@@ -37,6 +37,7 @@
         import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js';
         import { getAuth, signInAnonymously, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js';
         import { getFirestore, collection, addDoc, deleteDoc, doc, onSnapshot, setDoc } from 'https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js';
+        import { getStorage, ref, uploadBytes, getDownloadURL, deleteObject } from 'https://www.gstatic.com/firebasejs/10.8.1/firebase-storage.js';
 
         const { useState, useRef, useEffect, useMemo } = React;
 
@@ -53,12 +54,14 @@
 
         let db = null;
         let auth = null;
+        let storage = null;
         const appId = 'lucasabraham-ph-db';
 
         try {
             const app = initializeApp(firebaseConfig);
             auth = getAuth(app);
             db = getFirestore(app);
+            storage = getStorage(app);
         } catch (error) {
             console.warn("Error inicializando Firebase:", error);
         }
@@ -102,6 +105,10 @@
             
             const [searchOrderInput, setSearchOrderInput] = useState('');
             const [foundOrder, setFoundOrder] = useState(null);
+
+            const [showCreateModal, setShowCreateModal] = useState(false);
+            const [newAlbumData, setNewAlbumData] = useState({ name: '', price: '', color: '#171717' });
+            const [showArchivedModal, setShowArchivedModal] = useState(null);
 
             const fileInputRef = useRef(null);
             const ADMIN_PIN = '1234'; 
@@ -158,6 +165,33 @@
 
             const storagePercentage = Math.min((storageUsedMB / MAX_STORAGE_MB) * 100, 100);
 
+            const FIVE_DAYS_MS = 5 * 24 * 60 * 60 * 1000;
+            const now = Date.now();
+            // Si el álbum no tiene createdAt (álbumes viejos), lo tratamos como activo (ahora) para no romperlo
+            const activeAlbums = albums.filter(a => !a.createdAt || (now - a.createdAt) <= FIVE_DAYS_MS);
+            const archivedAlbums = albums.filter(a => a.createdAt && (now - a.createdAt) > FIVE_DAYS_MS);
+
+            const handleCreateAlbumSubmit = async (e) => {
+                e.preventDefault();
+                if (!newAlbumData.name) return;
+                const newAlbum = {
+                    id: Math.random().toString(36).substr(2, 9),
+                    name: newAlbumData.name,
+                    fullPrice: Number(newAlbumData.price) || 0,
+                    color: newAlbumData.color || '#171717',
+                    cover: null,
+                    createdAt: Date.now() // Fecha de hoy para calcular los 5 días
+                };
+                if (db) await setDoc(doc(db, 'artifacts', appId, 'albums', newAlbum.id), newAlbum);
+                setShowCreateModal(false);
+                setNewAlbumData({ name: '', price: '', color: '#171717' });
+            };
+
+            const buyFullAlbum = (album) => {
+                const msg = encodeURIComponent(`📸 *NUEVO PEDIDO DE ÁLBUM COMPLETO*\n\nHola Lucas! Quiero comprar todas las fotos del álbum "${album.name}".\n💰 *TOTAL: ${formatPrice(album.fullPrice)}*\n\nPor favor, indícame cómo realizar el pago.`);
+                window.open(`https://wa.me/${sellerPhone}?text=${msg}`, '_blank');
+            };
+
             const processImage = (file, albumId) => {
                 return new Promise((resolve) => {
                     const reader = new FileReader();
@@ -189,8 +223,10 @@
                             }
 
                             try {
-                                const watermarkedDataUrl = canvas.toDataURL('image/jpeg', 0.6);
-                                resolve({ albumId, name: file.name, url: watermarkedDataUrl, timestamp: Date.now() });
+                                // Convertimos el canvas a un archivo binario (Blob) más eficiente
+                                canvas.toBlob((blob) => {
+                                    resolve({ albumId, name: file.name, blob: blob, timestamp: Date.now() });
+                                }, 'image/jpeg', 0.6);
                             } catch (err) {
                                 resolve(null);
                             }
@@ -211,32 +247,56 @@
                     const processed = await Promise.all(files.map(f => processImage(f, activeAlbum)));
                     const validPhotos = processed.filter(p => p !== null);
 
-                    if (db) {
+                    if (db && storage) {
                         const photosCol = collection(db, 'artifacts', appId, 'photos');
-                        for (const photo of validPhotos) { await addDoc(photosCol, photo); }
-                    }
+                        let firstCoverUrl = null;
+
+                        for (const photo of validPhotos) {
+                            const fileId = Math.random().toString(36).substr(2, 9);
+                            const storageRef = ref(storage, `galeria/${activeAlbum}/${fileId}.jpg`);
+                            
+                            // 1. Subir la imagen real al "Disco Duro" (Storage)
+                            await uploadBytes(storageRef, photo.blob);
+                            const downloadUrl = await getDownloadURL(storageRef);
+                            
+                            if (!firstCoverUrl) firstCoverUrl = downloadUrl;
+
+                            // 2. Guardar solo el link en la Base de Datos
+                            await addDoc(photosCol, {
+                                albumId: photo.albumId,
+                                name: photo.name,
+                                url: downloadUrl,
+                                storagePath: storageRef.fullPath,
+                                timestamp: photo.timestamp
+                            });
+                        }
                     
-                    const currentAlbum = albums.find(a => a.id === activeAlbum);
-                    if (currentAlbum && !currentAlbum.cover && validPhotos.length > 0) {
-                        if(db) await setDoc(doc(db, 'artifacts', appId, 'albums', activeAlbum), { cover: validPhotos[0].url }, { merge: true });
+                        const currentAlbum = albums.find(a => a.id === activeAlbum);
+                        if (currentAlbum && !currentAlbum.cover && firstCoverUrl) {
+                            await setDoc(doc(db, 'artifacts', appId, 'albums', activeAlbum), { cover: firstCoverUrl }, { merge: true });
+                        }
                     }
                 } catch (error) {
-                    alert("Hubo un error procesando las imágenes.");
+                    console.error("Error subiendo:", error);
+                    alert("Hubo un error procesando o subiendo las imágenes.");
                 } finally {
                     setIsProcessing(false);
                     if (fileInputRef.current) fileInputRef.current.value = '';
                 }
             };
 
-            const createNewAlbum = async () => {
-                const name = prompt("Nombre del nuevo álbum:");
-                if (!name) return;
-                const newAlbum = { id: Math.random().toString(36).substr(2, 9), name, cover: null };
-                if (db) await setDoc(doc(db, 'artifacts', appId, 'albums', newAlbum.id), newAlbum);
-            };
-
-            const removePhoto = async (id) => {
-                if (db) await deleteDoc(doc(db, 'artifacts', appId, 'photos', id));
+            const removePhoto = async (id, storagePath) => {
+                if (db) {
+                    // Borramos la foto de la base de datos
+                    await deleteDoc(doc(db, 'artifacts', appId, 'photos', id));
+                    // Borramos el archivo pesado del disco duro para no gastar espacio
+                    if (storagePath && storage) {
+                        try {
+                            const storageRef = ref(storage, storagePath);
+                            await deleteObject(storageRef);
+                        } catch(e) { console.warn("Error borrando de Storage", e); }
+                    }
+                }
                 setCart(cart.filter(itemId => itemId !== id));
             };
 
@@ -272,9 +332,10 @@
 
                 if (db) await setDoc(doc(db, 'artifacts', appId, 'orders', orderId), newOrder);
 
-                let message = `📸 *NUEVO PEDIDO DE FOTOS*\n\nHola Lucas! Te adjunto mi comprobante de pago.\n\n`;
+                let message = `📸 *NUEVO PEDIDO DE FOTOS*\n\nHola Lucas! Te adjunto mi comprobante de pago de Mercado Pago.\n\n`;
                 message += `📋 *NÚMERO DE OPERACIÓN:* #${orderId}\n`;
-                message += `💰 *TOTAL PAGADO:* ${formatPrice(currentPrice)}\n\n`;
+                message += `💰 *TOTAL A PAGAR:* ${formatPrice(currentPrice)}\n`;
+                message += `💳 *ALIAS MP:* lucasabraham.mp\n\n`;
                 message += `_Cantidad de fotos: ${cart.length}_`;
 
                 window.open(`https://wa.me/${sellerPhone}?text=${encodeURIComponent(message)}`, '_blank');
@@ -384,30 +445,87 @@
                                 {activeAlbum === null ? (
                                     <div>
                                         <div className="flex justify-between items-center mb-6">
-                                            <h2 className="text-2xl font-light text-white">Tus Álbumes</h2>
-                                            <button onClick={createNewAlbum} className="flex items-center gap-2 bg-neutral-800 hover:bg-neutral-700 text-white px-4 py-2 rounded-lg text-sm transition border border-neutral-700">
-                                                <i className="fas fa-plus"></i> Crear Álbum
+                                            <h2 className="text-2xl font-light text-white">Gestor de Álbumes</h2>
+                                            <button onClick={() => setShowCreateModal(true)} className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg text-sm transition font-medium">
+                                                <i className="fas fa-plus"></i> Nuevo Álbum
                                             </button>
                                         </div>
                                         
-                                        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
-                                            {albums.map(album => (
+                                        {/* Modal para Crear Álbum */}
+                                        {showCreateModal && (
+                                            <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 fade-in">
+                                                <div className="bg-neutral-900 border border-neutral-800 p-6 rounded-2xl w-full max-w-md">
+                                                    <h3 className="text-xl text-white font-medium mb-4 flex items-center gap-2"><i className="fas fa-folder-plus text-indigo-400"></i> Crear Álbum</h3>
+                                                    <form onSubmit={handleCreateAlbumSubmit} className="space-y-4">
+                                                        <div>
+                                                            <label className="block text-xs text-neutral-500 mb-1">Nombre del Álbum</label>
+                                                            <input type="text" value={newAlbumData.name} onChange={e => setNewAlbumData({...newAlbumData, name: e.target.value})} className="w-full bg-neutral-950 border border-neutral-800 rounded-lg px-3 py-2 text-white outline-none focus:border-indigo-500" required placeholder="Ej: Boda Ana y Juan" />
+                                                        </div>
+                                                        <div>
+                                                            <label className="block text-xs text-neutral-500 mb-1">Precio Álbum Completo ($)</label>
+                                                            <input type="number" value={newAlbumData.price} onChange={e => setNewAlbumData({...newAlbumData, price: e.target.value})} className="w-full bg-neutral-950 border border-neutral-800 rounded-lg px-3 py-2 text-white outline-none focus:border-indigo-500" placeholder="Ej: 50000 (Dejar en 0 si no se vende completo)" />
+                                                        </div>
+                                                        <div>
+                                                            <label className="block text-xs text-neutral-500 mb-1">Color de Carátula</label>
+                                                            <div className="flex items-center gap-3">
+                                                                <input type="color" value={newAlbumData.color} onChange={e => setNewAlbumData({...newAlbumData, color: e.target.value})} className="w-12 h-12 bg-neutral-950 border border-neutral-800 rounded-lg cursor-pointer" />
+                                                                <span className="text-xs text-neutral-400">El color destacará el álbum</span>
+                                                            </div>
+                                                        </div>
+                                                        <div className="flex gap-2 justify-end mt-6 pt-4 border-t border-neutral-800">
+                                                            <button type="button" onClick={() => setShowCreateModal(false)} className="px-4 py-2 rounded-lg text-sm text-neutral-400 hover:text-white transition">Cancelar</button>
+                                                            <button type="submit" className="bg-indigo-600 hover:bg-indigo-700 text-white px-5 py-2 rounded-lg text-sm transition font-medium">Crear y Guardar</button>
+                                                        </div>
+                                                    </form>
+                                                </div>
+                                            </div>
+                                        )}
+
+                                        <h3 className="text-sm font-semibold text-emerald-400 mb-3 uppercase tracking-wider flex items-center gap-2"><i className="fas fa-bolt"></i> Álbumes Activos (5 días)</h3>
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6 mb-10">
+                                            {activeAlbums.map(album => (
                                                 <div key={album.id} onClick={() => setActiveAlbum(album.id)} className="bg-neutral-900 border border-neutral-800 rounded-2xl overflow-hidden cursor-pointer hover:border-indigo-500/50 transition group shadow-md">
-                                                    <div className="h-40 bg-neutral-950 relative flex items-center justify-center">
+                                                    <div className="h-40 relative flex items-center justify-center" style={{ backgroundColor: album.color || '#171717' }}>
                                                         {album.cover ? (
-                                                            <img src={album.cover} alt="Cover" className="w-full h-full object-cover opacity-60 group-hover:opacity-100 transition" />
+                                                            <img src={album.cover} alt="Cover" className="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition" />
                                                         ) : (
-                                                            <i className="fas fa-folder-open text-4xl text-neutral-800"></i>
+                                                            <i className="fas fa-image text-4xl text-white/20"></i>
                                                         )}
-                                                        <div className="absolute inset-0 bg-gradient-to-t from-neutral-900 via-transparent to-transparent"></div>
+                                                        <div className="absolute inset-0 bg-gradient-to-t from-neutral-900 via-neutral-900/30 to-transparent"></div>
+                                                        {album.fullPrice > 0 && <div className="absolute top-3 right-3 bg-indigo-600 text-white text-[10px] font-bold px-2 py-1 rounded-md border border-indigo-400/30 shadow-lg"><i className="fas fa-tag"></i> {formatPrice(album.fullPrice)}</div>}
                                                     </div>
-                                                    <div className="p-4 flex items-center gap-3">
-                                                        <i className="fas fa-folder text-indigo-400"></i>
-                                                        <h3 className="font-medium text-white">{album.name}</h3>
-                                                        <span className="ml-auto text-xs text-neutral-500 bg-neutral-800 px-2 py-1 rounded-md">{photos.filter(p => p.albumId === album.id).length} fotos</span>
+                                                    <div className="p-4">
+                                                        <div className="flex items-center gap-2 mb-1">
+                                                            <i className="fas fa-folder text-emerald-400 text-sm"></i>
+                                                            <h3 className="font-medium text-white truncate text-sm">{album.name}</h3>
+                                                        </div>
+                                                        <div className="flex justify-between items-center text-xs text-neutral-500">
+                                                            <span>{photos.filter(p => p.albumId === album.id).length} fotos</span>
+                                                            {album.createdAt && <span>Vence: {new Date(album.createdAt + FIVE_DAYS_MS).toLocaleDateString()}</span>}
+                                                        </div>
                                                     </div>
                                                 </div>
                                             ))}
+                                            {activeAlbums.length === 0 && <p className="text-xs text-neutral-500 col-span-full border border-dashed border-neutral-800 p-6 rounded-2xl text-center">No hay álbumes activos.</p>}
+                                        </div>
+
+                                        <h3 className="text-sm font-semibold text-neutral-500 mb-3 uppercase tracking-wider flex items-center gap-2"><i className="fas fa-archive"></i> Archivados (Expirados)</h3>
+                                        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4 opacity-60">
+                                            {archivedAlbums.map(album => (
+                                                <div key={album.id} onClick={() => setActiveAlbum(album.id)} className="bg-neutral-900 border border-neutral-800 rounded-xl overflow-hidden cursor-pointer hover:opacity-100 transition group grayscale hover:grayscale-0">
+                                                    <div className="h-24 relative flex items-center justify-center" style={{ backgroundColor: album.color || '#171717' }}>
+                                                        {album.cover && <img src={album.cover} alt="Cover" className="w-full h-full object-cover opacity-30 transition" />}
+                                                        <div className="absolute inset-0 flex items-center justify-center">
+                                                            <div className="bg-black/80 px-2 py-1 rounded text-[10px] text-white border border-white/10 backdrop-blur-md uppercase tracking-widest">Archivado</div>
+                                                        </div>
+                                                    </div>
+                                                    <div className="p-3 flex items-center gap-2">
+                                                        <i className="fas fa-folder text-neutral-600 text-xs"></i>
+                                                        <h3 className="font-medium text-neutral-400 truncate text-xs">{album.name}</h3>
+                                                    </div>
+                                                </div>
+                                            ))}
+                                            {archivedAlbums.length === 0 && <p className="text-xs text-neutral-600 col-span-full">No hay archivos viejos.</p>}
                                         </div>
                                     </div>
                                 ) : (
@@ -424,112 +542,225 @@
                                             {isProcessing ? (
                                                 <div className="flex flex-col items-center justify-center space-y-3">
                                                     <div className="w-8 h-8 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin"></div>
-                                                    <p className="text-indigo-400 text-sm">Protegiendo con Marca de Agua...</p>
+                                                    <p className="text-indigo-400 text-sm">Protegiendo y subiendo a la nube...</p>
                                                 </div>
                                             ) : (
-                                                <div className="flex flex-col items-center justify-center space-y-3 opacity-70 group-hover:opacity-100">
-                                                    <div className="bg-neutral-800 p-4 rounded-full"><i className="fas fa-cloud-arrow-up text-xl text-neutral-300"></i></div>
-                                                    <p className="text-white font-medium">Subir fotos a este álbum</p>
+                                                <div className="flex flex-col items-center justify-center space-y-3 opacity-70 group-hover:opacity-100 transition">
+                                                    <div className="bg-neutral-800 p-4 rounded-2xl">
+                                                        <i className="fas fa-image text-2xl text-neutral-300"></i>
+                                                    </div>
+                                                    <div>
+                                                        <p className="text-white font-medium">Haz clic para subir material</p>
+                                                        <p className="text-sm text-neutral-500 mt-1">Se aplicará la marca de agua y se subirá al almacenamiento.</p>
+                                                    </div>
                                                 </div>
                                             )}
                                         </div>
 
-                                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                                            {photos.filter(p => p.albumId === activeAlbum).map(photo => (
-                                                <div key={photo.id} className="group relative rounded-xl overflow-hidden bg-neutral-900 aspect-square">
-                                                    <img src={photo.url} alt="Protegida" className="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition" />
-                                                    <button onClick={() => removePhoto(photo.id)} className="absolute top-2 right-2 bg-red-500/90 text-white p-2 rounded-lg opacity-0 group-hover:opacity-100 transition backdrop-blur-sm">
-                                                        <i className="fas fa-trash-alt"></i>
-                                                    </button>
-                                                </div>
-                                            ))}
-                                        </div>
+                                        {/* Fotos del administrador */}
+                                        {photos.filter(p => p.albumId === activeAlbum).length > 0 && (
+                                            <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4">
+                                                {photos.filter(p => p.albumId === activeAlbum).map(photo => (
+                                                    <div key={photo.id} className="group relative rounded-xl overflow-hidden bg-neutral-900 aspect-[4/5]">
+                                                        <img src={photo.url} alt="Protegida" className="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-all" />
+                                                        <button onClick={(e) => { e.stopPropagation(); removePhoto(photo.id, photo.storagePath); }} className="absolute top-2 right-2 bg-red-500/90 text-white p-2 rounded-lg opacity-0 group-hover:opacity-100 transition backdrop-blur-sm">
+                                                            <i className="fas fa-trash"></i>
+                                                        </button>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        )}
                                     </div>
                                 )}
                             </div>
                         </div>
                     </div>
                 </div>
-                );
-            };
+            );
+        };
 
-            const ClientGallery = () => (
-                <div className="min-h-screen pb-40 fade-in selection:bg-indigo-500/30">
-                    <div className="max-w-4xl mx-auto pt-8 sm:pt-12 pb-6 px-4 sm:px-8">
+        const ClientGallery = () => {
+            return (
+                <div className="min-h-screen bg-neutral-950 text-neutral-200 pb-40 font-sans selection:bg-indigo-500/30">
+                    
+                    {/* Header Top - Mobile */}
+                    <div className="sticky top-0 z-40 bg-neutral-950 border-b border-neutral-900 px-4 py-3 flex items-center justify-between sm:hidden">
+                        <h1 className="text-lg font-bold text-white tracking-tight flex items-center gap-1.5">
+                            <i className="fas fa-lock text-sm"></i> lucasabraham.ph
+                        </h1>
+                    </div>
+
+                    {/* Bio & Stats - Instagram Style */}
+                    <div className="max-w-4xl mx-auto pt-6 sm:pt-12 pb-6 px-4 sm:px-8">
                         <div className="flex items-start sm:items-center gap-6 sm:gap-10 mb-6">
+                            
                             <div className="relative flex-shrink-0">
-                                <div className="w-24 h-24 sm:w-36 sm:h-36 rounded-full p-[3px] bg-gradient-to-tr from-yellow-500 via-pink-500 to-indigo-500 flex items-center justify-center shadow-xl">
-                                    <div className="w-full h-full rounded-full border-4 border-[#0a0a0a] overflow-hidden bg-neutral-900 flex items-center justify-center">
+                                <div className="w-20 h-20 sm:w-36 sm:h-36 rounded-full p-[3px] bg-gradient-to-tr from-yellow-500 via-pink-500 to-indigo-500 flex items-center justify-center">
+                                    <div className="w-full h-full rounded-full border-2 sm:border-4 border-neutral-950 overflow-hidden bg-neutral-900 flex items-center justify-center">
                                         <img src="https://i.postimg.cc/PrD4jg9V/Logo-LA.png" alt="lucasabraham.ph" className="w-[70%] h-[70%] object-contain" />
                                     </div>
                                 </div>
                             </div>
-                            <div className="flex-1 pt-2 sm:pt-0">
-                                <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-6 mb-4">
-                                    <h2 className="text-2xl font-semibold text-white">lucasabraham.ph</h2>
-                                    <button onClick={() => window.open(`https://wa.me/${sellerPhone}`, '_blank')} className="bg-neutral-800 hover:bg-neutral-700 text-white text-sm font-semibold px-5 py-2 rounded-lg transition w-full sm:w-auto text-center border border-neutral-700">
-                                        Contactar
-                                    </button>
+
+                            <div className="flex-1 pt-1 sm:pt-0">
+                                <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-6 mb-3 sm:mb-4">
+                                    <h2 className="text-xl sm:text-2xl font-semibold text-white">lucasabraham.ph</h2>
+                                    <div className="flex gap-2">
+                                        <button onClick={() => window.open(`https://wa.me/${sellerPhone}`, '_blank')} className="bg-neutral-800 hover:bg-neutral-700 text-white text-sm font-semibold px-5 py-1.5 rounded-lg transition w-full sm:w-auto text-center">
+                                            Contactar
+                                        </button>
+                                    </div>
                                 </div>
-                                <div className="flex gap-8 mb-4">
-                                    <div className="text-white text-sm"><span className="font-bold text-lg">{albums.length}</span> álbumes</div>
-                                    <div className="text-white text-sm"><span className="font-bold text-lg">{photos.length}</span> fotos</div>
+
+                                <div className="hidden sm:flex gap-8 mb-4">
+                                    <div className="text-white"><span className="font-bold">{activeAlbums.length + archivedAlbums.length}</span> álbumes</div>
+                                    <div className="text-white"><span className="font-bold">{photos.length}</span> fotos</div>
                                 </div>
+
                                 <div className="hidden sm:block">
                                     <p className="font-semibold text-white mb-1">Lucas Abraham | Fotografía</p>
-                                    <p className="text-neutral-400 text-sm leading-relaxed">
+                                    <p className="text-neutral-300 text-sm leading-relaxed mb-3">
                                         📸 Galería privada para clientes.<br/>
-                                        💳 Elegí tus fotos favoritas y enviá el comprobante.<br/>
                                         💎 Packs: 3x$5k | 5x$7.5k | 10x$10k
                                     </p>
+                                    {/* Botón Mercado Pago - Desktop */}
+                                    <div onClick={() => { navigator.clipboard.writeText('lucasabraham.mp'); setCopySuccess(true); setTimeout(()=>setCopySuccess(false), 2000); }} className="bg-[#009EE3] text-white text-xs font-bold px-3 py-1.5 rounded-md flex items-center gap-2 cursor-pointer hover:bg-[#0088cc] transition w-fit shadow-lg shadow-[#009EE3]/20">
+                                        <i className="fas fa-handshake"></i> {copySuccess ? '¡Alias Copiado!' : 'Alias MP: lucasabraham.mp'}
+                                    </div>
                                 </div>
                             </div>
                         </div>
-                        <div className="sm:hidden mb-6 px-2">
+
+                        <div className="sm:hidden mb-6">
                             <p className="font-semibold text-white mb-1">Lucas Abraham | Fotografía</p>
-                            <p className="text-neutral-400 text-sm leading-relaxed">
+                            <p className="text-neutral-300 text-sm leading-relaxed mb-3">
                                 📸 Galería privada para clientes.<br/>
-                                💳 Elegí tus fotos favoritas y enviá el comprobante.<br/>
                                 💎 Packs: 3x$5k | 5x$7.5k | 10x$10k
                             </p>
+                            {/* Botón Mercado Pago - Mobile */}
+                            <div onClick={() => { navigator.clipboard.writeText('lucasabraham.mp'); setCopySuccess(true); setTimeout(()=>setCopySuccess(false), 2000); }} className="bg-[#009EE3] text-white text-xs font-bold px-3 py-2 rounded-md flex items-center justify-center gap-2 cursor-pointer hover:bg-[#0088cc] transition w-full shadow-lg shadow-[#009EE3]/20">
+                                <i className="fas fa-handshake"></i> {copySuccess ? '¡Alias Copiado!' : 'Alias MP: lucasabraham.mp'}
+                            </div>
+                        </div>
+
+                        <div className="sm:hidden flex justify-around border-t border-neutral-900 pt-4">
+                            <div className="text-center flex flex-col">
+                                <span className="font-bold text-white text-lg">{activeAlbums.length + archivedAlbums.length}</span>
+                                <span className="text-xs text-neutral-500">álbumes</span>
+                            </div>
+                            <div className="text-center flex flex-col">
+                                <span className="font-bold text-white text-lg">{photos.length}</span>
+                                <span className="text-xs text-neutral-500">fotos</span>
+                            </div>
                         </div>
                     </div>
 
-                    <div className="max-w-4xl mx-auto flex justify-center border-t border-neutral-900 mb-8">
-                        <div className="flex items-center gap-2 border-t border-white pt-4 pb-2 px-4 -mt-[1px]">
-                            <i className="fas fa-border-all text-xs"></i>
-                            <span className="text-xs font-semibold text-white uppercase tracking-widest">Galería</span>
+                    <div className="max-w-4xl mx-auto flex justify-center border-t border-neutral-900 mb-6">
+                        <div className="flex items-center gap-2 border-t-2 border-white pt-3 pb-2 px-4 -mt-[1px]">
+                            <i className="fas fa-th text-xs"></i>
+                            <span className="text-[11px] font-semibold text-white uppercase tracking-widest">Galería</span>
                         </div>
                     </div>
 
-                    <div className="max-w-[1400px] mx-auto px-4 md:px-8">
+                    <div className="max-w-[1400px] mx-auto px-4 md:px-8 mt-4">
                         {activeAlbum === null ? (
                             <div>
-                                <h2 className="text-xl text-white mb-6 font-light flex items-center gap-2"><i className="fas fa-folder-open text-indigo-400"></i> Álbumes Disponibles</h2>
-                                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-                                    {albums.map(album => (
-                                        <div key={album.id} onClick={() => setActiveAlbum(album.id)} className="group cursor-pointer">
-                                            <div className="aspect-[4/3] rounded-2xl overflow-hidden bg-neutral-900 border border-neutral-800 mb-3 relative shadow-lg group-hover:border-indigo-500/50 transition-all">
-                                                {album.cover ? (
-                                                    <img src={album.cover} alt="Cover" className="w-full h-full object-cover opacity-70 group-hover:opacity-100 group-hover:scale-105 transition-all duration-500" />
-                                                ) : (
-                                                    <div className="w-full h-full flex items-center justify-center"><i className="fas fa-images text-4xl text-neutral-800"></i></div>
-                                                )}
-                                                <div className="absolute inset-0 bg-gradient-to-t from-black/90 to-transparent opacity-80"></div>
-                                                <div className="absolute bottom-4 left-4 right-4">
-                                                    <h3 className="text-white font-medium text-lg shadow-sm">{album.name}</h3>
-                                                </div>
+                                {showArchivedModal && (
+                                    <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-50 flex items-center justify-center p-4 fade-in">
+                                        <div className="bg-neutral-900 border border-neutral-800 p-8 rounded-3xl w-full max-w-md text-center shadow-2xl">
+                                            <div className="w-16 h-16 bg-neutral-800 rounded-full flex items-center justify-center mx-auto mb-4 border border-neutral-700">
+                                                <i className="fas fa-lock text-2xl text-neutral-400"></i>
                                             </div>
-                                            <p className="text-neutral-400 text-sm px-2">{photos.filter(p => p.albumId === album.id).length} fotos</p>
+                                            <h3 className="text-xl text-white font-medium mb-2">Galería Expirada</h3>
+                                            <p className="text-neutral-400 text-sm mb-6 leading-relaxed">
+                                                La galería <b className="text-white">"{showArchivedModal.name}"</b> ha estado cargada por más de 5 días y se encuentra archivada.
+                                            </p>
+                                            <div className="flex flex-col gap-3">
+                                                <button onClick={() => {
+                                                    const msg = encodeURIComponent(`Hola Lucas, quería consultar por la galería archivada "${showArchivedModal.name}".`);
+                                                    window.open(`https://wa.me/${sellerPhone}?text=${msg}`, '_blank');
+                                                    setShowArchivedModal(null);
+                                                }} className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3.5 rounded-xl transition flex items-center justify-center gap-2">
+                                                    <i className="fab fa-whatsapp text-lg"></i> Solicitar Acceso
+                                                </button>
+                                                <button onClick={() => setShowArchivedModal(null)} className="w-full bg-neutral-800 hover:bg-neutral-700 text-white font-medium py-3.5 rounded-xl transition">
+                                                    Volver a Galerías
+                                                </button>
+                                            </div>
                                         </div>
-                                    ))}
+                                    </div>
+                                )}
+
+                                <div className="mb-16">
+                                    <h2 className="text-xl text-white mb-6 font-light flex items-center gap-2"><i className="fas fa-bolt text-emerald-400"></i> Galerías Activas</h2>
+                                    {activeAlbums.length === 0 ? (
+                                        <p className="text-neutral-500 text-sm text-center py-10 bg-neutral-900/40 rounded-2xl border border-neutral-800/50">No hay eventos recientes activos.</p>
+                                    ) : (
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+                                            {activeAlbums.map(album => (
+                                                <div key={album.id} onClick={() => setActiveAlbum(album.id)} className="group cursor-pointer">
+                                                    <div className="aspect-[4/3] rounded-2xl overflow-hidden bg-neutral-900 border border-neutral-800 mb-3 relative shadow-lg group-hover:border-indigo-500/50 transition-all" style={{ backgroundColor: album.color || '#171717' }}>
+                                                        {album.cover ? (
+                                                            <img src={album.cover} alt="Cover" className="w-full h-full object-cover opacity-70 group-hover:opacity-100 group-hover:scale-105 transition-all duration-500" />
+                                                        ) : (
+                                                            <div className="w-full h-full flex items-center justify-center"><i className="fas fa-camera text-4xl text-white/20"></i></div>
+                                                        )}
+                                                        <div className="absolute inset-0 bg-gradient-to-t from-black/90 to-transparent opacity-80"></div>
+                                                        <div className="absolute bottom-4 left-4 right-4">
+                                                            <h3 className="text-white font-medium text-lg shadow-sm truncate">{album.name}</h3>
+                                                            {album.createdAt && (
+                                                                <p className="text-emerald-400 text-[11px] mt-1 font-medium bg-emerald-900/30 w-fit px-2 py-0.5 rounded border border-emerald-800/50">
+                                                                    <i className="fas fa-clock mr-1"></i> Disponible {5 - Math.floor((Date.now() - album.createdAt) / (1000 * 60 * 60 * 24))} días más
+                                                                </p>
+                                                            )}
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )}
+                                </div>
+
+                                <div>
+                                    <h2 className="text-lg text-neutral-500 mb-6 font-light flex items-center gap-2 border-t border-neutral-900 pt-6"><i className="fas fa-archive"></i> Galerías Archivadas</h2>
+                                    {archivedAlbums.length === 0 ? (
+                                        <p className="text-neutral-600 text-sm">No hay eventos archivados.</p>
+                                    ) : (
+                                        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 opacity-70">
+                                            {archivedAlbums.map(album => (
+                                                <div key={album.id} onClick={() => setShowArchivedModal(album)} className="group cursor-pointer hover:opacity-100 transition-all">
+                                                    <div className="aspect-[4/3] rounded-xl overflow-hidden bg-neutral-900 border border-neutral-800 mb-2 relative" style={{ backgroundColor: album.color || '#171717' }}>
+                                                        {album.cover && (
+                                                            <img src={album.cover} alt="Cover" className="w-full h-full object-cover opacity-40 group-hover:opacity-60 transition-all grayscale group-hover:grayscale-0" />
+                                                        )}
+                                                        <div className="absolute inset-0 flex items-center justify-center bg-black/50 backdrop-blur-[2px] group-hover:backdrop-blur-0 transition-all">
+                                                            <div className="bg-black/80 px-3 py-1.5 rounded-full text-[10px] text-white border border-white/10 flex items-center gap-1">
+                                                                <i className="fas fa-lock"></i> Expirada
+                                                            </div>
+                                                        </div>
+                                                        <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/90 to-transparent p-2 text-center">
+                                                            <h3 className="text-white/80 font-medium text-[11px] truncate">{album.name}</h3>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )}
                                 </div>
                             </div>
                         ) : (
                             <div className="fade-in">
-                                <button onClick={() => setActiveAlbum(null)} className="flex items-center gap-2 text-neutral-400 hover:text-white mb-8 transition bg-neutral-900 px-5 py-2.5 rounded-full w-fit border border-neutral-800 text-sm">
-                                    <i className="fas fa-arrow-left"></i> Volver a Álbumes
-                                </button>
+                                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
+                                    <button onClick={() => setActiveAlbum(null)} className="flex items-center gap-2 text-neutral-400 hover:text-white transition bg-neutral-900 px-5 py-2.5 rounded-full border border-neutral-800 text-sm">
+                                        <i className="fas fa-arrow-left"></i> Volver a Álbumes
+                                    </button>
+                                    
+                                    {activeAlbum && albums.find(a => a.id === activeAlbum)?.fullPrice > 0 && (
+                                        <button onClick={() => buyFullAlbum(albums.find(a => a.id === activeAlbum))} className="bg-indigo-600 hover:bg-indigo-500 text-white px-5 py-2.5 rounded-xl font-bold flex items-center justify-center gap-2 transition text-sm shadow-[0_0_20px_rgba(79,70,229,0.2)] w-full sm:w-auto border border-indigo-400/50">
+                                            <i className="fas fa-box-open text-indigo-200"></i> Comprar Álbum Completo: {formatPrice(albums.find(a => a.id === activeAlbum).fullPrice)}
+                                        </button>
+                                    )}
+                                </div>
                                 
                                 {photos.filter(p => p.albumId === activeAlbum).length === 0 ? (
                                     <p className="text-center text-neutral-500 py-20">Este álbum aún no tiene fotos.</p>
@@ -568,8 +799,8 @@
                                 </div>
                                 <div className="flex gap-2 w-full sm:w-auto">
                                     <button onClick={() => setCart([])} className="px-4 py-3 text-neutral-400 font-medium hover:text-white bg-white/5 rounded-xl transition text-sm flex-1 sm:flex-none">Vaciar</button>
-                                    <button onClick={handleCheckout} className="bg-white hover:bg-neutral-200 text-black px-6 py-3 rounded-xl font-bold flex items-center justify-center gap-2 transition flex-1 sm:flex-none">
-                                        <i className="fas fa-file-invoice"></i> Comprar
+                                    <button onClick={handleCheckout} className="bg-emerald-600 hover:bg-emerald-500 text-white px-6 py-3 rounded-xl font-bold flex items-center justify-center gap-2 transition flex-1 sm:flex-none">
+                                        <i className="fab fa-whatsapp text-lg"></i> Pedir por WP
                                     </button>
                                 </div>
                             </div>
@@ -577,15 +808,16 @@
                     )}
                 </div>
             );
+        };
 
-            if (route === '#/admin') {
-                return isAdminUnlocked ? AdminDashboard() : AdminLogin();
-            }
-            return ClientGallery();
+        if (route === '#/admin') {
+            return isAdminUnlocked ? AdminDashboard() : AdminLogin();
         }
+        return ClientGallery();
+    }
 
-        const root = ReactDOM.createRoot(document.getElementById('root'));
-        root.render(<App />);
+    const root = ReactDOM.createRoot(document.getElementById('root'));
+    root.render(<App />);
     </script>
 </body>
 </html>
