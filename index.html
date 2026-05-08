@@ -579,9 +579,9 @@
             );
 
             if (route === '#/admin') {
-                return isAdminUnlocked ? <AdminDashboard /> : <AdminLogin />;
+                return isAdminUnlocked ? AdminDashboard() : AdminLogin();
             }
-            return <ClientGallery />;
+            return ClientGallery();
         }
 
         const root = ReactDOM.createRoot(document.getElementById('root'));
