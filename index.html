@@ -115,6 +115,7 @@
 
             const [showCreateModal, setShowCreateModal] = useState(false);
             const [newAlbumData, setNewAlbumData] = useState({ name: '', price: '', color: '#171717' });
+            const [isLoadingAlbums, setIsLoadingAlbums] = useState(true); // Estado de carga inicial
             
             // Modales personalizados para evitar alert() y confirm()
             const [showArchivedModal, setShowArchivedModal] = useState(null);
@@ -122,6 +123,9 @@
             const [confirmDialog, setConfirmDialog] = useState(null); // { title, text, onConfirm }
 
             const fileInputRef = useRef(null);
+            const coverInputRef = useRef(null);
+            const [adminSelected, setAdminSelected] = useState([]);
+
             const ADMIN_PIN = '1234'; 
             const MAX_STORAGE_MB = 50; 
 
@@ -145,12 +149,16 @@
             }, []);
 
             useEffect(() => {
-                if (!db) return;
+                if (!db) {
+                    setIsLoadingAlbums(false);
+                    return;
+                }
                 const unsubPhotos = onSnapshot(collection(db, 'artifacts', appId, 'photos'), (snapshot) => {
                     setPhotos(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
                 });
                 const unsubAlbums = onSnapshot(collection(db, 'artifacts', appId, 'albums'), (snapshot) => {
                     setAlbums(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+                    setIsLoadingAlbums(false); // Detenemos la ruedita al recibir los datos
                 });
                 const unsubOrders = onSnapshot(collection(db, 'artifacts', appId, 'orders'), (snapshot) => {
                     setOrders(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
@@ -191,6 +199,47 @@
                 setNewAlbumData({ name: '', price: '', color: '#171717' });
             };
 
+            const processCover = (file) => {
+                return new Promise((resolve) => {
+                    const reader = new FileReader();
+                    reader.onload = (e) => {
+                        const img = new Image();
+                        img.onload = () => {
+                            const canvas = document.createElement('canvas');
+                            const MAX_DIMENSION = 1000; // Buena resolución para la carátula
+                            let width = img.width; let height = img.height;
+                            if (width > height && width > MAX_DIMENSION) { height *= MAX_DIMENSION / width; width = MAX_DIMENSION; }
+                            else if (height > MAX_DIMENSION) { width *= MAX_DIMENSION / height; height = MAX_DIMENSION; }
+                            canvas.width = width; canvas.height = height;
+                            const ctx = canvas.getContext('2d');
+                            ctx.drawImage(img, 0, 0, width, height);
+                            canvas.toBlob((blob) => resolve({ blob }), 'image/jpeg', 0.8);
+                        };
+                        img.src = e.target.result;
+                    };
+                    reader.readAsDataURL(file);
+                });
+            };
+
+            const handleCoverUpload = async (e) => {
+                const file = e.target.files[0];
+                if (!file || !activeAlbum) return;
+                setIsProcessing(true);
+                try {
+                    const processed = await processCover(file);
+                    const fileId = Math.random().toString(36).substr(2, 9);
+                    const storageRef = ref(storage, `galeria/${activeAlbum}/cover_${fileId}.jpg`);
+                    await uploadBytes(storageRef, processed.blob);
+                    const url = await getDownloadURL(storageRef);
+                    await setDoc(doc(db, 'artifacts', appId, 'albums', activeAlbum), { 
+                        cover: url, 
+                        coverStoragePath: storageRef.fullPath 
+                    }, { merge: true });
+                } catch (error) { console.error("Error subiendo portada:", error); }
+                setIsProcessing(false);
+                if (coverInputRef.current) coverInputRef.current.value = '';
+            };
+
             const processImage = (file, albumId) => {
                 return new Promise((resolve) => {
                     const reader = new FileReader();
@@ -198,7 +247,7 @@
                         const img = new Image();
                         img.onload = () => {
                             const canvas = document.createElement('canvas');
-                            const MAX_DIMENSION = 1000; 
+                            const MAX_DIMENSION = 600; // BAJA CALIDAD (600px máx) para ocupar poco espacio
                             let width = img.width;
                             let height = img.height;
 
@@ -214,33 +263,32 @@
 
                             // Aplicar Marca de Agua Repetida (Tiled)
                             if (watermarkImg) {
-                                const wmWidth = width * 0.35; // 35% del ancho para repetirla mejor
+                                const wmWidth = width * 0.35; 
                                 const wmRatio = watermarkImg.height / watermarkImg.width;
                                 const wmHeight = wmWidth * wmRatio;
                                 
                                 ctx.globalAlpha = 0.4; 
                                 
                                 ctx.translate(width / 2, height / 2);
-                                ctx.rotate(-Math.PI / 6); // Diagonal -30 grados
+                                ctx.rotate(-Math.PI / 6); 
                                 ctx.translate(-width / 2, -height / 2);
 
                                 const stepX = wmWidth * 1.3;
                                 const stepY = wmHeight * 2;
 
-                                // Dibujar grilla de marcas de agua
                                 for (let x = -width; x < width * 2; x += stepX) {
                                     for (let y = -height; y < height * 2; y += stepY) {
                                         ctx.drawImage(watermarkImg, x, y, wmWidth, wmHeight);
                                     }
                                 }
                                 
-                                ctx.setTransform(1, 0, 0, 1, 0, 0); // Resetear rotación
+                                ctx.setTransform(1, 0, 0, 1, 0, 0); 
                                 ctx.globalAlpha = 1.0;
                             }
 
                             canvas.toBlob((blob) => {
                                 resolve({ albumId, name: file.name, blob: blob, timestamp: Date.now() });
-                            }, 'image/jpeg', 0.6);
+                            }, 'image/jpeg', 0.4); // COMPRESIÓN ALTA (40% de calidad) para priorizar el ahorro de memoria
                         };
                         img.src = e.target.result;
                     };
@@ -293,24 +341,40 @@
                 }
             };
 
-            const removePhoto = async (id, storagePath) => {
+            const removePhoto = async (id, storagePath, albumId) => {
                 if (!db) return;
                 await deleteDoc(doc(db, 'artifacts', appId, 'photos', id));
-                if (storagePath && storage) {
+                const album = albums.find(a => a.id === albumId);
+                // Prevenir que se borre de Storage si es la portada actual
+                if (storagePath && storage && album?.coverStoragePath !== storagePath) {
                     try { await deleteObject(ref(storage, storagePath)); } catch(e) {}
                 }
                 setCart(cart.filter(itemId => itemId !== id));
             };
 
+            const setPhotoAsCover = async (photo) => {
+                if (!db || !activeAlbum) return;
+                setIsProcessing(true);
+                try {
+                    await setDoc(doc(db, 'artifacts', appId, 'albums', activeAlbum), { 
+                        cover: photo.url, 
+                        coverStoragePath: photo.storagePath 
+                    }, { merge: true });
+                } catch (e) { console.error(e); }
+                setIsProcessing(false);
+            };
+
             const executeArchiveAlbum = async (albumId) => {
                 setIsProcessing(true);
                 setConfirmDialog(null);
+                const albumData = albums.find(a => a.id === albumId);
+                const coverPath = albumData?.coverStoragePath;
                 const albumPhotos = photos.filter(p => p.albumId === albumId);
                 
-                // Borrar fotos de la nube para liberar memoria
+                // Borrar fotos de la nube para liberar memoria, EXCEPTO la portada
                 for (const p of albumPhotos) {
                     await deleteDoc(doc(db, 'artifacts', appId, 'photos', p.id));
-                    if (p.storagePath && storage) {
+                    if (p.storagePath && storage && p.storagePath !== coverPath) {
                         try { await deleteObject(ref(storage, p.storagePath)); } catch(e) {}
                     }
                 }
@@ -323,6 +387,8 @@
             const executeDeleteAlbum = async (albumId) => {
                 setIsProcessing(true);
                 setConfirmDialog(null);
+                const albumData = albums.find(a => a.id === albumId);
+                const coverPath = albumData?.coverStoragePath;
                 const albumPhotos = photos.filter(p => p.albumId === albumId);
                 
                 for (const p of albumPhotos) {
@@ -331,12 +397,44 @@
                         try { await deleteObject(ref(storage, p.storagePath)); } catch(e) {}
                     }
                 }
+                
+                // Borrar la portada guardada si existe (porque se elimina TODO el álbum)
+                if (coverPath && storage) {
+                    try { await deleteObject(ref(storage, coverPath)); } catch(e) {}
+                }
+
                 await deleteDoc(doc(db, 'artifacts', appId, 'albums', albumId));
                 setIsProcessing(false);
                 setActiveAlbum(null);
             };
 
             const toggleCart = (id) => setCart(prev => prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]);
+
+            const toggleAdminSelect = (id) => setAdminSelected(prev => prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]);
+            
+            const handleSelectAllAdmin = () => {
+                const albumPhotos = photos.filter(p => p.albumId === activeAlbum);
+                if (adminSelected.length === albumPhotos.length) setAdminSelected([]);
+                else setAdminSelected(albumPhotos.map(p => p.id));
+            };
+
+            const handleBulkDelete = async () => {
+                if (adminSelected.length === 0) return;
+                setConfirmDialog({
+                    title: 'Eliminar Seleccionadas',
+                    text: `¿Seguro que deseas eliminar ${adminSelected.length} fotos permanentemente?`,
+                    onConfirm: async () => {
+                        setIsProcessing(true);
+                        setConfirmDialog(null);
+                        for (const id of adminSelected) {
+                            const photo = photos.find(p => p.id === id);
+                            if (photo) await removePhoto(photo.id, photo.storagePath, photo.albumId);
+                        }
+                        setAdminSelected([]);
+                        setIsProcessing(false);
+                    }
+                });
+            };
 
             const toggleOrderStatus = async (orderId, currentStatus) => {
                 if (db) {
@@ -488,41 +586,13 @@
                         </header>
 
                         <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
-                            {/* Panel Lateral Admin */}
+                            {/* Panel Lateral Izquierdo */}
                             <div className="lg:col-span-1 space-y-6">
                                 <div className="bg-neutral-900 border border-neutral-800 p-6 rounded-2xl">
-                                    <h3 className="text-white font-medium mb-4 flex items-center gap-2"><i className="fas fa-database text-neutral-400"></i> Memoria en la Nube</h3>
-                                    <div className="w-full bg-neutral-950 rounded-full h-3 mb-2 border border-neutral-800 overflow-hidden">
-                                        <div className={`h-full rounded-full transition-all ${storagePercentage > 80 ? 'bg-red-500' : 'bg-indigo-500'}`} style={{ width: `${storagePercentage}%` }}></div>
-                                    </div>
-                                    <div className="flex justify-between text-xs text-neutral-500 mb-4">
-                                        <span>~{storageUsedMB} MB usados</span>
-                                        <span>{MAX_STORAGE_MB} MB max</span>
-                                    </div>
-                                    <p className="text-[11px] text-neutral-600 leading-tight">Archiva álbumes viejos para liberar espacio automáticamente.</p>
-                                </div>
-
-                                <div className="bg-neutral-900 border border-neutral-800 p-6 rounded-2xl">
-                                    <h3 className="text-white font-medium mb-4 flex items-center gap-2"><i className="fas fa-list-check text-emerald-400"></i> Cola de Pedidos</h3>
-                                    
-                                    <form onSubmit={(e) => { e.preventDefault(); setFoundOrder(orders.find(o => o.id.toUpperCase() === searchOrderInput.toUpperCase()) || 'NOT_FOUND'); }} className="flex gap-2 mb-4">
-                                        <input type="text" value={searchOrderInput} onChange={(e) => setSearchOrderInput(e.target.value)} placeholder="Buscar Operación..." className="w-full bg-neutral-950 border border-neutral-800 rounded-lg px-3 py-2 text-sm text-white outline-none uppercase" />
-                                        <button type="submit" className="bg-emerald-600 hover:bg-emerald-700 text-white px-3 rounded-lg"><i className="fas fa-search"></i></button>
-                                    </form>
-
-                                    {foundOrder && foundOrder !== 'NOT_FOUND' && (
-                                        <div className="bg-neutral-950 border border-emerald-900/50 p-4 rounded-xl mb-4">
-                                            <p className="text-emerald-400 font-bold mb-1"><i className="fas fa-check-circle mr-1"></i> Operación Válida</p>
-                                            <p className="text-xs text-neutral-400 mb-2">Busca en tu PC estos archivos originales:</p>
-                                            <ul className="text-xs text-white space-y-1 max-h-32 overflow-y-auto font-mono bg-neutral-900 p-2 rounded border border-neutral-800">
-                                                {foundOrder.items.map(i => <li key={i.id}>• {i.originalName}</li>)}
-                                            </ul>
-                                        </div>
-                                    )}
-
-                                    <div className="space-y-2 max-h-[300px] overflow-y-auto pr-1">
+                                    <h3 className="text-white font-medium mb-4 flex items-center gap-2"><i className="fas fa-list-check text-indigo-400"></i> Cola de Pedidos</h3>
+                                    <div className="space-y-3 max-h-[400px] overflow-y-auto pr-2">
                                         {orders.length === 0 ? (
-                                            <p className="text-xs text-neutral-500 text-center py-4">No hay pedidos aún.</p>
+                                            <p className="text-xs text-neutral-500">No hay pedidos aún.</p>
                                         ) : (
                                             orders.sort((a,b) => (a.processed === b.processed ? 0 : a.processed ? 1 : -1)).map(order => (
                                                 <div key={order.id} className={`p-3 rounded-xl border transition-all ${order.processed ? 'bg-neutral-950 border-neutral-800/50 opacity-60' : 'bg-neutral-800/50 border-neutral-700'}`}>
@@ -543,7 +613,7 @@
                                 </div>
                             </div>
 
-                            {/* Área Principal Admin */}
+                            {/* Área Principal */}
                             <div className="lg:col-span-3">
                                 {activeAlbum === null ? (
                                     <div className="fade-in">
@@ -569,7 +639,7 @@
                                                             <input type="number" value={newAlbumData.price} onChange={e => setNewAlbumData({...newAlbumData, price: e.target.value})} className="w-full bg-neutral-950 border border-neutral-800 rounded-lg px-3 py-3 text-white outline-none focus:border-indigo-500" placeholder="Ej: 50000" />
                                                         </div>
                                                         <div>
-                                                            <label className="block text-xs text-neutral-500 mb-1">Color de Carátula</label>
+                                                            <label className="block text-xs text-neutral-500 mb-1">Color Base de Carátula</label>
                                                             <div className="flex items-center gap-3">
                                                                 <input type="color" value={newAlbumData.color} onChange={e => setNewAlbumData({...newAlbumData, color: e.target.value})} className="w-12 h-12 bg-neutral-950 border border-neutral-800 rounded-lg cursor-pointer" />
                                                             </div>
@@ -623,65 +693,101 @@
                                     </div>
                                 ) : (
                                     <div className="fade-in">
-                                        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8 bg-neutral-900 p-4 rounded-2xl border border-neutral-800">
-                                            <div className="flex items-center gap-4">
-                                                <button onClick={() => setActiveAlbum(null)} className="text-neutral-400 hover:text-white bg-neutral-800 p-3 rounded-xl transition"><i className="fas fa-arrow-left"></i></button>
-                                                <div>
-                                                    <h2 className="text-xl font-bold text-white leading-tight">{activeAlbumData?.name}</h2>
-                                                    {activeAlbumData?.isArchived && <span className="text-xs text-red-400">Álbum Archivado (Fotos borradas)</span>}
+                                        <div className="flex flex-col gap-4 mb-8 bg-neutral-900 p-4 rounded-2xl border border-neutral-800">
+                                            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 w-full border-b border-neutral-800 pb-4">
+                                                <div className="flex items-center gap-4">
+                                                    <button onClick={() => { setActiveAlbum(null); setAdminSelected([]); }} className="text-neutral-400 hover:text-white bg-neutral-800 p-3 rounded-xl transition"><i className="fas fa-arrow-left"></i></button>
+                                                    <div>
+                                                        <h2 className="text-xl font-bold text-white leading-tight">{activeAlbumData?.name}</h2>
+                                                        {activeAlbumData?.isArchived && <span className="text-xs text-red-400">Álbum Archivado (Fotos borradas)</span>}
+                                                    </div>
+                                                </div>
+                                                <div className="flex gap-2">
+                                                    {!activeAlbumData?.isArchived && (
+                                                        <button onClick={() => setConfirmDialog({ title: 'Archivar Álbum', text: 'Se borrarán permanentemente las fotos para liberar espacio. La carátula seguirá visible para clientes. ¿Archivar?', onConfirm: () => executeArchiveAlbum(activeAlbumData.id) })} className="text-xs bg-amber-600/20 text-amber-400 hover:bg-amber-600/30 px-4 py-2 rounded-lg font-medium border border-amber-600/30 transition">
+                                                            <i className="fas fa-archive mr-1"></i> Archivar
+                                                        </button>
+                                                    )}
+                                                    <button onClick={() => setConfirmDialog({ title: 'Eliminar Álbum', text: 'Se eliminará el álbum por completo y todas sus fotos. Esta acción no se puede deshacer.', onConfirm: () => executeDeleteAlbum(activeAlbumData.id) })} className="text-xs bg-red-600/20 text-red-400 hover:bg-red-600/30 px-4 py-2 rounded-lg font-medium border border-red-600/30 transition">
+                                                        <i className="fas fa-trash mr-1"></i> Eliminar Totalmente
+                                                    </button>
                                                 </div>
                                             </div>
-                                            <div className="flex gap-2">
-                                                {!activeAlbumData?.isArchived && (
-                                                    <button onClick={() => setConfirmDialog({
-                                                        title: 'Archivar Álbum',
-                                                        text: 'Se borrarán permanentemente los archivos de alta calidad en la nube para liberar memoria, pero la carátula seguirá visible para clientes. ¿Archivar?',
-                                                        onConfirm: () => executeArchiveAlbum(activeAlbumData.id)
-                                                    })} className="text-xs bg-amber-600/20 text-amber-400 hover:bg-amber-600/30 px-4 py-2 rounded-lg font-medium border border-amber-600/30 transition">
-                                                        <i className="fas fa-archive mr-1"></i> Archivar
+
+                                            {/* Sección para subir la Portada de Diseño */}
+                                            <div className="flex items-center gap-4 w-full bg-neutral-950 p-3 rounded-xl border border-neutral-800">
+                                                <div className="w-16 h-16 rounded-lg overflow-hidden bg-neutral-900 border border-neutral-700 flex-shrink-0 flex items-center justify-center">
+                                                    {activeAlbumData?.cover ? <img src={activeAlbumData.cover} className="w-full h-full object-cover" /> : <i className="fas fa-image text-xl text-neutral-600"></i>}
+                                                </div>
+                                                <div className="flex-1">
+                                                    <p className="text-sm text-white font-medium mb-0.5">Diseño de Portada</p>
+                                                    <p className="text-xs text-neutral-500 mb-2">Sube una imagen con escudos o el título del partido.</p>
+                                                    <button onClick={() => !isProcessing && coverInputRef.current.click()} className="text-xs bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-1.5 rounded transition shadow-md">
+                                                        Subir Portada
                                                     </button>
-                                                )}
-                                                <button onClick={() => setConfirmDialog({
-                                                    title: 'Eliminar Álbum',
-                                                    text: 'Se eliminará el álbum por completo y todas sus fotos. Esta acción no se puede deshacer.',
-                                                    onConfirm: () => executeDeleteAlbum(activeAlbumData.id)
-                                                })} className="text-xs bg-red-600/20 text-red-400 hover:bg-red-600/30 px-4 py-2 rounded-lg font-medium border border-red-600/30 transition">
-                                                    <i className="fas fa-trash mr-1"></i> Eliminar Totalmente
-                                                </button>
+                                                    <input type="file" accept="image/*" className="hidden" ref={coverInputRef} onChange={handleCoverUpload} />
+                                                </div>
                                             </div>
                                         </div>
 
                                         {!activeAlbumData?.isArchived && (
-                                            <div className="border-2 border-dashed border-neutral-800 hover:border-indigo-500/50 rounded-3xl p-10 text-center bg-neutral-900/50 transition cursor-pointer mb-8 group" onClick={() => !isProcessing && fileInputRef.current.click()}>
-                                                <input type="file" multiple accept="image/*" className="hidden" ref={fileInputRef} onChange={handleFileUpload} disabled={isProcessing} />
-                                                {isProcessing ? (
-                                                    <div className="flex flex-col items-center justify-center space-y-3">
-                                                        <div className="w-10 h-10 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin"></div>
-                                                        <p className="text-indigo-400 text-sm font-medium">Marcando y subiendo...</p>
-                                                    </div>
-                                                ) : (
-                                                    <div className="flex flex-col items-center justify-center space-y-3 opacity-70 group-hover:opacity-100 transition">
-                                                        <div className="bg-neutral-800 p-4 rounded-full"><i className="fas fa-cloud-upload-alt text-2xl text-neutral-300"></i></div>
-                                                        <div>
-                                                            <p className="text-white font-medium">Haz clic para subir material</p>
+                                            <>
+                                                <div className="border-2 border-dashed border-neutral-800 hover:border-indigo-500/50 rounded-3xl p-8 text-center bg-neutral-900/50 transition cursor-pointer mb-6 group" onClick={() => !isProcessing && fileInputRef.current.click()}>
+                                                    <input type="file" multiple accept="image/*" className="hidden" ref={fileInputRef} onChange={handleFileUpload} disabled={isProcessing} />
+                                                    {isProcessing ? (
+                                                        <div className="flex flex-col items-center justify-center space-y-3">
+                                                            <div className="w-10 h-10 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin"></div>
+                                                            <p className="text-indigo-400 text-sm font-medium">Marcando y subiendo...</p>
                                                         </div>
+                                                    ) : (
+                                                        <div className="flex flex-col items-center justify-center space-y-2 opacity-70 group-hover:opacity-100 transition">
+                                                            <div className="bg-neutral-800 p-3 rounded-full"><i className="fas fa-cloud-upload-alt text-xl text-neutral-300"></i></div>
+                                                            <p className="text-white font-medium text-sm">Haz clic para subir fotos al álbum</p>
+                                                        </div>
+                                                    )}
+                                                </div>
+
+                                                {/* Controles de Selección para el Admin */}
+                                                {photos.filter(p => p.albumId === activeAlbum).length > 0 && (
+                                                    <div className="flex justify-between items-center mb-4 bg-neutral-900 p-3 rounded-xl border border-neutral-800">
+                                                        <button onClick={handleSelectAllAdmin} className="text-xs text-white bg-neutral-800 hover:bg-neutral-700 px-4 py-2 rounded-lg transition font-medium border border-neutral-700">
+                                                            {adminSelected.length === photos.filter(p => p.albumId === activeAlbum).length ? 'Deseleccionar Todas' : 'Seleccionar Todas'}
+                                                        </button>
+                                                        {adminSelected.length > 0 && (
+                                                            <button onClick={handleBulkDelete} className="text-xs bg-red-600 hover:bg-red-500 text-white px-4 py-2 rounded-lg transition font-medium shadow-md">
+                                                                <i className="fas fa-trash mr-1"></i> Eliminar ({adminSelected.length})
+                                                            </button>
+                                                        )}
                                                     </div>
                                                 )}
-                                            </div>
+                                            </>
                                         )}
 
-                                        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4">
-                                            {photos.filter(p => p.albumId === activeAlbum).map(photo => (
-                                                <div key={photo.id} className="group relative rounded-2xl overflow-hidden bg-neutral-900 aspect-[4/5] border border-neutral-800">
-                                                    <img src={photo.url} alt="Protegida" className="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-all" />
+                                        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-3">
+                                            {photos.filter(p => p.albumId === activeAlbum).map(photo => {
+                                                const isSelected = adminSelected.includes(photo.id);
+                                                const isCover = activeAlbumData?.coverStoragePath === photo.storagePath && photo.storagePath;
+                                                return (
+                                                <div key={photo.id} onClick={() => toggleAdminSelect(photo.id)} className={`group relative rounded-2xl overflow-hidden aspect-[4/5] border transition-all cursor-pointer ${isSelected ? 'border-indigo-500 ring-2 ring-indigo-500 scale-[0.95]' : 'border-neutral-800 bg-neutral-900 hover:opacity-90'}`}>
+                                                    <img src={photo.url} alt="Protegida" className="w-full h-full object-cover" />
                                                     <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/90 to-transparent p-2 pt-6">
                                                         <p className="text-white/60 text-[10px] font-mono truncate">{photo.name}</p>
                                                     </div>
-                                                    <button onClick={(e) => { e.stopPropagation(); removePhoto(photo.id, photo.storagePath); }} className="absolute top-2 right-2 bg-red-500/90 text-white p-2 rounded-lg opacity-0 group-hover:opacity-100 transition backdrop-blur-sm">
-                                                        <i className="fas fa-trash"></i>
+
+                                                    {/* Botón de Establecer Portada */}
+                                                    <button 
+                                                        onClick={(e) => { e.stopPropagation(); setPhotoAsCover(photo); }}
+                                                        className={`absolute top-2 left-2 w-7 h-7 rounded-lg flex items-center justify-center transition-all z-20 ${isCover ? 'bg-yellow-500 text-white opacity-100 shadow-lg shadow-yellow-500/20' : 'bg-black/50 text-white/70 hover:bg-yellow-500 hover:text-white opacity-0 group-hover:opacity-100 backdrop-blur-sm'}`}
+                                                        title={isCover ? "Portada actual" : "Elegir como portada"}
+                                                    >
+                                                        <i className={`fas fa-star ${isCover ? '' : 'text-sm'}`}></i>
                                                     </button>
+
+                                                    <div className={`absolute top-2 right-2 w-6 h-6 rounded-full flex items-center justify-center transition-all z-10 ${isSelected ? 'bg-indigo-500 text-white' : 'bg-black/50 border border-white/20 text-transparent opacity-0 group-hover:opacity-100'}`}>
+                                                        <i className="fas fa-check text-[10px]"></i>
+                                                    </div>
                                                 </div>
-                                            ))}
+                                            )})}
                                         </div>
                                     </div>
                                 )}
@@ -773,7 +879,21 @@
                     </div>
 
                     <div className="max-w-[1400px] mx-auto px-4 md:px-8 mt-4">
-                        {activeAlbum === null ? (
+                        {isLoadingAlbums ? (
+                            <div className="flex flex-col items-center justify-center py-32 fade-in">
+                                <svg className="w-12 h-12 animate-spin mb-4" viewBox="0 0 50 50">
+                                    <defs>
+                                        <linearGradient id="ig-grad" x1="0%" y1="100%" x2="100%" y2="0%">
+                                            <stop offset="0%" stopColor="#f59e0b" />
+                                            <stop offset="50%" stopColor="#ec4899" />
+                                            <stop offset="100%" stopColor="#6366f1" />
+                                        </linearGradient>
+                                    </defs>
+                                    <circle cx="25" cy="25" r="20" fill="none" stroke="url(#ig-grad)" strokeWidth="4" strokeDasharray="80 150" strokeLinecap="round" />
+                                </svg>
+                                <p className="text-transparent bg-clip-text bg-gradient-to-r from-yellow-500 via-pink-500 to-indigo-500 font-bold text-sm animate-pulse tracking-wide uppercase">Cargando...</p>
+                            </div>
+                        ) : activeAlbum === null ? (
                             <div>
                                 {/* Modal Álbum Archivado */}
                                 {showArchivedModal && (
