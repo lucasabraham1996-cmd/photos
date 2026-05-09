@@ -42,7 +42,7 @@
 
     <script type="text/babel" data-type="module">
         import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js';
-        import { getAuth, signInAnonymously } from 'https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js';
+        import { getAuth, signInAnonymously, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js';
         import { initializeFirestore, collection, addDoc, deleteDoc, doc, onSnapshot, setDoc } from 'https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js';
         import { getStorage, ref, uploadBytes, uploadBytesResumable, getDownloadURL, deleteObject } from 'https://www.gstatic.com/firebasejs/10.8.1/firebase-storage.js';
 
@@ -108,10 +108,14 @@
             
             const [showCreateModal, setShowCreateModal] = useState(false);
             const [newAlbumData, setNewAlbumData] = useState({ name: '', price: '', color: '#171717' });
-            const [isLoadingAlbums, setIsLoadingAlbums] = useState(true); 
+            const [isLoadingAlbums, setIsLoadingAlbums] = useState(true);
+            const [authReady, setAuthReady] = useState(false);
+            const [firebaseError, setFirebaseError] = useState(null);
+            const [firebaseStatus, setFirebaseStatus] = useState('Conectando con Firebase...'); 
             
             const [showArchivedModal, setShowArchivedModal] = useState(null);
             const [showCheckoutModal, setShowCheckoutModal] = useState(false);
+            const [previewPhoto, setPreviewPhoto] = useState(null);
             const [confirmDialog, setConfirmDialog] = useState(null);
 
             const fileInputRef = useRef(null);
@@ -136,27 +140,72 @@
             }, []);
 
             useEffect(() => {
-                if (!auth || !db) return;
-                signInAnonymously(auth).catch(e => console.warn("Auth mode failed", e));
-            }, []);
-
-            useEffect(() => {
-                if (!db) {
+                if (!auth || !db || !storage) {
+                    setFirebaseError({
+                        title: 'No se pudo iniciar Firebase',
+                        detail: 'Revisá la configuración firebaseConfig, especialmente projectId y storageBucket.'
+                    });
                     setIsLoadingAlbums(false);
                     return;
                 }
-                const unsubPhotos = onSnapshot(collection(db, 'artifacts', appId, 'photos'), (snapshot) => {
-                    setPhotos(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+
+                setFirebaseStatus('Conectando con Firebase...');
+                const unsubAuth = onAuthStateChanged(auth, async (user) => {
+                    if (user) {
+                        setAuthReady(true);
+                        setFirebaseStatus('Conexión lista. Ya podés usar la galería.');
+                        return;
+                    }
+                    try {
+                        setFirebaseStatus('Iniciando acceso anónimo...');
+                        await signInAnonymously(auth);
+                    } catch (e) {
+                        console.error('Error de autenticación anónima:', e);
+                        setFirebaseError({
+                            title: 'Firebase Auth no está listo',
+                            detail: `${e.code || 'auth/error'}: ${e.message || 'No se pudo iniciar sesión anónima. Activá Anonymous en Authentication > Sign-in method.'}`
+                        });
+                        setIsLoadingAlbums(false);
+                    }
                 });
-                const unsubAlbums = onSnapshot(collection(db, 'artifacts', appId, 'albums'), (snapshot) => {
-                    setAlbums(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
-                    setIsLoadingAlbums(false);
-                });
-                const unsubOrders = onSnapshot(collection(db, 'artifacts', appId, 'orders'), (snapshot) => {
-                    setOrders(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
-                });
-                return () => { unsubPhotos(); unsubAlbums(); unsubOrders(); };
+
+                return () => unsubAuth();
             }, []);
+
+            useEffect(() => {
+                if (!db || !authReady) return;
+                setIsLoadingAlbums(true);
+                setFirebaseError(null);
+
+                const handleSnapshotError = (area) => (error) => {
+                    console.error(`Error leyendo ${area}:`, error);
+                    setFirebaseError({
+                        title: `Firebase no permitió leer ${area}`,
+                        detail: `${error.code || 'firestore/error'}: ${error.message || 'Revisá las reglas de Firestore Database.'}`
+                    });
+                    setIsLoadingAlbums(false);
+                };
+
+                const unsubPhotos = onSnapshot(
+                    collection(db, 'artifacts', appId, 'photos'),
+                    (snapshot) => setPhotos(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }))),
+                    handleSnapshotError('fotos')
+                );
+                const unsubAlbums = onSnapshot(
+                    collection(db, 'artifacts', appId, 'albums'),
+                    (snapshot) => {
+                        setAlbums(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+                        setIsLoadingAlbums(false);
+                    },
+                    handleSnapshotError('álbumes')
+                );
+                const unsubOrders = onSnapshot(
+                    collection(db, 'artifacts', appId, 'orders'),
+                    (snapshot) => setOrders(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }))),
+                    handleSnapshotError('pedidos')
+                );
+                return () => { unsubPhotos(); unsubAlbums(); unsubOrders(); };
+            }, [authReady]);
 
             const storageUsedMB = useMemo(() => {
                 return (photos.length * 0.25).toFixed(2); // Calculo aproximado
@@ -182,7 +231,8 @@
                     createdAt: Date.now(),
                     isArchived: false
                 };
-                if (db) await setDoc(doc(db, 'artifacts', appId, 'albums', newAlbum.id), newAlbum);
+                if (!db || !authReady) { alert('Firebase todavía no está conectado. Esperá unos segundos y probá de nuevo.'); return; }
+                await setDoc(doc(db, 'artifacts', appId, 'albums', newAlbum.id), newAlbum);
                 setShowCreateModal(false);
                 setNewAlbumData({ name: '', price: '', color: '#171717' });
             };
@@ -212,12 +262,13 @@
             const handleCoverUpload = async (e) => {
                 const file = e.target.files[0];
                 if (!file || !activeAlbum) return;
+                if (!authReady || !db || !storage) { alert('Firebase todavía no está conectado. Revisá Anonymous Auth y las reglas.'); return; }
                 setIsProcessing(true);
                 try {
                     const processed = await processCover(file);
                     const fileId = Math.random().toString(36).substr(2, 9);
                     const storageRef = ref(storage, `galeria/${activeAlbum}/cover_${fileId}.jpg`);
-                    await uploadBytes(storageRef, processed.blob);
+                    await uploadBlobWithTimeout(storageRef, processed.blob);
                     const url = await getDownloadURL(storageRef);
                     await setDoc(doc(db, 'artifacts', appId, 'albums', activeAlbum), { 
                         cover: url, 
@@ -392,6 +443,7 @@
 
             const handleFileUpload = async (e) => {
                 if (!activeAlbum) return;
+                if (!authReady || !db || !storage) { alert('Firebase todavía no está conectado. Revisá Anonymous Auth y las reglas.'); return; }
                 const files = Array.from(e.target.files);
                 if (files.length === 0) return;
 
@@ -440,7 +492,7 @@
                     }
                 } catch (error) {
                     console.error("Error subiendo:", error);
-                    alert("Se produjo un error de red al subir algunas imágenes, intenta de nuevo.");
+                    alert(`No se pudo subir: ${error.code || ''} ${error.message || error}`);
                 } finally {
                     setIsProcessing(false);
                     setUploadProgress({ current: 0, total: 0 });
@@ -549,6 +601,18 @@
             const savings = regularPrice - currentPrice;
             const currentOrderId = useMemo(() => 'LA-' + Math.floor(10000 + Math.random() * 90000), [cart.length]);
 
+            const nextPackHint = useMemo(() => {
+                const count = cart.length;
+                if (count === 0) return 'Elegí tus favoritas y recibí la versión final en alta calidad.';
+                if (count < 3) return `Sumá ${3 - count} foto${3 - count === 1 ? '' : 's'} más y accedé al pack de 3 por $5.000.`;
+                if (count === 3) return 'Pack aplicado: 3 fotos por $5.000.';
+                if (count < 5) return `Sumá ${5 - count} foto más y llevate 5 por $7.500.`;
+                if (count === 5) return 'Pack aplicado: 5 fotos por $7.500.';
+                if (count < 10) return `Sumá ${10 - count} foto${10 - count === 1 ? '' : 's'} más y llevate 10 por $10.000.`;
+                if (count % 10 === 0) return 'Pack aplicado: 10 fotos por $10.000.';
+                return 'Promo aplicada automáticamente según la cantidad seleccionada.';
+            }, [cart.length]);
+
             const handleCheckoutFinal = async () => {
                 const selectedPhotos = photos.filter(p => cart.includes(p.id));
                 const newOrder = {
@@ -604,14 +668,15 @@
                             </button>
                             
                             <div className="text-center mb-6 pt-2">
-                                <h3 className="text-2xl text-white font-bold mb-1">Finalizar Pedido</h3>
-                                <p className="text-neutral-400 text-sm">Transfiere el monto y envíame el comprobante.</p>
+                                <h3 className="text-2xl text-white font-bold mb-1">Finalizar compra</h3>
+                                <p className="text-neutral-400 text-sm">Transferí el monto y enviá el comprobante por WhatsApp.</p>
                             </div>
 
                             <div className="bg-neutral-950 rounded-2xl p-5 mb-6 border border-neutral-800 text-center">
                                 <p className="text-neutral-500 text-xs uppercase tracking-widest mb-1">Total a Pagar</p>
                                 <p className="text-4xl font-bold text-white mb-2">{formatPrice(currentPrice)}</p>
-                                {savings > 0 && <p className="text-emerald-400 text-sm font-medium">¡Ahorraste {formatPrice(savings)}!</p>}
+                                {savings > 0 && <p className="text-emerald-400 text-sm font-medium">¡Ahorraste {formatPrice(savings)} con el pack!</p>}
+                                <p className="text-neutral-500 text-xs mt-3 leading-relaxed">Recibirás tus fotos finales en alta calidad y sin marca de agua.</p>
                             </div>
 
                             <div className="bg-[#009EE3]/10 border border-[#009EE3]/30 rounded-2xl p-5 mb-6">
@@ -631,7 +696,7 @@
                             </div>
 
                             <button onClick={handleCheckoutFinal} className="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-4 rounded-xl transition flex items-center justify-center gap-2 shadow-lg shadow-emerald-600/20">
-                                <i className="fab fa-whatsapp text-xl"></i> Enviar Comprobante
+                                <i className="fab fa-whatsapp text-xl"></i> Enviar comprobante y pedido
                             </button>
                             <p className="text-center text-xs text-neutral-500 mt-4">Operación #{currentOrderId}</p>
                         </div>
@@ -673,6 +738,7 @@
                             <div>
                                 <h1 className="text-3xl font-light text-white tracking-tight mb-2">Panel de <span className="font-bold text-indigo-400">lucasabraham.ph</span></h1>
                                 <p className="text-neutral-500">Administra tus archivos y visualiza tu galería.</p>
+                                <p className={`text-xs mt-2 ${authReady ? 'text-emerald-400' : 'text-amber-400'}`}><i className="fas fa-circle text-[7px] mr-2"></i>{firebaseStatus}</p>
                             </div>
                             <div className="flex flex-wrap gap-3">
                                 <button onClick={() => { navigator.clipboard.writeText(clientUrl); setCopySuccess(true); setTimeout(()=>setCopySuccess(false), 2000); }} className={`text-sm flex items-center gap-2 px-4 py-2 rounded-lg transition text-white ${copySuccess ? 'bg-emerald-600' : 'bg-indigo-600 hover:bg-indigo-700'}`}>
@@ -847,8 +913,8 @@
 
                                         {!activeAlbumData?.isArchived && (
                                             <>
-                                                <div className="border-2 border-dashed border-neutral-800 hover:border-indigo-500/50 rounded-3xl p-8 text-center bg-neutral-900/50 transition cursor-pointer mb-6 group" onClick={() => !isProcessing && fileInputRef.current.click()}>
-                                                    <input type="file" multiple accept="image/*" className="hidden" ref={fileInputRef} onChange={handleFileUpload} disabled={isProcessing} />
+                                                <div className="border-2 border-dashed border-neutral-800 hover:border-indigo-500/50 rounded-3xl p-8 text-center bg-neutral-900/50 transition cursor-pointer mb-6 group" onClick={() => !isProcessing && authReady && fileInputRef.current.click()}>
+                                                    <input type="file" multiple accept="image/*" className="hidden" ref={fileInputRef} onChange={handleFileUpload} disabled={isProcessing || !authReady} />
                                                     {isProcessing ? (
                                                         <div className="flex flex-col items-center justify-center space-y-3">
                                                             <div className="w-10 h-10 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin"></div>
@@ -859,8 +925,8 @@
                                                     ) : (
                                                         <div className="flex flex-col items-center justify-center space-y-2 opacity-70 group-hover:opacity-100 transition">
                                                             <div className="bg-neutral-800 p-3 rounded-full"><i className="fas fa-cloud-upload-alt text-xl text-neutral-300"></i></div>
-                                                            <p className="text-white font-medium text-sm">Haz clic para subir fotos al álbum</p>
-                                                            <p className="text-neutral-500 text-xs">Puedes seleccionar múltiples fotos a la vez</p>
+                                                            <p className="text-white font-medium text-sm">{authReady ? 'Haz clic para subir fotos al álbum' : 'Conectando con Firebase...'}</p>
+                                                            <p className="text-neutral-500 text-xs">{authReady ? 'Puedes seleccionar múltiples fotos a la vez' : 'El botón se habilita cuando Firebase esté listo'}</p>
                                                         </div>
                                                     )}
                                                 </div>
@@ -961,7 +1027,8 @@
                                 <div className="hidden sm:block">
                                     <p className="font-semibold text-white mb-1">Lucas Abraham | Fotografía</p>
                                     <p className="text-neutral-300 text-sm leading-relaxed">
-                                        Galería privada para clientes. Selecciona tus favoritas.<br/>
+                                        Reviví los mejores momentos y elegí tus fotos favoritas en alta calidad.<br/>
+                                        Las imágenes visibles son solo preview con marca de agua.<br/>
                                         💎 Packs Promo: 3x$5k | 5x$7.5k | 10x$10k
                                     </p>
                                 </div>
@@ -972,7 +1039,8 @@
                         <div className="sm:hidden mb-6">
                             <p className="font-semibold text-white mb-1">Lucas Abraham | Fotografía</p>
                             <p className="text-neutral-300 text-sm leading-relaxed mb-4">
-                                Galería privada para clientes. Selecciona tus favoritas.<br/>
+                                Reviví los mejores momentos y elegí tus fotos favoritas en alta calidad.<br/>
+                                Las imágenes visibles son solo preview con marca de agua.<br/>
                                 💎 Packs Promo: 3x$5k | 5x$7.5k | 10x$10k
                             </p>
                             <div className="flex justify-around border-t border-neutral-900 pt-4">
@@ -983,6 +1051,33 @@
                                 <div className="text-center flex flex-col">
                                     <span className="font-bold text-white text-lg">{photos.length}</span>
                                     <span className="text-xs text-neutral-500">fotos</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Cómo funciona */}
+                    <div className="max-w-4xl mx-auto px-4 sm:px-8 mb-8">
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                            <div className="bg-neutral-900 border border-neutral-800 rounded-2xl p-4 flex items-start gap-3">
+                                <div className="w-8 h-8 rounded-full bg-indigo-500/20 text-indigo-300 flex items-center justify-center font-bold text-sm flex-shrink-0">1</div>
+                                <div>
+                                    <p className="text-white text-sm font-semibold">Elegí tus favoritas</p>
+                                    <p className="text-neutral-500 text-xs mt-1">Tocá una foto para verla grande y seleccionarla.</p>
+                                </div>
+                            </div>
+                            <div className="bg-neutral-900 border border-neutral-800 rounded-2xl p-4 flex items-start gap-3">
+                                <div className="w-8 h-8 rounded-full bg-emerald-500/20 text-emerald-300 flex items-center justify-center font-bold text-sm flex-shrink-0">2</div>
+                                <div>
+                                    <p className="text-white text-sm font-semibold">Pagá tu pedido</p>
+                                    <p className="text-neutral-500 text-xs mt-1">Podés transferir por Mercado Pago.</p>
+                                </div>
+                            </div>
+                            <div className="bg-neutral-900 border border-neutral-800 rounded-2xl p-4 flex items-start gap-3">
+                                <div className="w-8 h-8 rounded-full bg-amber-500/20 text-amber-300 flex items-center justify-center font-bold text-sm flex-shrink-0">3</div>
+                                <div>
+                                    <p className="text-white text-sm font-semibold">Recibilas finales</p>
+                                    <p className="text-neutral-500 text-xs mt-1">En alta calidad y sin marca de agua.</p>
                                 </div>
                             </div>
                         </div>
@@ -1044,7 +1139,7 @@
                                 <div className="mb-12">
                                     <div className="flex flex-col mb-6 border-b border-neutral-900 pb-3">
                                         <h2 className="text-2xl text-white font-bold tracking-tight flex items-center gap-2"><i className="fas fa-bolt text-emerald-400"></i> Eventos Activos</h2>
-                                        <p className="text-neutral-500 text-sm mt-1">Fotos en alta calidad. Disponibles por tiempo limitado.</p>
+                                        <p className="text-neutral-500 text-sm mt-1">Vistas previas disponibles por tiempo limitado. La entrega final es en alta calidad y sin marca de agua.</p>
                                     </div>
                                     {activeAlbums.length === 0 ? (
                                         <p className="text-neutral-500 text-sm text-center py-10">No hay eventos recientes activos.</p>
@@ -1111,6 +1206,28 @@
                                     </button>
                                 </div>
                                 
+                                <div className="bg-indigo-500/10 border border-indigo-500/20 rounded-3xl p-5 mb-6 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                                    <div>
+                                        <p className="text-white font-semibold flex items-center gap-2"><i className="fas fa-eye text-indigo-300"></i> Estás viendo previews protegidas</p>
+                                        <p className="text-neutral-400 text-sm mt-1">Las fotos publicadas son de baja resolución y tienen marca de agua. Las compradas se entregan en alta calidad, sin marca de agua.</p>
+                                    </div>
+                                    {activeAlbumData?.fullPrice > 0 && (
+                                        <button onClick={() => {
+                                            const msg = encodeURIComponent(`📸 *COMPRA COLECCIÓN COMPLETA*
+
+Hola Lucas! Quiero comprar TODAS las fotos del evento "${activeAlbumData.name}".
+💰 *TOTAL: ${formatPrice(activeAlbumData.fullPrice)}*
+
+✅ Entiendo que la galería muestra previews y que recibiré las fotos finales en alta calidad, sin marca de agua.
+
+Te envío el comprobante para que puedas prepararlas.`);
+                                            window.open(`https://wa.me/${sellerPhone}?text=${msg}`, '_blank');
+                                        }} className="bg-white text-black hover:bg-neutral-200 px-5 py-3 rounded-2xl font-bold transition flex items-center justify-center gap-2 flex-shrink-0">
+                                            <i className="fas fa-images"></i> Comprar colección completa
+                                        </button>
+                                    )}
+                                </div>
+
                                 {/* Botón de Comprar Álbum Completo - Diseño VIP Mejorado */}
                                 {activeAlbumData?.fullPrice > 0 && (
                                     <div className="relative bg-gradient-to-br from-neutral-900 to-black border border-white/10 rounded-[2rem] p-6 md:p-8 mb-10 overflow-hidden group shadow-2xl">
@@ -1124,10 +1241,10 @@
                                                     <i className="fas fa-star"></i> Opción Premium
                                                 </div>
                                                 <h3 className="text-3xl font-extrabold text-white mb-3 tracking-tight">
-                                                    Colección Completa
+                                                    Comprá la colección completa
                                                 </h3>
                                                 <p className="text-neutral-400 text-sm md:text-base mb-6 max-w-xl mx-auto lg:mx-0">
-                                                    Desbloquea <strong>todas las fotos</strong> del evento "{activeAlbumData.name}" en máxima resolución, sin marcas de agua y listas para imprimir.
+                                                    Quedate con <strong>todas las fotos</strong> del evento "{activeAlbumData.name}" en máxima resolución, sin marcas de agua y listas para imprimir.
                                                 </p>
                                                 
                                                 <div className="flex flex-col sm:flex-row items-center gap-4 bg-white/5 border border-white/10 rounded-2xl p-4 backdrop-blur-sm w-fit mx-auto lg:mx-0">
@@ -1164,18 +1281,24 @@
                                         {photos.filter(p => p.albumId === activeAlbum).map(photo => {
                                             const isSelected = cart.includes(photo.id);
                                             return (
-                                                <div key={photo.id} onClick={() => toggleCart(photo.id)} className={`relative rounded-2xl overflow-hidden aspect-[4/5] cursor-pointer transition-all duration-300 select-none ${isSelected ? 'ring-2 ring-indigo-500 scale-[0.94] shadow-[0_0_30px_rgba(99,102,241,0.2)]' : 'hover:opacity-90 bg-neutral-900 border border-neutral-800 active:scale-[0.98]'}`}>
-                                                    <img src={photo.url} alt="Foto" className="w-full h-full object-cover pointer-events-none" />
+                                                <div key={photo.id} onClick={() => setPreviewPhoto(photo)} className={`group relative rounded-2xl overflow-hidden aspect-[4/5] cursor-pointer transition-all duration-300 select-none ${isSelected ? 'ring-2 ring-indigo-500 scale-[0.97] shadow-[0_0_30px_rgba(99,102,241,0.2)]' : 'hover:opacity-90 bg-neutral-900 border border-neutral-800 active:scale-[0.98]'}`}>
+                                                    <img src={photo.url} alt="Foto preview" className="w-full h-full object-cover pointer-events-none" />
                                                     
-                                                    <div className={`absolute inset-0 transition-colors duration-300 ${isSelected ? 'bg-indigo-900/40' : 'bg-transparent'}`}></div>
+                                                    <div className={`absolute inset-0 transition-colors duration-300 ${isSelected ? 'bg-indigo-900/30' : 'bg-transparent'}`}></div>
+                                                    <div className="absolute top-2 left-2 bg-black/60 backdrop-blur-sm border border-white/10 rounded-full px-2 py-1 text-[9px] text-white/80 font-bold tracking-wide">
+                                                        PREVIEW
+                                                    </div>
+                                                    <button onClick={(e) => { e.stopPropagation(); toggleCart(photo.id); }} className={`absolute top-2 right-2 sm:top-3 sm:right-3 min-w-8 h-8 px-2 rounded-full flex items-center justify-center transition-all duration-300 z-10 ${isSelected ? 'bg-indigo-500 text-white scale-105 shadow-lg' : 'bg-black/60 text-white border border-white/20 backdrop-blur-sm'}`}>
+                                                        {isSelected ? <i className="fas fa-check text-sm"></i> : <i className="fas fa-plus text-xs"></i>}
+                                                    </button>
+                                                    <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 pointer-events-none">
+                                                        <span className="bg-black/60 backdrop-blur-sm text-white text-xs px-3 py-2 rounded-full border border-white/10"><i className="fas fa-search-plus mr-1"></i> Ver grande</span>
+                                                    </div>
                                                     
                                                     {/* Nombre de foto */}
-                                                    <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent p-2 pt-6">
+                                                    <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent p-2 pt-8">
                                                         <p className="text-white/70 font-mono text-[9px] sm:text-[10px] truncate">{photo.name}</p>
-                                                    </div>
-
-                                                    <div className={`absolute top-2 right-2 sm:top-3 sm:right-3 w-8 h-8 rounded-full flex items-center justify-center transition-all duration-300 z-10 ${isSelected ? 'bg-indigo-500 text-white scale-110 shadow-lg' : 'bg-black/40 text-transparent border border-white/20 backdrop-blur-sm'}`}>
-                                                        <i className="fas fa-check text-sm"></i>
+                                                        <p className="text-indigo-200 text-[9px] mt-0.5">Tocá para ver / + para elegir</p>
                                                     </div>
                                                 </div>
                                             );
@@ -1185,6 +1308,35 @@
                             </div>
                         )}
                     </div>
+
+                    {/* Vista ampliada de foto */}
+                    {previewPhoto && (
+                        <div className="fixed inset-0 bg-black/90 backdrop-blur-md z-[55] flex items-center justify-center p-4 fade-in" onClick={() => setPreviewPhoto(null)}>
+                            <div className="w-full max-w-3xl bg-neutral-950 border border-neutral-800 rounded-3xl overflow-hidden shadow-2xl slide-up" onClick={(e) => e.stopPropagation()}>
+                                <div className="flex items-center justify-between p-4 border-b border-neutral-800">
+                                    <div>
+                                        <p className="text-white font-semibold text-sm">Vista previa protegida</p>
+                                        <p className="text-neutral-500 text-xs">La compra se entrega en alta calidad y sin marca de agua.</p>
+                                    </div>
+                                    <button onClick={() => setPreviewPhoto(null)} className="w-9 h-9 rounded-full bg-neutral-900 hover:bg-neutral-800 text-white flex items-center justify-center transition">
+                                        <i className="fas fa-times"></i>
+                                    </button>
+                                </div>
+                                <div className="bg-black flex items-center justify-center max-h-[70vh]">
+                                    <img src={previewPhoto.url} alt="Preview" className="max-w-full max-h-[70vh] object-contain pointer-events-none" />
+                                </div>
+                                <div className="p-4 flex flex-col sm:flex-row items-center justify-between gap-3">
+                                    <div className="text-center sm:text-left">
+                                        <p className="text-white/80 font-mono text-xs truncate max-w-xs">{previewPhoto.name}</p>
+                                        <p className="text-neutral-500 text-xs mt-1">Código: {previewPhoto.id.slice(-6).toUpperCase()}</p>
+                                    </div>
+                                    <button onClick={() => toggleCart(previewPhoto.id)} className={`w-full sm:w-auto px-6 py-3 rounded-2xl font-bold transition flex items-center justify-center gap-2 ${cart.includes(previewPhoto.id) ? 'bg-indigo-500 text-white' : 'bg-white text-black hover:bg-neutral-200'}`}>
+                                        {cart.includes(previewPhoto.id) ? <><i className="fas fa-check"></i> Foto seleccionada</> : <><i className="fas fa-plus"></i> Seleccionar para comprar</>}
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    )}
 
                     {/* Carrito Flotante Mobile/Desktop */}
                     {cart.length > 0 && (
@@ -1197,13 +1349,13 @@
                                             <p className="text-2xl font-bold text-white">{formatPrice(currentPrice)}</p>
                                             {savings > 0 && <p className="text-sm text-neutral-500 line-through">{formatPrice(regularPrice)}</p>}
                                         </div>
-                                        {savings > 0 ? <p className="text-xs font-medium text-emerald-400">¡Promo aplicada!</p> : <p className="text-xs text-neutral-400">Selecciona más para descuentos</p>}
+                                        <p className={`text-xs font-medium ${savings > 0 ? 'text-emerald-400' : 'text-neutral-400'}`}>{nextPackHint}</p>
                                     </div>
                                 </div>
                                 <div className="flex gap-2 w-full sm:w-auto">
                                     <button onClick={() => setCart([])} className="px-4 py-3 text-neutral-400 font-medium hover:text-white hover:bg-white/5 rounded-2xl transition text-sm flex-1 sm:flex-none">Vaciar</button>
                                     <button onClick={() => setShowCheckoutModal(true)} className="bg-white hover:bg-neutral-200 text-black px-6 py-3 rounded-2xl font-bold flex items-center justify-center gap-2 transition flex-1 sm:flex-none">
-                                        Pedir Fotos
+                                        Solicitar en alta calidad
                                     </button>
                                 </div>
                             </div>
@@ -1214,6 +1366,34 @@
                 </div>
                 );
             };
+
+            const FirebaseErrorScreen = () => (
+                <div className="min-h-screen bg-neutral-950 flex items-center justify-center p-4 text-white">
+                    <div className="max-w-xl w-full bg-neutral-900 border border-red-500/30 p-6 rounded-3xl shadow-2xl fade-in">
+                        <div className="w-14 h-14 rounded-2xl bg-red-500/15 border border-red-500/30 flex items-center justify-center mb-4 text-red-400">
+                            <i className="fas fa-triangle-exclamation text-2xl"></i>
+                        </div>
+                        <h2 className="text-2xl font-bold mb-2">La app no pudo conectar con Firebase</h2>
+                        <p className="text-neutral-300 text-sm leading-relaxed mb-4">
+                            No quedó cargando indefinidamente: ahora la app muestra el error real para poder corregirlo.
+                        </p>
+                        <div className="bg-black/40 border border-neutral-800 rounded-2xl p-4 mb-4">
+                            <p className="text-red-300 font-semibold mb-1">{firebaseError?.title}</p>
+                            <p className="text-neutral-400 text-xs break-words font-mono">{firebaseError?.detail}</p>
+                        </div>
+                        <div className="text-sm text-neutral-300 space-y-2">
+                            <p><strong>1.</strong> Verificá que Anonymous Auth esté habilitado.</p>
+                            <p><strong>2.</strong> Revisá reglas de Firestore Database y Storage.</p>
+                            <p><strong>3.</strong> Confirmá que el bucket del código coincida con Firebase Storage.</p>
+                        </div>
+                        <button onClick={() => window.location.reload()} className="mt-6 w-full bg-white text-black font-bold py-3 rounded-xl hover:bg-neutral-200 transition">
+                            Reintentar conexión
+                        </button>
+                    </div>
+                </div>
+            );
+
+            if (firebaseError) return <FirebaseErrorScreen />;
 
             if (route === '#/admin') {
                 return isAdminUnlocked ? AdminDashboard() : AdminLogin();
