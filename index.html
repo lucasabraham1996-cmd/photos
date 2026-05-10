@@ -18,6 +18,16 @@
     @keyframes fade{from{opacity:0}to{opacity:1}}@keyframes up{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:translateY(0)}}
     ::-webkit-scrollbar{width:8px;height:8px}::-webkit-scrollbar-track{background:#0a0a0a}::-webkit-scrollbar-thumb{background:#2c2c2c;border-radius:999px}
   </style>
+
+<script>
+  window.addEventListener('error', function(e){
+    var root = document.getElementById('root');
+    if(root && !root.innerHTML.trim()){
+      root.innerHTML = '<div style="min-height:100vh;background:#070707;color:white;font-family:Arial,sans-serif;display:flex;align-items:center;justify-content:center;padding:24px;"><div style="max-width:620px;background:#171717;border:1px solid rgba(239,68,68,.45);border-radius:24px;padding:28px;"><h1 style="font-size:24px;margin:0 0 12px;font-weight:800;">La app no pudo iniciar</h1><p style="color:#ddd;line-height:1.5;">Se detectó un error de JavaScript. Revisá la consola o volvé a subir la última versión corregida.</p><pre style="white-space:pre-wrap;background:#050505;border-radius:14px;padding:14px;color:#fecaca;">'+String(e.message||'Error desconocido')+'</pre></div></div>';
+    }
+  });
+</script>
+
 </head>
 <body>
   <div id="root"></div>
@@ -55,7 +65,9 @@ const formatPrice=(p)=>"$"+new Intl.NumberFormat("es-AR").format(Number(p||0));
 const norm=(v)=>String(v||"").trim().toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[^a-z0-9]+/g,"_").replace(/^_|_$/g,"");
 const pick=(row,keys)=>{const map={};Object.keys(row||{}).forEach(k=>map[norm(k)]=row[k]);for(const k of keys){const v=map[norm(k)];if(v!==undefined&&String(v).trim()!=="")return String(v).trim()}return""};
 const priceNum=(v)=>Number(String(v||"").replace(/[^0-9]/g,""))||0;
-const calculateBestPrice=(count)=>{if(count<=0)return 0;if(count>=10)return Math.floor(count/10)*10000+calculateBestPrice(count%10);if(count>=5)return Math.min(7500+calculateBestPrice(count-5),10000);if(count>=3)return Math.min(5000+calculateBestPrice(count-3),7500);return Math.min(count*2000,5000)};
+const discountRate=(count)=>count>=10?0.20:count>=5?0.15:count>=3?0.10:0;
+const calculateSubtotal=(items)=>items.reduce((sum,p)=>sum+(Number(p.price)||0),0);
+const calculateBestPrice=(items)=>Math.round(calculateSubtotal(items)*(1-discountRate(items.length)));
 const extractDriveId=(url)=>{const s=String(url||"");const patterns=[/drive\.google\.com\/file\/d\/([^/]+)/,/drive\.google\.com\/open\?id=([^&]+)/,/drive\.google\.com\/uc\?[^#]*id=([^&]+)/,/[?&]id=([^&]+)/];for(const p of patterns){const m=s.match(p);if(m&&m[1])return decodeURIComponent(m[1])}return""};
 const toImgUrl=(url)=>{const raw=String(url||"").trim();if(!raw)return"";if(raw.startsWith("data:image/"))return raw;const id=extractDriveId(raw);if(id)return`https://drive.google.com/thumbnail?id=${id}&sz=w500`;return raw};
 const yes=(v)=>["si","sí","yes","true","1","portada","cover"].includes(norm(v));
@@ -102,6 +114,7 @@ function normalizeAlbums(data){
           code:safeCode(name+"_"+(i+1)),
           url,
           rawUrl,
+          price: priceNum(pick(row,["precio foto","precio_foto","precio individual","precio","valor","valor foto","foto precio"]))||2000,
           isCover:yes(pick(row,["portada","cover","caratula"])),
           active:!["no","false","0","ocultar","hide"].includes(norm(pick(row,["activa","active","visible","publicar"])))
         };
@@ -239,18 +252,30 @@ function App(){
   const currentAlbum=displayAlbums.find(a=>a.id===activeAlbum)||null;
   const albumPhotos=currentAlbum?currentAlbum.photos:[];
   const selectedPhotos=allPhotos.filter(p=>cart.includes(p.id));
-  const total=calculateBestPrice(cart.length);
-  const regular=cart.length*2000;
+  const regular=calculateSubtotal(selectedPhotos);
+  const total=calculateBestPrice(selectedPhotos);
   const savings=regular-total;
+  const discount=discountRate(cart.length);
 
-  const promoText=()=>{const n=cart.length;if(n===0)return"Seleccioná tus fotos favoritas";if(n<3)return`Sumá ${3-n} foto${3-n===1?"":"s"} más y accedé al pack de 3 por $5.000`;if(n===3)return"Pack aplicado: 3 fotos por $5.000";if(n<5)return`Sumá ${5-n} foto${5-n===1?"":"s"} más y accedé al pack de 5 por $7.500`;if(n===5)return"Pack aplicado: 5 fotos por $7.500";if(n<10)return`Sumá ${10-n} foto${10-n===1?"":"s"} más y accedé al pack de 10 por $10.000`;return"Pack aplicado: 10 fotos por $10.000"};
+  const promoText=()=>{const n=cart.length;if(n===0)return"Seleccioná tus fotos favoritas";if(n<3)return`Sumá ${3-n} foto${3-n===1?"":"s"} más y obtené 10% de descuento`;if(n<5)return`Descuento aplicado: 10%. Sumá ${5-n} foto${5-n===1?"":"s"} más y pasá al 15%`;if(n<10)return`Descuento aplicado: 15%. Sumá ${10-n} fotos y pasá al 20%`;return"Descuento aplicado: 20% por 10 fotos o más"};
   const toggle=(id)=>setCart(c=>c.includes(id)?c.filter(x=>x!==id):[...c,id]);
 
   const sendOrder=()=>{
     const order='LA-'+Math.floor(10000+Math.random()*90000);
-    let msg=`📸 *NUEVO PEDIDO DE FOTOS*\n\nHola Lucas! Quiero comprar estas fotos en alta calidad, sin marca de agua.\n\n📋 *OPERACIÓN:* #${order}\n💰 *TOTAL:* ${formatPrice(total)}\n🖼️ *Cantidad:* ${cart.length} fotos\n\n*FOTOS ELEGIDAS:*\n`;
-    selectedPhotos.forEach(p=>msg+=`▫️ ${p.albumName} - ${p.name} - Código ${p.code}\n`);
+    let msg=`📸 *NUEVO PEDIDO DE FOTOS*\n\nHola Lucas! Quiero comprar estas fotos en alta calidad, sin marca de agua.\n\n📋 *OPERACIÓN:* #${order}\n💰 *SUBTOTAL:* ${formatPrice(regular)}\n🏷️ *DESCUENTO:* ${Math.round(discount*100)}%\n💰 *TOTAL:* ${formatPrice(total)}\n🖼️ *Cantidad:* ${cart.length} fotos\n\n*FOTOS ELEGIDAS:*\n`;
+    selectedPhotos.forEach(p=>msg+=`▫️ ${p.albumName} - ${p.name} - ${formatPrice(p.price)} - Código ${p.code}\n`);
     msg+='\nTe envío el comprobante para que puedas prepararlas.';
+    const orderData={
+      id:order,
+      date:new Date().toISOString(),
+      subtotal:regular,
+      discount:Math.round(discount*100),
+      total,
+      items:selectedPhotos.map(p=>({id:p.id,albumName:p.albumName,name:p.name,code:p.code,url:p.url,price:p.price})),
+      delivered:false
+    };
+    saveOrderRemote(orderData);
+    setOrders(o=>[orderData,...o.filter(x=>x.id!==orderData.id)]);
     window.open(`https://wa.me/${SELLER_PHONE}?text=${encodeURIComponent(msg)}`,'_blank');
     setCart([]);
   };
@@ -313,7 +338,7 @@ function App(){
     </div>
 
     <div className="grid md:grid-cols-2 xl:grid-cols-3 gap-5">
-      {displayAlbums.map(album=><div key={album.id} className="bg-neutral-900 border border-neutral-800 rounded-3xl overflow-hidden">
+      {displayAlbums.map(album=><div key={album.id} className="bg-neutral-900 border border-neutral-800 rounded-3xl overflow-hidden transition-all duration-500 hover:-translate-y-1 hover:border-indigo-400/50 hover:shadow-[0_18px_45px_rgba(99,102,241,.18)]">
         <div className="aspect-[4/5] bg-neutral-950 relative">{album.cover?<img src={album.cover} className="w-full h-full object-cover"/>:<div className="w-full h-full flex items-center justify-center text-neutral-600"><i className="fas fa-image text-5xl"></i></div>}<div className="absolute top-3 right-3 bg-black/70 border border-white/10 px-3 py-1 rounded-full text-[11px]">{album.photos.length} fotos</div></div>
         <div className="p-5">
           <h3 className="font-bold text-lg whitespace-normal break-words leading-tight">{album.name}</h3>
@@ -331,7 +356,7 @@ function App(){
     {editor?.type==='choosePhoto' && <Modal onClose={()=>setEditor(null)}>
       <h2 className="text-2xl font-black mb-2">Elegir una foto como carátula</h2>
       <p className="text-neutral-400 text-sm mb-5">Seleccioná una foto del álbum y se usará como portada.</p>
-      <div className="grid grid-cols-2 md:grid-cols-4 xl:grid-cols-5 gap-3">{(displayAlbums.find(a=>a.id===editor.albumId)?.photos||[]).map(photo=><button key={photo.id} onClick={()=>{setCoverOverrides(v=>({...v,[editor.albumId]:photo.url}));setAdminMessage('Carátula actualizada desde una foto del álbum.');setEditor(null)}} className="group text-left transition-all duration-300 hover:-translate-y-1 hover:scale-[1.015] active:scale-[0.98]"><div className="aspect-[4/5] rounded-2xl overflow-hidden border border-neutral-800 bg-neutral-950"><img src={photo.url} className="w-full h-full object-cover group-hover:scale-105 transition duration-300"/></div><p className="text-xs text-neutral-400 truncate mt-2">{photo.name}</p></button>)}</div>
+      <div className="grid grid-cols-2 md:grid-cols-4 xl:grid-cols-5 gap-3">{(displayAlbums.find(a=>a.id===editor.albumId)?.photos||[]).map(photo=><button key={photo.id} onClick={()=>{setCoverOverrides(v=>({...v,[editor.albumId]:photo.url}));setAdminMessage('Carátula actualizada desde una foto del álbum.');setEditor(null)}} className="group text-left transition-all duration-500 hover:-translate-y-1.5 hover:scale-[1.02] active:scale-[0.98] focus:outline-none"><div className="aspect-[4/5] rounded-2xl overflow-hidden border border-neutral-800 bg-neutral-950"><img src={photo.url} className="w-full h-full object-cover group-hover:scale-105 transition duration-300"/></div><p className="text-xs text-neutral-400 truncate mt-2">{photo.name}</p></button>)}</div>
     </Modal>}
 
     {editor?.type==='uploadOwn' && <Modal onClose={()=>setEditor(null)} max="max-w-2xl">
@@ -428,7 +453,7 @@ function App(){
           <div className="flex items-center gap-2 border-t-2 border-white pt-3 pb-2 px-4 -mt-[1px]"><i className="fas fa-th text-xs"></i><span className="text-[11px] font-semibold text-white uppercase tracking-widest">Galería</span></div>
         </div>
         <div className="grid grid-cols-3 gap-1 sm:gap-4">
-          {displayAlbums.map(a=><button key={a.id} onClick={()=>{location.hash=albumHash(a.id)}} className="group text-left transition-all duration-300 hover:-translate-y-1 hover:scale-[1.015] active:scale-[0.98]"><div className="aspect-square sm:aspect-[4/5] bg-neutral-900 overflow-hidden relative rounded-none sm:rounded-2xl border border-transparent group-hover:border-indigo-400/50 group-hover:shadow-[0_18px_45px_rgba(99,102,241,0.22)] transition-all duration-300">{a.cover?<img src={a.cover} className="w-full h-full object-cover group-hover:scale-110 transition duration-700 ease-out"/>:<div className="w-full h-full flex items-center justify-center text-neutral-600"><i className="fas fa-image text-3xl"></i></div>}<div className="hidden sm:block absolute inset-0 bg-gradient-to-t from-black/85 via-transparent to-transparent"></div><div className="hidden sm:block absolute bottom-3 left-3 right-3 bg-black/35 backdrop-blur-sm rounded-xl p-2"><h3 className="font-black whitespace-normal break-words leading-tight text-sm sm:text-base">{a.name}</h3><p className="text-emerald-300 text-xs mt-1">{a.photos.length} fotos</p></div></div><div className="sm:hidden mt-1 min-h-[28px]"><p className="text-[10px] font-semibold whitespace-normal break-words leading-tight">{a.name}</p></div></button>)}
+          {displayAlbums.map(a=><button key={a.id} onClick={()=>{location.hash=albumHash(a.id)}} className="group text-left transition-all duration-500 hover:-translate-y-1.5 hover:scale-[1.02] active:scale-[0.98] focus:outline-none"><div className="aspect-square sm:aspect-[4/5] bg-neutral-900 overflow-hidden relative rounded-xl sm:rounded-[1.6rem] border border-white/10 group-hover:border-indigo-400/60 group-hover:shadow-[0_22px_60px_rgba(99,102,241,0.28)] transition-all duration-500 before:absolute before:inset-0 before:bg-gradient-to-br before:from-white/10 before:via-transparent before:to-indigo-500/10 before:opacity-0 group-hover:before:opacity-100 before:transition-opacity before:duration-500">{a.cover?<img src={a.cover} className="w-full h-full object-cover group-hover:scale-110 transition duration-700 ease-out"/>:<div className="w-full h-full flex items-center justify-center text-neutral-600"><i className="fas fa-image text-3xl"></i></div>}<div className="hidden sm:block absolute inset-0 bg-gradient-to-t from-black/85 via-transparent to-transparent"></div><div className="hidden sm:block absolute bottom-3 left-3 right-3 bg-black/45 backdrop-blur-md rounded-2xl p-2.5 border border-white/10"><h3 className="font-black whitespace-normal break-words leading-tight text-sm sm:text-base">{a.name}</h3><p className="text-emerald-300 text-xs mt-1">{a.photos.length} fotos</p></div></div><div className="sm:hidden mt-1.5 min-h-[34px] bg-neutral-900/70 border border-neutral-800/70 rounded-lg px-2 py-1"><p className="text-[10px] font-semibold whitespace-normal break-words leading-tight">{a.name}</p></div></button>)}
         </div>
       </> : <>
         <button onClick={()=>{location.hash="#/galeria";setActiveAlbum(null)}} className="inline-flex items-center gap-2 bg-neutral-900/90 border border-neutral-800 hover:border-neutral-700 px-4 py-2.5 rounded-full mb-4 text-sm font-semibold shadow-[0_8px_22px_rgba(0,0,0,.2)]"><i className="fas fa-arrow-left text-xs"></i>Volver</button>
@@ -453,16 +478,16 @@ function App(){
             <img src={photo.url} className="w-full h-full object-cover pointer-events-none"/>
             <PreviewWatermark/>
             <div className={`absolute inset-0 ${isSelected?'bg-indigo-900/40':'bg-transparent'} pointer-events-none`}></div>
-            <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent p-2 pt-6 pointer-events-none"><p className="text-white/70 font-mono text-[9px] sm:text-[10px] truncate">{photo.name}</p></div>
+            <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent p-2 pt-6 pointer-events-none"><p className="text-white/80 font-mono text-[9px] sm:text-[10px] truncate">{photo.name}</p><p className="text-emerald-300 text-[9px] font-bold">{formatPrice(photo.price)}</p></div>
             <button onClick={(e)=>{e.stopPropagation();toggle(photo.id)}} className={`absolute top-2 right-2 sm:top-3 sm:right-3 w-8 h-8 rounded-full flex items-center justify-center transition-all duration-300 z-20 ${isSelected?'bg-indigo-500 text-white scale-110 shadow-lg':'bg-black/50 text-white/60 border border-white/20 backdrop-blur-sm'}`}><i className={`fas ${isSelected?'fa-check':'fa-plus'} text-sm`}></i></button>
           </div>})}
         </div>
       </>}
     </div>
 
-    {viewer && <Modal onClose={()=>setViewer(null)} max="max-w-6xl"><div className="grid lg:grid-cols-[1.2fr,.8fr] gap-5 items-start"><div className="rounded-3xl overflow-hidden bg-black border border-neutral-800 relative"><img src={viewer.url} className="w-full max-h-[80vh] object-contain mx-auto"/><PreviewWatermark/></div><div><h3 className="text-2xl font-black mb-1">{viewer.name}</h3><p className="text-neutral-400 text-sm mb-4">Código {viewer.code} · {viewer.albumName}</p><div className="bg-neutral-950 border border-neutral-800 rounded-2xl p-4 mb-4"><p className="text-sm text-neutral-300">Esta imagen es una vista previa con marca de agua. La foto comprada se entrega en alta calidad y sin marca de agua.</p></div><button onClick={()=>toggle(viewer.id)} className={`w-full ${cart.includes(viewer.id)?'bg-indigo-600':'bg-white text-black'} font-black py-4 rounded-xl mb-3`}>{cart.includes(viewer.id)?'Quitar de la selección':'Seleccionar esta foto'}</button><button onClick={()=>setViewer(null)} className="w-full bg-neutral-800 py-4 rounded-xl font-bold">Cerrar</button></div></div></Modal>}
+    {viewer && <Modal onClose={()=>setViewer(null)} max="max-w-6xl"><div className="grid lg:grid-cols-[1.2fr,.8fr] gap-5 items-start"><div className="rounded-3xl overflow-hidden bg-black border border-neutral-800 relative"><img src={viewer.url} className="w-full max-h-[80vh] object-contain mx-auto"/><PreviewWatermark/></div><div><h3 className="text-2xl font-black mb-1">{viewer.name}</h3><p className="text-neutral-400 text-sm mb-2">Código {viewer.code} · {viewer.albumName}</p><p className="text-emerald-300 font-black text-xl mb-4">{formatPrice(viewer.price)}</p><div className="bg-neutral-950 border border-neutral-800 rounded-2xl p-4 mb-4"><p className="text-sm text-neutral-300">Esta imagen es una vista previa con marca de agua. La foto comprada se entrega en alta calidad y sin marca de agua.</p></div><button onClick={()=>toggle(viewer.id)} className={`w-full ${cart.includes(viewer.id)?'bg-indigo-600':'bg-white text-black'} font-black py-4 rounded-xl mb-3`}>{cart.includes(viewer.id)?'Quitar de la selección':'Seleccionar esta foto'}</button><button onClick={()=>setViewer(null)} className="w-full bg-neutral-800 py-4 rounded-xl font-bold">Cerrar</button></div></div></Modal>}
 
-    {cart.length>0 && <div className="fixed bottom-4 sm:bottom-6 inset-x-0 mx-auto w-[calc(100vw-24px)] sm:w-[calc(100%-32px)] max-w-2xl z-40 up"><div className="glass border border-white/10 rounded-3xl p-3 sm:p-4 shadow-2xl flex flex-col sm:flex-row items-center justify-between gap-3"><div className="flex items-center gap-3 w-full sm:w-auto"><div className="bg-indigo-500 text-white w-12 h-12 rounded-2xl flex items-center justify-center font-bold text-xl shadow-lg">{cart.length}</div><div className="flex-1"><div className="flex items-baseline gap-2"><p className="text-xl sm:text-2xl font-bold text-white">{formatPrice(total)}</p>{savings>0&&<p className="text-sm text-neutral-500 line-through">{formatPrice(regular)}</p>}</div><p className="text-xs font-medium text-emerald-400">{promoText()}</p></div></div><div className="flex gap-2 w-full sm:w-auto"><button onClick={()=>setCart([])} className="px-4 py-3 text-neutral-400 font-medium hover:text-white hover:bg-white/5 rounded-2xl transition text-sm flex-1 sm:flex-none">Vaciar</button><button onClick={sendOrder} className="bg-white hover:bg-neutral-200 text-black px-6 py-3 rounded-2xl font-bold flex items-center justify-center gap-2 transition flex-1 sm:flex-none">Solicitar en alta calidad</button></div></div></div>}
+    {cart.length>0 && <div className="fixed bottom-4 sm:bottom-6 inset-x-0 mx-auto w-[calc(100vw-24px)] sm:w-[calc(100%-32px)] max-w-2xl z-40 up"><div className="glass border border-white/10 rounded-3xl p-3 sm:p-4 shadow-2xl flex flex-col sm:flex-row items-center justify-between gap-3"><div className="flex items-center gap-3 w-full sm:w-auto"><div className="bg-indigo-500 text-white w-12 h-12 rounded-2xl flex items-center justify-center font-bold text-xl shadow-lg">{cart.length}</div><div className="flex-1"><div className="flex items-baseline gap-2"><p className="text-xl sm:text-2xl font-bold text-white">{formatPrice(total)}</p>{savings>0&&<p className="text-sm text-neutral-500 line-through">{formatPrice(regular)}</p>}</div><p className="text-xs font-medium text-emerald-400">{promoText()}</p>{savings>0&&<p className="text-[10px] text-neutral-400">Ahorrás {formatPrice(savings)}</p>}</div></div><div className="flex gap-2 w-full sm:w-auto"><button onClick={()=>setCart([])} className="px-4 py-3 text-neutral-400 font-medium hover:text-white hover:bg-white/5 rounded-2xl transition text-sm flex-1 sm:flex-none">Vaciar</button><button onClick={sendOrder} className="bg-white hover:bg-neutral-200 text-black px-6 py-3 rounded-2xl font-bold flex items-center justify-center gap-2 transition flex-1 sm:flex-none">Solicitar en alta calidad</button></div></div></div>}
   </div>;
 }
 
