@@ -88,7 +88,7 @@ function normalizeAlbums(data){
       })
       .filter(Boolean)
       .filter(p=>p.active);
-    const fullPrice=priceNum(rawRows.map(r=>pick(r,["precio_album","precio album","album_completo","precio completo","fullprice","precio"])).find(Boolean))||DEFAULT_FULL_ALBUM_PRICE;
+    const fullPrice=priceNum(pick(rawRows[0]||{},["album completo","album_completo","precio_album","precio album","precio completo","fullprice","precio"]))||DEFAULT_FULL_ALBUM_PRICE;
     const coverPhoto=photos.find(p=>p.isCover)||photos[0]||null;
     return {id:albumId,name:albumName,photos,cover:coverPhoto?coverPhoto.url:"",fullPrice};
   }).filter(a=>a.photos.length>0);
