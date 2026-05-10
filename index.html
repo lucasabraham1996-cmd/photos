@@ -33,6 +33,23 @@ const MP_ALIAS="lucasabraham.mp";
 const DEFAULT_FULL_ALBUM_PRICE=50000;
 const ADMIN_PIN="1234";
 const LS_COVER_KEY="la_cover_overrides_v2";
+const LS_ORDERS_KEY="la_orders_v1";
+function readLocalOrders(){try{return JSON.parse(localStorage.getItem(LS_ORDERS_KEY)||"[]")}catch{return []}}
+function saveLocalOrders(orders){localStorage.setItem(LS_ORDERS_KEY,JSON.stringify(orders))}
+function apiAction(params){const q=new URLSearchParams(params);return jsonp(APPS_SCRIPT_URL+(APPS_SCRIPT_URL.includes("?")?"&":"?")+q.toString())}
+async function saveOrderRemote(order){
+  saveLocalOrders([order,...readLocalOrders().filter(o=>o.id!==order.id)]);
+  try{await apiAction({action:"createOrder",order:JSON.stringify(order)})}catch(e){console.warn("Pedido guardado localmente. Apps Script no aceptó escritura todavía.",e)}
+}
+async function loadOrdersRemote(){
+  try{const r=await apiAction({action:"listOrders"});if(r&&Array.isArray(r.orders)){saveLocalOrders(r.orders);return r.orders}}catch(e){console.warn("No se pudieron leer pedidos remotos",e)}
+  return readLocalOrders();
+}
+async function markOrderDelivered(orderId,delivered){
+  const local=readLocalOrders().map(o=>o.id===orderId?{...o,delivered}:o);saveLocalOrders(local);
+  try{await apiAction({action:"updateOrder",orderId,delivered:String(delivered)})}catch(e){console.warn("Estado actualizado localmente. Apps Script no aceptó escritura todavía.",e)}
+  return local;
+}
 
 const formatPrice=(p)=>"$"+new Intl.NumberFormat("es-AR").format(Number(p||0));
 const norm=(v)=>String(v||"").trim().toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[^a-z0-9]+/g,"_").replace(/^_|_$/g,"");
@@ -149,11 +166,35 @@ function loadCoverOverrides(){try{return JSON.parse(localStorage.getItem(LS_COVE
 function saveCoverOverrides(data){localStorage.setItem(LS_COVER_KEY,JSON.stringify(data));}
 
 const Modal=({children,onClose,max='max-w-5xl'})=><div className="fixed inset-0 bg-black/80 backdrop-blur-md z-[80] flex items-center justify-center p-4 fade"><div className={`w-full ${max} bg-neutral-900 border border-neutral-800 rounded-3xl p-5 up max-h-[92vh] overflow-y-auto relative`}><button onClick={onClose} className="absolute top-4 right-4 w-9 h-9 rounded-full bg-neutral-800 hover:bg-neutral-700"><i className="fas fa-times"></i></button>{children}</div></div>;
-const PreviewWatermark=()=> <div className="absolute inset-0 pointer-events-none overflow-hidden flex items-center justify-center"><div className="absolute inset-[-35%] opacity-55" style={{backgroundImage:`repeating-linear-gradient(-28deg, transparent 0px, transparent 70px, rgba(255,255,255,.22) 72px, rgba(255,255,255,.22) 74px, transparent 76px, transparent 150px)`}}></div><div className="absolute -rotate-12 text-white/45 font-black tracking-widest text-[34px] sm:text-[44px] md:text-[52px] whitespace-nowrap drop-shadow-[0_2px_6px_rgba(0,0,0,.85)]">PREVIEW · {BRAND}</div></div>;
+const WATERMARK_LOGO="https://i.postimg.cc/Bny3x871/marca-de-agua.png";
+const PreviewWatermark=()=> <div className="absolute inset-0 pointer-events-none overflow-hidden">
+  <div className="absolute inset-[-28%] -rotate-12 opacity-70 grid grid-cols-4 sm:grid-cols-5 gap-6 sm:gap-8 place-items-center">
+    {Array.from({length:60}).map((_,i)=><img key={i} src={WATERMARK_LOGO} className="w-24 sm:w-32 md:w-40 opacity-65 drop-shadow-[0_2px_8px_rgba(0,0,0,.95)]"/>) }
+  </div>
+  <div className="absolute inset-0 bg-black/10"></div>
+</div>;
 
 function Steps(){
-  const steps=[['Elegí tus fotos favoritas','Recorré la galería y marcá las que más te gusten.'],['Realizá el pago','Transferí por alias o coordiná el pago por WhatsApp.'],['Recibí tus fotos finales','Se entregan en alta calidad y sin marca de agua.']];
-  return <div className="grid md:grid-cols-3 gap-4 mb-8">{steps.map((s,i)=><div key={i} className="bg-neutral-900 border border-neutral-800 rounded-2xl p-5"><div className="w-9 h-9 rounded-xl bg-indigo-500/20 text-indigo-300 flex items-center justify-center font-black mb-3">{i+1}</div><h3 className="font-bold mb-1">{s[0]}</h3><p className="text-sm text-neutral-400 leading-relaxed">{s[1]}</p></div>)}</div>;
+  const steps=[
+    ['1','Elegí las fotos','Recorré la galería y marcá las que más te gusten.'],
+    ['2','Realizá la transferencia','Enviala al WhatsApp correspondiente.'],
+    ['3','Recibí tus fotos','Alta calidad y sin marca de agua.']
+  ];
+  const [step,setStep]=useState(0);
+  useEffect(()=>{const t=setInterval(()=>setStep(s=>(s+1)%steps.length),2800);return()=>clearInterval(t)},[]);
+  return <div className="mb-3 sm:mb-5">
+    <div className="sm:hidden bg-neutral-900/90 border border-neutral-800 rounded-xl px-3 py-2.5 overflow-hidden shadow-[0_8px_25px_rgba(0,0,0,.25)]">
+      <div className="flex items-center gap-2.5 min-h-[42px] transition-all duration-500" key={step}>
+        <div className="w-7 h-7 rounded-lg bg-indigo-500/20 text-indigo-300 flex items-center justify-center font-black text-xs shrink-0">{steps[step][0]}</div>
+        <div className="min-w-0 flex-1">
+          <h3 className="font-bold text-[12px] leading-tight text-white">{steps[step][1]}</h3>
+          <p className="text-[10px] text-neutral-400 leading-tight mt-0.5">{steps[step][2]}</p>
+        </div>
+      </div>
+      <div className="flex justify-center gap-1.5 mt-2">{steps.map((_,i)=><button key={i} onClick={()=>setStep(i)} className={`h-1.5 rounded-full transition-all ${i===step?'w-5 bg-indigo-400':'w-1.5 bg-neutral-600'}`}></button>)}</div>
+    </div>
+    <div className="hidden sm:grid grid-cols-3 gap-2.5">{steps.map((s,i)=><div key={i} className="bg-neutral-900/85 border border-neutral-800 rounded-xl px-3 py-3 transition-all duration-300 hover:-translate-y-0.5 hover:border-indigo-400/40 hover:shadow-[0_12px_30px_rgba(79,70,229,.12)]"><div className="flex items-start gap-3"><div className="w-7 h-7 rounded-lg bg-indigo-500/20 text-indigo-300 flex items-center justify-center font-black text-xs shrink-0">{s[0]}</div><div className="min-w-0"><h3 className="font-bold text-sm leading-tight mb-0.5">{s[1]}</h3><p className="text-[11px] text-neutral-400 leading-snug">{s[2]}</p></div></div></div>)}</div>
+  </div>
 }
 
 function App(){
@@ -170,6 +211,8 @@ function App(){
   const [coverOverrides,setCoverOverrides]=useState(loadCoverOverrides());
   const [editor,setEditor]=useState(null);
   const [adminMessage,setAdminMessage]=useState("");
+  const [orders,setOrders]=useState(readLocalOrders());
+  const [ordersLoading,setOrdersLoading]=useState(false);
   const ownInputRef=useRef(null);
   const homeLogoRef=useRef(null); const awayLogoRef=useRef(null);
 
@@ -241,6 +284,7 @@ function App(){
   }
 
   useEffect(()=>{if(!adminMessage)return;const t=setTimeout(()=>setAdminMessage(''),2500);return()=>clearTimeout(t)},[adminMessage]);
+  useEffect(()=>{if(route==="#/admin"&&admin){setOrdersLoading(true);loadOrdersRemote().then(setOrders).finally(()=>setOrdersLoading(false));}},[route,admin]);
 
   if(loading)return <div className="min-h-screen flex items-center justify-center"><div className="text-center"><div className="w-12 h-12 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div><p className="text-indigo-300 font-semibold">Cargando galería...</p></div></div>;
   if(error)return <div className="min-h-screen flex items-center justify-center p-5"><div className="max-w-xl w-full bg-neutral-900 border border-red-500/40 rounded-3xl p-7"><div className="w-14 h-14 rounded-2xl bg-red-500/20 border border-red-400/30 flex items-center justify-center mb-5"><i className="fas fa-triangle-exclamation text-red-300 text-2xl"></i></div><h1 className="text-2xl font-black mb-4">No se pudo cargar la galería</h1><div className="bg-black border border-neutral-800 rounded-2xl p-4 text-red-200 text-sm mb-5">{error}</div><p className="text-sm text-neutral-300 leading-relaxed mb-4">Verificá que Apps Script siga publicado como aplicación web y que la planilla tenga fotos públicas.</p><button onClick={load} className="w-full bg-white text-black font-bold py-4 rounded-xl">Reintentar</button></div></div>;
@@ -272,7 +316,7 @@ function App(){
       {displayAlbums.map(album=><div key={album.id} className="bg-neutral-900 border border-neutral-800 rounded-3xl overflow-hidden">
         <div className="aspect-[4/5] bg-neutral-950 relative">{album.cover?<img src={album.cover} className="w-full h-full object-cover"/>:<div className="w-full h-full flex items-center justify-center text-neutral-600"><i className="fas fa-image text-5xl"></i></div>}<div className="absolute top-3 right-3 bg-black/70 border border-white/10 px-3 py-1 rounded-full text-[11px]">{album.photos.length} fotos</div></div>
         <div className="p-5">
-          <h3 className="font-bold text-lg truncate">{album.name}</h3>
+          <h3 className="font-bold text-lg whitespace-normal break-words leading-tight">{album.name}</h3>
           <p className="text-xs text-neutral-400 mb-4">Álbum completo {formatPrice(album.fullPrice)}</p>
           <div className="grid gap-2">
             <button onClick={()=>openPhotoCoverPicker(album)} className="bg-neutral-800 hover:bg-neutral-700 text-sm rounded-xl px-4 py-3 text-left"><i className="fas fa-images mr-2 text-indigo-300"></i>Elegir una foto del álbum</button>
@@ -287,7 +331,7 @@ function App(){
     {editor?.type==='choosePhoto' && <Modal onClose={()=>setEditor(null)}>
       <h2 className="text-2xl font-black mb-2">Elegir una foto como carátula</h2>
       <p className="text-neutral-400 text-sm mb-5">Seleccioná una foto del álbum y se usará como portada.</p>
-      <div className="grid grid-cols-2 md:grid-cols-4 xl:grid-cols-5 gap-3">{(displayAlbums.find(a=>a.id===editor.albumId)?.photos||[]).map(photo=><button key={photo.id} onClick={()=>{setCoverOverrides(v=>({...v,[editor.albumId]:photo.url}));setAdminMessage('Carátula actualizada desde una foto del álbum.');setEditor(null)}} className="group text-left"><div className="aspect-[4/5] rounded-2xl overflow-hidden border border-neutral-800 bg-neutral-950"><img src={photo.url} className="w-full h-full object-cover group-hover:scale-105 transition duration-300"/></div><p className="text-xs text-neutral-400 truncate mt-2">{photo.name}</p></button>)}</div>
+      <div className="grid grid-cols-2 md:grid-cols-4 xl:grid-cols-5 gap-3">{(displayAlbums.find(a=>a.id===editor.albumId)?.photos||[]).map(photo=><button key={photo.id} onClick={()=>{setCoverOverrides(v=>({...v,[editor.albumId]:photo.url}));setAdminMessage('Carátula actualizada desde una foto del álbum.');setEditor(null)}} className="group text-left transition-all duration-300 hover:-translate-y-1 hover:scale-[1.015] active:scale-[0.98]"><div className="aspect-[4/5] rounded-2xl overflow-hidden border border-neutral-800 bg-neutral-950"><img src={photo.url} className="w-full h-full object-cover group-hover:scale-105 transition duration-300"/></div><p className="text-xs text-neutral-400 truncate mt-2">{photo.name}</p></button>)}</div>
     </Modal>}
 
     {editor?.type==='uploadOwn' && <Modal onClose={()=>setEditor(null)} max="max-w-2xl">
@@ -384,10 +428,10 @@ function App(){
           <div className="flex items-center gap-2 border-t-2 border-white pt-3 pb-2 px-4 -mt-[1px]"><i className="fas fa-th text-xs"></i><span className="text-[11px] font-semibold text-white uppercase tracking-widest">Galería</span></div>
         </div>
         <div className="grid grid-cols-3 gap-1 sm:gap-4">
-          {displayAlbums.map(a=><button key={a.id} onClick={()=>{location.hash=albumHash(a.id)}} className="group text-left"><div className="aspect-square sm:aspect-[4/5] bg-neutral-900 overflow-hidden relative">{a.cover?<img src={a.cover} className="w-full h-full object-cover group-hover:scale-105 transition duration-500"/>:<div className="w-full h-full flex items-center justify-center text-neutral-600"><i className="fas fa-image text-3xl"></i></div>}<div className="hidden sm:block absolute inset-0 bg-gradient-to-t from-black/85 via-transparent to-transparent"></div><div className="hidden sm:block absolute bottom-3 left-3 right-3"><h3 className="font-black truncate">{a.name}</h3><p className="text-emerald-300 text-xs">{a.photos.length} fotos</p></div></div><div className="sm:hidden mt-1"><p className="text-[10px] font-semibold truncate">{a.name}</p></div></button>)}
+          {displayAlbums.map(a=><button key={a.id} onClick={()=>{location.hash=albumHash(a.id)}} className="group text-left transition-all duration-300 hover:-translate-y-1 hover:scale-[1.015] active:scale-[0.98]"><div className="aspect-square sm:aspect-[4/5] bg-neutral-900 overflow-hidden relative rounded-none sm:rounded-2xl border border-transparent group-hover:border-indigo-400/50 group-hover:shadow-[0_18px_45px_rgba(99,102,241,0.22)] transition-all duration-300">{a.cover?<img src={a.cover} className="w-full h-full object-cover group-hover:scale-110 transition duration-700 ease-out"/>:<div className="w-full h-full flex items-center justify-center text-neutral-600"><i className="fas fa-image text-3xl"></i></div>}<div className="hidden sm:block absolute inset-0 bg-gradient-to-t from-black/85 via-transparent to-transparent"></div><div className="hidden sm:block absolute bottom-3 left-3 right-3 bg-black/35 backdrop-blur-sm rounded-xl p-2"><h3 className="font-black whitespace-normal break-words leading-tight text-sm sm:text-base">{a.name}</h3><p className="text-emerald-300 text-xs mt-1">{a.photos.length} fotos</p></div></div><div className="sm:hidden mt-1 min-h-[28px]"><p className="text-[10px] font-semibold whitespace-normal break-words leading-tight">{a.name}</p></div></button>)}
         </div>
       </> : <>
-        <button onClick={()=>{location.hash="#/galeria";setActiveAlbum(null)}} className="bg-neutral-900 border border-neutral-800 px-5 py-3 rounded-full mb-6"><i className="fas fa-arrow-left mr-2"></i>Volver</button>
+        <button onClick={()=>{location.hash="#/galeria";setActiveAlbum(null)}} className="inline-flex items-center gap-2 bg-neutral-900/90 border border-neutral-800 hover:border-neutral-700 px-4 py-2.5 rounded-full mb-4 text-sm font-semibold shadow-[0_8px_22px_rgba(0,0,0,.2)]"><i className="fas fa-arrow-left text-xs"></i>Volver</button>
         <div className="bg-gradient-to-br from-neutral-900 to-black border border-white/10 rounded-[2rem] p-6 mb-7">
           <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-5">
             <div>
@@ -402,7 +446,7 @@ function App(){
           </div>
         </div>
 
-        <div className="mb-5 flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3"><div><h2 className="text-2xl font-black">{currentAlbum.name}</h2><p className="text-neutral-400 text-sm">Elegí las fotos que quieras comprar.</p></div><button onClick={()=>{navigator.clipboard.writeText(albumUrl(currentAlbum.id));setCopyOk(true);setTimeout(()=>setCopyOk(false),1800)}} className="bg-neutral-900 border border-neutral-800 hover:bg-neutral-800 text-sm px-4 py-3 rounded-xl font-bold"><i className="fas fa-link mr-2"></i>{copyOk?"URL copiada":"Copiar URL del álbum"}</button></div>
+        <div className="mb-5 flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3"><div><h2 className="text-2xl font-black whitespace-normal break-words leading-tight">{currentAlbum.name}</h2><p className="text-neutral-400 text-sm">Elegí las fotos que quieras comprar.</p></div><button onClick={()=>{navigator.clipboard.writeText(albumUrl(currentAlbum.id));setCopyOk(true);setTimeout(()=>setCopyOk(false),1800)}} className="bg-neutral-900 border border-neutral-800 hover:bg-neutral-800 text-sm px-4 py-3 rounded-xl font-bold"><i className="fas fa-link mr-2"></i>{copyOk?"URL copiada":"Copiar URL del álbum"}</button></div>
         <div className="grid grid-cols-3 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-7 gap-2 sm:gap-3 pb-20">
           {albumPhotos.map(photo=>{const isSelected=cart.includes(photo.id);return <div key={photo.id} className={`relative rounded-xl overflow-hidden aspect-[4/5] cursor-pointer transition-all duration-300 ${isSelected?'ring-2 ring-indigo-500 scale-[0.97] shadow-[0_0_30px_rgba(99,102,241,0.2)]':'hover:opacity-90 bg-neutral-900 border border-neutral-800'}`}>
             <button onClick={()=>setViewer(photo)} className="absolute inset-0 z-10"></button>
@@ -418,7 +462,7 @@ function App(){
 
     {viewer && <Modal onClose={()=>setViewer(null)} max="max-w-6xl"><div className="grid lg:grid-cols-[1.2fr,.8fr] gap-5 items-start"><div className="rounded-3xl overflow-hidden bg-black border border-neutral-800 relative"><img src={viewer.url} className="w-full max-h-[80vh] object-contain mx-auto"/><PreviewWatermark/></div><div><h3 className="text-2xl font-black mb-1">{viewer.name}</h3><p className="text-neutral-400 text-sm mb-4">Código {viewer.code} · {viewer.albumName}</p><div className="bg-neutral-950 border border-neutral-800 rounded-2xl p-4 mb-4"><p className="text-sm text-neutral-300">Esta imagen es una vista previa con marca de agua. La foto comprada se entrega en alta calidad y sin marca de agua.</p></div><button onClick={()=>toggle(viewer.id)} className={`w-full ${cart.includes(viewer.id)?'bg-indigo-600':'bg-white text-black'} font-black py-4 rounded-xl mb-3`}>{cart.includes(viewer.id)?'Quitar de la selección':'Seleccionar esta foto'}</button><button onClick={()=>setViewer(null)} className="w-full bg-neutral-800 py-4 rounded-xl font-bold">Cerrar</button></div></div></Modal>}
 
-    {cart.length>0 && <div className="fixed bottom-4 sm:bottom-6 left-1/2 -translate-x-1/2 w-[calc(100%-20px)] sm:w-[calc(100%-32px)] max-w-2xl z-40 up"><div className="glass border border-white/10 rounded-3xl p-4 shadow-2xl flex flex-col sm:flex-row items-center justify-between gap-3"><div className="flex items-center gap-3 w-full sm:w-auto"><div className="bg-indigo-500 text-white w-12 h-12 rounded-2xl flex items-center justify-center font-bold text-xl shadow-lg">{cart.length}</div><div className="flex-1"><div className="flex items-baseline gap-2"><p className="text-2xl font-bold text-white">{formatPrice(total)}</p>{savings>0&&<p className="text-sm text-neutral-500 line-through">{formatPrice(regular)}</p>}</div><p className="text-xs font-medium text-emerald-400">{promoText()}</p></div></div><div className="flex gap-2 w-full sm:w-auto"><button onClick={()=>setCart([])} className="px-4 py-3 text-neutral-400 font-medium hover:text-white hover:bg-white/5 rounded-2xl transition text-sm flex-1 sm:flex-none">Vaciar</button><button onClick={sendOrder} className="bg-white hover:bg-neutral-200 text-black px-6 py-3 rounded-2xl font-bold flex items-center justify-center gap-2 transition flex-1 sm:flex-none">Solicitar en alta calidad</button></div></div></div>}
+    {cart.length>0 && <div className="fixed bottom-4 sm:bottom-6 inset-x-0 mx-auto w-[calc(100vw-24px)] sm:w-[calc(100%-32px)] max-w-2xl z-40 up"><div className="glass border border-white/10 rounded-3xl p-3 sm:p-4 shadow-2xl flex flex-col sm:flex-row items-center justify-between gap-3"><div className="flex items-center gap-3 w-full sm:w-auto"><div className="bg-indigo-500 text-white w-12 h-12 rounded-2xl flex items-center justify-center font-bold text-xl shadow-lg">{cart.length}</div><div className="flex-1"><div className="flex items-baseline gap-2"><p className="text-xl sm:text-2xl font-bold text-white">{formatPrice(total)}</p>{savings>0&&<p className="text-sm text-neutral-500 line-through">{formatPrice(regular)}</p>}</div><p className="text-xs font-medium text-emerald-400">{promoText()}</p></div></div><div className="flex gap-2 w-full sm:w-auto"><button onClick={()=>setCart([])} className="px-4 py-3 text-neutral-400 font-medium hover:text-white hover:bg-white/5 rounded-2xl transition text-sm flex-1 sm:flex-none">Vaciar</button><button onClick={sendOrder} className="bg-white hover:bg-neutral-200 text-black px-6 py-3 rounded-2xl font-bold flex items-center justify-center gap-2 transition flex-1 sm:flex-none">Solicitar en alta calidad</button></div></div></div>}
   </div>;
 }
 
