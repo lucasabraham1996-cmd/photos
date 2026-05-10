@@ -43,6 +43,9 @@ const extractDriveId=(url)=>{const s=String(url||"");const patterns=[/drive\.goo
 const toImgUrl=(url)=>{const raw=String(url||"").trim();if(!raw)return"";if(raw.startsWith("data:image/"))return raw;const id=extractDriveId(raw);if(id)return`https://drive.google.com/thumbnail?id=${id}&sz=w500`;return raw};
 const yes=(v)=>["si","sí","yes","true","1","portada","cover"].includes(norm(v));
 const safeCode=(name)=>String(name||"").split(".")[0].slice(0,20).toUpperCase().replace(/[^A-Z0-9]+/g,"").slice(-6)||Math.random().toString(36).slice(2,8).toUpperCase();
+const albumHash=(albumId)=>`#/album/${encodeURIComponent(albumId)}`;
+const albumUrl=(albumId)=>`${location.origin}${location.pathname}${albumHash(albumId)}`;
+const getAlbumIdFromHash=(hash)=>{const h=String(hash||"");const m=h.match(/^#\/album\/(.+)$/);return m?decodeURIComponent(m[1]):null};
 const looksLikeImageUrl=(v)=>{const s=String(v||"").trim();return /^https?:\/\//i.test(s)&&(/drive\.google\.com|googleusercontent|postimg|imgur|cloudinary|firebasestorage|\.jpg|\.jpeg|\.png|\.webp|\.gif/i.test(s));};
 const findAnyImageUrl=(row)=>{const direct=pick(row,["url","imagen","image","foto","preview","link","enlace","archivo","photo","src","miniatura","thumbnail"]);if(looksLikeImageUrl(direct))return direct;const vals=Object.values(row||{});return vals.find(looksLikeImageUrl)||""};
 
@@ -158,7 +161,7 @@ function App(){
   const [albums,setAlbums]=useState([]);
   const [loading,setLoading]=useState(true);
   const [error,setError]=useState("");
-  const [activeAlbum,setActiveAlbum]=useState(null);
+  const [activeAlbum,setActiveAlbum]=useState(getAlbumIdFromHash(location.hash));
   const [cart,setCart]=useState([]);
   const [viewer,setViewer]=useState(null);
   const [pin,setPin]=useState("");
@@ -170,7 +173,7 @@ function App(){
   const ownInputRef=useRef(null);
   const homeLogoRef=useRef(null); const awayLogoRef=useRef(null);
 
-  useEffect(()=>{const h=()=>setRoute(location.hash||"#/galeria");addEventListener('hashchange',h);return()=>removeEventListener('hashchange',h)},[]);
+  useEffect(()=>{const h=()=>{const hash=location.hash||"#/galeria";setRoute(hash);setActiveAlbum(getAlbumIdFromHash(hash));};addEventListener('hashchange',h);h();return()=>removeEventListener('hashchange',h)},[]);
   useEffect(()=>{saveCoverOverrides(coverOverrides)},[coverOverrides]);
 
   async function load(){
@@ -188,7 +191,8 @@ function App(){
   useEffect(()=>{load()},[]);
 
   const displayAlbums=useMemo(()=>albums.map(a=>({...a,cover:coverOverrides[a.id]||a.cover})),[albums,coverOverrides]);
-  const allPhotos=useMemo(()=>displayAlbums.flatMap(a=>a.photos),[displayAlbums]);
+  useEffect(()=>{if(!loading&&activeAlbum&&displayAlbums.length&&!displayAlbums.find(a=>a.id===activeAlbum)){setActiveAlbum(null);if(location.hash.startsWith("#/album/")) location.hash="#/galeria";}},[loading,activeAlbum,displayAlbums]);
+    const allPhotos=useMemo(()=>displayAlbums.flatMap(a=>a.photos),[displayAlbums]);
   const currentAlbum=displayAlbums.find(a=>a.id===activeAlbum)||null;
   const albumPhotos=currentAlbum?currentAlbum.photos:[];
   const selectedPhotos=allPhotos.filter(p=>cart.includes(p.id));
@@ -273,7 +277,7 @@ function App(){
           <div className="grid gap-2">
             <button onClick={()=>openPhotoCoverPicker(album)} className="bg-neutral-800 hover:bg-neutral-700 text-sm rounded-xl px-4 py-3 text-left"><i className="fas fa-images mr-2 text-indigo-300"></i>Elegir una foto del álbum</button>
             <button onClick={()=>setEditor({type:'uploadOwn',albumId:album.id})} className="bg-neutral-800 hover:bg-neutral-700 text-sm rounded-xl px-4 py-3 text-left"><i className="fas fa-upload mr-2 text-emerald-300"></i>Subir una carátula propia</button>
-            <button onClick={()=>setEditor({type:'matchCover',albumId:album.id,homeLogo:'',awayLogo:''})} className="bg-neutral-800 hover:bg-neutral-700 text-sm rounded-xl px-4 py-3 text-left"><i className="fas fa-shield-halved mr-2 text-amber-300"></i>Crear portada de partido</button>
+            <button onClick={()=>setEditor({type:'matchCover',albumId:album.id,homeLogo:'',awayLogo:''})} className="bg-neutral-800 hover:bg-neutral-700 text-sm rounded-xl px-4 py-3 text-left"><i className="fas fa-shield-halved mr-2 text-amber-300"></i>Crear portada de partido</button><button onClick={()=>{navigator.clipboard.writeText(albumUrl(album.id));setAdminMessage("URL del álbum copiada.");}} className="bg-neutral-800 hover:bg-neutral-700 text-sm rounded-xl px-4 py-3 text-left"><i className="fas fa-link mr-2 text-sky-300"></i>Copiar URL del álbum</button>
             {coverOverrides[album.id] && <button onClick={()=>removeCustomCover(album.id)} className="bg-red-600/20 border border-red-500/30 text-red-300 text-sm rounded-xl px-4 py-3 text-left"><i className="fas fa-trash-can mr-2"></i>Quitar carátula personalizada</button>}
           </div>
         </div>
@@ -335,7 +339,7 @@ function App(){
       <header className="max-w-5xl mx-auto pt-6 sm:pt-10 pb-4 px-0">
         <div className="sm:hidden sticky top-0 z-40 -mx-4 px-4 py-3 bg-[#070707]/90 backdrop-blur border-b border-neutral-900 mb-4 flex items-center justify-between">
           <h1 className="text-lg font-bold">{BRAND}</h1>
-          <button onClick={()=>location.hash='#/admin'} className="text-neutral-500"><i className="fas fa-bars"></i></button>
+          
         </div>
         <div className="grid grid-cols-[90px,1fr] sm:grid-cols-[170px,1fr] gap-5 sm:gap-10 items-start">
           <div className="flex justify-center">
@@ -351,7 +355,7 @@ function App(){
               <div className="flex gap-2 flex-wrap">
                 <button onClick={()=>window.open(`https://wa.me/${SELLER_PHONE}`,'_blank')} className="bg-neutral-800 hover:bg-neutral-700 border border-neutral-700 px-4 py-2 rounded-lg text-sm font-bold"><i className="fab fa-whatsapp mr-2 text-emerald-400"></i>WhatsApp</button>
                 <button onClick={()=>{navigator.clipboard.writeText(MP_ALIAS);setCopyOk(true);setTimeout(()=>setCopyOk(false),1800)}} className="bg-neutral-800 hover:bg-neutral-700 border border-neutral-700 px-4 py-2 rounded-lg text-sm font-bold">{copyOk?'Copiado':'Alias'}</button>
-                <button onClick={()=>location.hash='#/admin'} className="hidden sm:inline-flex bg-neutral-900 hover:bg-neutral-800 border border-neutral-800 px-4 py-2 rounded-lg text-sm font-bold text-neutral-300">Admin</button>
+                
               </div>
             </div>
             <div className="hidden sm:flex gap-8 mb-4">
@@ -380,10 +384,10 @@ function App(){
           <div className="flex items-center gap-2 border-t-2 border-white pt-3 pb-2 px-4 -mt-[1px]"><i className="fas fa-th text-xs"></i><span className="text-[11px] font-semibold text-white uppercase tracking-widest">Galería</span></div>
         </div>
         <div className="grid grid-cols-3 gap-1 sm:gap-4">
-          {displayAlbums.map(a=><button key={a.id} onClick={()=>setActiveAlbum(a.id)} className="group text-left"><div className="aspect-square sm:aspect-[4/5] bg-neutral-900 overflow-hidden relative">{a.cover?<img src={a.cover} className="w-full h-full object-cover group-hover:scale-105 transition duration-500"/>:<div className="w-full h-full flex items-center justify-center text-neutral-600"><i className="fas fa-image text-3xl"></i></div>}<div className="hidden sm:block absolute inset-0 bg-gradient-to-t from-black/85 via-transparent to-transparent"></div><div className="hidden sm:block absolute bottom-3 left-3 right-3"><h3 className="font-black truncate">{a.name}</h3><p className="text-emerald-300 text-xs">{a.photos.length} fotos</p></div></div><div className="sm:hidden mt-1"><p className="text-[10px] font-semibold truncate">{a.name}</p></div></button>)}
+          {displayAlbums.map(a=><button key={a.id} onClick={()=>{location.hash=albumHash(a.id)}} className="group text-left"><div className="aspect-square sm:aspect-[4/5] bg-neutral-900 overflow-hidden relative">{a.cover?<img src={a.cover} className="w-full h-full object-cover group-hover:scale-105 transition duration-500"/>:<div className="w-full h-full flex items-center justify-center text-neutral-600"><i className="fas fa-image text-3xl"></i></div>}<div className="hidden sm:block absolute inset-0 bg-gradient-to-t from-black/85 via-transparent to-transparent"></div><div className="hidden sm:block absolute bottom-3 left-3 right-3"><h3 className="font-black truncate">{a.name}</h3><p className="text-emerald-300 text-xs">{a.photos.length} fotos</p></div></div><div className="sm:hidden mt-1"><p className="text-[10px] font-semibold truncate">{a.name}</p></div></button>)}
         </div>
       </> : <>
-        <button onClick={()=>setActiveAlbum(null)} className="bg-neutral-900 border border-neutral-800 px-5 py-3 rounded-full mb-6"><i className="fas fa-arrow-left mr-2"></i>Volver</button>
+        <button onClick={()=>{location.hash="#/galeria";setActiveAlbum(null)}} className="bg-neutral-900 border border-neutral-800 px-5 py-3 rounded-full mb-6"><i className="fas fa-arrow-left mr-2"></i>Volver</button>
         <div className="bg-gradient-to-br from-neutral-900 to-black border border-white/10 rounded-[2rem] p-6 mb-7">
           <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-5">
             <div>
@@ -398,11 +402,12 @@ function App(){
           </div>
         </div>
 
-        <div className="mb-5"><h2 className="text-2xl font-black">{currentAlbum.name}</h2><p className="text-neutral-400 text-sm">Elegí las fotos que quieras comprar.</p></div>
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 sm:gap-4 pb-20">
-          {albumPhotos.map(photo=>{const isSelected=cart.includes(photo.id);return <div key={photo.id} className={`relative rounded-2xl overflow-hidden aspect-[4/5] cursor-pointer transition-all duration-300 ${isSelected?'ring-2 ring-indigo-500 scale-[0.97] shadow-[0_0_30px_rgba(99,102,241,0.2)]':'hover:opacity-90 bg-neutral-900 border border-neutral-800'}`}>
+        <div className="mb-5 flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3"><div><h2 className="text-2xl font-black">{currentAlbum.name}</h2><p className="text-neutral-400 text-sm">Elegí las fotos que quieras comprar.</p></div><button onClick={()=>{navigator.clipboard.writeText(albumUrl(currentAlbum.id));setCopyOk(true);setTimeout(()=>setCopyOk(false),1800)}} className="bg-neutral-900 border border-neutral-800 hover:bg-neutral-800 text-sm px-4 py-3 rounded-xl font-bold"><i className="fas fa-link mr-2"></i>{copyOk?"URL copiada":"Copiar URL del álbum"}</button></div>
+        <div className="grid grid-cols-3 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-7 gap-2 sm:gap-3 pb-20">
+          {albumPhotos.map(photo=>{const isSelected=cart.includes(photo.id);return <div key={photo.id} className={`relative rounded-xl overflow-hidden aspect-[4/5] cursor-pointer transition-all duration-300 ${isSelected?'ring-2 ring-indigo-500 scale-[0.97] shadow-[0_0_30px_rgba(99,102,241,0.2)]':'hover:opacity-90 bg-neutral-900 border border-neutral-800'}`}>
             <button onClick={()=>setViewer(photo)} className="absolute inset-0 z-10"></button>
             <img src={photo.url} className="w-full h-full object-cover pointer-events-none"/>
+            <PreviewWatermark/>
             <div className={`absolute inset-0 ${isSelected?'bg-indigo-900/40':'bg-transparent'} pointer-events-none`}></div>
             <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent p-2 pt-6 pointer-events-none"><p className="text-white/70 font-mono text-[9px] sm:text-[10px] truncate">{photo.name}</p></div>
             <button onClick={(e)=>{e.stopPropagation();toggle(photo.id)}} className={`absolute top-2 right-2 sm:top-3 sm:right-3 w-8 h-8 rounded-full flex items-center justify-center transition-all duration-300 z-20 ${isSelected?'bg-indigo-500 text-white scale-110 shadow-lg':'bg-black/50 text-white/60 border border-white/20 backdrop-blur-sm'}`}><i className={`fas ${isSelected?'fa-check':'fa-plus'} text-sm`}></i></button>
