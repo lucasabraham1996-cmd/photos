@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -10,34 +11,28 @@
   <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
   <style>
-    body{font-family:Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:#070707;color:#fff;-webkit-tap-highlight-color:transparent}    
+    body{font-family:Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:#070707;color:#fff;-webkit-tap-highlight-color:transparent}
+    img{-webkit-user-drag:none;user-select:none}
     .glass{background:rgba(20,20,20,.88);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px)}
-    .fade{animation:fade .28s ease-out forwards}.up{animation:up .34s cubic-bezier(.16,1,.3,1) forwards}
+    .fade{animation:fade .28s ease-out forwards}.up{animation:up .35s cubic-bezier(.16,1,.3,1) forwards}
     @keyframes fade{from{opacity:0}to{opacity:1}}@keyframes up{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:translateY(0)}}
-    img{-webkit-user-drag:none;user-select:none}.prevent-save{-webkit-touch-callout:none;user-select:none}
-    .wmText{position:absolute;inset:-25%;pointer-events:none;opacity:.34;transform:rotate(-28deg);display:grid;grid-template-columns:repeat(3,minmax(170px,1fr));gap:42px 30px;align-content:center;mix-blend-mode:screen}.wmText span{font-size:12px;font-weight:900;letter-spacing:.14em;color:rgba(255,255,255,.62);text-shadow:0 1px 12px rgba(0,0,0,.85);white-space:nowrap}
-    .wmLines{position:absolute;inset:-40%;pointer-events:none;opacity:.22;background-image:repeating-linear-gradient(-28deg,transparent 0 92px,rgba(255,255,255,.18) 94px 96px,transparent 98px 170px)}
+    ::-webkit-scrollbar{width:8px;height:8px}::-webkit-scrollbar-track{background:#0a0a0a}::-webkit-scrollbar-thumb{background:#2c2c2c;border-radius:999px}
   </style>
 </head>
 <body>
-<div id="root"></div>
-<script type="text/babel">
-const {useEffect,useMemo,useState}=React;
+  <div id="root"></div>
+  <script type="text/babel">
+const {useEffect,useMemo,useRef,useState}=React;
 
-/*
-  PASO CLAVE:
-  Pegá acá la URL de tu Google Apps Script Web App.
-  Debe terminar en /exec
-  Ejemplo: const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycb.../exec";
-*/
 const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwQixATrOYyu-wUnm23Cgy6_zbuUNOjbYQ636fEqHIt4GqzTZxVBJvhwireNt5isFE8lQ/exec";
-
 const FALLBACK_PUBLISHED_SHEET_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQvPPaZazUa43TBu127nq74y-UMDRRMKdQpOCWOWT6cc5YnsRwcTrzGA7NYM-QbYEnFSkMbdkgkaOn8/pub?output=csv";
 const BRAND="lucasabraham.ph";
+const HANDLE="@lucasabraham.ph";
 const SELLER_PHONE="3515580770";
 const MP_ALIAS="lucasabraham.mp";
 const DEFAULT_FULL_ALBUM_PRICE=50000;
 const ADMIN_PIN="1234";
+const LS_COVER_KEY="la_cover_overrides_v2";
 
 const formatPrice=(p)=>"$"+new Intl.NumberFormat("es-AR").format(Number(p||0));
 const norm=(v)=>String(v||"").trim().toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[^a-z0-9]+/g,"_").replace(/^_|_$/g,"");
@@ -45,51 +40,384 @@ const pick=(row,keys)=>{const map={};Object.keys(row||{}).forEach(k=>map[norm(k)
 const priceNum=(v)=>Number(String(v||"").replace(/[^0-9]/g,""))||0;
 const calculateBestPrice=(count)=>{if(count<=0)return 0;if(count>=10)return Math.floor(count/10)*10000+calculateBestPrice(count%10);if(count>=5)return Math.min(7500+calculateBestPrice(count-5),10000);if(count>=3)return Math.min(5000+calculateBestPrice(count-3),7500);return Math.min(count*2000,5000)};
 const extractDriveId=(url)=>{const s=String(url||"");const patterns=[/drive\.google\.com\/file\/d\/([^/]+)/,/drive\.google\.com\/open\?id=([^&]+)/,/drive\.google\.com\/uc\?[^#]*id=([^&]+)/,/[?&]id=([^&]+)/];for(const p of patterns){const m=s.match(p);if(m&&m[1])return decodeURIComponent(m[1])}return""};
-const toImgUrl=(url)=>{const raw=String(url||"").trim();if(!raw)return"";const id=extractDriveId(raw);if(id)return`https://drive.google.com/thumbnail?id=${id}&sz=w900`;return raw};
+const toImgUrl=(url)=>{const raw=String(url||"").trim();if(!raw)return"";if(raw.startsWith("data:image/"))return raw;const id=extractDriveId(raw);if(id)return`https://drive.google.com/thumbnail?id=${id}&sz=w500`;return raw};
+const yes=(v)=>["si","sí","yes","true","1","portada","cover"].includes(norm(v));
+const safeCode=(name)=>String(name||"").split(".")[0].slice(0,20).toUpperCase().replace(/[^A-Z0-9]+/g,"").slice(-6)||Math.random().toString(36).slice(2,8).toUpperCase();
+const looksLikeImageUrl=(v)=>{const s=String(v||"").trim();return /^https?:\/\//i.test(s)&&(/drive\.google\.com|googleusercontent|postimg|imgur|cloudinary|firebasestorage|\.jpg|\.jpeg|\.png|\.webp|\.gif/i.test(s));};
+const findAnyImageUrl=(row)=>{const direct=pick(row,["url","imagen","image","foto","preview","link","enlace","archivo","photo","src","miniatura","thumbnail"]);if(looksLikeImageUrl(direct))return direct;const vals=Object.values(row||{});return vals.find(looksLikeImageUrl)||""};
 
-function jsonp(url){return new Promise((resolve,reject)=>{const cb="cb_"+Date.now()+"_"+Math.random().toString(36).slice(2);const sep=url.includes("?")?"&":"?";const script=document.createElement("script");let done=false;const timer=setTimeout(()=>{if(done)return;done=true;delete window[cb];script.remove();reject(new Error("No respondió la fuente de datos"));},15000);window[cb]=(data)=>{if(done)return;done=true;clearTimeout(timer);delete window[cb];script.remove();resolve(data)};script.onerror=()=>{if(done)return;done=true;clearTimeout(timer);delete window[cb];script.remove();reject(new Error("No se pudo cargar la fuente de datos"))};script.src=url+sep+"callback="+encodeURIComponent(cb)+"&v="+Date.now();document.body.appendChild(script)})}
+function jsonp(url){return new Promise((resolve,reject)=>{const cb="cb_"+Date.now()+"_"+Math.random().toString(36).slice(2);const sep=url.includes("?")?"&":"?";const script=document.createElement("script");let done=false;const timer=setTimeout(()=>{if(done)return;done=true;delete window[cb];script.remove();reject(new Error("No respondió la fuente de datos"));},15000);window[cb]=(data)=>{if(done)return;done=true;clearTimeout(timer);delete window[cb];script.remove();resolve(data)};script.onerror=()=>{if(done)return;done=true;clearTimeout(timer);delete window[cb];script.remove();reject(new Error("No se pudo cargar la fuente de datos"))};script.src=`${url}${sep}callback=${cb}`;document.body.appendChild(script)})}
 
-function gvizJsonpForFirstSheet(){return new Promise((resolve,reject)=>{const m=FALLBACK_PUBLISHED_SHEET_URL.match(/\/spreadsheets\/d\/e\/([^/]+)\//);if(!m)return reject(new Error("No se pudo detectar el ID publicado de la planilla"));const cb="gviz_"+Date.now()+"_"+Math.random().toString(36).slice(2);const url=`https://docs.google.com/spreadsheets/d/e/${m[1]}/gviz/tq?tqx=out:json;responseHandler:${cb}&tq=${encodeURIComponent("select *")}&v=${Date.now()}`;const script=document.createElement("script");let done=false;const timer=setTimeout(()=>{if(done)return;done=true;delete window[cb];script.remove();reject(new Error("La planilla publicada no respondió"));},15000);window[cb]=(res)=>{if(done)return;done=true;clearTimeout(timer);delete window[cb];script.remove();try{const cols=(res.table.cols||[]).map((c,i)=>c.label||`Columna ${i+1}`);const rows=(res.table.rows||[]).map(r=>{const obj={};cols.forEach((h,i)=>obj[h]=(r.c[i]&&r.c[i].v!==undefined)?r.c[i].v:"");return obj});resolve({ok:true,albums:[{name:"Galería",rows}]})}catch(e){reject(e)}};script.onerror=()=>{if(done)return;done=true;clearTimeout(timer);delete window[cb];script.remove();reject(new Error("Google Sheets bloqueó la lectura directa. Usá Apps Script."))};script.src=url;document.body.appendChild(script)})}
+async function gvizJsonpForFirstSheet(){
+  const base=FALLBACK_PUBLISHED_SHEET_URL.replace(/pub\?output=csv/i,'gviz/tq?tqx=out:json');
+  const txt=await fetch(base).then(r=>r.text());
+  const m=txt.match(/google\.visualization\.Query\.setResponse\((.*)\);/s);
+  if(!m)throw new Error("Google Sheets bloqueó la lectura directa. Usá Apps Script.");
+  const obj=JSON.parse(m[1]);
+  const cols=(obj.table.cols||[]).map(c=>c.label||c.id||"");
+  const rows=(obj.table.rows||[]).map(r=>{const out={};(r.c||[]).forEach((c,i)=>out[cols[i]]=c&&c.v!==undefined?c.v:"");return out});
+  return {ok:true,albums:[{name:"Álbum",rows}]};
+}
 
 function normalizeAlbums(data){
-  const rawAlbums=(data&&data.albums)||[];
-  return rawAlbums.map((album,idx)=>{
-    const albumId="album_"+idx+"_"+norm(album.name);
-    const photos=(album.rows||[]).map((row,i)=>{
-      const rawUrl=pick(row,["url","url_preview","preview","imagen","imagen_url","foto","link","drive","google_drive","archivo","image"]);
-      const url=toImgUrl(rawUrl);
-      const active=pick(row,["activa","activo","publicar","visible","estado"]);
-      const hidden=["no","false","0","inactiva","inactivo","ocultar","baja"].includes(norm(active));
-      const name=pick(row,["nombre","foto_nombre","archivo","jugador","jugadora","dorsal","descripcion","detalle","id"] )||`Foto ${i+1}`;
-      const code=pick(row,["codigo","id","nro","numero","foto_id"] )||`${i+1}`;
-      const coverFlag=norm(pick(row,["portada","cover","caratula"]));
-      const fullAlbumPrice=priceNum(pick(row,["precio_album","album_precio","precio_total","coleccion","precio_coleccion"]));
-      return {id:`${albumId}_${i}_${code}`,albumId,albumName:album.name||`Álbum ${idx+1}`,name,code,url,rawUrl,isCover:["si","true","1","portada","cover"].includes(coverFlag),fullAlbumPrice,active:!!url&&!hidden,row};
-    }).filter(p=>p.active);
-    const coverPhoto=photos.find(p=>p.isCover)||photos[0];
-    const fullPrice=(photos.find(p=>p.fullAlbumPrice>0)||{}).fullAlbumPrice||DEFAULT_FULL_ALBUM_PRICE;
-    return {id:albumId,name:album.name||`Álbum ${idx+1}`,photos,cover:coverPhoto?coverPhoto.url:"",fullPrice};
+  const rawAlbums = Array.isArray(data?.albums) ? data.albums : Array.isArray(data) ? data : [];
+  const src=rawAlbums.filter(a=>Array.isArray(a.rows)||Array.isArray(a.photos)||Array.isArray(a.data));
+  return src.map((sheet,idx)=>{
+    const albumName=sheet.name||sheet.album||sheet.title||`Álbum ${idx+1}`;
+    const albumId=norm(albumName)||`album_${idx+1}`;
+    const rawRows=sheet.rows||sheet.photos||sheet.data||[];
+    const photos=rawRows
+      .map((row,i)=>{
+        const rawUrl=findAnyImageUrl(row);
+        const url=toImgUrl(rawUrl);
+        if(!url)return null;
+        const values=Object.values(row||{}).map(v=>String(v||"").trim());
+        const name=pick(row,["nombre de foto","nombre_foto","nombre foto","nombre","name","titulo","title","archivo","filename","foto","jugador","player"])||values[1]||`Foto ${i+1}`;
+        return {
+          id:`${albumId}_${i+1}`,
+          albumId,
+          albumName,
+          index:i,
+          name,
+          code:safeCode(name+"_"+(i+1)),
+          url,
+          rawUrl,
+          isCover:yes(pick(row,["portada","cover","caratula"])),
+          active:!["no","false","0","ocultar","hide"].includes(norm(pick(row,["activa","active","visible","publicar"])))
+        };
+      })
+      .filter(Boolean)
+      .filter(p=>p.active);
+    const fullPrice=priceNum(rawRows.map(r=>pick(r,["precio_album","precio album","album_completo","precio completo","fullprice","precio"])).find(Boolean))||DEFAULT_FULL_ALBUM_PRICE;
+    const coverPhoto=photos.find(p=>p.isCover)||photos[0]||null;
+    return {id:albumId,name:albumName,photos,cover:coverPhoto?coverPhoto.url:"",fullPrice};
   }).filter(a=>a.photos.length>0);
 }
 
-function Watermark(){return <><div className="wmLines"></div><div className="wmText">{Array.from({length:18}).map((_,i)=><span key={i}>PREVIEW · {BRAND}</span>)}</div></>}
-function Steps(){return <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-8"><div className="bg-neutral-900 border border-neutral-800 p-4 rounded-2xl"><b>1. Elegí</b><p className="text-xs text-neutral-400 mt-1">Seleccioná tus fotos favoritas.</p></div><div className="bg-neutral-900 border border-neutral-800 p-4 rounded-2xl"><b>2. Pagá</b><p className="text-xs text-neutral-400 mt-1">Transferí por Mercado Pago.</p></div><div className="bg-neutral-900 border border-neutral-800 p-4 rounded-2xl"><b>3. Recibí</b><p className="text-xs text-neutral-400 mt-1">Te envío las finales sin marca de agua.</p></div></div>}
-function App(){
-  const [route,setRoute]=useState(location.hash||"#/galeria");const [albums,setAlbums]=useState([]);const [activeAlbum,setActiveAlbum]=useState(null);const [cart,setCart]=useState([]);const [loading,setLoading]=useState(true);const [error,setError]=useState("");const [pin,setPin]=useState("");const [admin,setAdmin]=useState(false);const [viewer,setViewer]=useState(null);const [copyOk,setCopyOk]=useState(false);
-  useEffect(()=>{const h=()=>setRoute(location.hash||"#/galeria");addEventListener("hashchange",h);return()=>removeEventListener("hashchange",h)},[]);
-  async function load(){setLoading(true);setError("");try{let data;if(APPS_SCRIPT_URL.trim()){data=await jsonp(APPS_SCRIPT_URL.trim())}else{data=await gvizJsonpForFirstSheet()}const normalized=normalizeAlbums(data);if(!normalized.length)throw new Error("La planilla cargó, pero no encontré fotos. Revisá que haya columna URL o Imagen y links públicos.");setAlbums(normalized)}catch(e){console.error(e);setError(e.message||"No se pudo cargar la galería")}finally{setLoading(false)}}
-  useEffect(()=>{load()},[]);
-  const allPhotos=useMemo(()=>albums.flatMap(a=>a.photos),[albums]);const currentAlbum=albums.find(a=>a.id===activeAlbum);const albumPhotos=currentAlbum?currentAlbum.photos:[];const selectedPhotos=allPhotos.filter(p=>cart.includes(p.id));const total=calculateBestPrice(cart.length);const regular=cart.length*2000;const savings=regular-total;
-  const promoText=()=>{const n=cart.length;if(n===0)return"Seleccioná tus fotos favoritas";if(n<3)return`Sumá ${3-n} foto${3-n===1?"":"s"} más y accedé al pack de 3 por $5.000`;if(n===3)return"Pack aplicado: 3 fotos por $5.000";if(n<5)return`Sumá ${5-n} foto más y accedé al pack de 5 por $7.500`;if(n===5)return"Pack aplicado: 5 fotos por $7.500";if(n<10)return`Sumá ${10-n} fotos y accedé al pack de 10 por $10.000`;return"Pack aplicado: 10 fotos por $10.000"};
-  const toggle=(id)=>setCart(c=>c.includes(id)?c.filter(x=>x!==id):[...c,id]);
-  const sendOrder=()=>{const order="LA-"+Math.floor(10000+Math.random()*90000);let msg=`📸 *NUEVO PEDIDO DE FOTOS*\n\nHola Lucas! Quiero comprar estas fotos en alta calidad, sin marca de agua.\n\n📋 *OPERACIÓN:* #${order}\n💰 *TOTAL:* ${formatPrice(total)}\n🖼️ *Cantidad:* ${cart.length} fotos\n\n*FOTOS ELEGIDAS:*\n`;selectedPhotos.forEach(p=>msg+=`▫️ ${p.albumName} - ${p.name} - Código ${p.code}\n`);msg+=`\nTe envío el comprobante para que puedas prepararlas.`;window.open(`https://wa.me/${SELLER_PHONE}?text=${encodeURIComponent(msg)}`,"_blank");setCart([])};
-  if(loading)return <div className="min-h-screen flex items-center justify-center"><div className="text-center"><div className="w-12 h-12 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div><p className="text-indigo-300 font-semibold">Cargando galería...</p></div></div>;
-  if(error)return <div className="min-h-screen flex items-center justify-center p-5"><div className="max-w-xl w-full bg-neutral-900 border border-red-500/40 rounded-3xl p-7"><div className="w-14 h-14 rounded-2xl bg-red-500/20 border border-red-400/30 flex items-center justify-center mb-5"><i className="fas fa-triangle-exclamation text-red-300 text-2xl"></i></div><h1 className="text-2xl font-black mb-4">No se pudo cargar la galería</h1><div className="bg-black border border-neutral-800 rounded-2xl p-4 text-red-200 text-sm mb-5">{error}</div><p className="text-sm text-neutral-300 leading-relaxed mb-4">Si todavía no pegaste la URL de Apps Script en el HTML, la app solo podrá intentar leer la primera hoja publicada. Para usar cada pestaña como álbum, configurá Apps Script.</p><button onClick={load} className="w-full bg-white text-black font-bold py-4 rounded-xl">Reintentar</button></div></div>;
-  if(route==="#/admin"&&!admin)return <div className="min-h-screen flex items-center justify-center p-4"><form onSubmit={e=>{e.preventDefault();pin===ADMIN_PIN?setAdmin(true):alert("PIN incorrecto")}} className="bg-neutral-900 border border-neutral-800 p-7 rounded-3xl w-full max-w-sm"><h1 className="text-2xl font-bold mb-2">Acceso admin</h1><p className="text-neutral-400 text-sm mb-5">Panel de control de la galería.</p><input value={pin} onChange={e=>setPin(e.target.value)} type="password" placeholder="PIN" className="w-full bg-black border border-neutral-700 rounded-xl p-4 mb-4 text-center text-xl tracking-widest outline-none"/><button className="w-full bg-indigo-600 py-4 rounded-xl font-bold">Entrar</button></form></div>;
-  if(route==="#/admin")return <div className="min-h-screen p-5 md:p-8 max-w-6xl mx-auto"><header className="flex flex-col sm:flex-row gap-3 sm:items-end sm:justify-between border-b border-neutral-800 pb-5 mb-6"><div><h1 className="text-3xl font-black">Panel {BRAND}</h1><p className="text-neutral-400 text-sm">Datos cargados desde Google Sheets. {APPS_SCRIPT_URL?"Modo Apps Script":"Modo fallback: primera hoja solamente"}.</p></div><button onClick={()=>location.hash="#/galeria"} className="bg-neutral-800 px-4 py-3 rounded-xl">Ver galería</button></header><div className="grid md:grid-cols-3 gap-4 mb-6"><div className="bg-neutral-900 p-5 rounded-2xl border border-neutral-800"><b>{albums.length}</b><p className="text-xs text-neutral-400">álbumes</p></div><div className="bg-neutral-900 p-5 rounded-2xl border border-neutral-800"><b>{allPhotos.length}</b><p className="text-xs text-neutral-400">fotos publicadas</p></div><div className="bg-neutral-900 p-5 rounded-2xl border border-neutral-800"><b>{cart.length}</b><p className="text-xs text-neutral-400">fotos en carrito actual</p></div></div><div className="grid md:grid-cols-3 gap-4">{albums.map(a=><div key={a.id} className="bg-neutral-900 border border-neutral-800 rounded-3xl overflow-hidden"><div className="h-44 bg-neutral-950 relative">{a.cover&&<img src={a.cover} className="w-full h-full object-cover"/>}</div><div className="p-4"><h3 className="font-bold truncate">{a.name}</h3><p className="text-xs text-neutral-400">{a.photos.length} fotos · Álbum completo {formatPrice(a.fullPrice)}</p></div></div>)}</div></div>;
-  return <div className="min-h-screen pb-36 prevent-save" onContextMenu={e=>e.preventDefault()}><div className="max-w-6xl mx-auto px-4 py-8"><header className="flex gap-5 items-center mb-7"><div className="w-20 h-20 sm:w-28 sm:h-28 rounded-full p-[3px] bg-gradient-to-tr from-yellow-500 via-pink-500 to-indigo-500 shrink-0"><div className="w-full h-full rounded-full bg-neutral-950 border-4 border-neutral-950 flex items-center justify-center overflow-hidden"><img src="https://i.postimg.cc/PrD4jg9V/Logo-LA.png" className="w-[72%] h-[72%] object-contain"/></div></div><div className="flex-1"><h1 className="text-2xl sm:text-4xl font-black">{BRAND}</h1><p className="text-neutral-300 text-sm sm:text-base mt-1">Reviví los mejores momentos del evento y elegí tus fotos favoritas en alta calidad.</p><p className="text-amber-300 text-xs sm:text-sm mt-2">Las imágenes publicadas son previews en baja resolución con marca de agua. Las finales se entregan sin marca de agua.</p><div className="flex gap-2 mt-4"><button onClick={()=>window.open(`https://wa.me/${SELLER_PHONE}`,"_blank")} className="bg-neutral-800 border border-neutral-700 px-4 py-2 rounded-xl text-sm font-bold">Contactar</button><button onClick={()=>{navigator.clipboard.writeText(MP_ALIAS);setCopyOk(true);setTimeout(()=>setCopyOk(false),1800)}} className="bg-[#009EE3]/15 border border-[#009EE3]/30 text-[#4fc3f7] px-4 py-2 rounded-xl text-sm font-bold">{copyOk?"Alias copiado":"Alias MP"}</button></div></div></header><Steps/>{!currentAlbum?<><h2 className="text-2xl font-black mb-4">Eventos disponibles</h2><div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">{albums.map(a=><div key={a.id} onClick={()=>setActiveAlbum(a.id)} className="cursor-pointer group"><div className="aspect-[4/5] rounded-3xl overflow-hidden bg-neutral-900 border border-neutral-800 relative"><img src={a.cover} className="w-full h-full object-cover opacity-80 group-hover:opacity-100 group-hover:scale-105 transition duration-700"/><div className="absolute inset-0 bg-gradient-to-t from-black via-black/20 to-transparent"></div><div className="absolute bottom-5 left-5 right-5"><h3 className="text-xl font-black truncate">{a.name}</h3><p className="text-emerald-300 text-sm">{a.photos.length} fotos disponibles</p></div></div></div>)}</div></>:<><button onClick={()=>setActiveAlbum(null)} className="bg-neutral-900 border border-neutral-800 px-5 py-3 rounded-full mb-6"><i className="fas fa-arrow-left mr-2"></i>Volver</button><div className="bg-gradient-to-br from-neutral-900 to-black border border-white/10 rounded-[2rem] p-6 mb-7"><div className="flex flex-col lg:flex-row lg:items-center justify-between gap-5"><div><p className="text-amber-300 text-xs font-black uppercase tracking-widest mb-2"><i className="fas fa-star mr-1"></i> Opción premium</p><h2 className="text-3xl font-black mb-2">{currentAlbum.name}</h2><p className="text-neutral-400 max-w-xl">Comprá la colección completa en alta calidad, sin marcas de agua y lista para descargar.</p></div><div className="bg-black/40 border border-white/10 rounded-3xl p-5 text-center"><p className="text-xs text-neutral-500 uppercase">Valor colección</p><p className="text-3xl font-black mb-3">{formatPrice(currentAlbum.fullPrice)}</p><button onClick={()=>{const msg=`📸 *COMPRA COLECCIÓN COMPLETA*\n\nHola Lucas! Quiero comprar TODAS las fotos del evento "${currentAlbum.name}" en alta calidad y sin marca de agua.\n💰 Total: ${formatPrice(currentAlbum.fullPrice)}`;window.open(`https://wa.me/${SELLER_PHONE}?text=${encodeURIComponent(msg)}`,"_blank")}} className="bg-white text-black px-6 py-3 rounded-xl font-black"><i className="fab fa-whatsapp mr-2"></i>Comprar colección</button></div></div></div><div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 sm:gap-5">{albumPhotos.map(p=>{const selected=cart.includes(p.id);return <div key={p.id} onClick={()=>setViewer(p)} className={`relative rounded-2xl overflow-hidden aspect-[4/5] cursor-pointer bg-neutral-900 border transition ${selected?"border-indigo-500 ring-2 ring-indigo-500 scale-[.96]":"border-neutral-800"}`}><img src={p.url} className="w-full h-full object-cover"/><Watermark/><div className={`absolute inset-0 ${selected?"bg-indigo-900/35":""}`}></div><button onClick={e=>{e.stopPropagation();toggle(p.id)}} className={`absolute top-2 right-2 w-8 h-8 rounded-full flex items-center justify-center z-20 ${selected?"bg-indigo-500 text-white":"bg-black/55 border border-white/20 text-white"}`}><i className="fas fa-check text-xs"></i></button><div className="absolute bottom-0 left-0 right-0 p-2 pt-8 bg-gradient-to-t from-black/95 to-transparent"><p className="text-[10px] text-white/75 truncate">{p.name}</p></div></div>})}</div></>}</div>{viewer&&<div className="fixed inset-0 bg-black/90 z-50 p-4 flex items-center justify-center fade" onClick={()=>setViewer(null)}><div className="w-full max-w-4xl up" onClick={e=>e.stopPropagation()}><div className="relative rounded-3xl overflow-hidden bg-neutral-950 border border-neutral-800"><img src={viewer.url} className="w-full max-h-[76vh] object-contain"/><Watermark/><button onClick={()=>setViewer(null)} className="absolute top-4 right-4 bg-black/70 w-10 h-10 rounded-full"><i className="fas fa-times"></i></button></div><div className="flex flex-col sm:flex-row gap-3 justify-between items-center mt-4 glass border border-white/10 rounded-2xl p-4"><div><h3 className="font-bold">{viewer.name}</h3><p className="text-xs text-neutral-400">Preview protegida · entrega final sin marca de agua</p></div><button onClick={()=>toggle(viewer.id)} className="bg-white text-black px-6 py-3 rounded-xl font-black w-full sm:w-auto">{cart.includes(viewer.id)?"Quitar selección":"Seleccionar foto"}</button></div></div></div>}{cart.length>0&&<div className="fixed bottom-4 left-1/2 -translate-x-1/2 w-[calc(100%-24px)] max-w-2xl z-40 up"><div className="glass border border-white/10 rounded-3xl p-4 flex flex-col sm:flex-row gap-3 sm:items-center justify-between"><div className="flex items-center gap-3"><div className="bg-indigo-500 w-12 h-12 rounded-2xl flex items-center justify-center font-black text-xl">{cart.length}</div><div><div className="flex gap-2 items-baseline"><p className="text-2xl font-black">{formatPrice(total)}</p>{savings>0&&<p className="line-through text-neutral-500 text-sm">{formatPrice(regular)}</p>}</div><p className="text-xs text-emerald-300">{promoText()}</p></div></div><div className="flex gap-2"><button onClick={()=>setCart([])} className="px-4 py-3 rounded-2xl text-neutral-300">Vaciar</button><button onClick={sendOrder} className="bg-white text-black px-5 py-3 rounded-2xl font-black">Solicitar en alta calidad</button></div></div></div>}</div>;
+function readFileAsDataURL(file,maxW=1200,quality=0.82){
+  return new Promise((resolve,reject)=>{
+    const reader=new FileReader();
+    reader.onload=e=>{
+      const img=new Image();
+      img.onload=()=>{
+        const canvas=document.createElement('canvas');
+        let {width,height}=img;
+        if(width>height&&width>maxW){height=Math.round(height*(maxW/width));width=maxW}
+        else if(height>maxW){width=Math.round(width*(maxW/height));height=maxW}
+        canvas.width=width;canvas.height=height;
+        const ctx=canvas.getContext('2d');
+        ctx.drawImage(img,0,0,width,height);
+        resolve(canvas.toDataURL('image/jpeg',quality));
+      };
+      img.onerror=()=>reject(new Error('No se pudo leer la imagen'));
+      img.src=e.target.result;
+    };
+    reader.onerror=()=>reject(new Error('No se pudo abrir el archivo'));
+    reader.readAsDataURL(file);
+  })
 }
-ReactDOM.createRoot(document.getElementById("root")).render(<App/>);
-</script>
+
+function buildMatchCover({title,subtitle,homeLogo,awayLogo}){
+  return new Promise((resolve,reject)=>{
+    const canvas=document.createElement('canvas');
+    canvas.width=1080;canvas.height=1350;
+    const ctx=canvas.getContext('2d');
+    const load=(src)=>new Promise((res,rej)=>{if(!src)return res(null);const img=new Image();img.onload=()=>res(img);img.onerror=()=>rej(new Error('No se pudo cargar un escudo'));img.src=src;});
+    Promise.all([load(homeLogo),load(awayLogo)]).then(([home,away])=>{
+      const grad=ctx.createLinearGradient(0,0,canvas.width,canvas.height);grad.addColorStop(0,'#0b0d16');grad.addColorStop(.45,'#121933');grad.addColorStop(1,'#050505');ctx.fillStyle=grad;ctx.fillRect(0,0,canvas.width,canvas.height);
+      ctx.fillStyle='rgba(255,255,255,0.06)';ctx.fillRect(60,60,canvas.width-120,canvas.height-120);
+      ctx.strokeStyle='rgba(255,255,255,0.12)';ctx.lineWidth=2;ctx.strokeRect(60,60,canvas.width-120,canvas.height-120);
+      ctx.fillStyle='#fff';ctx.textAlign='center';ctx.font='800 68px Arial';wrapText(ctx,title||'Partido',canvas.width/2,170,canvas.width-220,82);
+      if(subtitle){ctx.fillStyle='rgba(255,255,255,0.8)';ctx.font='500 32px Arial';wrapText(ctx,subtitle,canvas.width/2,270,canvas.width-260,42)}
+      ctx.fillStyle='rgba(255,255,255,0.08)';ctx.beginPath();ctx.roundRect(110,360,860,560,36);ctx.fill();
+      if(home){drawContain(ctx,home,145,425,310,310)}
+      if(away){drawContain(ctx,away,625,425,310,310)}
+      ctx.fillStyle='rgba(255,255,255,0.9)';ctx.font='900 82px Arial';ctx.fillText('VS',canvas.width/2,620);
+      ctx.fillStyle='rgba(255,255,255,0.75)';ctx.font='700 28px Arial';ctx.fillText(BRAND,canvas.width/2,1085);
+      ctx.fillStyle='rgba(255,255,255,0.55)';ctx.font='500 24px Arial';ctx.fillText('Carátula generada desde el panel admin',canvas.width/2,1130);
+      resolve(canvas.toDataURL('image/jpeg',0.88));
+    }).catch(reject);
+  })
+}
+function drawContain(ctx,img,x,y,w,h){const ratio=Math.min(w/img.width,h/img.height);const nw=img.width*ratio;const nh=img.height*ratio;const nx=x+(w-nw)/2;const ny=y+(h-nh)/2;ctx.drawImage(img,nx,ny,nw,nh)}
+function wrapText(ctx,text,x,y,maxWidth,lineHeight){const words=String(text||'').split(' ');let line='';let lines=[];for(const word of words){const test=line?line+' '+word:word; if(ctx.measureText(test).width>maxWidth&&line){lines.push(line);line=word}else{line=test}}if(line)lines.push(line);lines.forEach((ln,i)=>ctx.fillText(ln,x,y+i*lineHeight));}
+
+function loadCoverOverrides(){try{return JSON.parse(localStorage.getItem(LS_COVER_KEY)||'{}')}catch{return {}}}
+function saveCoverOverrides(data){localStorage.setItem(LS_COVER_KEY,JSON.stringify(data));}
+
+const Modal=({children,onClose,max='max-w-5xl'})=><div className="fixed inset-0 bg-black/80 backdrop-blur-md z-[80] flex items-center justify-center p-4 fade"><div className={`w-full ${max} bg-neutral-900 border border-neutral-800 rounded-3xl p-5 up max-h-[92vh] overflow-y-auto relative`}><button onClick={onClose} className="absolute top-4 right-4 w-9 h-9 rounded-full bg-neutral-800 hover:bg-neutral-700"><i className="fas fa-times"></i></button>{children}</div></div>;
+const PreviewWatermark=()=> <div className="absolute inset-0 pointer-events-none overflow-hidden flex items-center justify-center"><div className="absolute inset-[-35%] opacity-55" style={{backgroundImage:`repeating-linear-gradient(-28deg, transparent 0px, transparent 70px, rgba(255,255,255,.22) 72px, rgba(255,255,255,.22) 74px, transparent 76px, transparent 150px)`}}></div><div className="absolute -rotate-12 text-white/45 font-black tracking-widest text-[34px] sm:text-[44px] md:text-[52px] whitespace-nowrap drop-shadow-[0_2px_6px_rgba(0,0,0,.85)]">PREVIEW · {BRAND}</div></div>;
+
+function Steps(){
+  const steps=[['Elegí tus fotos favoritas','Recorré la galería y marcá las que más te gusten.'],['Realizá el pago','Transferí por alias o coordiná el pago por WhatsApp.'],['Recibí tus fotos finales','Se entregan en alta calidad y sin marca de agua.']];
+  return <div className="grid md:grid-cols-3 gap-4 mb-8">{steps.map((s,i)=><div key={i} className="bg-neutral-900 border border-neutral-800 rounded-2xl p-5"><div className="w-9 h-9 rounded-xl bg-indigo-500/20 text-indigo-300 flex items-center justify-center font-black mb-3">{i+1}</div><h3 className="font-bold mb-1">{s[0]}</h3><p className="text-sm text-neutral-400 leading-relaxed">{s[1]}</p></div>)}</div>;
+}
+
+function App(){
+  const [route,setRoute]=useState(location.hash||"#/galeria");
+  const [albums,setAlbums]=useState([]);
+  const [loading,setLoading]=useState(true);
+  const [error,setError]=useState("");
+  const [activeAlbum,setActiveAlbum]=useState(null);
+  const [cart,setCart]=useState([]);
+  const [viewer,setViewer]=useState(null);
+  const [pin,setPin]=useState("");
+  const [admin,setAdmin]=useState(false);
+  const [copyOk,setCopyOk]=useState(false);
+  const [coverOverrides,setCoverOverrides]=useState(loadCoverOverrides());
+  const [editor,setEditor]=useState(null);
+  const [adminMessage,setAdminMessage]=useState("");
+  const ownInputRef=useRef(null);
+  const homeLogoRef=useRef(null); const awayLogoRef=useRef(null);
+
+  useEffect(()=>{const h=()=>setRoute(location.hash||"#/galeria");addEventListener('hashchange',h);return()=>removeEventListener('hashchange',h)},[]);
+  useEffect(()=>{saveCoverOverrides(coverOverrides)},[coverOverrides]);
+
+  async function load(){
+    setLoading(true);setError("");
+    try{
+      let data;
+      if(APPS_SCRIPT_URL.trim()) data=await jsonp(APPS_SCRIPT_URL.trim());
+      else data=await gvizJsonpForFirstSheet();
+      const normalized=normalizeAlbums(data);
+      if(!normalized.length) throw new Error('La planilla cargó, pero no encontré fotos. Esta versión acepta links públicos en columnas URL, Imagen, Foto, Link o cualquier columna que contenga una URL de imagen/Drive.');
+      setAlbums(normalized);
+    }catch(e){console.error(e);setError(e.message||'No se pudo cargar la galería');}
+    finally{setLoading(false)}
+  }
+  useEffect(()=>{load()},[]);
+
+  const displayAlbums=useMemo(()=>albums.map(a=>({...a,cover:coverOverrides[a.id]||a.cover})),[albums,coverOverrides]);
+  const allPhotos=useMemo(()=>displayAlbums.flatMap(a=>a.photos),[displayAlbums]);
+  const currentAlbum=displayAlbums.find(a=>a.id===activeAlbum)||null;
+  const albumPhotos=currentAlbum?currentAlbum.photos:[];
+  const selectedPhotos=allPhotos.filter(p=>cart.includes(p.id));
+  const total=calculateBestPrice(cart.length);
+  const regular=cart.length*2000;
+  const savings=regular-total;
+
+  const promoText=()=>{const n=cart.length;if(n===0)return"Seleccioná tus fotos favoritas";if(n<3)return`Sumá ${3-n} foto${3-n===1?"":"s"} más y accedé al pack de 3 por $5.000`;if(n===3)return"Pack aplicado: 3 fotos por $5.000";if(n<5)return`Sumá ${5-n} foto${5-n===1?"":"s"} más y accedé al pack de 5 por $7.500`;if(n===5)return"Pack aplicado: 5 fotos por $7.500";if(n<10)return`Sumá ${10-n} foto${10-n===1?"":"s"} más y accedé al pack de 10 por $10.000`;return"Pack aplicado: 10 fotos por $10.000"};
+  const toggle=(id)=>setCart(c=>c.includes(id)?c.filter(x=>x!==id):[...c,id]);
+
+  const sendOrder=()=>{
+    const order='LA-'+Math.floor(10000+Math.random()*90000);
+    let msg=`📸 *NUEVO PEDIDO DE FOTOS*\n\nHola Lucas! Quiero comprar estas fotos en alta calidad, sin marca de agua.\n\n📋 *OPERACIÓN:* #${order}\n💰 *TOTAL:* ${formatPrice(total)}\n🖼️ *Cantidad:* ${cart.length} fotos\n\n*FOTOS ELEGIDAS:*\n`;
+    selectedPhotos.forEach(p=>msg+=`▫️ ${p.albumName} - ${p.name} - Código ${p.code}\n`);
+    msg+='\nTe envío el comprobante para que puedas prepararlas.';
+    window.open(`https://wa.me/${SELLER_PHONE}?text=${encodeURIComponent(msg)}`,'_blank');
+    setCart([]);
+  };
+
+  function openPhotoCoverPicker(album){setEditor({type:'choosePhoto',albumId:album.id})}
+  async function handleOwnCoverFile(file){
+    if(!file||!editor?.albumId)return;
+    try{
+      const dataUrl=await readFileAsDataURL(file,1400,0.86);
+      setCoverOverrides(v=>({...v,[editor.albumId]:dataUrl}));
+      setAdminMessage('Carátula propia guardada correctamente.');
+      setEditor(null);
+    }catch(e){alert(e.message||'No se pudo cargar la imagen');}
+  }
+  async function handleGenerateCover(){
+    const title=(document.getElementById('matchTitle')||{}).value||'';
+    const subtitle=(document.getElementById('matchSubtitle')||{}).value||'';
+    const homeLogo=editor?.homeLogo||''; const awayLogo=editor?.awayLogo||'';
+    if(!title.trim()){alert('Ingresá un título para la portada.');return}
+    if(!homeLogo||!awayLogo){alert('Subí los dos escudos para generar la portada.');return}
+    try{
+      const out=await buildMatchCover({title,subtitle,homeLogo,awayLogo});
+      setCoverOverrides(v=>({...v,[editor.albumId]:out}));
+      setAdminMessage('Carátula de partido generada y guardada.');
+      setEditor(null);
+    }catch(e){alert(e.message||'No se pudo generar la portada')}
+  }
+  function removeCustomCover(albumId){
+    setCoverOverrides(v=>{const n={...v};delete n[albumId];return n});
+    setAdminMessage('Se eliminó la carátula personalizada.');
+  }
+
+  useEffect(()=>{if(!adminMessage)return;const t=setTimeout(()=>setAdminMessage(''),2500);return()=>clearTimeout(t)},[adminMessage]);
+
+  if(loading)return <div className="min-h-screen flex items-center justify-center"><div className="text-center"><div className="w-12 h-12 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div><p className="text-indigo-300 font-semibold">Cargando galería...</p></div></div>;
+  if(error)return <div className="min-h-screen flex items-center justify-center p-5"><div className="max-w-xl w-full bg-neutral-900 border border-red-500/40 rounded-3xl p-7"><div className="w-14 h-14 rounded-2xl bg-red-500/20 border border-red-400/30 flex items-center justify-center mb-5"><i className="fas fa-triangle-exclamation text-red-300 text-2xl"></i></div><h1 className="text-2xl font-black mb-4">No se pudo cargar la galería</h1><div className="bg-black border border-neutral-800 rounded-2xl p-4 text-red-200 text-sm mb-5">{error}</div><p className="text-sm text-neutral-300 leading-relaxed mb-4">Verificá que Apps Script siga publicado como aplicación web y que la planilla tenga fotos públicas.</p><button onClick={load} className="w-full bg-white text-black font-bold py-4 rounded-xl">Reintentar</button></div></div>;
+
+  if(route==="#/admin" && !admin) return <div className="min-h-screen flex items-center justify-center p-4"><form onSubmit={e=>{e.preventDefault();pin===ADMIN_PIN?setAdmin(true):alert('PIN incorrecto')}} className="bg-neutral-900 border border-neutral-800 p-7 rounded-3xl w-full max-w-sm"><h1 className="text-2xl font-bold mb-2">Acceso admin</h1><p className="text-neutral-400 text-sm mb-5">Panel de control de la galería.</p><input value={pin} onChange={e=>setPin(e.target.value)} type="password" placeholder="PIN" className="w-full bg-black border border-neutral-700 rounded-xl p-4 mb-4 text-center text-xl tracking-widest outline-none"/><button className="w-full bg-indigo-600 py-4 rounded-xl font-bold">Entrar</button></form></div>;
+
+  if(route==="#/admin") return <div className="min-h-screen p-5 md:p-8 max-w-7xl mx-auto">
+    <header className="flex flex-col sm:flex-row gap-3 sm:items-end sm:justify-between border-b border-neutral-800 pb-5 mb-6">
+      <div>
+        <h1 className="text-3xl font-black">Panel {BRAND}</h1>
+        <p className="text-neutral-400 text-sm">Podés ver las galerías cargadas y cambiar la carátula de cada una. Las carátulas personalizadas se guardan en este navegador.</p>
+      </div>
+      <div className="flex gap-2">
+        <button onClick={load} className="bg-neutral-800 px-4 py-3 rounded-xl"><i className="fas fa-rotate-right mr-2"></i>Actualizar</button>
+        <button onClick={()=>location.hash="#/galeria"} className="bg-indigo-600 px-4 py-3 rounded-xl font-bold">Ver galería</button>
+      </div>
+    </header>
+
+    {adminMessage && <div className="mb-4 bg-emerald-600/15 border border-emerald-500/30 text-emerald-300 rounded-2xl px-4 py-3 text-sm">{adminMessage}</div>}
+
+    <div className="grid md:grid-cols-4 gap-4 mb-6">
+      <div className="bg-neutral-900 p-5 rounded-2xl border border-neutral-800"><b className="text-2xl">{displayAlbums.length}</b><p className="text-xs text-neutral-400">álbumes</p></div>
+      <div className="bg-neutral-900 p-5 rounded-2xl border border-neutral-800"><b className="text-2xl">{allPhotos.length}</b><p className="text-xs text-neutral-400">fotos publicadas</p></div>
+      <div className="bg-neutral-900 p-5 rounded-2xl border border-neutral-800"><b className="text-2xl">3</b><p className="text-xs text-neutral-400">opciones de carátula</p></div>
+      <div className="bg-neutral-900 p-5 rounded-2xl border border-neutral-800"><b className="text-2xl">{Object.keys(coverOverrides).length}</b><p className="text-xs text-neutral-400">carátulas personalizadas</p></div>
+    </div>
+
+    <div className="grid md:grid-cols-2 xl:grid-cols-3 gap-5">
+      {displayAlbums.map(album=><div key={album.id} className="bg-neutral-900 border border-neutral-800 rounded-3xl overflow-hidden">
+        <div className="aspect-[4/5] bg-neutral-950 relative">{album.cover?<img src={album.cover} className="w-full h-full object-cover"/>:<div className="w-full h-full flex items-center justify-center text-neutral-600"><i className="fas fa-image text-5xl"></i></div>}<div className="absolute top-3 right-3 bg-black/70 border border-white/10 px-3 py-1 rounded-full text-[11px]">{album.photos.length} fotos</div></div>
+        <div className="p-5">
+          <h3 className="font-bold text-lg truncate">{album.name}</h3>
+          <p className="text-xs text-neutral-400 mb-4">Álbum completo {formatPrice(album.fullPrice)}</p>
+          <div className="grid gap-2">
+            <button onClick={()=>openPhotoCoverPicker(album)} className="bg-neutral-800 hover:bg-neutral-700 text-sm rounded-xl px-4 py-3 text-left"><i className="fas fa-images mr-2 text-indigo-300"></i>Elegir una foto del álbum</button>
+            <button onClick={()=>setEditor({type:'uploadOwn',albumId:album.id})} className="bg-neutral-800 hover:bg-neutral-700 text-sm rounded-xl px-4 py-3 text-left"><i className="fas fa-upload mr-2 text-emerald-300"></i>Subir una carátula propia</button>
+            <button onClick={()=>setEditor({type:'matchCover',albumId:album.id,homeLogo:'',awayLogo:''})} className="bg-neutral-800 hover:bg-neutral-700 text-sm rounded-xl px-4 py-3 text-left"><i className="fas fa-shield-halved mr-2 text-amber-300"></i>Crear portada de partido</button>
+            {coverOverrides[album.id] && <button onClick={()=>removeCustomCover(album.id)} className="bg-red-600/20 border border-red-500/30 text-red-300 text-sm rounded-xl px-4 py-3 text-left"><i className="fas fa-trash-can mr-2"></i>Quitar carátula personalizada</button>}
+          </div>
+        </div>
+      </div>)}
+    </div>
+
+    {editor?.type==='choosePhoto' && <Modal onClose={()=>setEditor(null)}>
+      <h2 className="text-2xl font-black mb-2">Elegir una foto como carátula</h2>
+      <p className="text-neutral-400 text-sm mb-5">Seleccioná una foto del álbum y se usará como portada.</p>
+      <div className="grid grid-cols-2 md:grid-cols-4 xl:grid-cols-5 gap-3">{(displayAlbums.find(a=>a.id===editor.albumId)?.photos||[]).map(photo=><button key={photo.id} onClick={()=>{setCoverOverrides(v=>({...v,[editor.albumId]:photo.url}));setAdminMessage('Carátula actualizada desde una foto del álbum.');setEditor(null)}} className="group text-left"><div className="aspect-[4/5] rounded-2xl overflow-hidden border border-neutral-800 bg-neutral-950"><img src={photo.url} className="w-full h-full object-cover group-hover:scale-105 transition duration-300"/></div><p className="text-xs text-neutral-400 truncate mt-2">{photo.name}</p></button>)}</div>
+    </Modal>}
+
+    {editor?.type==='uploadOwn' && <Modal onClose={()=>setEditor(null)} max="max-w-2xl">
+      <h2 className="text-2xl font-black mb-2">Subir una carátula propia</h2>
+      <p className="text-neutral-400 text-sm mb-5">Podés cargar una imagen tuya para usarla como portada del álbum.</p>
+      <div className="border-2 border-dashed border-neutral-700 rounded-3xl p-10 text-center bg-black/30">
+        <i className="fas fa-cloud-arrow-up text-4xl text-neutral-500 mb-4"></i>
+        <p className="mb-4 text-neutral-300">Elegí una imagen desde tu dispositivo.</p>
+        <button onClick={()=>ownInputRef.current?.click()} className="bg-indigo-600 px-5 py-3 rounded-xl font-bold">Seleccionar imagen</button>
+        <input ref={ownInputRef} type="file" accept="image/*" className="hidden" onChange={e=>handleOwnCoverFile(e.target.files?.[0])}/>
+      </div>
+    </Modal>}
+
+    {editor?.type==='matchCover' && <Modal onClose={()=>setEditor(null)} max="max-w-3xl">
+      <h2 className="text-2xl font-black mb-2">Crear portada de partido</h2>
+      <p className="text-neutral-400 text-sm mb-5">Subí los dos escudos y escribí el título del partido para generar una carátula.</p>
+      <div className="grid md:grid-cols-2 gap-5">
+        <div className="space-y-4">
+          <div><label className="block text-sm mb-1 text-neutral-300">Título principal</label><input id="matchTitle" placeholder="Ej: Talleres vs Belgrano" className="w-full bg-black border border-neutral-700 rounded-xl px-4 py-3 outline-none"/></div>
+          <div><label className="block text-sm mb-1 text-neutral-300">Subtítulo (opcional)</label><input id="matchSubtitle" placeholder="Ej: Entrenamiento nocturno - Cebollitas" className="w-full bg-black border border-neutral-700 rounded-xl px-4 py-3 outline-none"/></div>
+          <div className="grid grid-cols-2 gap-4">
+            <div className="bg-black/30 border border-neutral-800 rounded-2xl p-4 text-center">
+              <div className="aspect-square bg-neutral-950 rounded-2xl mb-3 flex items-center justify-center overflow-hidden">{editor.homeLogo?<img src={editor.homeLogo} className="w-4/5 h-4/5 object-contain"/>:<i className="fas fa-shield text-5xl text-neutral-600"></i>}</div>
+              <button onClick={()=>homeLogoRef.current?.click()} className="w-full bg-neutral-800 px-3 py-2 rounded-xl text-sm">Subir escudo 1</button>
+              <input ref={homeLogoRef} type="file" accept="image/*" className="hidden" onChange={async e=>{const f=e.target.files?.[0];if(f){const src=await readFileAsDataURL(f,600,.92);setEditor(v=>({...v,homeLogo:src}))}}}/>
+            </div>
+            <div className="bg-black/30 border border-neutral-800 rounded-2xl p-4 text-center">
+              <div className="aspect-square bg-neutral-950 rounded-2xl mb-3 flex items-center justify-center overflow-hidden">{editor.awayLogo?<img src={editor.awayLogo} className="w-4/5 h-4/5 object-contain"/>:<i className="fas fa-shield text-5xl text-neutral-600"></i>}</div>
+              <button onClick={()=>awayLogoRef.current?.click()} className="w-full bg-neutral-800 px-3 py-2 rounded-xl text-sm">Subir escudo 2</button>
+              <input ref={awayLogoRef} type="file" accept="image/*" className="hidden" onChange={async e=>{const f=e.target.files?.[0];if(f){const src=await readFileAsDataURL(f,600,.92);setEditor(v=>({...v,awayLogo:src}))}}}/>
+            </div>
+          </div>
+        </div>
+        <div className="bg-black/30 border border-neutral-800 rounded-3xl p-4 flex flex-col">
+          <p className="text-sm text-neutral-300 mb-3">Vista previa de elementos cargados</p>
+          <div className="rounded-2xl bg-neutral-950 p-4 flex-1 flex flex-col items-center justify-center text-center gap-4">
+            <div className="flex items-center justify-center gap-4">{editor.homeLogo?<img src={editor.homeLogo} className="w-20 h-20 object-contain"/>:<div className="w-20 h-20 rounded-2xl bg-neutral-900"></div>}<span className="font-black text-2xl text-neutral-500">VS</span>{editor.awayLogo?<img src={editor.awayLogo} className="w-20 h-20 object-contain"/>:<div className="w-20 h-20 rounded-2xl bg-neutral-900"></div>}</div>
+            <p className="font-bold text-white">{(document.getElementById('matchTitle')||{}).value || 'Título del partido'}</p>
+            <p className="text-sm text-neutral-500">La carátula se genera al guardar.</p>
+          </div>
+          <button onClick={handleGenerateCover} className="mt-4 bg-amber-500 text-black font-black px-5 py-3 rounded-xl"><i className="fas fa-wand-magic-sparkles mr-2"></i>Generar y guardar carátula</button>
+        </div>
+      </div>
+    </Modal>}
+  </div>;
+
+  return <div className="min-h-screen pb-36" onContextMenu={e=>e.preventDefault()}>
+    <div className="max-w-6xl mx-auto px-4 py-8">
+      <header className="max-w-5xl mx-auto pt-6 sm:pt-10 pb-4 px-0">
+        <div className="sm:hidden sticky top-0 z-40 -mx-4 px-4 py-3 bg-[#070707]/90 backdrop-blur border-b border-neutral-900 mb-4 flex items-center justify-between">
+          <h1 className="text-lg font-bold">{BRAND}</h1>
+          <button onClick={()=>location.hash='#/admin'} className="text-neutral-500"><i className="fas fa-bars"></i></button>
+        </div>
+        <div className="grid grid-cols-[90px,1fr] sm:grid-cols-[170px,1fr] gap-5 sm:gap-10 items-start">
+          <div className="flex justify-center">
+            <div className="w-20 h-20 sm:w-36 sm:h-36 rounded-full p-[3px] bg-gradient-to-tr from-yellow-500 via-pink-500 to-indigo-500">
+              <div className="w-full h-full rounded-full bg-neutral-950 border-4 border-neutral-950 flex items-center justify-center overflow-hidden">
+                <img src="https://i.postimg.cc/PrD4jg9V/Logo-LA.png" className="w-[72%] h-[72%] object-contain"/>
+              </div>
+            </div>
+          </div>
+          <div className="min-w-0">
+            <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-5 mb-4">
+              <h1 className="text-xl sm:text-2xl font-semibold truncate">{BRAND}</h1>
+              <div className="flex gap-2 flex-wrap">
+                <button onClick={()=>window.open(`https://wa.me/${SELLER_PHONE}`,'_blank')} className="bg-neutral-800 hover:bg-neutral-700 border border-neutral-700 px-4 py-2 rounded-lg text-sm font-bold"><i className="fab fa-whatsapp mr-2 text-emerald-400"></i>WhatsApp</button>
+                <button onClick={()=>{navigator.clipboard.writeText(MP_ALIAS);setCopyOk(true);setTimeout(()=>setCopyOk(false),1800)}} className="bg-neutral-800 hover:bg-neutral-700 border border-neutral-700 px-4 py-2 rounded-lg text-sm font-bold">{copyOk?'Copiado':'Alias'}</button>
+                <button onClick={()=>location.hash='#/admin'} className="hidden sm:inline-flex bg-neutral-900 hover:bg-neutral-800 border border-neutral-800 px-4 py-2 rounded-lg text-sm font-bold text-neutral-300">Admin</button>
+              </div>
+            </div>
+            <div className="hidden sm:flex gap-8 mb-4">
+              <div><b>{displayAlbums.length}</b> <span className="text-neutral-300">álbumes</span></div>
+              <div><b>{allPhotos.length}</b> <span className="text-neutral-300">fotos</span></div>
+              <div><b>HD</b> <span className="text-neutral-300">entrega final</span></div>
+            </div>
+            <div>
+              <p className="font-bold">Lucas Abraham | Fotografía deportiva</p>
+              <p className="text-neutral-300 text-sm leading-relaxed mt-1"><span className="font-semibold text-white">{HANDLE}</span><br/>Galería privada para elegir y comprar tus fotos favoritas.</p>
+              <p className="text-amber-300 text-xs sm:text-sm mt-2">Las imágenes publicadas son previews con marca de agua. Las finales se entregan en alta calidad y sin marca de agua.</p>
+            </div>
+          </div>
+        </div>
+        <div className="sm:hidden grid grid-cols-3 border-y border-neutral-900 mt-5 py-3 text-center">
+          <div><b className="block">{displayAlbums.length}</b><span className="text-xs text-neutral-500">álbumes</span></div>
+          <div><b className="block">{allPhotos.length}</b><span className="text-xs text-neutral-500">fotos</span></div>
+          <div><b className="block">HD</b><span className="text-xs text-neutral-500">entrega</span></div>
+        </div>
+      </header>
+
+      <Steps/>
+
+      {!currentAlbum ? <>
+        <div className="flex justify-center border-t border-neutral-900 mb-6">
+          <div className="flex items-center gap-2 border-t-2 border-white pt-3 pb-2 px-4 -mt-[1px]"><i className="fas fa-th text-xs"></i><span className="text-[11px] font-semibold text-white uppercase tracking-widest">Galería</span></div>
+        </div>
+        <div className="grid grid-cols-3 gap-1 sm:gap-4">
+          {displayAlbums.map(a=><button key={a.id} onClick={()=>setActiveAlbum(a.id)} className="group text-left"><div className="aspect-square sm:aspect-[4/5] bg-neutral-900 overflow-hidden relative">{a.cover?<img src={a.cover} className="w-full h-full object-cover group-hover:scale-105 transition duration-500"/>:<div className="w-full h-full flex items-center justify-center text-neutral-600"><i className="fas fa-image text-3xl"></i></div>}<div className="hidden sm:block absolute inset-0 bg-gradient-to-t from-black/85 via-transparent to-transparent"></div><div className="hidden sm:block absolute bottom-3 left-3 right-3"><h3 className="font-black truncate">{a.name}</h3><p className="text-emerald-300 text-xs">{a.photos.length} fotos</p></div></div><div className="sm:hidden mt-1"><p className="text-[10px] font-semibold truncate">{a.name}</p></div></button>)}
+        </div>
+      </> : <>
+        <button onClick={()=>setActiveAlbum(null)} className="bg-neutral-900 border border-neutral-800 px-5 py-3 rounded-full mb-6"><i className="fas fa-arrow-left mr-2"></i>Volver</button>
+        <div className="bg-gradient-to-br from-neutral-900 to-black border border-white/10 rounded-[2rem] p-6 mb-7">
+          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-5">
+            <div>
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-500/10 border border-amber-500/20 text-amber-400 text-[10px] font-bold tracking-widest uppercase mb-4"><i className="fas fa-star"></i> Opción Premium</div>
+              <h3 className="text-3xl font-extrabold text-white mb-3 tracking-tight">Colección completa</h3>
+              <p className="text-neutral-400 text-sm md:text-base mb-4 max-w-2xl">Desbloqueá <strong>todas las fotos</strong> del evento "{currentAlbum.name}" en máxima resolución, sin marcas de agua y listas para descargar.</p>
+            </div>
+            <div className="w-full lg:w-auto flex flex-col items-center gap-4 bg-black/40 p-6 rounded-3xl border border-white/5">
+              <div className="text-center"><p className="text-[10px] text-neutral-500 uppercase tracking-widest mb-1 font-semibold">Valor total</p><p className="text-4xl font-black text-white">{formatPrice(currentAlbum.fullPrice)}</p></div>
+              <button onClick={()=>{const msg=encodeURIComponent(`📸 *COMPRA COLECCIÓN COMPLETA*\n\nHola Lucas! Quiero comprar TODAS las fotos del evento "${currentAlbum.name}".\n💰 *TOTAL: ${formatPrice(currentAlbum.fullPrice)}*\n\n✅ Entiendo que las fotos se entregan en alta calidad y sin marca de agua.\n\nPor favor, indicame cómo realizar el pago.`);window.open(`https://wa.me/${SELLER_PHONE}?text=${msg}`,'_blank')}} className="w-full sm:w-auto bg-white text-black hover:bg-neutral-200 px-8 py-4 rounded-xl font-bold transition-all flex items-center justify-center gap-2"><i className="fab fa-whatsapp text-xl"></i> Comprar colección</button>
+            </div>
+          </div>
+        </div>
+
+        <div className="mb-5"><h2 className="text-2xl font-black">{currentAlbum.name}</h2><p className="text-neutral-400 text-sm">Elegí las fotos que quieras comprar.</p></div>
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 sm:gap-4 pb-20">
+          {albumPhotos.map(photo=>{const isSelected=cart.includes(photo.id);return <div key={photo.id} className={`relative rounded-2xl overflow-hidden aspect-[4/5] cursor-pointer transition-all duration-300 ${isSelected?'ring-2 ring-indigo-500 scale-[0.97] shadow-[0_0_30px_rgba(99,102,241,0.2)]':'hover:opacity-90 bg-neutral-900 border border-neutral-800'}`}>
+            <button onClick={()=>setViewer(photo)} className="absolute inset-0 z-10"></button>
+            <img src={photo.url} className="w-full h-full object-cover pointer-events-none"/>
+            <div className={`absolute inset-0 ${isSelected?'bg-indigo-900/40':'bg-transparent'} pointer-events-none`}></div>
+            <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent p-2 pt-6 pointer-events-none"><p className="text-white/70 font-mono text-[9px] sm:text-[10px] truncate">{photo.name}</p></div>
+            <button onClick={(e)=>{e.stopPropagation();toggle(photo.id)}} className={`absolute top-2 right-2 sm:top-3 sm:right-3 w-8 h-8 rounded-full flex items-center justify-center transition-all duration-300 z-20 ${isSelected?'bg-indigo-500 text-white scale-110 shadow-lg':'bg-black/50 text-white/60 border border-white/20 backdrop-blur-sm'}`}><i className={`fas ${isSelected?'fa-check':'fa-plus'} text-sm`}></i></button>
+          </div>})}
+        </div>
+      </>}
+    </div>
+
+    {viewer && <Modal onClose={()=>setViewer(null)} max="max-w-6xl"><div className="grid lg:grid-cols-[1.2fr,.8fr] gap-5 items-start"><div className="rounded-3xl overflow-hidden bg-black border border-neutral-800 relative"><img src={viewer.url} className="w-full max-h-[80vh] object-contain mx-auto"/><PreviewWatermark/></div><div><h3 className="text-2xl font-black mb-1">{viewer.name}</h3><p className="text-neutral-400 text-sm mb-4">Código {viewer.code} · {viewer.albumName}</p><div className="bg-neutral-950 border border-neutral-800 rounded-2xl p-4 mb-4"><p className="text-sm text-neutral-300">Esta imagen es una vista previa con marca de agua. La foto comprada se entrega en alta calidad y sin marca de agua.</p></div><button onClick={()=>toggle(viewer.id)} className={`w-full ${cart.includes(viewer.id)?'bg-indigo-600':'bg-white text-black'} font-black py-4 rounded-xl mb-3`}>{cart.includes(viewer.id)?'Quitar de la selección':'Seleccionar esta foto'}</button><button onClick={()=>setViewer(null)} className="w-full bg-neutral-800 py-4 rounded-xl font-bold">Cerrar</button></div></div></Modal>}
+
+    {cart.length>0 && <div className="fixed bottom-4 sm:bottom-6 left-1/2 -translate-x-1/2 w-[calc(100%-20px)] sm:w-[calc(100%-32px)] max-w-2xl z-40 up"><div className="glass border border-white/10 rounded-3xl p-4 shadow-2xl flex flex-col sm:flex-row items-center justify-between gap-3"><div className="flex items-center gap-3 w-full sm:w-auto"><div className="bg-indigo-500 text-white w-12 h-12 rounded-2xl flex items-center justify-center font-bold text-xl shadow-lg">{cart.length}</div><div className="flex-1"><div className="flex items-baseline gap-2"><p className="text-2xl font-bold text-white">{formatPrice(total)}</p>{savings>0&&<p className="text-sm text-neutral-500 line-through">{formatPrice(regular)}</p>}</div><p className="text-xs font-medium text-emerald-400">{promoText()}</p></div></div><div className="flex gap-2 w-full sm:w-auto"><button onClick={()=>setCart([])} className="px-4 py-3 text-neutral-400 font-medium hover:text-white hover:bg-white/5 rounded-2xl transition text-sm flex-1 sm:flex-none">Vaciar</button><button onClick={sendOrder} className="bg-white hover:bg-neutral-200 text-black px-6 py-3 rounded-2xl font-bold flex items-center justify-center gap-2 transition flex-1 sm:flex-none">Solicitar en alta calidad</button></div></div></div>}
+  </div>;
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
+  </script>
 </body>
 </html>
