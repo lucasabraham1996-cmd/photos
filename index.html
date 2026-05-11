@@ -75,6 +75,29 @@ const safeCode=(name)=>String(name||"").split(".")[0].slice(0,20).toUpperCase().
 const albumHash=(albumId)=>`#/album/${encodeURIComponent(albumId)}`;
 const albumUrl=(albumId)=>`${location.origin}${location.pathname}${albumHash(albumId)}`;
 const getAlbumIdFromHash=(hash)=>{const h=String(hash||"");const m=h.match(/^#\/album\/(.+)$/);return m?decodeURIComponent(m[1]):null};
+const LS_HIGHLIGHTS_KEY="la_featured_albums_v1";
+function readHighlightIds(){try{return JSON.parse(localStorage.getItem(LS_HIGHLIGHTS_KEY)||"[]")}catch{return []}}
+function saveHighlightIds(ids){localStorage.setItem(LS_HIGHLIGHTS_KEY,JSON.stringify(ids))}
+function parseAlbumDate(v){
+  const s=String(v||"").trim();
+  if(!s)return null;
+  const m=s.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{2,4})$/);
+  if(m){const y=Number(m[3].length===2?"20"+m[3]:m[3]);return new Date(y,Number(m[2])-1,Number(m[1])).getTime()}
+  const t=Date.parse(s);
+  return Number.isNaN(t)?null:t;
+}
+function formatAlbumDate(ts){
+  if(!ts)return "";
+  return new Intl.DateTimeFormat("es-AR",{day:"2-digit",month:"short",year:"numeric"}).format(new Date(ts)).replace(".","");
+}
+function getAlbumDateFromRows(rows){
+  for(const r of rows||[]){
+    const raw=pick(r,["fecha","date","día","dia","fecha album","fecha_album","evento fecha","fecha evento"]);
+    if(raw){const ts=parseAlbumDate(raw);if(ts)return ts}
+  }
+  return 0;
+}
+
 const looksLikeImageUrl=(v)=>{const s=String(v||"").trim();return /^https?:\/\//i.test(s)&&(/drive\.google\.com|googleusercontent|postimg|imgur|cloudinary|firebasestorage|\.jpg|\.jpeg|\.png|\.webp|\.gif/i.test(s));};
 const findAnyImageUrl=(row)=>{const direct=pick(row,["url","imagen","image","foto","preview","link","enlace","archivo","photo","src","miniatura","thumbnail"]);if(looksLikeImageUrl(direct))return direct;const vals=Object.values(row||{});return vals.find(looksLikeImageUrl)||""};
 
@@ -123,7 +146,7 @@ function normalizeAlbums(data){
       .filter(p=>p.active);
     const fullPrice=priceNum(pick(rawRows[0]||{},["album completo","album_completo","precio_album","precio album","precio completo","fullprice","precio"]))||DEFAULT_FULL_ALBUM_PRICE;
     const coverPhoto=photos.find(p=>p.isCover)||photos[0]||null;
-    return {id:albumId,name:albumName,photos,cover:coverPhoto?coverPhoto.url:"",fullPrice};
+    const dateTs=getAlbumDateFromRows(rawRows);return {id:albumId,name:albumName,photos,cover:coverPhoto?coverPhoto.url:"",fullPrice,dateTs,dateLabel:formatAlbumDate(dateTs)};
   }).filter(a=>a.photos.length>0);
 }
 
@@ -226,11 +249,14 @@ function App(){
   const [adminMessage,setAdminMessage]=useState("");
   const [orders,setOrders]=useState(readLocalOrders());
   const [ordersLoading,setOrdersLoading]=useState(false);
+  const [albumSearch,setAlbumSearch]=useState("");
+  const [highlightIds,setHighlightIds]=useState(readHighlightIds());
   const ownInputRef=useRef(null);
   const homeLogoRef=useRef(null); const awayLogoRef=useRef(null);
 
   useEffect(()=>{const h=()=>{const hash=location.hash||"#/galeria";setRoute(hash);setActiveAlbum(getAlbumIdFromHash(hash));};addEventListener('hashchange',h);h();return()=>removeEventListener('hashchange',h)},[]);
   useEffect(()=>{saveCoverOverrides(coverOverrides)},[coverOverrides]);
+  useEffect(()=>{saveHighlightIds(highlightIds)},[highlightIds]);
 
   async function load(){
     setLoading(true);setError("");
@@ -246,7 +272,10 @@ function App(){
   }
   useEffect(()=>{load()},[]);
 
-  const displayAlbums=useMemo(()=>albums.map(a=>({...a,cover:coverOverrides[a.id]||a.cover})),[albums,coverOverrides]);
+  const displayAlbums=useMemo(()=>albums.map(a=>({...a,cover:coverOverrides[a.id]||a.cover})).sort((a,b)=>(b.dateTs||0)-(a.dateTs||0)||a.name.localeCompare(b.name)),[albums,coverOverrides]);
+  const filteredAlbums=useMemo(()=>{const q=norm(albumSearch);if(!q)return displayAlbums;return displayAlbums.filter(a=>norm(a.name).includes(q)||norm(a.dateLabel).includes(q))},[displayAlbums,albumSearch]);
+  const highlightedAlbums=useMemo(()=>highlightIds.map(id=>displayAlbums.find(a=>a.id===id)).filter(Boolean),[highlightIds,displayAlbums]);
+  const toggleHighlight=(albumId)=>setHighlightIds(ids=>ids.includes(albumId)?ids.filter(id=>id!==albumId):[albumId,...ids].slice(0,12));
   useEffect(()=>{if(!loading&&activeAlbum&&displayAlbums.length&&!displayAlbums.find(a=>a.id===activeAlbum)){setActiveAlbum(null);if(location.hash.startsWith("#/album/")) location.hash="#/galeria";}},[loading,activeAlbum,displayAlbums]);
     const allPhotos=useMemo(()=>displayAlbums.flatMap(a=>a.photos),[displayAlbums]);
   const currentAlbum=displayAlbums.find(a=>a.id===activeAlbum)||null;
@@ -334,19 +363,26 @@ function App(){
       <div className="bg-neutral-900 p-5 rounded-2xl border border-neutral-800"><b className="text-2xl">{displayAlbums.length}</b><p className="text-xs text-neutral-400">álbumes</p></div>
       <div className="bg-neutral-900 p-5 rounded-2xl border border-neutral-800"><b className="text-2xl">{allPhotos.length}</b><p className="text-xs text-neutral-400">fotos publicadas</p></div>
       <div className="bg-neutral-900 p-5 rounded-2xl border border-neutral-800"><b className="text-2xl">3</b><p className="text-xs text-neutral-400">opciones de carátula</p></div>
-      <div className="bg-neutral-900 p-5 rounded-2xl border border-neutral-800"><b className="text-2xl">{Object.keys(coverOverrides).length}</b><p className="text-xs text-neutral-400">carátulas personalizadas</p></div>
+      <div className="bg-neutral-900 p-5 rounded-2xl border border-neutral-800"><b className="text-2xl">{highlightIds.length}</b><p className="text-xs text-neutral-400">historias destacadas</p></div>
+    </div>
+
+    <div className="mb-5">
+      <div className="relative">
+        <i className="fas fa-search absolute left-4 top-1/2 -translate-y-1/2 text-neutral-500 text-sm"></i>
+        <input value={albumSearch} onChange={e=>setAlbumSearch(e.target.value)} placeholder="Buscar álbum..." className="w-full bg-neutral-900 border border-neutral-800 rounded-2xl pl-11 pr-4 py-3 text-sm outline-none focus:border-indigo-500"/>
+      </div>
     </div>
 
     <div className="grid md:grid-cols-2 xl:grid-cols-3 gap-5">
-      {displayAlbums.map(album=><div key={album.id} className="bg-neutral-900 border border-neutral-800 rounded-3xl overflow-hidden transition-all duration-500 hover:-translate-y-1 hover:border-indigo-400/50 hover:shadow-[0_18px_45px_rgba(99,102,241,.18)]">
-        <div className="aspect-[4/5] bg-neutral-950 relative">{album.cover?<img src={album.cover} className="w-full h-full object-cover"/>:<div className="w-full h-full flex items-center justify-center text-neutral-600"><i className="fas fa-image text-5xl"></i></div>}<div className="absolute top-3 right-3 bg-black/70 border border-white/10 px-3 py-1 rounded-full text-[11px]">{album.photos.length} fotos</div></div>
+      {filteredAlbums.map(album=><div key={album.id} className="bg-neutral-900 border border-neutral-800 rounded-3xl overflow-hidden transition-all duration-500 hover:-translate-y-1 hover:border-indigo-400/50 hover:shadow-[0_18px_45px_rgba(99,102,241,.18)]">
+        <div className="aspect-[4/5] bg-neutral-950 relative">{album.cover?<img src={album.cover} className="w-full h-full object-cover"/>:<div className="w-full h-full flex items-center justify-center text-neutral-600"><i className="fas fa-image text-5xl"></i></div>}<div className="absolute top-3 left-3 bg-black/70 border border-white/10 px-3 py-1 rounded-full text-[11px] text-white">{album.dateLabel||"Sin fecha"}</div><div className="absolute top-3 right-3 bg-black/70 border border-white/10 px-3 py-1 rounded-full text-[11px]">{album.photos.length} fotos</div></div>
         <div className="p-5">
           <h3 className="font-bold text-lg whitespace-normal break-words leading-tight">{album.name}</h3>
           <p className="text-xs text-neutral-400 mb-4">Álbum completo {formatPrice(album.fullPrice)}</p>
           <div className="grid gap-2">
             <button onClick={()=>openPhotoCoverPicker(album)} className="bg-neutral-800 hover:bg-neutral-700 text-sm rounded-xl px-4 py-3 text-left"><i className="fas fa-images mr-2 text-indigo-300"></i>Elegir una foto del álbum</button>
             <button onClick={()=>setEditor({type:'uploadOwn',albumId:album.id})} className="bg-neutral-800 hover:bg-neutral-700 text-sm rounded-xl px-4 py-3 text-left"><i className="fas fa-upload mr-2 text-emerald-300"></i>Subir una carátula propia</button>
-            <button onClick={()=>setEditor({type:'matchCover',albumId:album.id,homeLogo:'',awayLogo:''})} className="bg-neutral-800 hover:bg-neutral-700 text-sm rounded-xl px-4 py-3 text-left"><i className="fas fa-shield-halved mr-2 text-amber-300"></i>Crear portada de partido</button><button onClick={()=>{navigator.clipboard.writeText(albumUrl(album.id));setAdminMessage("URL del álbum copiada.");}} className="bg-neutral-800 hover:bg-neutral-700 text-sm rounded-xl px-4 py-3 text-left"><i className="fas fa-link mr-2 text-sky-300"></i>Copiar URL del álbum</button>
+            <button onClick={()=>setEditor({type:'matchCover',albumId:album.id,homeLogo:'',awayLogo:''})} className="bg-neutral-800 hover:bg-neutral-700 text-sm rounded-xl px-4 py-3 text-left"><i className="fas fa-shield-halved mr-2 text-amber-300"></i>Crear portada de partido</button><button onClick={()=>{navigator.clipboard.writeText(albumUrl(album.id));setAdminMessage("URL del álbum copiada.");}} className="bg-neutral-800 hover:bg-neutral-700 text-sm rounded-xl px-4 py-3 text-left"><i className="fas fa-link mr-2 text-sky-300"></i>Copiar URL del álbum</button><button onClick={()=>toggleHighlight(album.id)} className={`${highlightIds.includes(album.id)?"bg-pink-600/20 border-pink-500/30 text-pink-200":"bg-neutral-800 hover:bg-neutral-700 text-white border-neutral-800"} border text-sm rounded-xl px-4 py-3 text-left`}><i className="fas fa-circle-dot mr-2 text-pink-300"></i>{highlightIds.includes(album.id)?"Quitar de historias destacadas":"Agregar a historias destacadas"}</button>
             {coverOverrides[album.id] && <button onClick={()=>removeCustomCover(album.id)} className="bg-red-600/20 border border-red-500/30 text-red-300 text-sm rounded-xl px-4 py-3 text-left"><i className="fas fa-trash-can mr-2"></i>Quitar carátula personalizada</button>}
           </div>
         </div>
@@ -444,17 +480,31 @@ function App(){
           <div><b className="block">{allPhotos.length}</b><span className="text-xs text-neutral-500">fotos</span></div>
           <div><b className="block">HD</b><span className="text-xs text-neutral-500">entrega</span></div>
         </div>
+        {highlightedAlbums.length>0&&<div className="mt-5 sm:mt-7 overflow-x-auto pb-2">
+          <div className="flex gap-4 sm:gap-5">
+            {highlightedAlbums.map(a=><button key={a.id} onClick={()=>{location.hash=albumHash(a.id)}} className="group shrink-0 w-[74px] sm:w-[88px] text-center">
+              <div className="w-[66px] h-[66px] sm:w-20 sm:h-20 mx-auto rounded-full p-[2px] bg-gradient-to-tr from-yellow-400 via-pink-500 to-indigo-500 transition-all duration-300 group-hover:scale-105 group-hover:shadow-[0_10px_28px_rgba(236,72,153,.22)]">
+                <div className="w-full h-full rounded-full bg-neutral-950 border-2 border-neutral-950 overflow-hidden">{a.cover?<img src={a.cover} className="w-full h-full object-cover"/>:<div className="w-full h-full bg-neutral-900"></div>}</div>
+              </div>
+              <p className="text-[10px] sm:text-[11px] text-neutral-300 mt-1.5 leading-tight whitespace-normal break-words line-clamp-2">{a.name}</p>
+            </button>)}
+          </div>
+        </div>}
       </header>
 
       <Steps/>
 
       {!currentAlbum ? <>
-        <div className="flex justify-center border-t border-neutral-900 mb-6">
+        <div className="flex justify-center border-t border-neutral-900 mb-4">
           <div className="flex items-center gap-2 border-t-2 border-white pt-3 pb-2 px-4 -mt-[1px]"><i className="fas fa-th text-xs"></i><span className="text-[11px] font-semibold text-white uppercase tracking-widest">Galería</span></div>
         </div>
-        <div className="grid grid-cols-3 gap-1 sm:gap-4">
-          {displayAlbums.map(a=><button key={a.id} onClick={()=>{location.hash=albumHash(a.id)}} className="group text-left transition-all duration-500 hover:-translate-y-1.5 hover:scale-[1.02] active:scale-[0.98] focus:outline-none"><div className="aspect-square sm:aspect-[4/5] bg-neutral-900 overflow-hidden relative rounded-xl sm:rounded-[1.6rem] border border-white/10 group-hover:border-indigo-400/60 group-hover:shadow-[0_22px_60px_rgba(99,102,241,0.28)] transition-all duration-500 before:absolute before:inset-0 before:bg-gradient-to-br before:from-white/10 before:via-transparent before:to-indigo-500/10 before:opacity-0 group-hover:before:opacity-100 before:transition-opacity before:duration-500">{a.cover?<img src={a.cover} className="w-full h-full object-cover group-hover:scale-110 transition duration-700 ease-out"/>:<div className="w-full h-full flex items-center justify-center text-neutral-600"><i className="fas fa-image text-3xl"></i></div>}<div className="hidden sm:block absolute inset-0 bg-gradient-to-t from-black/85 via-transparent to-transparent"></div><div className="hidden sm:block absolute bottom-3 left-3 right-3 bg-black/45 backdrop-blur-md rounded-2xl p-2.5 border border-white/10"><h3 className="font-black whitespace-normal break-words leading-tight text-sm sm:text-base">{a.name}</h3><p className="text-emerald-300 text-xs mt-1">{a.photos.length} fotos</p></div></div><div className="sm:hidden mt-1.5 min-h-[34px] bg-neutral-900/70 border border-neutral-800/70 rounded-lg px-2 py-1"><p className="text-[10px] font-semibold whitespace-normal break-words leading-tight">{a.name}</p></div></button>)}
+        <div className="relative mb-4">
+          <i className="fas fa-search absolute left-4 top-1/2 -translate-y-1/2 text-neutral-500 text-sm"></i>
+          <input value={albumSearch} onChange={e=>setAlbumSearch(e.target.value)} placeholder="Buscar álbum..." className="w-full bg-neutral-900/90 border border-neutral-800 rounded-2xl pl-11 pr-4 py-3 text-sm outline-none focus:border-indigo-500"/>
         </div>
+        <div className="grid grid-cols-3 gap-2 sm:gap-4">
+          {filteredAlbums.map(a=><button key={a.id} onClick={()=>{location.hash=albumHash(a.id)}} className="group text-left transition-all duration-500 hover:-translate-y-1.5 hover:scale-[1.02] active:scale-[0.98] focus:outline-none"><div className="aspect-square sm:aspect-[4/5] bg-neutral-900 overflow-hidden relative rounded-xl sm:rounded-[1.6rem] border border-white/10 group-hover:border-indigo-400/60 group-hover:shadow-[0_22px_60px_rgba(99,102,241,0.28)] transition-all duration-500 before:absolute before:inset-0 before:bg-gradient-to-br before:from-white/10 before:via-transparent before:to-indigo-500/10 before:opacity-0 group-hover:before:opacity-100 before:transition-opacity before:duration-500">{a.cover?<img src={a.cover} className="w-full h-full object-cover group-hover:scale-110 transition duration-700 ease-out"/>:<div className="w-full h-full flex items-center justify-center text-neutral-600"><i className="fas fa-image text-3xl"></i></div>}<div className="absolute top-2 left-2 sm:top-3 sm:left-3 bg-black/65 backdrop-blur-md border border-white/10 px-2 py-1 rounded-full text-[9px] sm:text-[10px] text-white">{a.dateLabel||"Sin fecha"}</div><div className="hidden sm:block absolute inset-0 bg-gradient-to-t from-black/85 via-transparent to-transparent"></div><div className="hidden sm:block absolute bottom-3 left-3 right-3 bg-black/45 backdrop-blur-md rounded-2xl p-2.5 border border-white/10"><h3 className="font-black whitespace-normal break-words leading-tight text-sm sm:text-base">{a.name}</h3><p className="text-emerald-300 text-xs mt-1">{a.photos.length} fotos</p></div></div><div className="sm:hidden mt-1.5 min-h-[42px] bg-gradient-to-br from-neutral-900 to-neutral-950 border border-neutral-800/80 rounded-xl px-2 py-1.5 shadow-[0_8px_20px_rgba(0,0,0,.18)]"><p className="text-[10px] font-black whitespace-normal break-words leading-tight text-white">{a.name}</p><p className="text-[9px] text-emerald-300 mt-0.5">{a.photos.length} fotos</p></div></button>)}
+        </div>{filteredAlbums.length===0&&<div className="text-center text-neutral-500 py-12 text-sm">No se encontraron álbumes.</div>}
       </> : <>
         <button onClick={()=>{location.hash="#/galeria";setActiveAlbum(null)}} className="inline-flex items-center gap-2 bg-neutral-900/90 border border-neutral-800 hover:border-neutral-700 px-4 py-2.5 rounded-full mb-4 text-sm font-semibold shadow-[0_8px_22px_rgba(0,0,0,.2)]"><i className="fas fa-arrow-left text-xs"></i>Volver</button>
         <div className="bg-gradient-to-br from-neutral-900 to-black border border-white/10 rounded-[2rem] p-6 mb-7">
