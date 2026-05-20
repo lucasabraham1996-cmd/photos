@@ -32,6 +32,30 @@
     body.light-mode .text-neutral-400,body.light-mode .text-neutral-300{color:#52525b!important}
     body.light-mode .glass{background:rgba(255,255,255,.92)!important;color:#111827!important}
     body.light-mode input{background:#ffffff!important;color:#111827!important}
+
+    body.light-mode,body.light-mode *{color:#111827}
+    body.light-mode .text-white,body.light-mode .text-neutral-100,body.light-mode .text-neutral-200,body.light-mode .text-neutral-300,body.light-mode .text-neutral-400,body.light-mode .text-neutral-500,body.light-mode .text-emerald-300,body.light-mode .text-emerald-400,body.light-mode .text-amber-100,body.light-mode .text-amber-200,body.light-mode .text-amber-300,body.light-mode .text-indigo-300,body.light-mode .text-pink-100,body.light-mode .text-red-200{color:#111827!important}
+    body.light-mode .bg-neutral-800,body.light-mode .bg-neutral-700{background:#e5e7eb!important;color:#111827!important}
+    body.light-mode .bg-indigo-600,body.light-mode .bg-indigo-500{background:#dbeafe!important;color:#111827!important}
+    body.light-mode .bg-emerald-500,body.light-mode .bg-emerald-600{background:#bbf7d0!important;color:#111827!important}
+    body.light-mode .bg-white{background:#e5e7eb!important;color:#111827!important}
+    body.light-mode .text-black{color:#111827!important}
+    body.light-mode .bg-white.text-black,body.light-mode button.bg-white{background:#e5e7eb!important;color:#111827!important}
+    body.light-mode .glass{background:rgba(255,255,255,.94)!important;color:#111827!important}
+    body.light-mode .header-logo{filter:invert(1) contrast(1.2) brightness(.75)}
+    body.light-mode .bg-gradient-to-br,body.light-mode .bg-gradient-to-t{background-image:none!important}
+
+    .album-info-panel{background:linear-gradient(180deg,rgba(0,0,0,.08),rgba(0,0,0,.88))!important}
+    .album-caption{background:rgba(0,0,0,.58)!important;backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px)}
+    .album-title-white,.album-title-white *{color:#fff!important}
+    .album-meta-white{color:#86efac!important}
+    body.light-mode .album-info-panel{background:linear-gradient(180deg,rgba(0,0,0,.05),rgba(0,0,0,.88))!important}
+    body.light-mode .album-caption{background:rgba(0,0,0,.64)!important;border-color:rgba(255,255,255,.18)!important}
+    body.light-mode .album-title-white,body.light-mode .album-title-white *,body.light-mode .album-meta-white{color:#fff!important}
+    body.light-mode .main-banner-card{background:#fff!important}
+    .main-banner-img{display:block;width:100%;height:clamp(112px,22vw,280px);object-fit:contain}
+    @media(max-width:640px){.album-caption{left:8px!important;right:8px!important;bottom:8px!important;border-radius:16px!important;padding:8px!important}.album-title-white{font-size:12px!important;line-height:1.15!important;letter-spacing:.01em}.album-meta-white{font-size:10px!important}.main-banner-img{height:auto;max-height:none}.main-banner-wrap{gap:10px}}
+    @media(max-width:640px){.admin-actions,.mobile-stack{flex-direction:column}.admin-actions button,.admin-actions input,.mobile-stack button{width:100%}.viewer-nav-label{display:inline}}
   </style>
 
 <script>
@@ -63,7 +87,8 @@ const LS_THEME_KEY="la_theme_mode_v1";
 const LS_WM_KEY="la_watermark_settings_v1";
 function readLocalOrders(){try{return JSON.parse(localStorage.getItem(LS_ORDERS_KEY)||"[]")}catch{return []}}
 function saveLocalOrders(orders){localStorage.setItem(LS_ORDERS_KEY,JSON.stringify(orders))}
-function readTheme(){try{return localStorage.getItem(LS_THEME_KEY)||"dark"}catch{return "dark"}}
+function systemTheme(){try{return window.matchMedia&&window.matchMedia('(prefers-color-scheme: light)').matches?'light':'dark'}catch{return 'dark'}}
+function readTheme(){try{return localStorage.getItem(LS_THEME_KEY)||systemTheme()}catch{return systemTheme()}}
 function saveTheme(v){try{localStorage.setItem(LS_THEME_KEY,v)}catch(e){}}
 function readWatermarkSettings(){try{return JSON.parse(localStorage.getItem(LS_WM_KEY)||'{"opacity":0.55,"darkness":0.10,"disabledAlbums":{}}')}catch{return {opacity:0.55,darkness:0.10,disabledAlbums:{}}}}
 function saveWatermarkSettings(v){try{localStorage.setItem(LS_WM_KEY,JSON.stringify(v))}catch(e){}}
@@ -93,6 +118,11 @@ const extractDriveId=(url)=>{const s=String(url||"");const patterns=[/drive\.goo
 const toImgUrl=(url,size=500)=>{const raw=String(url||"").trim();if(!raw)return"";if(raw.startsWith("data:image/"))return raw;const id=extractDriveId(raw);if(id)return`https://drive.google.com/thumbnail?id=${id}&sz=w${size}`;return raw};
 const cleanOperationCode=(v)=>String(v||"").trim().replace(/^#/g,"").toUpperCase();
 const orderDriveLink=(item)=>item.driveLink||item.rawUrl||item.originalUrl||item.url||"";
+const EM={clip:"\u{1F4CB}",money:"\u{1F4B0}",tag:"\u{1F3F7}\uFE0F",image:"\u{1F5BC}\uFE0F",dot:"\u25AB\uFE0F",point:"\u{1F449}",wave:"\u{1F44B}",camera:"\u{1F4F8}",sparkles:"\u2728",thanks:"\u{1F64C}",check:"\u2705",box:"\u{1F4E6}"};
+function buildDeliveryLinksMessage(order){
+  const links=(order?.items||[]).map(orderDriveLink).filter(Boolean);
+  return `${EM.wave} ¡Buenas! Acá van las fotos:\n${links.map(l=>`${EM.camera} ${l}`).join('\n')}\n\n${EM.sparkles} ¡Gracias por confiar en mi trabajo! ${EM.thanks}`;
+}
 const yes=(v)=>["si","sí","yes","true","1","portada","cover"].includes(norm(v));
 const safeCode=(name)=>String(name||"").split(".")[0].slice(0,20).toUpperCase().replace(/[^A-Z0-9]+/g,"").slice(-6)||Math.random().toString(36).slice(2,8).toUpperCase();
 const albumHash=(albumId)=>`#/album/${encodeURIComponent(albumId)}`;
@@ -258,6 +288,32 @@ const PromoBanners=()=>{
   </div>
 };
 
+const MainHeaderBanners=()=>{
+  const banners=[
+    {src:"https://i.postimg.cc/pLrPtFw0/080905fa-ba44-4525-b618-e906e3e3e1e3.png",msg:"Hola Lucas! Quiero consultar por una figurita del Mundial personalizada."},
+    {src:"https://i.postimg.cc/L85mMPd8/ec56e040-b2ed-41a3-9395-21a914051e46.png",msg:"Hola Lucas! Quiero consultar por un diseño de jugador profesional personalizado."}
+  ];
+  const [bannerIndex,setBannerIndex]=useState(0);
+  const touchStartX=useRef(null);
+  const goBanner=(dir)=>setBannerIndex(i=>(i+dir+banners.length)%banners.length);
+  useEffect(()=>{const t=setInterval(()=>goBanner(1),5000);return()=>clearInterval(t)},[]);
+  const active=banners[bannerIndex];
+  return <div className="main-banner-wrap mt-5 sm:mt-7 w-full overflow-hidden">
+    <button
+      onClick={()=>window.open(`https://wa.me/${SELLER_PHONE}?text=${encodeURIComponent(active.msg)}`,'_blank')}
+      onTouchStart={e=>{touchStartX.current=e.touches[0].clientX}}
+      onTouchEnd={e=>{if(touchStartX.current===null)return;const dx=e.changedTouches[0].clientX-touchStartX.current;if(Math.abs(dx)>45)goBanner(dx<0?1:-1);touchStartX.current=null}}
+      className="block w-full p-0 m-0 bg-transparent border-0 rounded-none overflow-hidden active:scale-[0.995] transition-transform"
+      aria-label="Abrir banner por WhatsApp"
+    >
+      <img key={active.src} src={active.src} loading="lazy" decoding="async" className="block w-full h-auto object-contain select-none" draggable="false"/>
+    </button>
+    <div className="flex justify-center gap-2 mt-2">
+      {banners.map((_,i)=><button key={i} onClick={()=>setBannerIndex(i)} className={`h-1.5 rounded-full transition-all ${i===bannerIndex?'w-6 bg-white dark:bg-white':'w-1.5 bg-neutral-500/50'}`} aria-label={`Ver banner ${i+1}`}></button>)}
+    </div>
+  </div>
+};
+
 function Steps(){
   const steps=[
     ['1','Elegí las fotos','Recorré la galería y marcá las que más te gusten.'],
@@ -342,6 +398,7 @@ function App(){
   useEffect(()=>{if(albumPhotos.length){setFocusPhoto(p=>p&&albumPhotos.some(x=>x.id===p.id)?p:albumPhotos[0])}else{setFocusPhoto(null)}},[activeAlbum,albumPhotos.length]);
   const selectedPhotos=allPhotos.filter(p=>cart.includes(p.id));
   const matchedOrder=useMemo(()=>{const q=cleanOperationCode(orderSearch);if(!q)return null;return orders.find(o=>cleanOperationCode(o.id)===q)},[orders,orderSearch]);
+  const recentOrders=useMemo(()=>[...orders].sort((a,b)=>new Date(b.date||0)-new Date(a.date||0)).slice(0,10),[orders]);
   const regular=calculateSubtotal(selectedPhotos);
   const total=calculateBestPrice(selectedPhotos);
   const savings=regular-total;
@@ -358,19 +415,19 @@ function App(){
 
   const sendOrder=()=>{
     const order='LA-'+Math.floor(10000+Math.random()*90000);
-    let msg=`📋 *OPERACIÓN:* #${order}
-💰 *SUBTOTAL:* ${formatPrice(regular)}
-🏷️ *DESCUENTO:* ${Math.round(discount*100)}%
-💰 *TOTAL:* ${formatPrice(total)}
-🖼️ *Cantidad:* ${cart.length} fotos
+    let msg=`${EM.clip} *OPERACIÓN:* #${order}
+${EM.money} *SUBTOTAL:* ${formatPrice(regular)}
+${EM.tag} *DESCUENTO:* ${Math.round(discount*100)}%
+${EM.money} *TOTAL:* ${formatPrice(total)}
+${EM.image} *Cantidad:* ${cart.length} fotos
 
 *FOTOS ELEGIDAS:*
 `;
-    selectedPhotos.forEach(p=>msg+=`▫️ ${p.albumName} - ${p.name} - ${formatPrice(p.price)} - Código ${p.code}
+    selectedPhotos.forEach(p=>msg+=`${EM.dot} ${p.albumName} - ${p.name} - ${formatPrice(p.price)} - Código ${p.code}
 `);
     msg+=`
 *ALIAS PARA TRANSFERENCIA:*
-👉 *${MP_ALIAS}*
+${EM.point} *${MP_ALIAS}*
 
 Te envío el comprobante para que puedas prepararlas.`;
     const orderData={
@@ -430,7 +487,7 @@ Te envío el comprobante para que puedas prepararlas.`;
         <h1 className="text-3xl font-black">Panel {BRAND}</h1>
         <p className="text-neutral-400 text-sm">Podés ver las galerías, cambiar carátulas y elegir qué álbumes aparecen como historias destacadas en el encabezado.</p>
       </div>
-      <div className="flex gap-2">
+      <div className="mobile-stack flex gap-2">
         <button onClick={load} className="bg-neutral-800 px-4 py-3 rounded-xl"><i className="fas fa-rotate-right mr-2"></i>Actualizar</button>
         <button onClick={()=>setTheme(t=>t==='dark'?'light':'dark')} className="bg-neutral-800 px-4 py-3 rounded-xl font-bold"><i className={`fas ${theme==='dark'?'fa-sun':'fa-moon'} mr-2`}></i>{theme==='dark'?'Claro':'Oscuro'}</button>
         <button onClick={()=>location.hash="#/galeria"} className="bg-indigo-600 px-4 py-3 rounded-xl font-bold">Ver galería</button>
@@ -452,7 +509,7 @@ Te envío el comprobante para que puedas prepararlas.`;
           <h2 className="text-xl font-black mb-1">Buscar operación y obtener links de Drive</h2>
           <p className="text-neutral-400 text-sm">Ingresá el código de operación, por ejemplo <b>#LA-55336</b>, y la app lista las fotos compradas con sus enlaces.</p>
         </div>
-        <div className="flex gap-2 w-full lg:w-auto">
+        <div className="admin-actions flex gap-2 w-full lg:w-auto">
           <input value={orderSearch} onChange={e=>setOrderSearch(e.target.value)} placeholder="#LA-55336" className="flex-1 lg:w-56 bg-black border border-neutral-700 rounded-xl px-4 py-3 outline-none uppercase"/>
           <button onClick={()=>{setOrdersLoading(true);loadOrdersRemote().then(setOrders).finally(()=>setOrdersLoading(false));}} className="bg-indigo-600 hover:bg-indigo-500 px-4 py-3 rounded-xl font-bold">{ordersLoading?'Cargando...':'Actualizar'}</button>
         </div>
@@ -461,13 +518,26 @@ Te envío el comprobante para que puedas prepararlas.`;
       {matchedOrder && <div className="mt-5 bg-black/35 border border-neutral-800 rounded-2xl p-4">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
           <div><p className="text-xs text-neutral-500 uppercase tracking-widest">Operación</p><h3 className="text-2xl font-black">#{matchedOrder.id}</h3><div className={`inline-flex items-center gap-2 mt-2 px-3 py-1 rounded-full text-xs font-black ${matchedOrder.delivered?'bg-emerald-500/20 text-emerald-300 border border-emerald-500/35':'bg-amber-500/15 text-amber-300 border border-amber-500/30'}`}><i className={`fas ${matchedOrder.delivered?'fa-circle-check':'fa-clock'}`}></i>{matchedOrder.delivered?'Pedido ya cargado y entregado':'Pendiente de cargar/entregar'}</div><p className="text-neutral-400 text-sm mt-2">Total: {formatPrice(matchedOrder.total)} · {matchedOrder.items?.length||0} fotos</p></div>
-          <div className="flex flex-col sm:flex-row gap-2"><button onClick={()=>markOrderDelivered(matchedOrder.id,!matchedOrder.delivered).then(setOrders)} className={`${matchedOrder.delivered?'bg-neutral-800 text-white':'bg-emerald-500 text-black'} px-4 py-3 rounded-xl font-black text-sm`}>{matchedOrder.delivered?'Marcar pendiente':'Marcar entregado'}</button><button onClick={()=>navigator.clipboard.writeText((matchedOrder.items||[]).map(i=>orderDriveLink(i)).filter(Boolean).join('\n'))} className="bg-white text-black px-4 py-3 rounded-xl font-black text-sm"><i className="fas fa-copy mr-2"></i>Copiar todos los links</button></div>
+          <div className="mobile-stack flex flex-col sm:flex-row gap-2"><button onClick={()=>markOrderDelivered(matchedOrder.id,!matchedOrder.delivered).then(o=>{setOrders(o);setAdminMessage(!matchedOrder.delivered?'Pedido marcado como cargado y entregado.':'Pedido marcado como pendiente.');})} className={`${matchedOrder.delivered?'bg-neutral-800 text-white':'bg-emerald-500 text-black'} px-4 py-3 rounded-xl font-black text-sm`}>{matchedOrder.delivered?'Marcar pendiente':'Marcar entregado'}</button><button onClick={()=>{navigator.clipboard.writeText(buildDeliveryLinksMessage(matchedOrder));setAdminMessage('Mensaje con links copiado.');}} className="bg-white text-black px-4 py-3 rounded-xl font-black text-sm"><i className="fas fa-copy mr-2"></i>Copiar mensaje con links</button></div>
         </div>
         <div className="grid gap-3">{(matchedOrder.items||[]).map((item,i)=>{const link=orderDriveLink(item);return <div key={i} className="bg-neutral-950 border border-neutral-800 rounded-2xl p-3 flex flex-col md:flex-row md:items-center gap-3 md:justify-between">
           <div className="min-w-0"><p className="font-bold truncate">{item.albumName} - {item.name}</p><p className="text-xs text-neutral-400">Código {item.code} · {formatPrice(item.price)}</p><p className="text-[11px] text-neutral-500 truncate mt-1">{link||'Sin link guardado'}</p></div>
           <div className="flex gap-2 shrink-0">{link&&<button onClick={()=>navigator.clipboard.writeText(link)} className="bg-neutral-800 px-3 py-2 rounded-xl text-sm font-bold">Copiar</button>}{link&&<button onClick={()=>window.open(link,'_blank')} className="bg-emerald-500 text-black px-3 py-2 rounded-xl text-sm font-black">Abrir</button>}</div>
         </div>})}</div>
       </div>}
+      <div className="mt-5 border-t border-neutral-800 pt-4">
+        <div className="flex items-center justify-between gap-3 mb-3">
+          <h3 className="font-black text-lg">Últimos 10 pedidos</h3>
+          <span className="text-xs text-neutral-400">Estado actualizado</span>
+        </div>
+        <div className="grid gap-2">
+          {recentOrders.length===0&&<p className="text-sm text-neutral-400">Todavía no hay pedidos cargados.</p>}
+          {recentOrders.map(o=><div key={o.id} className="bg-neutral-950 border border-neutral-800 rounded-2xl px-3 py-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+            <div className="min-w-0"><p className="font-black truncate">#{o.id}</p><p className="text-xs text-neutral-400">{new Date(o.date||Date.now()).toLocaleString('es-AR')} · {o.items?.length||0} fotos · {formatPrice(o.total)}</p></div>
+            <div className={`inline-flex items-center justify-center gap-2 px-3 py-1.5 rounded-full text-xs font-black ${o.delivered?'bg-emerald-500/20 text-emerald-300 border border-emerald-500/35':'bg-amber-500/15 text-amber-300 border border-amber-500/30'}`}><i className={`fas ${o.delivered?'fa-circle-check':'fa-clock'}`}></i>{o.delivered?'Cargado y entregado':'Pendiente'}</div>
+          </div>)}
+        </div>
+      </div>
     </div>
 
 
@@ -567,7 +637,7 @@ Te envío el comprobante para que puedas prepararlas.`;
           <div className="flex justify-center">
             <div className="w-20 h-20 sm:w-36 sm:h-36 rounded-full p-[3px] bg-gradient-to-tr from-yellow-500 via-pink-500 to-indigo-500">
               <div className="w-full h-full rounded-full bg-neutral-950 border-4 border-neutral-950 flex items-center justify-center overflow-hidden">
-                <img src="https://i.postimg.cc/PrD4jg9V/Logo-LA.png" className="w-[72%] h-[72%] object-contain"/>
+                <img src="https://i.postimg.cc/PrD4jg9V/Logo-LA.png" className="header-logo w-[72%] h-[72%] object-contain"/>
               </div>
             </div>
           </div>
@@ -612,6 +682,7 @@ Te envío el comprobante para que puedas prepararlas.`;
             </div>
           </div>
         </div>}
+        {!currentAlbum && <MainHeaderBanners/>}
       </header>
 
       <Steps/>
@@ -626,13 +697,13 @@ Te envío el comprobante para que puedas prepararlas.`;
           <input value={albumSearch} onChange={e=>setAlbumSearch(e.target.value)} placeholder="Buscar álbum..." className="w-full bg-neutral-900/90 border border-neutral-800 rounded-2xl pl-11 pr-4 py-3 text-sm outline-none focus:border-indigo-500"/>
         </div>
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 sm:gap-4">
-          {filteredAlbums.map(a=><button key={a.id} onClick={()=>{location.hash=albumHash(a.id)}} className="group text-left transition-all duration-500 hover:-translate-y-1.5 hover:scale-[1.02] active:scale-[0.98] focus:outline-none"><div className="aspect-[4/5] bg-neutral-900 overflow-hidden relative rounded-xl sm:rounded-[1.6rem] border border-white/10 group-hover:border-indigo-400/60 group-hover:shadow-[0_22px_60px_rgba(99,102,241,0.28)] transition-all duration-500 before:absolute before:inset-0 before:bg-gradient-to-br before:from-white/10 before:via-transparent before:to-indigo-500/10 before:opacity-0 group-hover:before:opacity-100 before:transition-opacity before:duration-500">{a.cover?<img src={a.cover} loading="lazy" decoding="async" className="w-full h-full object-cover group-hover:scale-110 transition duration-700 ease-out"/>:<div className="w-full h-full flex items-center justify-center text-neutral-600"><i className="fas fa-image text-3xl"></i></div>}<div className="absolute top-2 left-2 sm:top-3 sm:left-3 bg-black/65 backdrop-blur-md border border-white/10 px-2 py-1 rounded-full text-[9px] sm:text-[10px] text-white">{a.dateLabel||"Sin fecha"}</div><div className="absolute inset-0 bg-gradient-to-t from-black/85 via-transparent to-transparent"></div><div className="absolute bottom-2 sm:bottom-3 left-2 sm:left-3 right-2 sm:right-3 bg-black/45 backdrop-blur-md rounded-xl sm:rounded-2xl p-2 sm:p-2.5 border border-white/10"><h3 className="font-black whitespace-normal break-words leading-tight text-[11px] sm:text-sm">{a.name}</h3><p className="text-emerald-300 text-[10px] sm:text-xs mt-1">{a.photos.length} fotos</p></div></div></button>)}
+          {filteredAlbums.map(a=><button key={a.id} onClick={()=>{location.hash=albumHash(a.id)}} className="group text-left transition-all duration-500 hover:-translate-y-1.5 hover:scale-[1.02] active:scale-[0.98] focus:outline-none"><div className="aspect-[4/5] bg-neutral-900 overflow-hidden relative rounded-xl sm:rounded-[1.6rem] border border-white/10 group-hover:border-indigo-400/60 group-hover:shadow-[0_22px_60px_rgba(99,102,241,0.28)] transition-all duration-500 before:absolute before:inset-0 before:bg-gradient-to-br before:from-white/10 before:via-transparent before:to-indigo-500/10 before:opacity-0 group-hover:before:opacity-100 before:transition-opacity before:duration-500">{a.cover?<img src={a.cover} loading="lazy" decoding="async" className="w-full h-full object-cover group-hover:scale-110 transition duration-700 ease-out"/>:<div className="w-full h-full flex items-center justify-center text-neutral-600"><i className="fas fa-image text-3xl"></i></div>}<div className="absolute top-2 left-2 sm:top-3 sm:left-3 bg-black/65 backdrop-blur-md border border-white/10 px-2 py-1 rounded-full text-[9px] sm:text-[10px] text-white">{a.dateLabel||"Sin fecha"}</div><div className="album-info-panel absolute inset-0"></div><div className="album-caption absolute bottom-2 sm:bottom-3 left-2 sm:left-3 right-2 sm:right-3 rounded-xl sm:rounded-2xl p-2 sm:p-2.5 border border-white/10"><h3 className="album-title-white font-black whitespace-normal break-words leading-tight text-[12px] sm:text-sm">{a.name}</h3><p className="album-meta-white text-[10px] sm:text-xs mt-1">{a.photos.length} fotos</p></div></div></button>)}
         </div>
         {filteredAlbums.length===0&&filteredArchivedAlbums.length===0&&<div className="text-center text-neutral-500 py-12 text-sm">No se encontraron álbumes.</div>}
         {filteredArchivedAlbums.length>0&&<div className="mt-8 sm:mt-10">
           <div className="flex items-center gap-2 mb-4"><i className="fas fa-box-archive text-neutral-500"></i><h3 className="font-black text-lg">Álbumes archivados</h3></div>
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 sm:gap-4">
-            {filteredArchivedAlbums.map(a=><button key={a.id} onClick={()=>window.open(`https://wa.me/${SELLER_PHONE}?text=${encodeURIComponent(`Hola Lucas! Quiero consultar por el álbum archivado "${a.name}".`)}`,'_blank')} className="group text-left transition-all duration-500 hover:-translate-y-1 active:scale-[0.98] focus:outline-none"><div className="aspect-[4/5] bg-neutral-900 overflow-hidden relative rounded-xl sm:rounded-[1.6rem] border border-amber-400/20 group-hover:border-amber-400/60 transition-all duration-500">{a.cover?<img src={a.cover} loading="lazy" decoding="async" className="w-full h-full object-cover opacity-90 group-hover:scale-105 transition duration-700 ease-out"/>:<div className="w-full h-full flex items-center justify-center text-neutral-600"><i className="fas fa-image text-3xl"></i></div>}<div className="absolute inset-0 bg-black/25"></div><div className="absolute top-2 left-2 sm:top-3 sm:left-3 bg-amber-500/90 text-black px-2 py-1 rounded-full text-[9px] sm:text-[10px] font-black">Archivado</div><div className="absolute bottom-2 sm:bottom-3 left-2 sm:left-3 right-2 sm:right-3 bg-black/55 backdrop-blur-md rounded-xl sm:rounded-2xl p-2 sm:p-2.5 border border-white/10"><h3 className="font-black whitespace-normal break-words leading-tight text-[11px] sm:text-sm">{a.name}</h3><p className="text-amber-300 text-[10px] sm:text-xs mt-1">Consultá por WhatsApp</p></div></div></button>)}
+            {filteredArchivedAlbums.map(a=><button key={a.id} onClick={()=>window.open(`https://wa.me/${SELLER_PHONE}?text=${encodeURIComponent(`Hola Lucas! Quiero consultar por el álbum archivado "${a.name}".`)}`,'_blank')} className="group text-left transition-all duration-500 hover:-translate-y-1 active:scale-[0.98] focus:outline-none"><div className="aspect-[4/5] bg-neutral-900 overflow-hidden relative rounded-xl sm:rounded-[1.6rem] border border-amber-400/20 group-hover:border-amber-400/60 transition-all duration-500">{a.cover?<img src={a.cover} loading="lazy" decoding="async" className="w-full h-full object-cover opacity-90 group-hover:scale-105 transition duration-700 ease-out"/>:<div className="w-full h-full flex items-center justify-center text-neutral-600"><i className="fas fa-image text-3xl"></i></div>}<div className="absolute inset-0 bg-black/25"></div><div className="absolute top-2 left-2 sm:top-3 sm:left-3 bg-amber-500/90 text-black px-2 py-1 rounded-full text-[9px] sm:text-[10px] font-black">Archivado</div><div className="album-caption absolute bottom-2 sm:bottom-3 left-2 sm:left-3 right-2 sm:right-3 rounded-xl sm:rounded-2xl p-2 sm:p-2.5 border border-white/10"><h3 className="album-title-white font-black whitespace-normal break-words leading-tight text-[12px] sm:text-sm">{a.name}</h3><p className="album-meta-white text-[10px] sm:text-xs mt-1">Consultá por WhatsApp</p></div></div></button>)}
           </div>
         </div>}
       </> : <>
@@ -665,7 +736,7 @@ Te envío el comprobante para que puedas prepararlas.`);window.open(`https://wa.
 
         <div className="mb-5 flex flex-col lg:flex-row lg:items-end lg:justify-between gap-3"><div><h2 className="text-2xl font-black whitespace-normal break-words leading-tight">{currentAlbum.name}</h2><p className="text-neutral-400 text-sm">Elegí las fotos que quieras comprar.</p></div><div className="flex flex-col gap-2 w-full lg:w-auto"><div className="bg-neutral-900 border border-neutral-800 rounded-xl p-1 grid grid-cols-3 gap-1 w-full sm:w-auto"><button onClick={()=>setViewMode('mosaic')} className={`px-3 py-2.5 rounded-lg text-[11px] sm:text-xs font-bold ${viewMode==='mosaic'?'bg-white text-black':'text-neutral-300'}`}><i className="fas fa-table-cells mr-1"></i>Mosaico</button><button onClick={()=>setViewMode('large')} className={`px-3 py-2.5 rounded-lg text-[11px] sm:text-xs font-bold ${viewMode==='large'?'bg-white text-black':'text-neutral-300'}`}><i className="fas fa-expand mr-1"></i>Grandes</button><button onClick={()=>setViewMode('gallery')} className={`px-3 py-2.5 rounded-lg text-[11px] sm:text-xs font-bold ${viewMode==='gallery'?'bg-white text-black':'text-neutral-300'}`}><i className="fas fa-images mr-1"></i>Galería</button></div><button onClick={()=>{navigator.clipboard.writeText(albumUrl(currentAlbum.id));setCopyOk(true);setTimeout(()=>setCopyOk(false),1800)}} className="w-full bg-neutral-900 border border-neutral-800 hover:bg-neutral-800 text-sm px-4 py-3 rounded-xl font-bold"><i className="fas fa-link mr-2"></i>{copyOk?"URL copiada":"Copiar URL del álbum"}</button></div></div>
         {viewMode==='gallery' && focusPhoto && <div className="bg-neutral-950 border border-neutral-800 rounded-3xl p-3 sm:p-4 mb-4">
-          <div onTouchStart={e=>touchStartX.current=e.touches?.[0]?.clientX} onTouchEnd={handleSwipeEnd(moveFocus)} className="relative rounded-2xl overflow-hidden bg-black min-h-[260px] sm:min-h-[320px] flex items-center justify-center"><img src={focusPhoto.fullUrl||focusPhoto.url} loading="eager" decoding="async" className="max-h-[72vh] w-full object-contain"/><PreviewWatermark {...wmProps(focusPhoto.albumId)}/><button onClick={()=>moveFocus(-1)} className="absolute left-3 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-black/60 border border-white/20 text-white"><i className="fas fa-chevron-left"></i></button><button onClick={()=>moveFocus(1)} className="absolute right-3 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-black/60 border border-white/20 text-white"><i className="fas fa-chevron-right"></i></button><button onClick={()=>setViewer(focusPhoto)} className="absolute bottom-3 right-3 bg-white text-black px-4 py-2 rounded-xl font-black text-sm">Abrir</button></div>
+          <div onTouchStart={e=>touchStartX.current=e.touches?.[0]?.clientX} onTouchEnd={handleSwipeEnd(moveFocus)} className="relative rounded-2xl overflow-hidden bg-black min-h-[260px] sm:min-h-[320px] flex items-center justify-center"><img src={focusPhoto.fullUrl||focusPhoto.url} loading="eager" decoding="async" className="max-h-[72vh] w-full object-contain"/><PreviewWatermark {...wmProps(focusPhoto.albumId)}/><button onClick={()=>moveFocus(-1)} className="absolute left-2 sm:left-3 top-1/2 -translate-y-1/2 px-3 h-10 rounded-full bg-black/70 border border-white/20 text-white font-bold text-xs"><i className="fas fa-chevron-left sm:mr-1"></i><span className="hidden sm:inline viewer-nav-label">Anterior</span></button><button onClick={()=>moveFocus(1)} className="absolute right-2 sm:right-3 top-1/2 -translate-y-1/2 px-3 h-10 rounded-full bg-black/70 border border-white/20 text-white font-bold text-xs"><span className="hidden sm:inline viewer-nav-label">Siguiente</span><i className="fas fa-chevron-right sm:ml-1"></i></button><button onClick={()=>setViewer(focusPhoto)} className="absolute bottom-3 right-3 bg-white text-black px-4 py-2 rounded-xl font-black text-sm">Abrir</button></div>
           <div className="mt-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3"><div><h3 className="font-black">{focusPhoto.name}</h3><p className="text-xs text-neutral-400">Código {focusPhoto.code} · {formatPrice(focusPhoto.price)}</p></div><button onClick={()=>toggle(focusPhoto.id)} className={`${cart.includes(focusPhoto.id)?'bg-indigo-600 text-white':'bg-emerald-500 text-black'} w-full sm:w-auto px-4 py-3 rounded-xl font-black text-sm`}>{cart.includes(focusPhoto.id)?'Agregada al carrito':'Agregar al carrito'}</button></div>
         </div>}
         <div className={`${viewMode==='large'?'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4':'grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-7 gap-2 sm:gap-3'} pb-20`}>
@@ -682,7 +753,7 @@ Te envío el comprobante para que puedas prepararlas.`);window.open(`https://wa.
       </>}
     </div>
 
-    {viewer && <Modal onClose={()=>setViewer(null)} max="max-w-6xl"><div className="grid lg:grid-cols-[1.2fr,.8fr] gap-5 items-start"><div onTouchStart={e=>touchStartX.current=e.touches?.[0]?.clientX} onTouchEnd={handleSwipeEnd(moveViewer)} className="rounded-3xl overflow-hidden bg-black border border-neutral-800 relative"><img src={viewer.fullUrl||viewer.url} loading="eager" decoding="async" className="w-full max-h-[80vh] object-contain mx-auto"/><PreviewWatermark {...wmProps(viewer.albumId)}/><button onClick={()=>moveViewer(-1)} className="absolute left-3 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-black/60 border border-white/20 text-white"><i className="fas fa-chevron-left"></i></button><button onClick={()=>moveViewer(1)} className="absolute right-3 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-black/60 border border-white/20 text-white"><i className="fas fa-chevron-right"></i></button></div><div><h3 className="text-2xl font-black mb-1">{viewer.name}</h3><p className="text-neutral-400 text-sm mb-2">Código {viewer.code} · {viewer.albumName}</p><p className="text-emerald-300 font-black text-xl mb-4">{formatPrice(viewer.price)}</p><div className="bg-neutral-950 border border-neutral-800 rounded-2xl p-4 mb-4"><p className="text-sm text-neutral-300">La foto comprada se entrega en alta calidad y sin marca de agua.</p></div><button onClick={()=>toggle(viewer.id)} className={`w-full ${cart.includes(viewer.id)?'bg-indigo-600':'bg-white text-black'} font-black py-4 rounded-xl mb-3`}>{cart.includes(viewer.id)?'Quitar del carrito':'Agregar al carrito'}</button><button onClick={()=>setViewer(null)} className="w-full bg-neutral-800 py-4 rounded-xl font-bold">Cerrar</button></div></div></Modal>}
+    {viewer && <Modal onClose={()=>setViewer(null)} max="max-w-6xl"><div className="grid lg:grid-cols-[1.2fr,.8fr] gap-5 items-start"><div onTouchStart={e=>touchStartX.current=e.touches?.[0]?.clientX} onTouchEnd={handleSwipeEnd(moveViewer)} className="rounded-3xl overflow-hidden bg-black border border-neutral-800 relative"><img src={viewer.fullUrl||viewer.url} loading="eager" decoding="async" className="w-full max-h-[80vh] object-contain mx-auto"/><PreviewWatermark {...wmProps(viewer.albumId)}/><button onClick={()=>moveViewer(-1)} className="absolute left-2 sm:left-3 top-1/2 -translate-y-1/2 px-3 h-10 rounded-full bg-black/70 border border-white/20 text-white font-bold text-xs"><i className="fas fa-chevron-left sm:mr-1"></i><span className="hidden sm:inline viewer-nav-label">Anterior</span></button><button onClick={()=>moveViewer(1)} className="absolute right-2 sm:right-3 top-1/2 -translate-y-1/2 px-3 h-10 rounded-full bg-black/70 border border-white/20 text-white font-bold text-xs"><span className="hidden sm:inline viewer-nav-label">Siguiente</span><i className="fas fa-chevron-right sm:ml-1"></i></button></div><div><h3 className="text-2xl font-black mb-1">{viewer.name}</h3><p className="text-neutral-400 text-sm mb-2">Código {viewer.code} · {viewer.albumName}</p><p className="text-emerald-300 font-black text-xl mb-4">{formatPrice(viewer.price)}</p><div className="bg-neutral-950 border border-neutral-800 rounded-2xl p-4 mb-4"><p className="text-sm text-neutral-300">La foto comprada se entrega en alta calidad y sin marca de agua.</p></div><button onClick={()=>toggle(viewer.id)} className={`w-full ${cart.includes(viewer.id)?'bg-indigo-600':'bg-white text-black'} font-black py-4 rounded-xl mb-3`}>{cart.includes(viewer.id)?'Quitar del carrito':'Agregar al carrito'}</button><button onClick={()=>setViewer(null)} className="w-full bg-neutral-800 py-4 rounded-xl font-bold">Cerrar</button></div></div></Modal>}
 
     {cart.length>0 && <div className="fixed bottom-4 sm:bottom-6 inset-x-0 mx-auto w-[calc(100vw-24px)] sm:w-[calc(100%-32px)] max-w-2xl z-40 up"><div className="glass border border-white/10 rounded-3xl p-3 sm:p-4 shadow-2xl flex flex-col sm:flex-row items-center justify-between gap-3"><div className="flex items-center gap-3 w-full sm:w-auto"><div className="bg-indigo-500 text-white w-12 h-12 rounded-2xl flex items-center justify-center font-bold text-xl shadow-lg">{cart.length}</div><div className="flex-1"><div className="flex items-baseline gap-2"><p className="text-xl sm:text-2xl font-bold text-white">{formatPrice(total)}</p>{savings>0&&<p className="text-sm text-neutral-500 line-through">{formatPrice(regular)}</p>}</div><p className="text-xs font-medium text-emerald-400">{promoText()}</p>{savings>0&&<p className="text-[10px] text-neutral-400">Ahorrás {formatPrice(savings)}</p>}</div></div><div className="flex gap-2 w-full sm:w-auto"><button onClick={()=>setCart([])} className="px-4 py-3 text-neutral-400 font-medium hover:text-white hover:bg-white/5 rounded-2xl transition text-sm flex-1 sm:flex-none">Vaciar</button><button onClick={sendOrder} className="bg-white hover:bg-neutral-200 text-black px-6 py-3 rounded-2xl font-bold flex items-center justify-center gap-2 transition flex-1 sm:flex-none">Enviar pedido</button></div></div></div>}
   </div>;
