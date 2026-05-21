@@ -56,6 +56,26 @@
     .main-banner-img{display:block;width:100%;height:clamp(112px,22vw,280px);object-fit:contain}
     @media(max-width:640px){.album-caption{left:8px!important;right:8px!important;bottom:8px!important;border-radius:16px!important;padding:8px!important}.album-title-white{font-size:12px!important;line-height:1.15!important;letter-spacing:.01em}.album-meta-white{font-size:10px!important}.main-banner-img{height:auto;max-height:none}.main-banner-wrap{gap:10px}}
     @media(max-width:640px){.admin-actions,.mobile-stack{flex-direction:column}.admin-actions button,.admin-actions input,.mobile-stack button{width:100%}.viewer-nav-label{display:inline}}
+
+    .loading-shell{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px;background:radial-gradient(circle at 50% 18%,rgba(255,255,255,.10),transparent 34%),linear-gradient(135deg,#030303,#0b0b0f 45%,#000)}
+    .loading-card{width:min(92vw,380px);border:1px solid rgba(255,255,255,.10);background:rgba(12,12,14,.72);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);border-radius:34px;padding:30px 24px;text-align:center;box-shadow:0 30px 80px rgba(0,0,0,.48);position:relative;overflow:hidden}
+    .loading-card:before{content:"";position:absolute;inset:-1px;background:conic-gradient(from 180deg,transparent,rgba(255,255,255,.20),transparent 35%,rgba(99,102,241,.25),transparent 70%);opacity:.45;animation:spinSlow 5s linear infinite;z-index:-1}
+    .loading-logo-wrap{width:98px;height:98px;margin:0 auto 18px;border-radius:28px;background:#050505;border:1px solid rgba(255,255,255,.14);display:flex;align-items:center;justify-content:center;box-shadow:0 18px 40px rgba(0,0,0,.45)}
+    .loading-logo{width:76%;height:76%;object-fit:contain;filter:drop-shadow(0 8px 18px rgba(255,255,255,.10))}
+    .loading-bar{height:5px;border-radius:999px;background:rgba(255,255,255,.10);overflow:hidden;margin-top:18px}
+    .loading-bar span{display:block;height:100%;width:42%;border-radius:999px;background:linear-gradient(90deg,#fff,#9ca3af,#fff);animation:loadMove 1.05s ease-in-out infinite}
+    @keyframes loadMove{0%{transform:translateX(-110%)}100%{transform:translateX(250%)}}
+    @keyframes spinSlow{to{transform:rotate(360deg)}}
+    .promo-badge{width:58px;height:58px;border-radius:999px;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;font-weight:950;line-height:.88;color:#fff!important;background:linear-gradient(135deg,#ef4444,#b91c1c);border:2px solid rgba(255,255,255,.84);box-shadow:0 14px 34px rgba(239,68,68,.48),0 0 0 5px rgba(239,68,68,.16);transform:rotate(8deg);animation:promoPulse 1.85s ease-in-out infinite;font-size:15px;letter-spacing:-.03em;z-index:20}
+    .promo-badge small{font-size:8px;letter-spacing:.02em;text-transform:uppercase;color:#fff!important;margin-top:3px}
+    @keyframes promoPulse{0%,100%{background:linear-gradient(135deg,#ef4444,#b91c1c);box-shadow:0 14px 34px rgba(239,68,68,.48),0 0 0 5px rgba(239,68,68,.16);transform:rotate(8deg) scale(1)}50%{background:linear-gradient(135deg,#22c55e,#15803d);box-shadow:0 16px 38px rgba(34,197,94,.42),0 0 0 7px rgba(34,197,94,.15);transform:rotate(-4deg) scale(1.08)}}
+    .promo-pill{display:inline-flex;align-items:center;gap:8px;background:linear-gradient(135deg,#ef4444,#b91c1c);color:#fff!important;border:1px solid rgba(255,255,255,.45);box-shadow:0 12px 28px rgba(239,68,68,.28);border-radius:999px;padding:8px 12px;font-size:12px;font-weight:950;animation:promoPill 2.2s ease-in-out infinite}
+    @keyframes promoPill{0%,100%{background:linear-gradient(135deg,#ef4444,#b91c1c)}50%{background:linear-gradient(135deg,#22c55e,#15803d)}}
+    body.light-mode .loading-shell{background:radial-gradient(circle at 50% 18%,rgba(0,0,0,.10),transparent 34%),linear-gradient(135deg,#f8fafc,#ffffff 45%,#e5e7eb)}
+    body.light-mode .loading-card{background:rgba(255,255,255,.84);color:#111827;border-color:#d4d4d8}
+    body.light-mode .loading-logo-wrap{background:#111827}
+    @media(max-width:640px){.loading-card{border-radius:28px;padding:26px 20px}.loading-logo-wrap{width:86px;height:86px}.promo-badge{width:52px;height:52px;font-size:13px}.promo-badge small{font-size:7px}}
+
   </style>
 
 <script>
@@ -86,6 +106,7 @@ const LS_ORDERS_KEY="la_orders_v1";
 const LS_THEME_KEY="la_theme_mode_v1";
 const LS_WM_KEY="la_watermark_settings_v1";
 const LS_DISCOUNT_KEY="la_site_discount_settings_v1";
+const LS_ALBUM_CACHE_KEY="la_album_cache_v1";
 function readLocalOrders(){try{return JSON.parse(localStorage.getItem(LS_ORDERS_KEY)||"[]")}catch{return []}}
 function saveLocalOrders(orders){localStorage.setItem(LS_ORDERS_KEY,JSON.stringify(orders))}
 function systemTheme(){try{return window.matchMedia&&window.matchMedia('(prefers-color-scheme: light)').matches?'light':'dark'}catch{return 'dark'}}
@@ -95,6 +116,9 @@ function readWatermarkSettings(){try{return JSON.parse(localStorage.getItem(LS_W
 function saveWatermarkSettings(v){try{localStorage.setItem(LS_WM_KEY,JSON.stringify(v))}catch(e){}}
 function readDiscountSettings(){try{return JSON.parse(localStorage.getItem(LS_DISCOUNT_KEY)||'{"percent":0,"excludedAlbums":{}}')}catch{return {percent:0,excludedAlbums:{}}}}
 function saveDiscountSettings(v){try{localStorage.setItem(LS_DISCOUNT_KEY,JSON.stringify(v))}catch(e){}}
+function readAlbumCache(){try{return JSON.parse(localStorage.getItem(LS_ALBUM_CACHE_KEY)||"[]")}catch{return []}}
+function saveAlbumCache(v){try{localStorage.setItem(LS_ALBUM_CACHE_KEY,JSON.stringify(v))}catch(e){}}
+const wait=(ms)=>new Promise(r=>setTimeout(r,ms));
 function apiAction(params){const q=new URLSearchParams(params);return jsonp(APPS_SCRIPT_URL+(APPS_SCRIPT_URL.includes("?")?"&":"?")+q.toString())}
 async function saveOrderRemote(order){
   saveLocalOrders([order,...readLocalOrders().filter(o=>o.id!==order.id)]);
@@ -157,7 +181,8 @@ function getAlbumDateFromRows(rows){
 const looksLikeImageUrl=(v)=>{const s=String(v||"").trim();return /^https?:\/\//i.test(s)&&(/drive\.google\.com|googleusercontent|postimg|imgur|cloudinary|firebasestorage|\.jpg|\.jpeg|\.png|\.webp|\.gif/i.test(s));};
 const findAnyImageUrl=(row)=>{const direct=pick(row,["url","imagen","image","foto","preview","link","enlace","archivo","photo","src","miniatura","thumbnail"]);if(looksLikeImageUrl(direct))return direct;const vals=Object.values(row||{});return vals.find(looksLikeImageUrl)||""};
 
-function jsonp(url){return new Promise((resolve,reject)=>{const cb="cb_"+Date.now()+"_"+Math.random().toString(36).slice(2);const sep=url.includes("?")?"&":"?";const script=document.createElement("script");let done=false;const timer=setTimeout(()=>{if(done)return;done=true;delete window[cb];script.remove();reject(new Error("No respondió la fuente de datos"));},15000);window[cb]=(data)=>{if(done)return;done=true;clearTimeout(timer);delete window[cb];script.remove();resolve(data)};script.onerror=()=>{if(done)return;done=true;clearTimeout(timer);delete window[cb];script.remove();reject(new Error("No se pudo cargar la fuente de datos"))};script.src=`${url}${sep}callback=${cb}`;document.body.appendChild(script)})}
+function jsonp(url,timeoutMs=26000){return new Promise((resolve,reject)=>{const cb="cb_"+Date.now()+"_"+Math.random().toString(36).slice(2);const sep=url.includes("?")?"&":"?";const script=document.createElement("script");let done=false;const timer=setTimeout(()=>{if(done)return;done=true;delete window[cb];script.remove();reject(new Error("No respondió la fuente de datos"));},timeoutMs);window[cb]=(data)=>{if(done)return;done=true;clearTimeout(timer);delete window[cb];script.remove();resolve(data)};script.onerror=()=>{if(done)return;done=true;clearTimeout(timer);delete window[cb];script.remove();reject(new Error("No se pudo cargar la fuente de datos"))};script.src=`${url}${sep}callback=${cb}&_=${Date.now()}`;document.body.appendChild(script)})}
+async function fetchGalleryData(){let lastError;for(let i=0;i<3;i++){try{return APPS_SCRIPT_URL.trim()?await jsonp(APPS_SCRIPT_URL.trim(),i===0?18000:30000):await gvizJsonpForFirstSheet()}catch(e){lastError=e;await wait(700+i*900)}}throw lastError||new Error("No respondió la fuente de datos")}
 
 async function gvizJsonpForFirstSheet(){
   const base=FALLBACK_PUBLISHED_SHEET_URL.replace(/pub\?output=csv/i,'gviz/tq?tqx=out:json');
@@ -375,16 +400,23 @@ function App(){
   useEffect(()=>{saveWatermarkSettings(watermarkSettings)},[watermarkSettings]);
   useEffect(()=>{saveDiscountSettings(discountSettings)},[discountSettings]);
 
-  async function load(){
-    setLoading(true);setError("");
+  async function load({silent=false}={}){
+    const cached=readAlbumCache();
+    if(cached.length&&!albums.length){setAlbums(cached);setLoading(false);setError("");}
+    if(!silent && !cached.length){setLoading(true);setError("");}
     try{
-      let data;
-      if(APPS_SCRIPT_URL.trim()) data=await jsonp(APPS_SCRIPT_URL.trim());
-      else data=await gvizJsonpForFirstSheet();
+      const data=await fetchGalleryData();
       const normalized=normalizeAlbums(data);
       if(!normalized.length) throw new Error('La planilla cargó, pero no encontré fotos. Esta versión acepta links públicos en columnas URL, Imagen, Foto, Link o cualquier columna que contenga una URL de imagen/Drive.');
       setAlbums(normalized);
-    }catch(e){console.error(e);setError(e.message||'No se pudo cargar la galería');}
+      saveAlbumCache(normalized);
+      setError("");
+    }catch(e){
+      console.error(e);
+      const cachedNow=readAlbumCache();
+      if(cachedNow.length){setAlbums(cachedNow);setError("");}
+      else setError(e.message||'No se pudo cargar la galería');
+    }
     finally{setLoading(false)}
   }
   useEffect(()=>{load()},[]);
@@ -489,8 +521,8 @@ A continuación, te envío el comprobante.`;
   useEffect(()=>{if(!adminMessage)return;const t=setTimeout(()=>setAdminMessage(''),2500);return()=>clearTimeout(t)},[adminMessage]);
   useEffect(()=>{if(route==="#/admin"&&admin){setOrdersLoading(true);loadOrdersRemote().then(setOrders).finally(()=>setOrdersLoading(false));}},[route,admin]);
 
-  if(loading)return <div className="min-h-screen flex items-center justify-center"><div className="text-center"><div className="w-12 h-12 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div><p className="text-indigo-300 font-semibold">Cargando galería...</p></div></div>;
-  if(error)return <div className="min-h-screen flex items-center justify-center p-5"><div className="max-w-xl w-full bg-neutral-900 border border-red-500/40 rounded-3xl p-7"><div className="w-14 h-14 rounded-2xl bg-red-500/20 border border-red-400/30 flex items-center justify-center mb-5"><i className="fas fa-triangle-exclamation text-red-300 text-2xl"></i></div><h1 className="text-2xl font-black mb-4">No se pudo cargar la galería</h1><div className="bg-black border border-neutral-800 rounded-2xl p-4 text-red-200 text-sm mb-5">{error}</div><p className="text-sm text-neutral-300 leading-relaxed mb-4">Verificá que Apps Script siga publicado como aplicación web y que la planilla tenga fotos públicas.</p><button onClick={load} className="w-full bg-white text-black font-bold py-4 rounded-xl">Reintentar</button></div></div>;
+  if(loading)return <div className="loading-shell"><div className="loading-card up"><div className="loading-logo-wrap"><img src="https://i.postimg.cc/PrD4jg9V/Logo-LA.png" className="loading-logo"/></div><h1 className="text-2xl font-black mb-1">Cargando galería</h1><p className="text-sm text-neutral-400">Preparando tus álbumes y fotos...</p><div className="loading-bar"><span></span></div></div></div>;
+  if(error)return <div className="min-h-screen flex items-center justify-center p-5"><div className="max-w-xl w-full bg-neutral-900 border border-red-500/40 rounded-3xl p-7"><div className="w-16 h-16 rounded-2xl bg-red-500/20 border border-red-400/30 flex items-center justify-center mb-5"><img src="https://i.postimg.cc/PrD4jg9V/Logo-LA.png" className="w-11 h-11 object-contain"/></div><h1 className="text-2xl font-black mb-4">No se pudo cargar la galería</h1><div className="bg-black border border-neutral-800 rounded-2xl p-4 text-red-200 text-sm mb-5">{error}</div><p className="text-sm text-neutral-300 leading-relaxed mb-3">Verificá que Apps Script siga publicado como aplicación web y que la planilla tenga fotos públicas.</p><p className="text-sm text-amber-300 leading-relaxed mb-5"><i className="fas fa-keyboard mr-2"></i>Si aparece este aviso de forma ocasional, apretá <b>F5</b> para actualizar. Muchas veces se soluciona de ese modo.</p><div className="grid sm:grid-cols-2 gap-2"><button onClick={()=>load()} className="w-full bg-white text-black font-bold py-4 rounded-xl">Reintentar</button><button onClick={()=>location.reload()} className="w-full bg-neutral-800 text-white font-bold py-4 rounded-xl">Actualizar con F5</button></div></div></div>;
 
   if(route==="#/admin" && !admin) return <div className="min-h-screen flex items-center justify-center p-4"><form onSubmit={e=>{e.preventDefault();pin===ADMIN_PIN?setAdmin(true):alert('PIN incorrecto')}} className="bg-neutral-900 border border-neutral-800 p-7 rounded-3xl w-full max-w-sm"><h1 className="text-2xl font-bold mb-2">Acceso admin</h1><p className="text-neutral-400 text-sm mb-5">Panel de control de la galería.</p><input value={pin} onChange={e=>setPin(e.target.value)} type="password" placeholder="PIN" className="w-full bg-black border border-neutral-700 rounded-xl p-4 mb-4 text-center text-xl tracking-widest outline-none"/><button className="w-full bg-indigo-600 py-4 rounded-xl font-bold">Entrar</button></form></div>;
 
@@ -582,7 +614,7 @@ A continuación, te envío el comprobante.`;
           <button onClick={()=>setDiscountSettings(s=>({...s,percent:0}))} className="bg-neutral-800 px-4 py-3 rounded-xl font-bold self-end">Quitar descuento</button>
         </div>
       </div>
-      {siteDiscountPercent>0&&<div className="mt-4 bg-emerald-500/10 border border-emerald-500/25 rounded-2xl px-4 py-3 text-sm text-emerald-300"><i className="fas fa-badge-percent mr-2"></i>Descuento activo del <b>{siteDiscountPercent}%</b>. Se muestra como burbuja en los álbumes no exceptuados.</div>}
+      {siteDiscountPercent>0&&<div className="mt-4 bg-red-500/10 border border-red-500/25 rounded-2xl px-4 py-3 text-sm text-red-200"><i className="fas fa-badge-percent mr-2"></i>Descuento activo del <b>{siteDiscountPercent}%</b>. Se muestra como burbuja en los álbumes no exceptuados.</div>}
     </div>
 
     <div className="mb-5">
@@ -594,7 +626,7 @@ A continuación, te envío el comprobante.`;
 
     <div className="grid md:grid-cols-2 xl:grid-cols-3 gap-5">
       {displayAlbums.filter(album=>{const q=norm(albumSearch);return !q||norm(album.name).includes(q)||norm(album.dateLabel).includes(q)}).map(album=><div key={album.id} className="bg-neutral-900 border border-neutral-800 rounded-3xl overflow-hidden transition-all duration-500 hover:-translate-y-1 hover:border-indigo-400/50 hover:shadow-[0_18px_45px_rgba(99,102,241,.18)]">
-        <div className="aspect-[4/5] bg-neutral-950 relative">{album.cover?<img src={album.cover} loading="lazy" decoding="async" className="w-full h-full object-cover"/>:<div className="w-full h-full flex items-center justify-center text-neutral-600"><i className="fas fa-image text-5xl"></i></div>}<div className="absolute top-3 left-3 bg-black/70 border border-white/10 px-3 py-1 rounded-full text-[11px] text-white">{album.dateLabel||"Sin fecha"}</div><div className="absolute top-3 right-3 bg-black/70 border border-white/10 px-3 py-1 rounded-full text-[11px] text-white">{album.photos.length} fotos</div>{album.archived&&<div className="absolute bottom-3 left-3 bg-amber-500 text-black px-3 py-1 rounded-full text-[11px] font-black">Archivado</div>}{hasSiteDiscount(album.id)&&<div className="absolute bottom-3 right-3 bg-emerald-500 text-black px-3 py-1 rounded-full text-[11px] font-black">-{albumSiteDiscount(album.id)}%</div>}</div>
+        <div className="aspect-[4/5] bg-neutral-950 relative">{album.cover?<img src={album.cover} loading="lazy" decoding="async" className="w-full h-full object-cover"/>:<div className="w-full h-full flex items-center justify-center text-neutral-600"><i className="fas fa-image text-5xl"></i></div>}<div className="absolute top-3 left-3 bg-black/70 border border-white/10 px-3 py-1 rounded-full text-[11px] text-white">{album.dateLabel||"Sin fecha"}</div><div className="absolute top-3 right-3 bg-black/70 border border-white/10 px-3 py-1 rounded-full text-[11px] text-white">{album.photos.length} fotos</div>{album.archived&&<div className="absolute bottom-3 left-3 bg-amber-500 text-black px-3 py-1 rounded-full text-[11px] font-black">Archivado</div>}{hasSiteDiscount(album.id)&&<div className="promo-badge absolute bottom-3 right-3"><span>-{albumSiteDiscount(album.id)}%</span><small>OFF</small></div>}</div>
         <div className="p-5">
           <h3 className="font-bold text-lg whitespace-normal break-words leading-tight">{album.name}</h3>
           <p className="text-xs text-neutral-400 mb-4">Álbum completo {hasSiteDiscount(album.id)?<><span className="line-through mr-2">{formatPrice(album.fullPrice)}</span><b>{formatPrice(albumPriceWithDiscount(album))}</b></>:formatPrice(album.fullPrice)}</p>
@@ -729,7 +761,7 @@ A continuación, te envío el comprobante.`;
           <input value={albumSearch} onChange={e=>setAlbumSearch(e.target.value)} placeholder="Buscar álbum..." className="w-full bg-neutral-900/90 border border-neutral-800 rounded-2xl pl-11 pr-4 py-3 text-sm outline-none focus:border-indigo-500"/>
         </div>
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 sm:gap-4">
-          {filteredAlbums.map(a=><button key={a.id} onClick={()=>{location.hash=albumHash(a.id)}} className="group text-left transition-all duration-500 hover:-translate-y-1.5 hover:scale-[1.02] active:scale-[0.98] focus:outline-none"><div className="aspect-[4/5] bg-neutral-900 overflow-hidden relative rounded-xl sm:rounded-[1.6rem] border border-white/10 group-hover:border-indigo-400/60 group-hover:shadow-[0_22px_60px_rgba(99,102,241,0.28)] transition-all duration-500 before:absolute before:inset-0 before:bg-gradient-to-br before:from-white/10 before:via-transparent before:to-indigo-500/10 before:opacity-0 group-hover:before:opacity-100 before:transition-opacity before:duration-500">{a.cover?<img src={a.cover} loading="lazy" decoding="async" className="w-full h-full object-cover group-hover:scale-110 transition duration-700 ease-out"/>:<div className="w-full h-full flex items-center justify-center text-neutral-600"><i className="fas fa-image text-3xl"></i></div>}<div className="absolute top-2 left-2 sm:top-3 sm:left-3 bg-black/65 backdrop-blur-md border border-white/10 px-2 py-1 rounded-full text-[9px] sm:text-[10px] text-white">{a.dateLabel||"Sin fecha"}</div>{hasSiteDiscount(a.id)&&<div className="absolute top-2 right-2 sm:top-3 sm:right-3 bg-emerald-400 text-black px-2.5 py-1 rounded-full text-[10px] sm:text-xs font-black shadow-[0_8px_20px_rgba(16,185,129,.28)]">-{albumSiteDiscount(a.id)}%</div>}<div className="album-info-panel absolute inset-0"></div><div className="album-caption absolute bottom-2 sm:bottom-3 left-2 sm:left-3 right-2 sm:right-3 rounded-xl sm:rounded-2xl p-2 sm:p-2.5 border border-white/10"><h3 className="album-title-white font-black whitespace-normal break-words leading-tight text-[12px] sm:text-sm">{a.name}</h3><p className="album-meta-white text-[10px] sm:text-xs mt-1">{a.photos.length} fotos</p></div></div></button>)}
+          {filteredAlbums.map(a=><button key={a.id} onClick={()=>{location.hash=albumHash(a.id)}} className="group text-left transition-all duration-500 hover:-translate-y-1.5 hover:scale-[1.02] active:scale-[0.98] focus:outline-none"><div className="aspect-[4/5] bg-neutral-900 overflow-hidden relative rounded-xl sm:rounded-[1.6rem] border border-white/10 group-hover:border-indigo-400/60 group-hover:shadow-[0_22px_60px_rgba(99,102,241,0.28)] transition-all duration-500 before:absolute before:inset-0 before:bg-gradient-to-br before:from-white/10 before:via-transparent before:to-indigo-500/10 before:opacity-0 group-hover:before:opacity-100 before:transition-opacity before:duration-500">{a.cover?<img src={a.cover} loading="lazy" decoding="async" className="w-full h-full object-cover group-hover:scale-110 transition duration-700 ease-out"/>:<div className="w-full h-full flex items-center justify-center text-neutral-600"><i className="fas fa-image text-3xl"></i></div>}<div className="absolute top-2 left-2 sm:top-3 sm:left-3 bg-black/65 backdrop-blur-md border border-white/10 px-2 py-1 rounded-full text-[9px] sm:text-[10px] text-white">{a.dateLabel||"Sin fecha"}</div>{hasSiteDiscount(a.id)&&<div className="promo-badge absolute top-2 right-2 sm:top-3 sm:right-3"><span>-{albumSiteDiscount(a.id)}%</span><small>OFF</small></div>}<div className="album-info-panel absolute inset-0"></div><div className="album-caption absolute bottom-2 sm:bottom-3 left-2 sm:left-3 right-2 sm:right-3 rounded-xl sm:rounded-2xl p-2 sm:p-2.5 border border-white/10"><h3 className="album-title-white font-black whitespace-normal break-words leading-tight text-[12px] sm:text-sm">{a.name}</h3><p className="album-meta-white text-[10px] sm:text-xs mt-1">{a.photos.length} fotos</p></div></div></button>)}
         </div>
         {filteredAlbums.length===0&&filteredArchivedAlbums.length===0&&<div className="text-center text-neutral-500 py-12 text-sm">No se encontraron álbumes.</div>}
         {filteredArchivedAlbums.length>0&&<div className="mt-8 sm:mt-10">
@@ -744,7 +776,7 @@ A continuación, te envío el comprobante.`;
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
             <div className="min-w-0">
               <h3 className="text-lg sm:text-xl font-black text-white leading-tight">Colección completa</h3>
-              <p className="text-neutral-400 text-xs sm:text-sm leading-relaxed">Todas las fotos del álbum en alta calidad y sin marca de agua.</p>{hasSiteDiscount(currentAlbum.id)&&<div className="inline-flex items-center gap-2 mt-2 bg-emerald-400 text-black px-3 py-1.5 rounded-full text-xs font-black shadow-[0_10px_25px_rgba(16,185,129,.20)]"><i className="fas fa-percent"></i>Descuento web aplicado: {albumSiteDiscount(currentAlbum.id)}%</div>}
+              <p className="text-neutral-400 text-xs sm:text-sm leading-relaxed">Todas las fotos del álbum en alta calidad y sin marca de agua.</p>{hasSiteDiscount(currentAlbum.id)&&<div className="promo-pill mt-2"><i className="fas fa-percent"></i>Descuento web aplicado: {albumSiteDiscount(currentAlbum.id)}%</div>}
             </div>
             <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between sm:justify-end gap-3 w-full sm:w-auto">
               <div className="text-left sm:text-right">
