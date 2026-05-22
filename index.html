@@ -12,7 +12,10 @@
   <link rel="preconnect" href="https://drive.google.com" />
   <link rel="preconnect" href="https://docs.google.com" />
   <link rel="preconnect" href="https://script.google.com" />
-  <script type="text/javascript" src="https://gc.kes.v2.scr.kaspersky-labs.com/7EA5E9BB-55E1-4C31-9C21-4943DDFED2E4/main.js?attr=3cOEt3Tt7SZTXzYwksoBUOHukBpOJeDIi5ytLsjL4xlPEOYW9d7PZOxWwmDHhq6WR1fEfiL7TKoZ6293tIeJMg" charset="UTF-8"></script><script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://unpkg.com" />
+  <link rel="preconnect" href="https://cdnjs.cloudflare.com" />
+  <link rel="preconnect" href="https://i.postimg.cc" />
+<script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
   <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
   <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
@@ -84,6 +87,20 @@
     .modern-album-img{transition:transform .85s cubic-bezier(.16,1,.3,1),filter .45s}
     .modern-album-card:hover .modern-album-img{transform:scale(1.12);filter:saturate(1.12) contrast(1.06)}
     .album-cta-chip{display:inline-flex;align-items:center;gap:6px;background:rgba(37,99,235,.22);border:1px solid rgba(147,197,253,.35);border-radius:999px;padding:5px 9px;color:#dbeafe!important;font-size:10px;font-weight:900;box-shadow:inset 0 1px 0 rgba(255,255,255,.10)}
+
+    .album-loading-panel{border:1px solid rgba(147,197,253,.18);background:linear-gradient(135deg,rgba(2,6,23,.86),rgba(7,13,30,.92),rgba(0,0,0,.94));background-size:220% 220%;animation:buyGradientMove 4.5s ease-in-out infinite;border-radius:28px;padding:16px;box-shadow:0 18px 46px rgba(37,99,235,.14);overflow:hidden;position:relative}
+    .album-loading-panel:before{content:"";position:absolute;inset:-40%;background:radial-gradient(circle at 24% 14%,rgba(96,165,250,.22),transparent 28%),radial-gradient(circle at 76% 72%,rgba(30,64,175,.24),transparent 32%);animation:softFloat 4.8s ease-in-out infinite;pointer-events:none}
+    .album-skeleton-card{aspect-ratio:4/5;border-radius:1.55rem;position:relative;overflow:hidden;border:1px solid rgba(255,255,255,.10);background:linear-gradient(135deg,#020617,#0b1228,#000);box-shadow:0 16px 38px rgba(0,0,0,.32)}
+    .album-skeleton-card:after{content:"";position:absolute;inset:0;background:linear-gradient(100deg,transparent 0%,rgba(255,255,255,.08) 46%,transparent 72%);transform:translateX(-100%);animation:skeletonSweep 1.25s ease-in-out infinite}
+    .album-skeleton-logo{position:absolute;top:50%;left:50%;width:52px;height:52px;transform:translate(-50%,-50%);border-radius:18px;background:rgba(255,255,255,.06);display:flex;align-items:center;justify-content:center;border:1px solid rgba(255,255,255,.10);z-index:2}
+    .album-skeleton-caption{position:absolute;left:10px;right:10px;bottom:10px;height:54px;border-radius:16px;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.09);z-index:2}
+    .quick-loading-strip{display:flex;align-items:center;gap:10px;background:rgba(2,6,23,.86);border:1px solid rgba(147,197,253,.22);box-shadow:0 10px 30px rgba(37,99,235,.14);border-radius:18px;padding:10px 12px;color:#e0f2fe!important}
+    .quick-loading-dot{width:9px;height:9px;border-radius:999px;background:#60a5fa;box-shadow:0 0 0 5px rgba(96,165,250,.13);animation:dotPulse 1.05s ease-in-out infinite}
+    @keyframes skeletonSweep{to{transform:translateX(100%)}}
+    @keyframes softFloat{0%,100%{transform:translate3d(0,0,0) rotate(0deg)}50%{transform:translate3d(4%,3%,0) rotate(4deg)}}
+    @keyframes dotPulse{0%,100%{transform:scale(1);opacity:.65}50%{transform:scale(1.4);opacity:1}}
+    body.light-mode .album-loading-panel,body.light-mode .quick-loading-strip{color:#e0f2fe!important}
+    body.light-mode .album-loading-panel *,body.light-mode .quick-loading-strip *{color:#e0f2fe!important}
     body.light-mode .loading-shell{background:radial-gradient(circle at 50% 18%,rgba(0,0,0,.10),transparent 34%),linear-gradient(135deg,#f8fafc,#ffffff 45%,#e5e7eb)}
     body.light-mode .loading-card{background:rgba(255,255,255,.84);color:#111827;border-color:#d4d4d8}
     body.light-mode .loading-logo-wrap{background:#111827}
@@ -438,6 +455,24 @@ function Steps(){
   </div>
 }
 
+function AlbumLoadingGrid({count=8}){
+  return <div className="album-loading-panel up mb-5">
+    <div className="relative z-[2] flex items-center gap-3 mb-4">
+      <div className="loading-logo-wrap !w-12 !h-12 !rounded-2xl !mb-0"><img src="https://i.postimg.cc/PrD4jg9V/Logo-LA.png" className="loading-logo"/></div>
+      <div>
+        <h3 className="font-black text-white leading-tight">Cargando álbumes</h3>
+        <p className="text-xs text-sky-100/80">Preparando la galería para que puedas entrar más rápido...</p>
+      </div>
+    </div>
+    <div className="relative z-[2] grid grid-cols-2 sm:grid-cols-3 gap-3 sm:gap-4">
+      {Array.from({length:count}).map((_,i)=><div key={i} className="album-skeleton-card">
+        <div className="album-skeleton-logo"><img src="https://i.postimg.cc/PrD4jg9V/Logo-LA.png" className="w-8 h-8 object-contain opacity-70"/></div>
+        <div className="album-skeleton-caption"></div>
+      </div>)}
+    </div>
+  </div>
+}
+
 function App(){
   const [route,setRoute]=useState(location.hash||"#/galeria");
   const [albums,setAlbums]=useState([]);
@@ -461,6 +496,7 @@ function App(){
   const [albumSearch,setAlbumSearch]=useState("");
   const [viewMode,setViewMode]=useState("mosaic");
   const [focusPhoto,setFocusPhoto]=useState(null);
+  const [albumRenderLimit,setAlbumRenderLimit]=useState(()=>window.innerWidth<640?8:15);
   const [highlightIds,setHighlightIds]=useState(readHighlightIds());
   const [albumPage,setAlbumPage]=useState(1);
   const [checkoutOpen,setCheckoutOpen]=useState(false);
@@ -508,6 +544,7 @@ function App(){
   const archivedAlbums=useMemo(()=>displayAlbums.filter(a=>a.archived),[displayAlbums]);
   const filteredAlbums=useMemo(()=>{const q=norm(albumSearch);if(!q)return activeAlbums;return activeAlbums.filter(a=>norm(a.name).includes(q)||norm(a.dateLabel).includes(q))},[activeAlbums,albumSearch]);
   const filteredArchivedAlbums=useMemo(()=>{const q=norm(albumSearch);if(!q)return archivedAlbums;return archivedAlbums.filter(a=>norm(a.name).includes(q)||norm(a.dateLabel).includes(q))},[archivedAlbums,albumSearch]);
+  const visibleFilteredAlbums=useMemo(()=>filteredAlbums.slice(0,albumRenderLimit),[filteredAlbums,albumRenderLimit]);
   const highlightedAlbums=useMemo(()=>{const selected=highlightIds.map(id=>activeAlbums.find(a=>a.id===id)).filter(Boolean);return selected.length?selected:activeAlbums.slice(0,8)},[highlightIds,activeAlbums]);
   const toggleHighlight=(albumId)=>setHighlightIds(ids=>ids.includes(albumId)?ids.filter(id=>id!==albumId):[albumId,...ids].slice(0,12));
   const allPhotos=useMemo(()=>activeAlbums.flatMap(a=>a.photos||[]),[activeAlbums]);
@@ -646,8 +683,18 @@ A continuación, te envío el comprobante.`;
   useEffect(()=>{if(!adminMessage)return;const t=setTimeout(()=>setAdminMessage(''),2500);return()=>clearTimeout(t)},[adminMessage]);
   useEffect(()=>{if(route==="#/admin"&&admin){setOrdersLoading(true);loadOrdersRemote().then(setOrders).finally(()=>setOrdersLoading(false));}},[route,admin]);
 
-  if(loading)return <div className="loading-shell"><div className="loading-card up"><div className="loading-logo-wrap"><img src="https://i.postimg.cc/PrD4jg9V/Logo-LA.png" className="loading-logo"/></div><h1 className="text-2xl font-black mb-1">Cargando galería</h1><p className="text-sm text-neutral-400">Preparando tus álbumes y fotos...</p><div className="loading-bar"><span></span></div></div></div>;
-  if(error)return <div className="min-h-screen flex items-center justify-center p-5"><div className="max-w-xl w-full bg-neutral-900 border border-red-500/40 rounded-3xl p-7"><div className="w-16 h-16 rounded-2xl bg-red-500/20 border border-red-400/30 flex items-center justify-center mb-5"><img src="https://i.postimg.cc/PrD4jg9V/Logo-LA.png" className="w-11 h-11 object-contain"/></div><h1 className="text-2xl font-black mb-4">No se pudo cargar la galería</h1><div className="bg-black border border-neutral-800 rounded-2xl p-4 text-red-200 text-sm mb-5">{error}</div><p className="text-sm text-neutral-300 leading-relaxed mb-3">Verificá que Apps Script siga publicado como aplicación web y que la planilla tenga fotos públicas.</p><p className="text-sm text-amber-300 leading-relaxed mb-5"><i className="fas fa-keyboard mr-2"></i>Si aparece este aviso de forma ocasional, apretá <b>F5</b> para actualizar. Muchas veces se soluciona de ese modo.</p><div className="grid sm:grid-cols-2 gap-2"><button onClick={()=>load()} className="w-full bg-white text-black font-bold py-4 rounded-xl">Reintentar</button><button onClick={()=>location.reload()} className="w-full bg-neutral-800 text-white font-bold py-4 rounded-xl">Actualizar con F5</button></div></div></div>;
+  useEffect(()=>{
+    setAlbumRenderLimit(window.innerWidth<640?8:15);
+  },[albumSearch,activeAlbums.length]);
+  useEffect(()=>{
+    if(currentAlbum || albumRenderLimit>=filteredAlbums.length)return;
+    const add=()=>setAlbumRenderLimit(v=>Math.min(filteredAlbums.length,v+(window.innerWidth<640?8:12)));
+    const id=window.requestIdleCallback?window.requestIdleCallback(add,{timeout:700}):setTimeout(add,180);
+    return()=>{window.cancelIdleCallback?window.cancelIdleCallback(id):clearTimeout(id)};
+  },[currentAlbum,albumRenderLimit,filteredAlbums.length]);
+
+  if(loading && !albums.length && route==="#/admin")return <div className="loading-shell"><div className="loading-card up"><div className="loading-logo-wrap"><img src="https://i.postimg.cc/PrD4jg9V/Logo-LA.png" className="loading-logo"/></div><h1 className="text-2xl font-black mb-1">Cargando panel</h1><p className="text-sm text-neutral-400">Preparando la información...</p><div className="loading-bar"><span></span></div></div></div>;
+  if(error && !albums.length)return <div className="min-h-screen flex items-center justify-center p-5"><div className="max-w-xl w-full bg-neutral-900 border border-red-500/40 rounded-3xl p-7"><div className="w-16 h-16 rounded-2xl bg-red-500/20 border border-red-400/30 flex items-center justify-center mb-5"><img src="https://i.postimg.cc/PrD4jg9V/Logo-LA.png" className="w-11 h-11 object-contain"/></div><h1 className="text-2xl font-black mb-4">No se pudo cargar la galería</h1><div className="bg-black border border-neutral-800 rounded-2xl p-4 text-red-200 text-sm mb-5">{error}</div><p className="text-sm text-neutral-300 leading-relaxed mb-3">Verificá que Apps Script siga publicado como aplicación web y que la planilla tenga fotos públicas.</p><p className="text-sm text-amber-300 leading-relaxed mb-5"><i className="fas fa-keyboard mr-2"></i>Si aparece este aviso de forma ocasional, apretá <b>F5</b> para actualizar. Muchas veces se soluciona de ese modo.</p><div className="grid sm:grid-cols-2 gap-2"><button onClick={()=>load()} className="w-full bg-white text-black font-bold py-4 rounded-xl">Reintentar</button><button onClick={()=>location.reload()} className="w-full bg-neutral-800 text-white font-bold py-4 rounded-xl">Actualizar con F5</button></div></div></div>;
 
   if(route==="#/admin" && !admin) return <div className="min-h-screen flex items-center justify-center p-4"><form onSubmit={e=>{e.preventDefault();pin===ADMIN_PIN?setAdmin(true):alert('PIN incorrecto')}} className="bg-neutral-900 border border-neutral-800 p-7 rounded-3xl w-full max-w-sm"><h1 className="text-2xl font-bold mb-2">Acceso admin</h1><p className="text-neutral-400 text-sm mb-5">Panel de control de la galería.</p><input value={pin} onChange={e=>setPin(e.target.value)} type="password" placeholder="PIN" className="w-full bg-black border border-neutral-700 rounded-xl p-4 mb-4 text-center text-xl tracking-widest outline-none"/><button className="w-full bg-indigo-600 py-4 rounded-xl font-bold">Entrar</button></form></div>;
 
@@ -902,7 +949,7 @@ A continuación, te envío el comprobante.`;
             </div>
           </div>
         </div>}
-        {!currentAlbum && <MainHeaderBanners/>}
+        {!currentAlbum && activeAlbums.length>0 && <MainHeaderBanners/>}
       </header>
 
       <Steps/>
@@ -918,10 +965,14 @@ A continuación, te envío el comprobante.`;
             <input value={albumSearch} onChange={e=>setAlbumSearch(e.target.value)} placeholder="Buscar álbum..." className="w-full bg-neutral-900/90 border border-neutral-800 rounded-2xl pl-11 pr-4 py-3 text-sm outline-none focus:border-indigo-500"/>
           </div>
         </div>
-        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 sm:gap-4">
-          {filteredAlbums.map(a=><button key={a.id} onClick={()=>{location.hash=albumHash(a.id)}} className="group text-left active:scale-[0.98] focus:outline-none"><div className="modern-album-card aspect-[4/5]"><div className="absolute inset-0 bg-neutral-900">{a.cover?<img src={a.cover} loading="lazy" decoding="async" className="modern-album-img w-full h-full object-cover"/>:<div className="w-full h-full flex items-center justify-center text-neutral-600"><i className="fas fa-image text-3xl"></i></div>}</div><div className="absolute inset-0 bg-gradient-to-t from-black via-black/38 to-transparent z-[2]"></div><div className="absolute top-2 left-2 sm:top-3 sm:left-3 z-[3] bg-black/55 backdrop-blur-md border border-white/15 px-2.5 py-1.5 rounded-full text-[9px] sm:text-[10px] text-white album-date-chip shadow-lg"><i className="fas fa-calendar-days mr-1 text-sky-300"></i>{a.dateLabel||"Sin fecha"}</div>{hasSiteDiscount(a.id)&&<div className="promo-badge absolute top-2 right-2 sm:top-3 sm:right-3"><span>-{albumSiteDiscount(a.id)}%</span><small>OFF</small></div>}<div className="absolute bottom-2 sm:bottom-3 left-2 sm:left-3 right-2 sm:right-3 z-[3] rounded-2xl p-2.5 sm:p-3 border border-white/12 bg-black/54 backdrop-blur-xl shadow-[0_18px_40px_rgba(0,0,0,.42)]"><div className="flex items-start justify-between gap-2"><div className="min-w-0"><h3 className="album-title-white font-black whitespace-normal break-words leading-tight text-[12px] sm:text-[15px]">{a.name}</h3><p className="album-meta-white text-[10px] sm:text-xs mt-1">{a.photos.length} fotos disponibles</p></div><span className="album-cta-chip shrink-0"><i className="fas fa-arrow-right"></i> Ver</span></div></div></div></button>)}
-        </div>
-        {filteredAlbums.length===0&&filteredArchivedAlbums.length===0&&<div className="text-center text-neutral-500 py-12 text-sm">No se encontraron álbumes.</div>}
+        {loading && activeAlbums.length===0 ? <AlbumLoadingGrid count={window.innerWidth<640?6:9}/> : <>
+          {loading && activeAlbums.length>0&&<div className="quick-loading-strip mb-4"><span className="quick-loading-dot"></span><div><b>Actualizando galería</b><p className="text-[11px] opacity-80 leading-tight">Mostrando lo guardado mientras se cargan los últimos cambios.</p></div></div>}
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 sm:gap-4">
+            {visibleFilteredAlbums.map(a=><button key={a.id} onClick={()=>{location.hash=albumHash(a.id)}} className="group text-left active:scale-[0.98] focus:outline-none"><div className="modern-album-card aspect-[4/5]"><div className="absolute inset-0 bg-neutral-900">{a.cover?<img src={a.cover} loading="lazy" decoding="async" className="modern-album-img w-full h-full object-cover"/>:<div className="w-full h-full flex items-center justify-center text-neutral-600"><i className="fas fa-image text-3xl"></i></div>}</div><div className="absolute inset-0 bg-gradient-to-t from-black via-black/38 to-transparent z-[2]"></div><div className="absolute top-2 left-2 sm:top-3 sm:left-3 z-[3] bg-black/55 backdrop-blur-md border border-white/15 px-2.5 py-1.5 rounded-full text-[9px] sm:text-[10px] text-white album-date-chip shadow-lg"><i className="fas fa-calendar-days mr-1 text-sky-300"></i>{a.dateLabel||"Sin fecha"}</div>{hasSiteDiscount(a.id)&&<div className="promo-badge absolute top-2 right-2 sm:top-3 sm:right-3"><span>-{albumSiteDiscount(a.id)}%</span><small>OFF</small></div>}<div className="absolute bottom-2 sm:bottom-3 left-2 sm:left-3 right-2 sm:right-3 z-[3] rounded-2xl p-2.5 sm:p-3 border border-white/12 bg-black/54 backdrop-blur-xl shadow-[0_18px_40px_rgba(0,0,0,.42)]"><div className="flex items-start justify-between gap-2"><div className="min-w-0"><h3 className="album-title-white font-black whitespace-normal break-words leading-tight text-[12px] sm:text-[15px]">{a.name}</h3><p className="album-meta-white text-[10px] sm:text-xs mt-1">{a.photos.length} fotos disponibles</p></div><span className="album-cta-chip shrink-0"><i className="fas fa-arrow-right"></i> Ver</span></div></div></div></button>)}
+          </div>
+          {albumRenderLimit<filteredAlbums.length&&<div className="quick-loading-strip mt-4 justify-center"><span className="quick-loading-dot"></span><b>Cargando más álbumes...</b></div>}
+        </>}
+        {!loading&&filteredAlbums.length===0&&filteredArchivedAlbums.length===0&&<div className="text-center text-neutral-500 py-12 text-sm">No se encontraron álbumes.</div>}
         {filteredArchivedAlbums.length>0&&<div className="mt-8 sm:mt-10">
           <div className="flex items-center gap-2 mb-4"><i className="fas fa-box-archive text-neutral-500"></i><h3 className="font-black text-lg">Álbumes archivados</h3></div>
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 sm:gap-4">
