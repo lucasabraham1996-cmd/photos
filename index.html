@@ -1,3 +1,12 @@
+
+
+
+
+
+
+
+
+
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -18,7 +27,6 @@
   <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js"></script>
-  <script src="/__/firebase/init.js"></script>
   <style>
     body{font-family:Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:#070707;color:#fff;-webkit-tap-highlight-color:transparent}
     img{-webkit-user-drag:none;user-select:none}
@@ -197,9 +205,19 @@ const LS_SHARED_STATE_KEY="la_shared_admin_state_v2";
 const PHOTOS_PER_PAGE=70;
 
 // Firebase se usa como fuente central para que móvil y PC vean lo mismo.
-// En Firebase Hosting se inicializa solo con /__/firebase/init.js.
-// Si se usa otro hosting, podés definir window.LA_FIREBASE_CONFIG antes de este script.
-const FIREBASE_CONFIG = window.LA_FIREBASE_CONFIG || null;
+// Config integrado para no depender de /__/firebase/init.js.
+const FIREBASE_CONFIG = window.LA_FIREBASE_CONFIG || {
+  apiKey: "AIzaSyAznAxOW-leFrKw3tIjRV5vilIjvRKsgk0",
+  authDomain: "lucasabraham-b84aa.firebaseapp.com",
+  projectId: "lucasabraham-b84aa",
+  storageBucket: "lucasabraham-b84aa.firebasestorage.app",
+  messagingSenderId: "1057661064112",
+  appId: "1:1057661064112:web:6952c87bd6a5388c0e3c75",
+  measurementId: "G-NPYNZQ0MPQ"
+};
+const FIREBASE_APP_DOC_ID = "lucasabraham-ph-db";
+const ORDERS_COLLECTION_PATH = `artifacts/${FIREBASE_APP_DOC_ID}/orders`;
+const SHARED_STATE_DOC_PATH = `artifacts/${FIREBASE_APP_DOC_ID}/config/shared_state`;
 let firebasePersistenceStarted=false;
 let firebaseAuthPromise=null;
 function getFirebaseApp(){
@@ -214,6 +232,7 @@ async function getFirebaseDb(){
   const app=getFirebaseApp();
   if(!app||!firebase.firestore)return null;
   const db=firebase.firestore(app);
+  try{window.LA_FIREBASE_STATUS={ok:true,projectId:FIREBASE_CONFIG.projectId,ordersPath:ORDERS_COLLECTION_PATH};}catch(e){}
   try{
     if(!firebasePersistenceStarted){
       firebasePersistenceStarted=true;
@@ -258,13 +277,13 @@ async function loadSharedAdminState(){
   try{
     const db=await getFirebaseDb();
     if(db){
-      const snap=await db.collection('la_gallery').doc('shared_state').get();
+      const snap=await db.doc(SHARED_STATE_DOC_PATH).get();
       if(snap.exists){
         const remote=normalizeSharedState(snap.data());
         writeSharedCache(remote);
         return remote;
       }
-      await db.collection('la_gallery').doc('shared_state').set(local,{merge:true});
+      await db.doc(SHARED_STATE_DOC_PATH).set(local,{merge:true});
       return local;
     }
   }catch(e){console.warn('No se pudo leer configuración desde Firebase.',e)}
@@ -278,7 +297,7 @@ async function saveSharedAdminState(partial){
   const next=writeSharedCache(partial);
   try{
     const db=await getFirebaseDb();
-    if(db){await db.collection('la_gallery').doc('shared_state').set(next,{merge:true});return next}
+    if(db){await db.doc(SHARED_STATE_DOC_PATH).set(next,{merge:true});return next}
   }catch(e){console.warn('No se pudo guardar configuración en Firebase.',e)}
   try{await apiAction({action:'saveSiteState',state:JSON.stringify(next)})}catch(e){}
   return next;
@@ -288,7 +307,7 @@ function subscribeSharedAdminState(onData){
   let cancelled=false;
   getFirebaseDb().then(db=>{
     if(cancelled||!db)return;
-    unsub=db.collection('la_gallery').doc('shared_state').onSnapshot(snap=>{
+    unsub=db.doc(SHARED_STATE_DOC_PATH).onSnapshot(snap=>{
       if(snap.exists){
         const remote=normalizeSharedState(snap.data());
         writeSharedCache(remote);
@@ -303,7 +322,7 @@ function subscribeOrders(onData){
   let cancelled=false;
   getFirebaseDb().then(db=>{
     if(cancelled||!db)return;
-    unsub=db.collection('la_orders').orderBy('date','desc').limit(3000).onSnapshot(snap=>{
+    unsub=db.collection(ORDERS_COLLECTION_PATH).orderBy('date','desc').limit(3000).onSnapshot(snap=>{
       const remote=snap.docs.map(d=>({id:d.data().id||d.id,...d.data()}));
       const merged=mergeOrders(remote,readLocalOrders(),readPendingOrders());
       saveLocalOrders(merged);
@@ -316,17 +335,17 @@ async function saveOrderFirebase(order){
   const db=await getFirebaseDb();
   if(!db)return false;
   const clean={...order,id:order.id||order.orderId||order.codigo||order.code,updatedAt:new Date().toISOString()};
-  await db.collection('la_orders').doc(firebaseDocId(clean.id)).set(clean,{merge:true});
+  await db.collection(ORDERS_COLLECTION_PATH).doc(firebaseDocId(clean.id)).set(clean,{merge:true});
   return true;
 }
 async function loadOrdersFirebase(limit=3000){
   const db=await getFirebaseDb();
   if(!db)return [];
   try{
-    const snap=await db.collection('la_orders').orderBy('date','desc').limit(limit).get();
+    const snap=await db.collection(ORDERS_COLLECTION_PATH).orderBy('date','desc').limit(limit).get();
     return snap.docs.map(d=>({id:d.data().id||d.id,...d.data()}));
   }catch(e){
-    const snap=await db.collection('la_orders').limit(limit).get();
+    const snap=await db.collection(ORDERS_COLLECTION_PATH).limit(limit).get();
     return snap.docs.map(d=>({id:d.data().id||d.id,...d.data()}));
   }
 }
@@ -349,7 +368,7 @@ async function findOrderEverywhere(code){
     const db=await getFirebaseDb();
     if(db){
       for(const id of orderCodeVariants(q)){
-        const snap=await db.collection('la_orders').doc(firebaseDocId(id)).get();
+        const snap=await db.collection(ORDERS_COLLECTION_PATH).doc(firebaseDocId(id)).get();
         if(snap.exists)return {id:snap.data().id||snap.id,...snap.data()};
       }
       const all=await loadOrdersFirebase(3000);
@@ -373,7 +392,7 @@ async function findOrderEverywhere(code){
 async function updateOrderFirebase(orderId,partial){
   const db=await getFirebaseDb();
   if(!db)return false;
-  await db.collection('la_orders').doc(firebaseDocId(orderId)).set({id:orderId,...partial,updatedAt:new Date().toISOString()},{merge:true});
+  await db.collection(ORDERS_COLLECTION_PATH).doc(firebaseDocId(orderId)).set({id:orderId,...partial,updatedAt:new Date().toISOString()},{merge:true});
   return true;
 }
 function readLocalOrders(){try{return JSON.parse(localStorage.getItem(LS_ORDERS_KEY)||"[]")}catch{return []}}
