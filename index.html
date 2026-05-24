@@ -312,7 +312,7 @@ function subscribeOrders(onData){
   let cancelled=false;
   getFirebaseDb().then(db=>{
     if(cancelled||!db)return;
-    unsub=db.collection('la_orders').orderBy('date','desc').limit(500).onSnapshot(snap=>{
+    unsub=db.collection('la_orders').orderBy('date','desc').limit(3000).onSnapshot(snap=>{
       const remote=snap.docs.map(d=>({id:d.data().id||d.id,...d.data()}));
       const merged=mergeOrders(remote,readLocalOrders(),readPendingOrders());
       saveLocalOrders(merged);
@@ -328,11 +328,56 @@ async function saveOrderFirebase(order){
   await db.collection('la_orders').doc(firebaseDocId(clean.id)).set(clean,{merge:true});
   return true;
 }
-async function loadOrdersFirebase(){
+async function loadOrdersFirebase(limit=3000){
   const db=await getFirebaseDb();
   if(!db)return [];
-  const snap=await db.collection('la_orders').orderBy('date','desc').limit(500).get();
-  return snap.docs.map(d=>({id:d.data().id||d.id,...d.data()}));
+  try{
+    const snap=await db.collection('la_orders').orderBy('date','desc').limit(limit).get();
+    return snap.docs.map(d=>({id:d.data().id||d.id,...d.data()}));
+  }catch(e){
+    const snap=await db.collection('la_orders').limit(limit).get();
+    return snap.docs.map(d=>({id:d.data().id||d.id,...d.data()}));
+  }
+}
+function orderCodeVariants(v){
+  const clean=normalizeOrderCode(v);
+  const withDash=clean.replace(/^LA(\d+)/,'LA-$1');
+  return Array.from(new Set([String(v||''),clean,withDash,'#'+withDash,'#'+clean].filter(Boolean)));
+}
+function findOrderInList(list,code){
+  const q=normalizeOrderCode(code);
+  if(!q)return null;
+  return (list||[]).find(o=>normalizeOrderCode(o?.id||o?.orderId||o?.codigo||o?.code)===q)||null;
+}
+async function findOrderEverywhere(code){
+  const q=normalizeOrderCode(code);
+  if(!q)return null;
+  const localHit=findOrderInList(mergeOrders(readLocalOrders(),readPendingOrders()),q);
+  if(localHit)return localHit;
+  try{
+    const db=await getFirebaseDb();
+    if(db){
+      for(const id of orderCodeVariants(q)){
+        const snap=await db.collection('la_orders').doc(firebaseDocId(id)).get();
+        if(snap.exists)return {id:snap.data().id||snap.id,...snap.data()};
+      }
+      const all=await loadOrdersFirebase(3000);
+      const hit=findOrderInList(all,q);
+      if(hit)return hit;
+    }
+  }catch(e){console.warn('No se pudo buscar el pedido directo en Firebase.',e)}
+  try{
+    const r=await apiAction({action:'getOrder',orderId:q});
+    if(r&&r.order)return r.order;
+  }catch(e){}
+  try{
+    const r=await apiAction({action:'listOrders'});
+    if(r&&Array.isArray(r.orders)){
+      const hit=findOrderInList(r.orders,q);
+      if(hit)return hit;
+    }
+  }catch(e){}
+  return null;
 }
 async function updateOrderFirebase(orderId,partial){
   const db=await getFirebaseDb();
@@ -602,23 +647,34 @@ const PromoBanners=()=>{
 
 const MainHeaderBanners=()=>{
   const banners=[
-    {src:"https://i.postimg.cc/pLrPtFw0/080905fa-ba44-4525-b618-e906e3e3e1e3.png",msg:"Hola Lucas! Quiero consultar por una figurita del Mundial personalizada."},
-    {src:"https://i.postimg.cc/L85mMPd8/ec56e040-b2ed-41a3-9395-21a914051e46.png",msg:"Hola Lucas! Quiero consultar por un diseño de jugador profesional personalizado."}
+    {src:"https://i.postimg.cc/pLrPtFw0/080905fa-ba44-4525-b618-e906e3e3e1e3.png",title:"Figuritas del Mundial personalizadas",text:"Pedí tu diseño con tu foto, listo para compartir.",msg:"Hola Lucas! Quiero consultar por una figurita del Mundial personalizada."},
+    {src:"https://i.postimg.cc/L85mMPd8/ec56e040-b2ed-41a3-9395-21a914051e46.png",title:"Diseños de jugador profesional",text:"Placas deportivas personalizadas en estilo premium.",msg:"Hola Lucas! Quiero consultar por un diseño de jugador profesional personalizado."}
   ];
   const [bannerIndex,setBannerIndex]=useState(0);
+  const [broken,setBroken]=useState({});
   const touchStartX=useRef(null);
   const goBanner=(dir)=>setBannerIndex(i=>(i+dir+banners.length)%banners.length);
   useEffect(()=>{const t=setInterval(()=>goBanner(1),5000);return()=>clearInterval(t)},[]);
   const active=banners[bannerIndex];
+  const isBroken=broken[active.src];
   return <div className="main-banner-wrap mt-5 sm:mt-7 w-full overflow-hidden">
     <button
       onClick={()=>window.open(`https://wa.me/${SELLER_PHONE}?text=${encodeURIComponent(active.msg)}`,'_blank')}
       onTouchStart={e=>{touchStartX.current=e.touches[0].clientX}}
       onTouchEnd={e=>{if(touchStartX.current===null)return;const dx=e.changedTouches[0].clientX-touchStartX.current;if(Math.abs(dx)>45)goBanner(dx<0?1:-1);touchStartX.current=null}}
-      className="block w-full p-0 m-0 bg-transparent border-0 rounded-none overflow-hidden active:scale-[0.995] transition-transform"
+      className="block w-full p-0 m-0 bg-transparent border-0 rounded-[28px] overflow-hidden active:scale-[0.995] transition-transform"
       aria-label="Abrir banner por WhatsApp"
     >
-      <img key={active.src} src={active.src} loading="lazy" decoding="async" className="block w-full h-auto object-contain select-none" draggable="false"/>
+      {!isBroken ? <img key={active.src} src={active.src} loading="lazy" decoding="async" onError={()=>setBroken(b=>({...b,[active.src]:true}))} className="block w-full h-auto object-contain select-none" draggable="false"/> :
+        <div className="buy-gradient min-h-[132px] sm:min-h-[210px] rounded-[28px] p-5 sm:p-8 flex items-center justify-between gap-4 text-left">
+          <div>
+            <p className="text-xs sm:text-sm font-black tracking-[.22em] uppercase text-sky-100">lucasabraham.ph</p>
+            <h3 className="text-2xl sm:text-5xl font-black leading-tight mt-2">{active.title}</h3>
+            <p className="text-sm sm:text-lg text-sky-100/85 mt-2 max-w-xl">{active.text}</p>
+            <span className="inline-flex mt-4 bg-emerald-500 text-black px-4 py-2 rounded-xl font-black text-sm"><i className="fab fa-whatsapp mr-2"></i> Pedir con un clic</span>
+          </div>
+          <img src="https://i.postimg.cc/PrD4jg9V/Logo-LA.png" className="w-20 h-20 sm:w-32 sm:h-32 object-contain shrink-0 opacity-90"/>
+        </div>}
     </button>
     <div className="flex justify-center gap-2 mt-2">
       {banners.map((_,i)=><button key={i} onClick={()=>setBannerIndex(i)} className={`h-1.5 rounded-full transition-all ${i===bannerIndex?'w-6 bg-white dark:bg-white':'w-1.5 bg-neutral-500/50'}`} aria-label={`Ver banner ${i+1}`}></button>)}
@@ -688,6 +744,8 @@ function App(){
   const [orders,setOrders]=useState(readLocalOrders());
   const [ordersLoading,setOrdersLoading]=useState(false);
   const [orderSearch,setOrderSearch]=useState("");
+  const [directOrder,setDirectOrder]=useState(null);
+  const [orderSearchTouched,setOrderSearchTouched]=useState(false);
   const [albumSearch,setAlbumSearch]=useState("");
   const [viewMode,setViewMode]=useState("mosaic");
   const [focusPhoto,setFocusPhoto]=useState(null);
@@ -768,7 +826,12 @@ function App(){
   useEffect(()=>{if(albumPage>totalAlbumPages)setAlbumPage(totalAlbumPages)},[albumPage,totalAlbumPages]);
   useEffect(()=>{if(albumPhotos.length){setFocusPhoto(p=>p&&albumPhotos.some(x=>x.id===p.id)?p:albumPhotos[0])}else{setFocusPhoto(null)}},[activeAlbum,albumPhotos.length]);
   const selectedPhotos=allPhotos.filter(p=>cart.includes(p.id));
-  const matchedOrder=useMemo(()=>{const q=cleanOperationCode(orderSearch);if(!q)return null;return orders.find(o=>cleanOperationCode(o.id)===q)},[orders,orderSearch]);
+  const matchedOrder=useMemo(()=>{
+    const q=cleanOperationCode(orderSearch);
+    if(!q)return null;
+    if(directOrder&&cleanOperationCode(directOrder.id)===q)return directOrder;
+    return findOrderInList(orders,q);
+  },[orders,orderSearch,directOrder]);
   const recentOrders=useMemo(()=>[...orders].sort((a,b)=>new Date(b.date||0)-new Date(a.date||0)).slice(0,10),[orders]);
   const regular=calculateSubtotal(selectedPhotos);
   const discount=discountRate(cart.length);
@@ -890,6 +953,27 @@ A continuación, te envío el comprobante.`;
     setAdminMessage('Se eliminó la carátula personalizada.');
   }
 
+  async function searchOrderNow(){
+    const q=cleanOperationCode(orderSearch);
+    if(!q)return;
+    setOrderSearchTouched(true);
+    setOrdersLoading(true);
+    try{
+      const merged=await loadOrdersRemote();
+      let hit=findOrderInList(merged,q);
+      if(!hit)hit=await findOrderEverywhere(q);
+      if(hit){
+        const next=mergeOrders([hit],merged);
+        saveLocalOrders(next);
+        setOrders(next);
+        setDirectOrder(hit);
+      }else{
+        setOrders(merged);
+        setDirectOrder(null);
+      }
+    }finally{setOrdersLoading(false)}
+  }
+
   useEffect(()=>{if(!adminMessage)return;const t=setTimeout(()=>setAdminMessage(''),2500);return()=>clearTimeout(t)},[adminMessage]);
   useEffect(()=>{
     if(route!=="#/admin"||!admin)return;
@@ -901,8 +985,9 @@ A continuación, te envío el comprobante.`;
   useEffect(()=>{
     if(route!=="#/admin"||!admin)return;
     const q=cleanOperationCode(orderSearch);
-    if(!q||matchedOrder)return;
-    const t=setTimeout(()=>{setOrdersLoading(true);loadOrdersRemote().then(setOrders).finally(()=>setOrdersLoading(false));},450);
+    if(!q){setDirectOrder(null);setOrderSearchTouched(false);return;}
+    if(matchedOrder)return;
+    const t=setTimeout(()=>{searchOrderNow();},650);
     return()=>clearTimeout(t);
   },[orderSearch,route,admin,matchedOrder]);
 
@@ -950,11 +1035,11 @@ A continuación, te envío el comprobante.`;
           <p className="text-neutral-400 text-sm">Ingresá el código de operación, por ejemplo <b>#LA-55336</b>, y la app lista las fotos compradas con sus enlaces.</p>
         </div>
         <div className="admin-actions flex gap-2 w-full lg:w-auto">
-          <input value={orderSearch} onChange={e=>setOrderSearch(e.target.value.toUpperCase())} onKeyDown={e=>{if(e.key==='Enter'){setOrdersLoading(true);loadOrdersRemote().then(setOrders).finally(()=>setOrdersLoading(false));}}} placeholder="#LA-55336" className="flex-1 lg:w-56 bg-black border border-neutral-700 rounded-xl px-4 py-3 outline-none uppercase"/>
-          <button onClick={()=>{setOrdersLoading(true);loadOrdersRemote().then(setOrders).finally(()=>setOrdersLoading(false));}} className="bg-indigo-600 hover:bg-indigo-500 px-4 py-3 rounded-xl font-bold">{ordersLoading?'Cargando...':'Actualizar'}</button>
+          <input value={orderSearch} onChange={e=>{setOrderSearch(e.target.value.toUpperCase());setDirectOrder(null);setOrderSearchTouched(false);}} onKeyDown={e=>{if(e.key==='Enter')searchOrderNow();}} placeholder="#LA-55336" className="flex-1 lg:w-56 bg-black border border-neutral-700 rounded-xl px-4 py-3 outline-none uppercase"/>
+          <button onClick={searchOrderNow} className="bg-indigo-600 hover:bg-indigo-500 px-4 py-3 rounded-xl font-bold">{ordersLoading?'Buscando...':'Buscar/actualizar'}</button>
         </div>
       </div>
-      {orderSearch && !matchedOrder && <div className="mt-4 bg-red-500/10 border border-red-500/25 text-red-200 rounded-2xl px-4 py-3 text-sm">No encontré esa operación en los pedidos guardados. La búsqueda acepta #LA-55336, LA-55336 o LA55336. Probá tocar <b>Actualizar</b>. Ahora la búsqueda sincroniza Firebase y el respaldo local para traer pedidos generados desde celular, PC o versiones anteriores.</div>}
+      {orderSearch && orderSearchTouched && !ordersLoading && !matchedOrder && <div className="mt-4 bg-red-500/10 border border-red-500/25 text-red-200 rounded-2xl px-4 py-3 text-sm">No encontré esa operación en Firebase, Apps Script ni en el respaldo local de este navegador. La búsqueda acepta #LA-55336, LA-55336 o LA55336. Si el pedido fue generado desde una versión anterior que solo guardó en el celular del comprador y no llegó a sincronizar, no aparece en esta PC; desde esta versión los nuevos pedidos quedan centralizados.</div>}
       {matchedOrder && <div className="mt-5 bg-black/35 border border-neutral-800 rounded-2xl p-4">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
           <div><p className="text-xs text-neutral-500 uppercase tracking-widest">Operación</p><h3 className="text-2xl font-black">#{matchedOrder.id}</h3><div className={`inline-flex items-center gap-2 mt-2 px-3 py-1 rounded-full text-xs font-black ${matchedOrder.delivered?'bg-emerald-500/20 text-emerald-300 border border-emerald-500/35':'bg-amber-500/15 text-amber-300 border border-amber-500/30'}`}><i className={`fas ${matchedOrder.delivered?'fa-circle-check':'fa-clock'}`}></i>{matchedOrder.delivered?'Pedido ya cargado y entregado':'Pendiente de cargar/entregar'}</div><p className="text-neutral-400 text-sm mt-2">Total: {formatPrice(matchedOrder.total)} · {matchedOrder.items?.length||0} fotos</p></div>
