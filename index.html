@@ -3,6 +3,8 @@
 
 
 
+
+
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -188,6 +190,7 @@ const DEFAULT_FULL_ALBUM_PRICE=50000;
 const ADMIN_PIN="1234";
 const LS_COVER_KEY="la_cover_overrides_v2";
 const LS_ORDERS_KEY="la_orders_v1";
+const LS_PENDING_ORDERS_KEY="la_pending_orders_v1";
 const LS_THEME_KEY="la_theme_mode_v1";
 const LS_WM_KEY="la_watermark_settings_v1";
 const LS_DISCOUNT_KEY="la_site_discount_settings_v1";
@@ -195,7 +198,26 @@ const LS_ALBUM_CACHE_KEY="la_album_cache_v1";
 const LS_COUPONS_KEY="la_coupon_settings_v1";
 const PHOTOS_PER_PAGE=50;
 function readLocalOrders(){try{return JSON.parse(localStorage.getItem(LS_ORDERS_KEY)||"[]")}catch{return []}}
-function saveLocalOrders(orders){localStorage.setItem(LS_ORDERS_KEY,JSON.stringify(orders))}
+function saveLocalOrders(orders){localStorage.setItem(LS_ORDERS_KEY,JSON.stringify(Array.isArray(orders)?orders:[]))}
+function readPendingOrders(){try{return JSON.parse(localStorage.getItem(LS_PENDING_ORDERS_KEY)||"[]")}catch{return []}}
+function savePendingOrders(orders){localStorage.setItem(LS_PENDING_ORDERS_KEY,JSON.stringify(Array.isArray(orders)?orders:[]))}
+function normalizeOrderCode(v){
+  return String(v||"")
+    .toUpperCase()
+    .replace(/OPERACI[ÓO]N|PEDIDO|CODIGO|C[ÓO]DIGO|N[°º]|#/g,"")
+    .replace(/[^A-Z0-9]/g,"");
+}
+function sameOrderCode(a,b){return normalizeOrderCode(a)===normalizeOrderCode(b)}
+function mergeOrders(...lists){
+  const map=new Map();
+  lists.flat().filter(Boolean).forEach(order=>{
+    const key=normalizeOrderCode(order.id||order.orderId||order.codigo||order.code);
+    if(!key)return;
+    const current=map.get(key)||{};
+    map.set(key,{...current,...order,id:order.id||current.id,items:order.items||current.items||[],delivered:order.delivered??current.delivered??false});
+  });
+  return Array.from(map.values()).sort((a,b)=>new Date(b.date||0)-new Date(a.date||0));
+}
 function systemTheme(){try{return window.matchMedia&&window.matchMedia('(prefers-color-scheme: light)').matches?'light':'dark'}catch{return 'dark'}}
 function readTheme(){try{return localStorage.getItem(LS_THEME_KEY)||systemTheme()}catch{return systemTheme()}}
 function saveTheme(v){try{localStorage.setItem(LS_THEME_KEY,v)}catch(e){}}
@@ -209,16 +231,45 @@ function readAlbumCache(){try{return JSON.parse(localStorage.getItem(LS_ALBUM_CA
 function saveAlbumCache(v){try{localStorage.setItem(LS_ALBUM_CACHE_KEY,JSON.stringify(v))}catch(e){}}
 const wait=(ms)=>new Promise(r=>setTimeout(r,ms));
 function apiAction(params){const q=new URLSearchParams(params);return jsonp(APPS_SCRIPT_URL+(APPS_SCRIPT_URL.includes("?")?"&":"?")+q.toString())}
+async function syncPendingOrders(){
+  const pending=readPendingOrders();
+  if(!pending.length)return;
+  const stillPending=[];
+  for(const order of pending){
+    try{await apiAction({action:"createOrder",order:JSON.stringify(order)})}
+    catch(e){stillPending.push(order)}
+  }
+  savePendingOrders(stillPending);
+}
 async function saveOrderRemote(order){
-  saveLocalOrders([order,...readLocalOrders().filter(o=>o.id!==order.id)]);
-  try{await apiAction({action:"createOrder",order:JSON.stringify(order)})}catch(e){console.warn("Pedido guardado localmente. Apps Script no aceptó escritura todavía.",e)}
+  const merged=mergeOrders([order],readLocalOrders());
+  saveLocalOrders(merged);
+  savePendingOrders(mergeOrders([order],readPendingOrders()));
+  try{
+    await apiAction({action:"createOrder",order:JSON.stringify(order)});
+    savePendingOrders(readPendingOrders().filter(o=>!sameOrderCode(o.id,order.id)));
+  }catch(e){
+    console.warn("Pedido guardado localmente y pendiente de sincronizar con Apps Script.",e);
+  }
 }
 async function loadOrdersRemote(){
-  try{const r=await apiAction({action:"listOrders"});if(r&&Array.isArray(r.orders)){saveLocalOrders(r.orders);return r.orders}}catch(e){console.warn("No se pudieron leer pedidos remotos",e)}
-  return readLocalOrders();
+  const local=readLocalOrders();
+  try{
+    await syncPendingOrders();
+    const r=await apiAction({action:"listOrders"});
+    if(r&&Array.isArray(r.orders)){
+      const merged=mergeOrders(r.orders,local,readPendingOrders());
+      saveLocalOrders(merged);
+      return merged;
+    }
+  }catch(e){console.warn("No se pudieron leer pedidos remotos. Se conservan los pedidos locales.",e)}
+  const merged=mergeOrders(local,readPendingOrders());
+  saveLocalOrders(merged);
+  return merged;
 }
 async function markOrderDelivered(orderId,delivered){
-  const local=readLocalOrders().map(o=>o.id===orderId?{...o,delivered}:o);saveLocalOrders(local);
+  const local=mergeOrders(readLocalOrders()).map(o=>sameOrderCode(o.id,orderId)?{...o,delivered}:o);
+  saveLocalOrders(local);
   try{await apiAction({action:"updateOrder",orderId,delivered:String(delivered)})}catch(e){console.warn("Estado actualizado localmente. Apps Script no aceptó escritura todavía.",e)}
   return local;
 }
@@ -232,7 +283,7 @@ const calculateSubtotal=(items)=>items.reduce((sum,p)=>sum+(Number(p.price)||0),
 const calculateBestPrice=(items)=>Math.round(calculateSubtotal(items)*(1-discountRate(items.length)));
 const extractDriveId=(url)=>{const s=String(url||"");const patterns=[/drive\.google\.com\/file\/d\/([^/]+)/,/drive\.google\.com\/open\?id=([^&]+)/,/drive\.google\.com\/uc\?[^#]*id=([^&]+)/,/[?&]id=([^&]+)/];for(const p of patterns){const m=s.match(p);if(m&&m[1])return decodeURIComponent(m[1])}return""};
 const toImgUrl=(url,size=500)=>{const raw=String(url||"").trim();if(!raw)return"";if(raw.startsWith("data:image/"))return raw;const id=extractDriveId(raw);if(id)return`https://drive.google.com/thumbnail?id=${id}&sz=w${size}`;return raw};
-const cleanOperationCode=(v)=>String(v||"").trim().replace(/^#/g,"").toUpperCase();
+const cleanOperationCode=(v)=>normalizeOrderCode(v);
 const orderDriveLink=(item)=>item.driveLink||item.rawUrl||item.originalUrl||item.url||"";
 const EM={clip:"\u{1F4CB}",money:"\u{1F4B0}",tag:"\u{1F3F7}\uFE0F",image:"\u{1F5BC}\uFE0F",dot:"\u25AB\uFE0F",point:"\u{1F449}",wave:"\u{1F44B}",hello:"\u{1F44B}\u{1F3FC}",camera:"\u{1F4F8}",sparkles:"\u2728",thanks:"\u{1F64C}",check:"\u2705",box:"\u{1F4E6}"};
 function buildDeliveryLinksMessage(order){
@@ -627,7 +678,7 @@ A continuación, te envío el comprobante.`;
       delivered:false
     };
     saveOrderRemote(orderData);
-    setOrders(o=>[orderData,...o.filter(x=>x.id!==orderData.id)]);
+    setOrders(o=>mergeOrders([orderData],o));
     window.open(`https://wa.me/${SELLER_PHONE}?text=${encodeURIComponent(msg)}`,'_blank');
     setCart([]);
     setCheckoutOpen(false);
@@ -727,11 +778,11 @@ A continuación, te envío el comprobante.`;
           <p className="text-neutral-400 text-sm">Ingresá el código de operación, por ejemplo <b>#LA-55336</b>, y la app lista las fotos compradas con sus enlaces.</p>
         </div>
         <div className="admin-actions flex gap-2 w-full lg:w-auto">
-          <input value={orderSearch} onChange={e=>setOrderSearch(e.target.value)} placeholder="#LA-55336" className="flex-1 lg:w-56 bg-black border border-neutral-700 rounded-xl px-4 py-3 outline-none uppercase"/>
+          <input value={orderSearch} onChange={e=>setOrderSearch(e.target.value.toUpperCase())} onKeyDown={e=>{if(e.key==='Enter'){setOrdersLoading(true);loadOrdersRemote().then(setOrders).finally(()=>setOrdersLoading(false));}}} placeholder="#LA-55336" className="flex-1 lg:w-56 bg-black border border-neutral-700 rounded-xl px-4 py-3 outline-none uppercase"/>
           <button onClick={()=>{setOrdersLoading(true);loadOrdersRemote().then(setOrders).finally(()=>setOrdersLoading(false));}} className="bg-indigo-600 hover:bg-indigo-500 px-4 py-3 rounded-xl font-bold">{ordersLoading?'Cargando...':'Actualizar'}</button>
         </div>
       </div>
-      {orderSearch && !matchedOrder && <div className="mt-4 bg-red-500/10 border border-red-500/25 text-red-200 rounded-2xl px-4 py-3 text-sm">No encontré esa operación en los pedidos cargados. Probá actualizar pedidos o verificá el código.</div>}
+      {orderSearch && !matchedOrder && <div className="mt-4 bg-red-500/10 border border-red-500/25 text-red-200 rounded-2xl px-4 py-3 text-sm">No encontré esa operación en los pedidos guardados. La búsqueda acepta #LA-55336, LA-55336 o LA55336. Probá tocar <b>Actualizar</b> para sincronizar y verificá que el pedido se haya generado desde esta misma versión.</div>}
       {matchedOrder && <div className="mt-5 bg-black/35 border border-neutral-800 rounded-2xl p-4">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
           <div><p className="text-xs text-neutral-500 uppercase tracking-widest">Operación</p><h3 className="text-2xl font-black">#{matchedOrder.id}</h3><div className={`inline-flex items-center gap-2 mt-2 px-3 py-1 rounded-full text-xs font-black ${matchedOrder.delivered?'bg-emerald-500/20 text-emerald-300 border border-emerald-500/35':'bg-amber-500/15 text-amber-300 border border-amber-500/30'}`}><i className={`fas ${matchedOrder.delivered?'fa-circle-check':'fa-clock'}`}></i>{matchedOrder.delivered?'Pedido ya cargado y entregado':'Pendiente de cargar/entregar'}</div><p className="text-neutral-400 text-sm mt-2">Total: {formatPrice(matchedOrder.total)} · {matchedOrder.items?.length||0} fotos</p></div>
