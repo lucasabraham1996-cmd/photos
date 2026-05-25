@@ -203,7 +203,7 @@ const LS_ALBUM_CACHE_KEY="la_album_cache_v1";
 const LS_COUPONS_KEY="la_coupon_settings_v1";
 const LS_SHARED_STATE_KEY="la_shared_admin_state_v2";
 const PHOTOS_PER_PAGE=70;
-const APP_VERSION="firebase-primary-orders-v4-buy-anchor-fix";
+const APP_VERSION="firebase-unificada-sin-cache-v8";
 
 // Firebase se usa como fuente central para que móvil y PC vean lo mismo.
 // Config integrado para no depender de /__/firebase/init.js.
@@ -234,13 +234,9 @@ async function getFirebaseDb(){
   const app=getFirebaseApp();
   if(!app||!firebase.firestore)return null;
   const db=firebase.firestore(app);
-  try{window.LA_FIREBASE_STATUS={ok:true,projectId:FIREBASE_CONFIG.projectId,ordersPath:ORDERS_COLLECTION_PATH};}catch(e){}
-  try{
-    if(!firebasePersistenceStarted){
-      firebasePersistenceStarted=true;
-      db.enablePersistence({synchronizeTabs:true}).catch(()=>{});
-    }
-  }catch(e){}
+  try{window.LA_FIREBASE_STATUS={ok:true,projectId:FIREBASE_CONFIG.projectId,ordersPath:ORDERS_COLLECTION_PATH,appVersion:APP_VERSION};}catch(e){}
+  // No usamos persistencia/cache offline de Firestore para evitar que PC, incógnito y celular muestren listados distintos.
+  try{ db.settings({ignoreUndefinedProperties:true}); }catch(e){}
   try{
     if(firebase.auth&&!firebase.auth().currentUser){
       firebaseAuthPromise=firebaseAuthPromise||firebase.auth().signInAnonymously().catch(()=>null);
@@ -325,10 +321,8 @@ function subscribeOrders(onData){
   getFirebaseDb().then(db=>{
     if(cancelled||!db)return;
     unsub=db.collection(ORDERS_COLLECTION_PATH).orderBy('date','desc').limit(3000).onSnapshot(snap=>{
-      const remote=snap.docs.map(d=>({id:d.data().id||d.id,...d.data()}));
-      const merged=mergeOrders(remote,readLocalOrders(),readPendingOrders());
-      saveLocalOrders(merged);
-      onData&&onData(merged);
+      const remote=mergeOrders(snap.docs.map(d=>({id:d.data().id||d.id,...d.data(),_firebasePath:ORDERS_COLLECTION_PATH})));
+      onData&&onData(remote);
     },e=>console.warn('Sincronización de pedidos no disponible.',e));
   });
   return ()=>{cancelled=true;if(unsub)unsub()};
@@ -371,11 +365,11 @@ async function loadOrdersFirebase(limit=3000){
   const paths=[ORDERS_COLLECTION_PATH,...legacyOrderCollections()];
   for(const path of paths){
     try{
-      const snap=await db.collection(path).orderBy('date','desc').limit(limit).get();
+      const snap=await db.collection(path).orderBy('date','desc').limit(limit).get({source:'server'});
       all.push(...snap.docs.map(d=>({id:d.data().id||d.id,...d.data(),_firebasePath:path})));
     }catch(e){
       try{
-        const snap=await db.collection(path).limit(limit).get();
+        const snap=await db.collection(path).limit(limit).get({source:'server'});
         all.push(...snap.docs.map(d=>({id:d.data().id||d.id,...d.data(),_firebasePath:path})));
       }catch(err){
         console.warn('No se pudieron leer pedidos desde Firebase:', path, err);
@@ -489,7 +483,7 @@ async function saveOrderRemote(order){
   try{status.firebase=await saveOrderFirebase(clean)}catch(e){status.error=String(e&&e.message?e.message:e);console.warn("Firebase no aceptó el pedido todavía.",e)}
   try{await apiAction({action:"createOrder",order:JSON.stringify(clean)});status.script=true}catch(e){console.warn("Apps Script no aceptó el pedido todavía.",e)}
   if(status.firebase||status.script)savePendingOrders(readPendingOrders().filter(o=>!sameOrderCode(o.id,clean.id)));
-  try{window.LA_LAST_ORDER_SAVE_STATUS={...status,id:clean.id,at:new Date().toISOString()};}catch(e){}
+  try{window.LA_LAST_ORDER_SAVE_STATUS={...status,id:clean.id,ordersPath:ORDERS_COLLECTION_PATH,at:new Date().toISOString(),appVersion:APP_VERSION};}catch(e){}
   return status;
 }
 async function loadOrdersRemote(){
@@ -502,8 +496,8 @@ async function loadOrdersRemote(){
     const r=await apiAction({action:"listOrders"});
     if(r&&Array.isArray(r.orders))scriptOrders=r.orders;
   }catch(e){console.warn("No se pudieron leer pedidos desde Apps Script.",e)}
-  const merged=mergeOrders(firebaseOrders,scriptOrders,local,readPendingOrders());
-  saveLocalOrders(merged);
+  // El listado principal del admin se arma SOLO con datos remotos para que no haya dos versiones distintas entre navegador normal, incógnito y celular.
+  const merged=mergeOrders(firebaseOrders,scriptOrders);
   return merged;
 }
 async function markOrderDelivered(orderId,delivered){
@@ -792,7 +786,7 @@ function App(){
   const [coverOverrides,setCoverOverrides]=useState(loadCoverOverrides());
   const [editor,setEditor]=useState(null);
   const [adminMessage,setAdminMessage]=useState("");
-  const [orders,setOrders]=useState(readLocalOrders());
+  const [orders,setOrders]=useState([]);
   const [ordersLoading,setOrdersLoading]=useState(false);
   const [orderSearch,setOrderSearch]=useState("");
   const [directOrder,setDirectOrder]=useState(null);
@@ -965,48 +959,63 @@ A continuación, te envío el comprobante.`;
   };
 
   const sendOrder=(e)=>{
-    // IMPORTANTE: este handler NO usa preventDefault. El enlace <a> abre WhatsApp de forma nativa
-    // aunque Firebase, Apps Script o localStorage fallen. Así el botón COMPRAR siempre funciona.
+    // Evitamos que el navegador calcule un href distinto o bloquee el flujo.
+    // En este único click: armamos pedido, guardamos local, intentamos subir a Firebase y abrimos WhatsApp.
+    if(e&&e.preventDefault)e.preventDefault();
     if(!cart.length || !selectedPhotos.length){
-      if(e&&e.preventDefault)e.preventDefault();
       alert('Seleccioná al menos una foto antes de comprar.');
       return;
     }
 
-    const {order,orderData}=buildOrderPackage(checkoutOrderCode||('LA-'+Math.floor(10000+Math.random()*90000)));
+    const fixedCode=checkoutOrderCode || ('LA-'+Math.floor(10000+Math.random()*90000));
+    if(!checkoutOrderCode) setCheckoutOrderCode(fixedCode);
+    const {order,orderData,whatsappUrl}=buildOrderPackage(fixedCode);
 
     try{saveLocalOrders(mergeOrders([orderData],readLocalOrders()));}catch(err){console.warn('No se pudo guardar pedido local.',err)}
     try{savePendingOrders(mergeOrders([orderData],readPendingOrders()));}catch(err){console.warn('No se pudo guardar pedido pendiente.',err)}
-    try{setOrders(o=>mergeOrders([orderData],o));}catch(err){}
-    try{setAdminMessage(`Pedido ${order} generado. Abriendo WhatsApp...`);}catch(err){}
+    try{setAdminMessage(`Pedido ${order} generado. Guardando y abriendo WhatsApp...`);}catch(err){}
 
-    // Limpiamos la pantalla después de que el navegador procese el click del enlace.
-    setTimeout(()=>{
-      try{setCart([]);}catch(err){}
-      try{setCheckoutOpen(false);}catch(err){}
-      try{setAppliedCoupon(null);}catch(err){}
-      try{setCheckoutCoupon('');}catch(err){}
-      try{setCouponMessage('');}catch(err){}
-      try{setCheckoutOrderCode('');}catch(err){}
-    },350);
+    let popup=null;
+    try{
+      popup=window.open('', '_blank');
+      if(popup){
+        popup.document.write('<!doctype html><html><head><title>Abriendo WhatsApp...</title><meta name="viewport" content="width=device-width,initial-scale=1"><style>body{font-family:Arial,sans-serif;background:#050505;color:white;display:flex;align-items:center;justify-content:center;min-height:100vh;margin:0;text-align:center;padding:24px}a{color:#22c55e;font-weight:800}</style></head><body><div><h2>Preparando WhatsApp...</h2><p>Si no abre automáticamente, tocá abajo.</p><p><a href="'+whatsappUrl.replace(/"/g,'&quot;')+'">Abrir WhatsApp</a></p></div></body></html>');
+        popup.document.close();
+      }
+    }catch(err){popup=null;}
 
-    // Sincronización remota en segundo plano: nunca bloquea WhatsApp.
-    setTimeout(()=>{
-      Promise.resolve()
-        .then(()=>saveOrderRemote(orderData))
-        .then(saveStatus=>{
-          if(saveStatus&&saveStatus.firebase){
-            setAdminMessage(`Pedido ${order} guardado correctamente en Firebase.`);
-          }else{
-            console.warn(`El pedido ${order} quedó local/pendiente. Firebase no confirmó la subida.`, saveStatus);
-            setAdminMessage(`Pedido ${order} generado. Firebase no confirmó la subida todavía.`);
-          }
-        })
-        .catch(err=>{
-          console.warn('No se pudo sincronizar el pedido en segundo plano.',err);
-          setAdminMessage(`Pedido ${order} generado. Error al sincronizar Firebase.`);
-        });
-    },600);
+    const remoteSave=Promise.resolve()
+      .then(()=>saveOrderRemote(orderData))
+      .then(status=>{
+        if(status&&status.firebase){
+          setAdminMessage(`Pedido ${order} guardado en Firebase.`);
+        }else{
+          console.warn(`Pedido ${order} generado, pero Firebase no confirmó la subida.`, status);
+          setAdminMessage(`Pedido ${order} generado. Firebase no confirmó la subida.`);
+        }
+        return status;
+      })
+      .catch(err=>{
+        console.error('Error sincronizando pedido:', err);
+        setAdminMessage(`Pedido ${order} generado. Error Firebase: ${err?.message||err}`);
+        return {firebase:false,error:String(err?.message||err)};
+      });
+
+    // Damos un margen muy corto para que Firebase alcance a iniciar, pero no bloqueamos la compra.
+    Promise.race([remoteSave, wait(900)]).finally(()=>{
+      try{
+        if(popup && !popup.closed){ popup.location.href=whatsappUrl; }
+        else { window.location.href=whatsappUrl; }
+      }catch(err){ window.location.href=whatsappUrl; }
+      setTimeout(()=>{
+        try{setCart([]);}catch(err){}
+        try{setCheckoutOpen(false);}catch(err){}
+        try{setAppliedCoupon(null);}catch(err){}
+        try{setCheckoutCoupon('');}catch(err){}
+        try{setCouponMessage('');}catch(err){}
+        try{setCheckoutOrderCode('');}catch(err){}
+      },500);
+    });
   };
 
   const addCoupon=()=>{
@@ -1121,7 +1130,7 @@ A continuación, te envío el comprobante.`;
 
     {adminMessage && <div className="mb-4 bg-emerald-600/15 border border-emerald-500/30 text-emerald-300 rounded-2xl px-4 py-3 text-sm">{adminMessage}</div>}
     <div className="mb-4 bg-blue-500/10 border border-blue-500/25 text-blue-100 rounded-2xl px-4 py-3 text-xs leading-relaxed">
-      <b>Firebase:</b> proyecto lucasabraham-b84aa · ruta principal <b>artifacts/lucasabraham-ph-db/orders</b> · versión <b>firebase-primary-orders-v2</b>. Si al comprar aparece un aviso rojo, el pedido quedó local pero Firestore rechazó la escritura.
+      <b>Firebase:</b> proyecto lucasabraham-b84aa · ruta principal <b>artifacts/lucasabraham-ph-db/orders</b> · versión <b>firebase-unificada-sin-cache-v8</b>. Si al comprar aparece un aviso rojo, el pedido quedó local pero Firestore rechazó la escritura.
     </div>
 
     <div className="grid md:grid-cols-4 gap-4 mb-6">
@@ -1505,7 +1514,7 @@ Te envío el comprobante para que puedas prepararlas.`);window.open(`https://wa.
                 <p>Al confirmar, se abrirá el chat de WhatsApp con <b>Lucas Abraham</b>. Ahí deberás enviar el comprobante de transferencia al alias <b>{MP_ALIAS}</b> de Mercado Pago.</p>
               </div>
             </div>
-            <a href={currentWhatsappHref()} target="_blank" rel="noopener noreferrer" onClick={sendOrder} aria-disabled={!cart.length} className={`final-buy-btn mt-4 w-full py-4 rounded-2xl font-black transition-all flex items-center justify-center ${!cart.length?'opacity-40 pointer-events-none':''}`}><i className="fab fa-whatsapp mr-2"></i>COMPRAR</a>
+            <button type="button" onClick={sendOrder} disabled={!cart.length} className={`final-buy-btn mt-4 w-full py-4 rounded-2xl font-black transition-all flex items-center justify-center ${!cart.length?'opacity-40 pointer-events-none':''}`}><i className="fab fa-whatsapp mr-2"></i>COMPRAR</button>
           </div>
         </div>
       </div>
