@@ -203,7 +203,7 @@ const LS_ALBUM_CACHE_KEY="la_album_cache_v1";
 const LS_COUPONS_KEY="la_coupon_settings_v1";
 const LS_SHARED_STATE_KEY="la_shared_admin_state_v2";
 const PHOTOS_PER_PAGE=70;
-const APP_VERSION="firebase-unificada-sin-cache-v8";
+const APP_VERSION="modo-estable-sin-realtime-v9";
 
 // Firebase se usa como fuente central para que móvil y PC vean lo mismo.
 // Config integrado para no depender de /__/firebase/init.js.
@@ -271,61 +271,28 @@ function normalizeSharedState(state){
   };
 }
 async function loadSharedAdminState(){
+  // Modo estable: no leemos Firestore al iniciar para no gastar cuota ni generar loops.
+  // Primero intentamos Apps Script; si no responde, usamos la configuración local.
   const local=readSharedCache();
-  try{
-    const db=await getFirebaseDb();
-    if(db){
-      const snap=await db.doc(SHARED_STATE_DOC_PATH).get();
-      if(snap.exists){
-        const remote=normalizeSharedState(snap.data());
-        writeSharedCache(remote);
-        return remote;
-      }
-      await db.doc(SHARED_STATE_DOC_PATH).set(local,{merge:true});
-      return local;
-    }
-  }catch(e){console.warn('No se pudo leer configuración desde Firebase.',e)}
   try{
     const r=await apiAction({action:'getSiteState'});
     if(r&&r.state){const remote=normalizeSharedState(r.state);writeSharedCache(remote);return remote}
-  }catch(e){}
+  }catch(e){console.warn('No se pudo leer configuración desde Apps Script.',e)}
   return local;
 }
 async function saveSharedAdminState(partial){
   const next=writeSharedCache(partial);
-  try{
-    const db=await getFirebaseDb();
-    if(db){await db.doc(SHARED_STATE_DOC_PATH).set(next,{merge:true});return next}
-  }catch(e){console.warn('No se pudo guardar configuración en Firebase.',e)}
-  try{await apiAction({action:'saveSiteState',state:JSON.stringify(next)})}catch(e){}
+  try{await apiAction({action:'saveSiteState',state:JSON.stringify(next)})}catch(e){console.warn('No se pudo guardar configuración en Apps Script.',e)}
   return next;
 }
 function subscribeSharedAdminState(onData){
-  let unsub=null;
-  let cancelled=false;
-  getFirebaseDb().then(db=>{
-    if(cancelled||!db)return;
-    unsub=db.doc(SHARED_STATE_DOC_PATH).onSnapshot(snap=>{
-      if(snap.exists){
-        const remote=normalizeSharedState(snap.data());
-        writeSharedCache(remote);
-        onData&&onData(remote);
-      }
-    },e=>console.warn('Sincronización de configuración no disponible.',e));
-  });
-  return ()=>{cancelled=true;if(unsub)unsub()};
+  // Sin listener realtime: evita consumo permanente de Firestore y diferencias por caché.
+  return ()=>{};
 }
 function subscribeOrders(onData){
-  let unsub=null;
-  let cancelled=false;
-  getFirebaseDb().then(db=>{
-    if(cancelled||!db)return;
-    unsub=db.collection(ORDERS_COLLECTION_PATH).orderBy('date','desc').limit(3000).onSnapshot(snap=>{
-      const remote=mergeOrders(snap.docs.map(d=>({id:d.data().id||d.id,...d.data(),_firebasePath:ORDERS_COLLECTION_PATH})));
-      onData&&onData(remote);
-    },e=>console.warn('Sincronización de pedidos no disponible.',e));
-  });
-  return ()=>{cancelled=true;if(unsub)unsub()};
+  // Sin onSnapshot realtime: evita consumo constante y errores resource-exhausted.
+  // El admin actualiza pedidos con el botón Buscar/actualizar o al entrar.
+  return ()=>{};
 }
 function orderCollections(){
   // Ruta principal real que se ve en Firebase Console: artifacts > lucasabraham-ph-db > orders.
@@ -393,20 +360,8 @@ async function findOrderEverywhere(code){
   if(!q)return null;
   const localHit=findOrderInList(mergeOrders(readLocalOrders(),readPendingOrders()),q);
   if(localHit)return localHit;
-  try{
-    const db=await getFirebaseDb();
-    if(db){
-      for(const path of [ORDERS_COLLECTION_PATH,...legacyOrderCollections()]){
-        for(const id of orderCodeVariants(q)){
-          const snap=await db.collection(path).doc(firebaseDocId(id)).get();
-          if(snap.exists)return {id:snap.data().id||snap.id,...snap.data()};
-        }
-      }
-      const all=await loadOrdersFirebase(3000);
-      const hit=findOrderInList(all,q);
-      if(hit)return hit;
-    }
-  }catch(e){console.warn('No se pudo buscar el pedido directo en Firebase.',e)}
+
+  // Primero Apps Script: es el respaldo central y no consume cuota Firestore.
   try{
     const r=await apiAction({action:'getOrder',orderId:q});
     if(r&&r.order)return r.order;
@@ -418,6 +373,26 @@ async function findOrderEverywhere(code){
       if(hit)return hit;
     }
   }catch(e){}
+
+  // Firestore queda como último intento. Si la cuota está agotada, no insistimos.
+  if(sessionStorage.getItem('LA_FIRESTORE_QUOTA_EXHAUSTED')==='1')return null;
+  try{
+    const db=await getFirebaseDb();
+    if(db){
+      for(const path of [ORDERS_COLLECTION_PATH]){
+        for(const id of orderCodeVariants(q)){
+          const snap=await db.collection(path).doc(firebaseDocId(id)).get();
+          if(snap.exists)return {id:snap.data().id||snap.id,...snap.data()};
+        }
+      }
+      const all=await loadOrdersFirebase(3000);
+      const hit=findOrderInList(all,q);
+      if(hit)return hit;
+    }
+  }catch(e){
+    if(String(e&&e.message||e).includes('resource-exhausted')) sessionStorage.setItem('LA_FIRESTORE_QUOTA_EXHAUSTED','1');
+    console.warn('No se pudo buscar el pedido directo en Firebase.',e)
+  }
   return null;
 }
 async function updateOrderFirebase(orderId,partial){
@@ -468,44 +443,72 @@ async function syncPendingOrders(){
   const stillPending=[];
   for(const order of pending){
     let saved=false;
-    try{saved=await saveOrderFirebase(order)}catch(e){}
-    try{await apiAction({action:"createOrder",order:JSON.stringify(order)});saved=true}catch(e){}
+    // Primero Apps Script para evitar agotar Firestore.
+    try{await apiAction({action:"createOrder",order:JSON.stringify(order)});saved=true}catch(e){console.warn('Apps Script no aceptó pedido pendiente.',e)}
+    // Firestore solo si no está bloqueado por cuota.
+    if(sessionStorage.getItem('LA_FIRESTORE_QUOTA_EXHAUSTED')!=='1'){
+      try{await saveOrderFirebase(order);saved=true}catch(e){
+        if(String(e&&e.message||e).includes('resource-exhausted')) sessionStorage.setItem('LA_FIRESTORE_QUOTA_EXHAUSTED','1');
+        console.warn('Firebase no aceptó pedido pendiente.',e);
+      }
+    }
     if(!saved)stillPending.push(order);
   }
   savePendingOrders(stillPending);
 }
 async function saveOrderRemote(order){
   const clean={...order,id:order.id||order.orderId||order.codigo||order.code,date:order.date||new Date().toISOString(),items:Array.isArray(order.items)?order.items:[]};
-  const merged=mergeOrders([clean],readLocalOrders());
-  saveLocalOrders(merged);
+  saveLocalOrders(mergeOrders([clean],readLocalOrders()));
   savePendingOrders(mergeOrders([clean],readPendingOrders()));
   const status={firebase:false,script:false,error:''};
-  try{status.firebase=await saveOrderFirebase(clean)}catch(e){status.error=String(e&&e.message?e.message:e);console.warn("Firebase no aceptó el pedido todavía.",e)}
-  try{await apiAction({action:"createOrder",order:JSON.stringify(clean)});status.script=true}catch(e){console.warn("Apps Script no aceptó el pedido todavía.",e)}
+
+  // Guardado central principal: Apps Script. No depende de la cuota de Firestore.
+  try{await apiAction({action:"createOrder",order:JSON.stringify(clean)});status.script=true}catch(e){status.error=String(e&&e.message?e.message:e);console.warn("Apps Script no aceptó el pedido todavía.",e)}
+
+  // Firestore queda como copia secundaria. Si se agota cuota, no rompe la compra ni se insiste.
+  if(sessionStorage.getItem('LA_FIRESTORE_QUOTA_EXHAUSTED')!=='1'){
+    try{status.firebase=await saveOrderFirebase(clean)}catch(e){
+      status.error=String(e&&e.message?e.message:e);
+      if(String(e&&e.message||e).includes('resource-exhausted')) sessionStorage.setItem('LA_FIRESTORE_QUOTA_EXHAUSTED','1');
+      console.warn("Firebase no aceptó el pedido todavía.",e)
+    }
+  }
+
   if(status.firebase||status.script)savePendingOrders(readPendingOrders().filter(o=>!sameOrderCode(o.id,clean.id)));
   try{window.LA_LAST_ORDER_SAVE_STATUS={...status,id:clean.id,ordersPath:ORDERS_COLLECTION_PATH,at:new Date().toISOString(),appVersion:APP_VERSION};}catch(e){}
   return status;
 }
 async function loadOrdersRemote(){
-  const local=readLocalOrders();
-  await syncPendingOrders();
-  let firebaseOrders=[];
   let scriptOrders=[];
-  try{firebaseOrders=await loadOrdersFirebase()}catch(e){console.warn("No se pudieron leer pedidos desde Firebase.",e)}
+  let firebaseOrders=[];
+
+  // No sincronizamos pendientes automáticamente al abrir el admin para no disparar escrituras repetidas.
   try{
     const r=await apiAction({action:"listOrders"});
     if(r&&Array.isArray(r.orders))scriptOrders=r.orders;
   }catch(e){console.warn("No se pudieron leer pedidos desde Apps Script.",e)}
-  // El listado principal del admin se arma SOLO con datos remotos para que no haya dos versiones distintas entre navegador normal, incógnito y celular.
-  const merged=mergeOrders(firebaseOrders,scriptOrders);
-  return merged;
+
+  // Firestore solo como lectura secundaria y sin realtime. Si la cuota está agotada, se omite.
+  if(sessionStorage.getItem('LA_FIRESTORE_QUOTA_EXHAUSTED')!=='1'){
+    try{firebaseOrders=await loadOrdersFirebase()}catch(e){
+      if(String(e&&e.message||e).includes('resource-exhausted')) sessionStorage.setItem('LA_FIRESTORE_QUOTA_EXHAUSTED','1');
+      console.warn("No se pudieron leer pedidos desde Firebase.",e)
+    }
+  }
+
+  // El listado principal se arma con datos remotos, para que normal/incógnito vean lo mismo.
+  return mergeOrders(scriptOrders,firebaseOrders);
 }
 async function markOrderDelivered(orderId,delivered){
-  const local=mergeOrders(readLocalOrders()).map(o=>sameOrderCode(o.id,orderId)?{...o,delivered,updatedAt:new Date().toISOString()}:o);
-  saveLocalOrders(local);
-  try{await updateOrderFirebase(orderId,{delivered})}catch(e){console.warn("Firebase no aceptó el cambio de estado todavía.",e)}
   try{await apiAction({action:"updateOrder",orderId,delivered:String(delivered)})}catch(e){console.warn("Apps Script no aceptó el cambio de estado todavía.",e)}
-  return local;
+  if(sessionStorage.getItem('LA_FIRESTORE_QUOTA_EXHAUSTED')!=='1'){
+    try{await updateOrderFirebase(orderId,{delivered})}catch(e){
+      if(String(e&&e.message||e).includes('resource-exhausted')) sessionStorage.setItem('LA_FIRESTORE_QUOTA_EXHAUSTED','1');
+      console.warn("Firebase no aceptó el cambio de estado todavía.",e)
+    }
+  }
+  const remote=await loadOrdersRemote();
+  return remote;
 }
 
 const formatPrice=(p)=>"$"+new Intl.NumberFormat("es-AR").format(Number(p||0));
@@ -1095,10 +1098,9 @@ A continuación, te envío el comprobante.`;
     if(route!=="#/admin"||!admin)return;
     const q=cleanOperationCode(orderSearch);
     if(!q){setDirectOrder(null);setOrderSearchTouched(false);return;}
-    if(matchedOrder)return;
-    const t=setTimeout(()=>{searchOrderNow();},650);
-    return()=>clearTimeout(t);
-  },[orderSearch,route,admin,matchedOrder]);
+    // No buscamos automáticamente mientras se escribe: evita lecturas repetidas y cuota agotada.
+    // Usar el botón Buscar/actualizar.
+  },[orderSearch,route,admin]);
 
   useEffect(()=>{
     setAlbumRenderLimit(window.innerWidth<640?8:15);
@@ -1130,7 +1132,7 @@ A continuación, te envío el comprobante.`;
 
     {adminMessage && <div className="mb-4 bg-emerald-600/15 border border-emerald-500/30 text-emerald-300 rounded-2xl px-4 py-3 text-sm">{adminMessage}</div>}
     <div className="mb-4 bg-blue-500/10 border border-blue-500/25 text-blue-100 rounded-2xl px-4 py-3 text-xs leading-relaxed">
-      <b>Firebase:</b> proyecto lucasabraham-b84aa · ruta principal <b>artifacts/lucasabraham-ph-db/orders</b> · versión <b>firebase-unificada-sin-cache-v8</b>. Si al comprar aparece un aviso rojo, el pedido quedó local pero Firestore rechazó la escritura.
+      <b>Firebase:</b> proyecto lucasabraham-b84aa · ruta principal <b>artifacts/lucasabraham-ph-db/orders</b> · versión <b>modo-estable-sin-realtime-v9</b>. Si al comprar aparece un aviso rojo, el pedido quedó local pero Firestore rechazó la escritura.
     </div>
 
     <div className="grid md:grid-cols-4 gap-4 mb-6">
