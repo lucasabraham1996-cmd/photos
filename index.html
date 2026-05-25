@@ -1099,6 +1099,40 @@ A continuación, te envío el comprobante.`;
     }finally{setOrdersLoading(false)}
   }
 
+  function clearOrderBox(){
+    setOrderSearch("");
+    setDirectOrder(null);
+    setOrderSearchTouched(false);
+  }
+
+  async function toggleDeliveredAndClose(order){
+    if(!order?.id)return;
+    const nextDelivered=!order.delivered;
+    const updatedOrders=await markOrderDelivered(order.id,nextDelivered);
+    setOrders(updatedOrders);
+    if(nextDelivered){
+      clearOrderBox();
+      setAdminMessage('Pedido marcado como cargado y entregado. Ya podés buscar otro código.');
+      setTimeout(()=>{
+        const input=document.getElementById('order-search-input');
+        if(input)input.focus();
+      },80);
+    }else{
+      setAdminMessage('Pedido marcado como pendiente.');
+    }
+  }
+
+  function openOrderFromQueue(order){
+    if(!order?.id)return;
+    setOrderSearch('#'+order.id);
+    setDirectOrder(order);
+    setOrderSearchTouched(true);
+    setTimeout(()=>{
+      const box=document.getElementById('order-search-panel');
+      if(box)box.scrollIntoView({behavior:'smooth',block:'start'});
+    },60);
+  }
+
   useEffect(()=>{if(!adminMessage)return;const t=setTimeout(()=>setAdminMessage(''),2500);return()=>clearTimeout(t)},[adminMessage]);
   useEffect(()=>{
     if(route!=="#/admin"||!admin)return;
@@ -1145,7 +1179,7 @@ A continuación, te envío el comprobante.`;
 
     {adminMessage && <div className="mb-4 bg-emerald-600/15 border border-emerald-500/30 text-emerald-300 rounded-2xl px-4 py-3 text-sm">{adminMessage}</div>}
     <div className="mb-4 bg-blue-500/10 border border-blue-500/25 text-blue-100 rounded-2xl px-4 py-3 text-xs leading-relaxed">
-      <b>Firebase:</b> proyecto lucasabraham-b84aa · ruta principal <b>artifacts/lucasabraham-ph-db/orders</b> · versión <b>modo-estable-sin-realtime-v9</b>. Si al comprar aparece un aviso rojo, el pedido quedó local pero Firestore rechazó la escritura.
+      <b>Firebase:</b> proyecto lucasabraham-b84aa · ruta principal <b>artifacts/lucasabraham-ph-db/orders</b> · versión <b>modo-estable-sin-realtime-v10-entrega-cierra-dialogo</b>. Si al comprar aparece un aviso rojo, el pedido quedó local pero Firestore rechazó la escritura.
     </div>
 
     <div className="grid md:grid-cols-4 gap-4 mb-6">
@@ -1155,14 +1189,14 @@ A continuación, te envío el comprobante.`;
       <div className="bg-neutral-900 p-5 rounded-2xl border border-neutral-800"><b className="text-2xl">{highlightIds.length}</b><p className="text-xs text-neutral-400">historias destacadas</p></div>
     </div>
 
-    <div className="bg-neutral-900 border border-neutral-800 rounded-3xl p-5 mb-6">
+    <div id="order-search-panel" className="bg-neutral-900 border border-neutral-800 rounded-3xl p-5 mb-6">
       <div className="flex flex-col lg:flex-row lg:items-end gap-4 lg:justify-between">
         <div>
           <h2 className="text-xl font-black mb-1">Buscar operación y obtener links de Drive</h2>
           <p className="text-neutral-400 text-sm">Ingresá el código de operación, por ejemplo <b>#LA-55336</b>, y la app lista las fotos compradas con sus enlaces.</p>
         </div>
         <div className="admin-actions flex gap-2 w-full lg:w-auto">
-          <input value={orderSearch} onChange={e=>{setOrderSearch(e.target.value.toUpperCase());setDirectOrder(null);setOrderSearchTouched(false);}} onKeyDown={e=>{if(e.key==='Enter')searchOrderNow();}} placeholder="#LA-55336" className="flex-1 lg:w-56 bg-black border border-neutral-700 rounded-xl px-4 py-3 outline-none uppercase"/>
+          <input id="order-search-input" value={orderSearch} onChange={e=>{setOrderSearch(e.target.value.toUpperCase());setDirectOrder(null);setOrderSearchTouched(false);}} onKeyDown={e=>{if(e.key==='Enter')searchOrderNow();}} placeholder="#LA-55336" className="flex-1 lg:w-56 bg-black border border-neutral-700 rounded-xl px-4 py-3 outline-none uppercase"/>
           <button onClick={searchOrderNow} className="bg-indigo-600 hover:bg-indigo-500 px-4 py-3 rounded-xl font-bold">{ordersLoading?'Buscando...':'Buscar/actualizar'}</button>
         </div>
       </div>
@@ -1170,7 +1204,7 @@ A continuación, te envío el comprobante.`;
       {matchedOrder && <div className="mt-5 bg-black/35 border border-neutral-800 rounded-2xl p-4">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
           <div><p className="text-xs text-neutral-500 uppercase tracking-widest">Operación</p><h3 className="text-2xl font-black">#{matchedOrder.id}</h3><div className={`inline-flex items-center gap-2 mt-2 px-3 py-1 rounded-full text-xs font-black ${matchedOrder.delivered?'bg-emerald-500/20 text-emerald-300 border border-emerald-500/35':'bg-amber-500/15 text-amber-300 border border-amber-500/30'}`}><i className={`fas ${matchedOrder.delivered?'fa-circle-check':'fa-clock'}`}></i>{matchedOrder.delivered?'Pedido ya cargado y entregado':'Pendiente de cargar/entregar'}</div><p className="text-neutral-400 text-sm mt-2">Total: {formatPrice(matchedOrder.total)} · {matchedOrder.items?.length||0} fotos</p></div>
-          <div className="mobile-stack flex flex-col sm:flex-row gap-2"><button onClick={()=>markOrderDelivered(matchedOrder.id,!matchedOrder.delivered).then(o=>{setOrders(o);setAdminMessage(!matchedOrder.delivered?'Pedido marcado como cargado y entregado.':'Pedido marcado como pendiente.');})} className={`${matchedOrder.delivered?'bg-neutral-800 text-white':'bg-emerald-500 text-black'} px-4 py-3 rounded-xl font-black text-sm`}>{matchedOrder.delivered?'Marcar pendiente':'Marcar entregado'}</button><button onClick={()=>{navigator.clipboard.writeText(buildDeliveryLinksMessage(matchedOrder));setAdminMessage('Mensaje con links copiado.');}} className="bg-white text-black px-4 py-3 rounded-xl font-black text-sm"><i className="fas fa-copy mr-2"></i>Copiar mensaje con links</button></div>
+          <div className="mobile-stack flex flex-col sm:flex-row gap-2"><button onClick={()=>toggleDeliveredAndClose(matchedOrder)} className={`${matchedOrder.delivered?'bg-neutral-800 text-white':'bg-emerald-500 text-black'} px-4 py-3 rounded-xl font-black text-sm`}>{matchedOrder.delivered?'Marcar pendiente':'Marcar entregado'}</button><button onClick={()=>{navigator.clipboard.writeText(buildDeliveryLinksMessage(matchedOrder));setAdminMessage('Mensaje con links copiado.');}} className="bg-white text-black px-4 py-3 rounded-xl font-black text-sm"><i className="fas fa-copy mr-2"></i>Copiar mensaje con links</button></div>
         </div>
         <div className="grid gap-3">{(matchedOrder.items||[]).map((item,i)=>{const link=orderDriveLink(item);return <div key={i} className="bg-neutral-950 border border-neutral-800 rounded-2xl p-3 flex flex-col md:flex-row md:items-center gap-3 md:justify-between">
           <div className="min-w-0"><p className="font-bold truncate">{item.albumName} - {item.name}</p><p className="text-xs text-neutral-400">Código {item.code} · {formatPrice(item.price)}</p><p className="text-[11px] text-neutral-500 truncate mt-1">{link||'Sin link guardado'}</p></div>
@@ -1185,8 +1219,14 @@ A continuación, te envío el comprobante.`;
         <div className="grid gap-2">
           {recentOrders.length===0&&<p className="text-sm text-neutral-400">Todavía no hay pedidos cargados.</p>}
           {recentOrders.map(o=><div key={o.id} className="bg-neutral-950 border border-neutral-800 rounded-2xl px-3 py-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
-            <div className="min-w-0"><p className="font-black truncate">#{o.id}</p><p className="text-xs text-neutral-400">{new Date(o.date||Date.now()).toLocaleString('es-AR')} · {o.items?.length||0} fotos · {formatPrice(o.total)}</p></div>
-            <div className={`inline-flex items-center justify-center gap-2 px-3 py-1.5 rounded-full text-xs font-black ${o.delivered?'bg-emerald-500/20 text-emerald-300 border border-emerald-500/35':'bg-amber-500/15 text-amber-300 border border-amber-500/30'}`}><i className={`fas ${o.delivered?'fa-circle-check':'fa-clock'}`}></i>{o.delivered?'Cargado y entregado':'Pendiente'}</div>
+            <button onClick={()=>openOrderFromQueue(o)} className="min-w-0 text-left flex-1 hover:opacity-90">
+              <p className="font-black truncate">#{o.id}</p>
+              <p className="text-xs text-neutral-400">{new Date(o.date||Date.now()).toLocaleString('es-AR')} · {o.items?.length||0} fotos · {formatPrice(o.total)}</p>
+            </button>
+            <div className="flex items-center gap-2">
+              <div className={`inline-flex items-center justify-center gap-2 px-3 py-1.5 rounded-full text-xs font-black ${o.delivered?'bg-emerald-500/20 text-emerald-300 border border-emerald-500/35':'bg-amber-500/15 text-amber-300 border border-amber-500/30'}`}><i className={`fas ${o.delivered?'fa-circle-check':'fa-clock'}`}></i>{o.delivered?'Cargado y entregado':'Pendiente'}</div>
+              <button onClick={()=>openOrderFromQueue(o)} className="bg-neutral-800 hover:bg-neutral-700 px-3 py-2 rounded-xl text-xs font-black">Abrir</button>
+            </div>
           </div>)}
         </div>
       </div>
