@@ -7,6 +7,8 @@
 
 
 
+
+
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -203,7 +205,7 @@ const LS_ALBUM_CACHE_KEY="la_album_cache_v1";
 const LS_COUPONS_KEY="la_coupon_settings_v1";
 const LS_SHARED_STATE_KEY="la_shared_admin_state_v2";
 const PHOTOS_PER_PAGE=70;
-const APP_VERSION="modo-estable-sin-realtime-v9";
+const APP_VERSION="modo-estable-sin-realtime-v10-drive-link";
 
 // Firebase se usa como fuente central para que móvil y PC vean lo mismo.
 // Config integrado para no depender de /__/firebase/init.js.
@@ -521,7 +523,13 @@ const calculateBestPrice=(items)=>Math.round(calculateSubtotal(items)*(1-discoun
 const extractDriveId=(url)=>{const s=String(url||"");const patterns=[/drive\.google\.com\/file\/d\/([^/]+)/,/drive\.google\.com\/open\?id=([^&]+)/,/drive\.google\.com\/uc\?[^#]*id=([^&]+)/,/[?&]id=([^&]+)/];for(const p of patterns){const m=s.match(p);if(m&&m[1])return decodeURIComponent(m[1])}return""};
 const toImgUrl=(url,size=500)=>{const raw=String(url||"").trim();if(!raw)return"";if(raw.startsWith("data:image/"))return raw;const id=extractDriveId(raw);if(id)return`https://drive.google.com/thumbnail?id=${id}&sz=w${size}`;return raw};
 const cleanOperationCode=(v)=>normalizeOrderCode(v);
-const orderDriveLink=(item)=>item.driveLink||item.rawUrl||item.originalUrl||item.url||"";
+function toDriveViewLink(url){
+  const raw=String(url||"").trim();
+  if(!raw)return "";
+  const id=extractDriveId(raw);
+  return id ? `https://drive.google.com/file/d/${id}/view?usp=sharing` : raw;
+}
+const orderDriveLink=(item)=>toDriveViewLink(item.driveLink||item.rawUrl||item.originalUrl||item.url||"");
 const EM={clip:"\u{1F4CB}",money:"\u{1F4B0}",tag:"\u{1F3F7}\uFE0F",image:"\u{1F5BC}\uFE0F",dot:"\u25AB\uFE0F",point:"\u{1F449}",wave:"\u{1F44B}",hello:"\u{1F44B}\u{1F3FC}",camera:"\u{1F4F8}",sparkles:"\u2728",thanks:"\u{1F64C}",check:"\u2705",box:"\u{1F4E6}"};
 function buildDeliveryLinksMessage(order){
   const links=(order?.items||[]).map(orderDriveLink).filter(Boolean);
@@ -599,9 +607,14 @@ function normalizeAlbums(data){
           index:i,
           name,
           code:safeCode(name+"_"+(i+1)),
+          // Para mostrar en galería: la app convierte el link de Drive de "Url preview"
+          // en miniatura liviana automáticamente.
           url,
           rawUrl,
           fullUrl,
+          // Para entregar por código de pedido: se guarda el mismo link de la columna "Url preview".
+          // Luego orderDriveLink lo convierte a link normal de Drive para enviar por WhatsApp.
+          driveLink: rawUrl,
           price: priceNum(pick(row,["precio foto","precio_foto","precio individual","precio","valor","valor foto","foto precio"]))||2000,
           isCover:yes(pick(row,["portada","cover","caratula"])),
           active:!["no","false","0","ocultar","hide"].includes(norm(pick(row,["activa","active","visible","publicar"])))
