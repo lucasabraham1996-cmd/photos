@@ -189,7 +189,7 @@ const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwQixATrOYyu-wU
 const FALLBACK_PUBLISHED_SHEET_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQvPPaZazUa43TBu127nq74y-UMDRRMKdQpOCWOWT6cc5YnsRwcTrzGA7NYM-QbYEnFSkMbdkgkaOn8/pub?output=csv";
 const BRAND="lucasabraham.ph";
 const HANDLE="@lucasabraham.ph";
-const SELLER_PHONE="3515580770";
+const SELLER_PHONE="5493515580770";
 const MP_ALIAS="lucasabraham.mp";
 const DEFAULT_FULL_ALBUM_PRICE=50000;
 const ADMIN_PIN="1234";
@@ -957,8 +957,18 @@ A continuación, te envío el comprobante.`;
     savePendingOrders(mergeOrders([orderData],readPendingOrders()));
     setOrders(o=>mergeOrders([orderData],o));
 
-    // Abrir WhatsApp directamente evita la pestaña en blanco que quedaba mientras se esperaba a Firebase.
-    window.open(whatsappUrl,'_blank');
+    // Abrir WhatsApp sin depender de una pestaña nueva: si el navegador bloquea popups,
+    // navega en la misma pestaña. Además usa número con formato internacional para wa.me.
+    const abrirWhatsApp = () => {
+      try {
+        const nuevaVentana = window.open(whatsappUrl, '_blank', 'noopener,noreferrer');
+        if (!nuevaVentana || nuevaVentana.closed || typeof nuevaVentana.closed === 'undefined') {
+          window.location.href = whatsappUrl;
+        }
+      } catch (e) {
+        window.location.href = whatsappUrl;
+      }
+    };
 
     // Sincronización remota en segundo plano: Firebase + Apps Script.
     saveOrderRemote(orderData).then(saveStatus=>{
@@ -971,6 +981,8 @@ A continuación, te envío el comprobante.`;
     }).catch(err=>{
       console.warn('No se pudo sincronizar el pedido en segundo plano.',err);
       setAdminMessage(`Pedido ${order} guardado localmente. Error al sincronizar Firebase.`);
+    }).finally(()=>{
+      setTimeout(abrirWhatsApp, 80);
     });
 
     setCart([]);
