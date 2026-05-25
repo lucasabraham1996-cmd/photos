@@ -1,3 +1,14 @@
+
+
+
+
+
+
+
+
+
+
+
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -194,7 +205,28 @@ const LS_ALBUM_CACHE_KEY="la_album_cache_v1";
 const LS_COUPONS_KEY="la_coupon_settings_v1";
 const LS_SHARED_STATE_KEY="la_shared_admin_state_v2";
 const PHOTOS_PER_PAGE=70;
-const APP_VERSION="modo-estable-sin-realtime-v10-drive-link";
+const APP_VERSION="modo-estable-sin-realtime-v11-firebase-limits-fix";
+const FIRESTORE_FREE_DAILY_LIMITS = {
+  reads: 50000,
+  writes: 20000,
+  deletes: 20000
+};
+function parseSafeDate(v){
+  if(!v)return null;
+  const d = new Date(v);
+  return Number.isNaN(d.getTime()) ? null : d;
+}
+function isSameLocalDate(v, baseDate=new Date()){
+  const d=parseSafeDate(v);
+  if(!d)return false;
+  return d.getFullYear()===baseDate.getFullYear() && d.getMonth()===baseDate.getMonth() && d.getDate()===baseDate.getDate();
+}
+function pctOfLimit(value, limit){
+  const n=Number(value)||0;
+  const l=Number(limit)||1;
+  return Math.max(0, Math.min(100, Math.round((n/l)*100)));
+}
+
 
 // Firebase se usa como fuente central para que móvil y PC vean lo mismo.
 // Config integrado para no depender de /__/firebase/init.js.
@@ -307,12 +339,8 @@ async function saveOrderFirebase(order){
     throw new Error('Firebase rechazó la escritura en artifacts/lucasabraham-ph-db/orders. Revisá reglas/permisos de Firestore. Detalle: '+(e&&e.message?e.message:String(e)));
   }
 
-  // Copia opcional legacy: si falla no invalida el pedido, porque la ruta principal ya quedó guardada.
-  for(const path of legacyOrderCollections()){
-    try{await db.collection(path).doc(docId).set(clean,{merge:true});}
-    catch(e){console.warn('No se pudo guardar copia legacy del pedido:', path, e)}
-  }
-
+  // Para cuidar el cupo diario, desde esta versión se guarda una sola escritura por pedido en la ruta principal.
+  // No se duplica más el pedido en la colección legacy.
   try{window.LA_LAST_FIREBASE_SAVE={ok:true,id:clean.id,paths:[ORDERS_COLLECTION_PATH],at:new Date().toISOString(),appVersion:APP_VERSION};}catch(e){}
   return true;
 }
@@ -474,13 +502,15 @@ async function loadOrdersRemote(){
   let firebaseOrders=[];
 
   // No sincronizamos pendientes automáticamente al abrir el admin para no disparar escrituras repetidas.
+  // La lectura principal es Apps Script, así el admin no consume lecturas de Firestore en cada actualización.
   try{
     const r=await apiAction({action:"listOrders"});
     if(r&&Array.isArray(r.orders))scriptOrders=r.orders;
   }catch(e){console.warn("No se pudieron leer pedidos desde Apps Script.",e)}
 
-  // Firestore solo como lectura secundaria y sin realtime. Si la cuota está agotada, se omite.
-  if(sessionStorage.getItem('LA_FIRESTORE_QUOTA_EXHAUSTED')!=='1'){
+  // Firestore queda como respaldo: solo se lee si Apps Script no devolvió pedidos.
+  // Esto evita que abrir el admin lea cientos o miles de documentos sin necesidad.
+  if(!scriptOrders.length && sessionStorage.getItem('LA_FIRESTORE_QUOTA_EXHAUSTED')!=='1'){
     try{firebaseOrders=await loadOrdersFirebase()}catch(e){
       if(String(e&&e.message||e).includes('resource-exhausted')) sessionStorage.setItem('LA_FIRESTORE_QUOTA_EXHAUSTED','1');
       console.warn("No se pudieron leer pedidos desde Firebase.",e)
@@ -866,13 +896,13 @@ function App(){
   const visibleFilteredAlbums=useMemo(()=>filteredAlbums.slice(0,albumRenderLimit),[filteredAlbums,albumRenderLimit]);
   const highlightedAlbums=useMemo(()=>{const selected=highlightIds.map(id=>activeAlbums.find(a=>a.id===id)).filter(Boolean);return selected.length?selected:activeAlbums.slice(0,8)},[highlightIds,activeAlbums]);
   const toggleHighlight=(albumId)=>setHighlightIds(ids=>ids.includes(albumId)?ids.filter(id=>id!==albumId):[albumId,...ids].slice(0,12));
-  const allPhotos=useMemo(()=>activeAlbums.flatMap(a=>a.photos||[]),[activeAlbums]);
-  const currentAlbum=activeAlbums.find(a=>a.id===activeAlbum)||null;
+  const allPhotos=useMemo(()=>displayAlbums.flatMap(a=>a.photos||[]),[displayAlbums]);
+  const currentAlbum=displayAlbums.find(a=>a.id===activeAlbum)||null;
   const albumPhotos=currentAlbum&&Array.isArray(currentAlbum.photos)?currentAlbum.photos:[];
   const totalAlbumPages=Math.max(1,Math.ceil(albumPhotos.length/PHOTOS_PER_PAGE));
   const safeAlbumPage=Math.min(albumPage,totalAlbumPages);
   const pagedPhotos=albumPhotos.slice((safeAlbumPage-1)*PHOTOS_PER_PAGE,safeAlbumPage*PHOTOS_PER_PAGE);
-  useEffect(()=>{if(!loading&&activeAlbum&&activeAlbums.length&&!activeAlbums.find(a=>a.id===activeAlbum)){setActiveAlbum(null);if(location.hash.startsWith("#/album/")) location.hash="#/galeria";}},[loading,activeAlbum,activeAlbums]);
+  useEffect(()=>{if(!loading&&activeAlbum&&displayAlbums.length&&!displayAlbums.find(a=>a.id===activeAlbum)){setActiveAlbum(null);if(location.hash.startsWith("#/album/")) location.hash="#/galeria";}},[loading,activeAlbum,displayAlbums]);
   useEffect(()=>{setAlbumPage(1)},[activeAlbum]);
   useEffect(()=>{if(albumPage>totalAlbumPages)setAlbumPage(totalAlbumPages)},[albumPage,totalAlbumPages]);
   useEffect(()=>{if(albumPhotos.length){setFocusPhoto(p=>p&&albumPhotos.some(x=>x.id===p.id)?p:albumPhotos[0])}else{setFocusPhoto(null)}},[activeAlbum,albumPhotos.length]);
@@ -883,7 +913,30 @@ function App(){
     if(directOrder&&cleanOperationCode(directOrder.id)===q)return directOrder;
     return findOrderInList(orders,q);
   },[orders,orderSearch,directOrder]);
-  const recentOrders=useMemo(()=>[...orders].filter(o=>!o.delivered&&!o.rejected).sort((a,b)=>new Date(b.date||0)-new Date(a.date||0)).slice(0,10),[orders]);
+  const isTruthyStatus=(v)=>v===true||String(v||'').toLowerCase()==='true'||String(v||'').toLowerCase()==='si'||String(v||'').toLowerCase()==='sí'||String(v||'').toLowerCase()==='1';
+  const orderStatusText=(o)=>norm(o?.status||o?.estado||'');
+  const isResolvedOrder=(o)=>isTruthyStatus(o?.delivered)||isTruthyStatus(o?.rejected)||['entregado','cargado_y_entregado','rechazado','cancelado','resuelto'].includes(orderStatusText(o));
+  const isPendingOrder=(o)=>o&&normalizeOrderCode(o.id||o.orderId||o.codigo||o.code)&&!isResolvedOrder(o);
+  const recentOrders=useMemo(()=>mergeOrders(orders).filter(isPendingOrder).sort((a,b)=>new Date(b.date||0)-new Date(a.date||0)).slice(0,10),[orders]);
+  const firebaseDailyEstimate=useMemo(()=>{
+    const all=mergeOrders(orders);
+    const createdToday=all.filter(o=>isSameLocalDate(o.date||o.createdAt||o.updatedAt));
+    const resolvedToday=all.filter(o=>isSameLocalDate(o.resolvedAt||o.deliveredAt||o.rejectedAt));
+    // Estimación conservadora desde esta versión: 1 escritura al crear el pedido + 1 escritura al entregarlo/rechazarlo.
+    // Las visitas a la galería no leen ni escriben Firestore.
+    const writes=createdToday.length+resolvedToday.length;
+    const reads=0;
+    const deletes=0;
+    return {
+      created:createdToday.length,
+      resolved:resolvedToday.length,
+      writes,reads,deletes,
+      remainingWrites:Math.max(0,FIRESTORE_FREE_DAILY_LIMITS.writes-writes),
+      writePct:pctOfLimit(writes,FIRESTORE_FREE_DAILY_LIMITS.writes),
+      maxNewOrders:FIRESTORE_FREE_DAILY_LIMITS.writes,
+      maxCompletedOrders:Math.floor(FIRESTORE_FREE_DAILY_LIMITS.writes/2)
+    };
+  },[orders]);
   const regular=calculateSubtotal(selectedPhotos);
   const discount=discountRate(cart.length);
   const siteDiscountPercent=Math.max(0,Math.min(100,Number(discountSettings.percent)||0));
@@ -1137,7 +1190,9 @@ A continuación, te envío el comprobante.`;
 
     try{
       const remote=await loadOrdersRemote();
-      setOrders(mergeOrders(remote,[updatedOrder]));
+      const mergedAfterRemote=mergeOrders(remote,[updatedOrder]);
+      saveLocalOrders(mergedAfterRemote);
+      setOrders(mergedAfterRemote);
     }catch(e){console.warn('No se pudo refrescar la cola después del cambio.',e)}
 
     clearOrderBox();
@@ -1204,7 +1259,33 @@ A continuación, te envío el comprobante.`;
 
     {adminMessage && <div className="mb-4 bg-emerald-600/15 border border-emerald-500/30 text-emerald-300 rounded-2xl px-4 py-3 text-sm">{adminMessage}</div>}
     <div className="mb-4 bg-blue-500/10 border border-blue-500/25 text-blue-100 rounded-2xl px-4 py-3 text-xs leading-relaxed">
-      <b>Firebase:</b> proyecto lucasabraham-b84aa · ruta principal <b>artifacts/lucasabraham-ph-db/orders</b> · versión <b>modo-estable-sin-realtime-v11-entregado-rechazado</b>. Si al comprar aparece un aviso rojo, el pedido quedó local pero Firestore rechazó la escritura.
+      <b>Firebase:</b> proyecto lucasabraham-b84aa · ruta principal <b>artifacts/lucasabraham-ph-db/orders</b> · versión <b>modo-estable-sin-realtime-v13-cupo-firebase</b>. Si al comprar aparece un aviso rojo, el pedido quedó local pero Firestore rechazó la escritura.
+    </div>
+
+    <div className="mb-6 bg-neutral-900 border border-neutral-800 rounded-3xl p-5">
+      <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4 mb-4">
+        <div>
+          <h2 className="text-xl font-black mb-1"><i className="fas fa-database mr-2 text-sky-300"></i>Cupo diario estimado de Firebase</h2>
+          <p className="text-neutral-400 text-sm leading-relaxed">Desde esta versión, las visitas normales a la web no leen ni escriben Firestore. Firebase se usa al generar un pedido y cuando el admin marca entregado, rechazado o reabre.</p>
+        </div>
+        <button onClick={()=>window.open('https://console.firebase.google.com/project/lucasabraham-b84aa/firestore/usage','_blank')} className="bg-neutral-800 hover:bg-neutral-700 px-4 py-3 rounded-xl font-bold text-sm"><i className="fas fa-arrow-up-right-from-square mr-2"></i>Ver uso exacto</button>
+      </div>
+      <div className="grid sm:grid-cols-3 gap-3 mb-4">
+        <div className="bg-black/35 border border-neutral-800 rounded-2xl p-4"><p className="text-xs text-neutral-500 uppercase tracking-widest">Lecturas gratis</p><b className="text-2xl">{FIRESTORE_FREE_DAILY_LIMITS.reads.toLocaleString('es-AR')}</b><p className="text-xs text-neutral-400 mt-1">Por día</p></div>
+        <div className="bg-black/35 border border-neutral-800 rounded-2xl p-4"><p className="text-xs text-neutral-500 uppercase tracking-widest">Escrituras gratis</p><b className="text-2xl">{FIRESTORE_FREE_DAILY_LIMITS.writes.toLocaleString('es-AR')}</b><p className="text-xs text-neutral-400 mt-1">Por día</p></div>
+        <div className="bg-black/35 border border-neutral-800 rounded-2xl p-4"><p className="text-xs text-neutral-500 uppercase tracking-widest">Borrados gratis</p><b className="text-2xl">{FIRESTORE_FREE_DAILY_LIMITS.deletes.toLocaleString('es-AR')}</b><p className="text-xs text-neutral-400 mt-1">Por día</p></div>
+      </div>
+      <div className="bg-black/35 border border-sky-500/20 rounded-2xl p-4">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-2">
+          <div>
+            <p className="text-sm font-black text-sky-100">Uso estimado de hoy en esta app</p>
+            <p className="text-xs text-neutral-400">Pedidos creados: <b>{firebaseDailyEstimate.created}</b> · Resueltos entregado/rechazado: <b>{firebaseDailyEstimate.resolved}</b> · Escrituras estimadas: <b>{firebaseDailyEstimate.writes}</b></p>
+          </div>
+          <p className="text-xs text-neutral-400">Restantes aprox.: <b className="text-white">{firebaseDailyEstimate.remainingWrites.toLocaleString('es-AR')}</b></p>
+        </div>
+        <div className="h-3 bg-neutral-800 rounded-full overflow-hidden"><div className="h-full bg-sky-500 rounded-full" style={{width:`${firebaseDailyEstimate.writePct}%`}}></div></div>
+        <p className="text-[11px] text-neutral-500 mt-2">Cálculo orientativo: 1 escritura al crear el pedido y 1 escritura al marcarlo como entregado/rechazado. El uso exacto se ve en Firebase Console.</p>
+      </div>
     </div>
 
     <div className="grid md:grid-cols-4 gap-4 mb-6">
@@ -1239,7 +1320,7 @@ A continuación, te envío el comprobante.`;
       <div className="mt-5 border-t border-neutral-800 pt-4">
         <div className="flex items-center justify-between gap-3 mb-3">
           <h3 className="font-black text-lg">Cola de pedidos pendientes</h3>
-          <span className="text-xs text-neutral-400">Entregados y rechazados se quitan automáticamente</span>
+          <span className="text-xs text-neutral-400">Solo se muestran pendientes. Al marcar entregado o rechazado, desaparecen de esta cola.</span>
         </div>
         <div className="grid gap-2">
           {recentOrders.length===0&&<p className="text-sm text-neutral-400">No hay pedidos pendientes en la cola.</p>}
@@ -1474,9 +1555,9 @@ A continuación, te envío el comprobante.`;
         </>}
         {!loading&&filteredAlbums.length===0&&filteredArchivedAlbums.length===0&&<div className="text-center text-neutral-500 py-12 text-sm">No se encontraron álbumes.</div>}
         {filteredArchivedAlbums.length>0&&<div className="mt-8 sm:mt-10">
-          <div className="flex items-center gap-2 mb-4"><i className="fas fa-box-archive text-neutral-500"></i><h3 className="font-black text-lg">Álbumes archivados</h3></div>
+          <div className="flex items-center gap-2 mb-4"><i className="fas fa-box-archive text-neutral-500"></i><h3 className="font-black text-lg">Galerías antiguas</h3></div>
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 sm:gap-4">
-            {filteredArchivedAlbums.map(a=><button key={a.id} onClick={()=>window.open(`https://wa.me/${SELLER_PHONE}?text=${encodeURIComponent(`Hola Lucas! Quiero consultar por el álbum archivado "${a.name}".`)}`,'_blank')} className="group text-left transition-all duration-500 hover:-translate-y-1 active:scale-[0.98] focus:outline-none"><div className="aspect-[4/5] bg-neutral-900 overflow-hidden relative rounded-xl sm:rounded-[1.6rem] border border-amber-400/20 group-hover:border-amber-400/60 transition-all duration-500">{a.cover?<img src={a.cover} loading="lazy" decoding="async" className="w-full h-full object-cover opacity-90 group-hover:scale-105 transition duration-700 ease-out"/>:<div className="w-full h-full flex items-center justify-center text-neutral-600"><i className="fas fa-image text-3xl"></i></div>}<div className="absolute inset-0 bg-black/25"></div><div className="absolute top-2 left-2 sm:top-3 sm:left-3 bg-amber-500/90 text-black px-2 py-1 rounded-full text-[9px] sm:text-[10px] font-black">Archivado</div><div className="album-caption absolute bottom-2 sm:bottom-3 left-2 sm:left-3 right-2 sm:right-3 rounded-xl sm:rounded-2xl p-2 sm:p-2.5 border border-white/10"><h3 className="album-title-white font-black whitespace-normal break-words leading-tight text-[12px] sm:text-sm">{a.name}</h3><p className="album-meta-white text-[10px] sm:text-xs mt-1">Consultá por WhatsApp</p></div></div></button>)}
+            {filteredArchivedAlbums.map(a=><button key={a.id} onClick={()=>{location.hash=albumHash(a.id)}} className="group text-left transition-all duration-500 hover:-translate-y-1 active:scale-[0.98] focus:outline-none"><div className="aspect-[4/5] bg-neutral-900 overflow-hidden relative rounded-xl sm:rounded-[1.6rem] border border-amber-400/20 group-hover:border-amber-400/60 transition-all duration-500">{a.cover?<img src={a.cover} loading="lazy" decoding="async" className="w-full h-full object-cover opacity-90 group-hover:scale-105 transition duration-700 ease-out"/>:<div className="w-full h-full flex items-center justify-center text-neutral-600"><i className="fas fa-image text-3xl"></i></div>}<div className="absolute inset-0 bg-black/25"></div><div className="absolute top-2 left-2 sm:top-3 sm:left-3 bg-amber-500/90 text-black px-2 py-1 rounded-full text-[9px] sm:text-[10px] font-black">Antigua</div><div className="album-caption absolute bottom-2 sm:bottom-3 left-2 sm:left-3 right-2 sm:right-3 rounded-xl sm:rounded-2xl p-2 sm:p-2.5 border border-white/10"><h3 className="album-title-white font-black whitespace-normal break-words leading-tight text-[12px] sm:text-sm">{a.name}</h3><p className="album-meta-white text-[10px] sm:text-xs mt-1">Ver galería</p></div></div></button>)}
           </div>
         </div>}
       </> : <>
@@ -1507,7 +1588,7 @@ Te envío el comprobante para que puedas prepararlas.`);window.open(`https://wa.
           </div>
         </div>
 
-        <div className="mb-5 flex flex-col lg:flex-row lg:items-end lg:justify-between gap-3"><div><h2 className="text-2xl font-black whitespace-normal break-words leading-tight">{currentAlbum.name} <span className="inline-flex align-middle ml-2 px-3 py-1 rounded-full bg-sky-500/15 border border-sky-400/35 text-sky-200 text-sm font-black">({albumPhotos.length} fotos)</span></h2><p className="text-neutral-400 text-sm">Elegí las fotos que quieras comprar.</p></div><div className="flex flex-col gap-2 w-full lg:w-auto"><div className="bg-neutral-900 border border-neutral-800 rounded-xl p-1 grid grid-cols-3 gap-1 w-full sm:w-auto"><button onClick={()=>setViewMode('mosaic')} className={`px-3 py-2.5 rounded-lg text-[11px] sm:text-xs font-bold ${viewMode==='mosaic'?'bg-white text-black':'text-neutral-300'}`}><i className="fas fa-table-cells mr-1"></i>Mosaico</button><button onClick={()=>setViewMode('large')} className={`px-3 py-2.5 rounded-lg text-[11px] sm:text-xs font-bold ${viewMode==='large'?'bg-white text-black':'text-neutral-300'}`}><i className="fas fa-expand mr-1"></i>Grandes</button><button onClick={()=>setViewMode('gallery')} className={`px-3 py-2.5 rounded-lg text-[11px] sm:text-xs font-bold ${viewMode==='gallery'?'bg-white text-black':'text-neutral-300'}`}><i className="fas fa-images mr-1"></i>Galería</button></div><button onClick={()=>{navigator.clipboard.writeText(albumUrl(currentAlbum.id));setCopyOk(true);setTimeout(()=>setCopyOk(false),1800)}} className="w-full bg-neutral-900 border border-neutral-800 hover:bg-neutral-800 text-sm px-4 py-3 rounded-xl font-bold"><i className="fas fa-link mr-2"></i>{copyOk?"URL copiada":"Copiar URL del álbum"}</button></div></div>
+        <div className="mb-5 flex flex-col lg:flex-row lg:items-end lg:justify-between gap-3"><div><h2 className="text-2xl font-black whitespace-normal break-words leading-tight">{currentAlbum.name} {currentAlbum.archived&&<span className="inline-flex align-middle ml-2 px-3 py-1 rounded-full bg-amber-500 text-black text-xs font-black">Galería antigua</span>} <span className="inline-flex align-middle ml-2 px-3 py-1 rounded-full bg-sky-500/15 border border-sky-400/35 text-sky-200 text-sm font-black">({albumPhotos.length} fotos)</span></h2><p className="text-neutral-400 text-sm">Elegí las fotos que quieras comprar.</p></div><div className="flex flex-col gap-2 w-full lg:w-auto"><div className="bg-neutral-900 border border-neutral-800 rounded-xl p-1 grid grid-cols-3 gap-1 w-full sm:w-auto"><button onClick={()=>setViewMode('mosaic')} className={`px-3 py-2.5 rounded-lg text-[11px] sm:text-xs font-bold ${viewMode==='mosaic'?'bg-white text-black':'text-neutral-300'}`}><i className="fas fa-table-cells mr-1"></i>Mosaico</button><button onClick={()=>setViewMode('large')} className={`px-3 py-2.5 rounded-lg text-[11px] sm:text-xs font-bold ${viewMode==='large'?'bg-white text-black':'text-neutral-300'}`}><i className="fas fa-expand mr-1"></i>Grandes</button><button onClick={()=>setViewMode('gallery')} className={`px-3 py-2.5 rounded-lg text-[11px] sm:text-xs font-bold ${viewMode==='gallery'?'bg-white text-black':'text-neutral-300'}`}><i className="fas fa-images mr-1"></i>Galería</button></div><button onClick={()=>{navigator.clipboard.writeText(albumUrl(currentAlbum.id));setCopyOk(true);setTimeout(()=>setCopyOk(false),1800)}} className="w-full bg-neutral-900 border border-neutral-800 hover:bg-neutral-800 text-sm px-4 py-3 rounded-xl font-bold"><i className="fas fa-link mr-2"></i>{copyOk?"URL copiada":"Copiar URL del álbum"}</button></div></div>
         {viewMode==='gallery' && focusPhoto && <div className="bg-neutral-950 border border-neutral-800 rounded-3xl p-3 sm:p-4 mb-4">
           <div onTouchStart={e=>touchStartX.current=e.touches?.[0]?.clientX} onTouchEnd={handleSwipeEnd(moveFocus)} className="relative rounded-2xl overflow-hidden bg-black min-h-[260px] sm:min-h-[320px] flex items-center justify-center"><img src={focusPhoto.fullUrl||focusPhoto.url} loading="eager" decoding="async" className="max-h-[72vh] w-full object-contain"/><PreviewWatermark {...wmProps(focusPhoto.albumId)}/><button onClick={()=>moveFocus(-1)} className="absolute left-2 sm:left-3 top-1/2 -translate-y-1/2 px-3 h-10 rounded-full bg-black/70 border border-white/20 text-white font-bold text-xs"><i className="fas fa-chevron-left sm:mr-1"></i><span className="hidden sm:inline viewer-nav-label">Anterior</span></button><button onClick={()=>moveFocus(1)} className="absolute right-2 sm:right-3 top-1/2 -translate-y-1/2 px-3 h-10 rounded-full bg-black/70 border border-white/20 text-white font-bold text-xs"><span className="hidden sm:inline viewer-nav-label">Siguiente</span><i className="fas fa-chevron-right sm:ml-1"></i></button><button onClick={()=>setViewer(focusPhoto)} className="absolute bottom-3 right-3 bg-white text-black px-4 py-2 rounded-xl font-black text-sm">Abrir</button></div>
           <div className="mt-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3"><div><h3 className="font-black">{focusPhoto.name}</h3><p className="text-xs text-neutral-400">Código {focusPhoto.code} · {formatPrice(focusPhoto.price)}</p></div><button onClick={()=>toggle(focusPhoto.id)} className={`${cart.includes(focusPhoto.id)?'buy-btn':'buy-btn'} w-full sm:w-auto px-4 py-3 rounded-xl font-black text-sm`}>{cart.includes(focusPhoto.id)?'Agregada al carrito':'Agregar al carrito'}</button></div>
