@@ -921,7 +921,12 @@ function App(){
     setAppliedCoupon(found);
     setCouponMessage(`Cupón ${found.code} aplicado: ${found.percent}% de descuento extra.`);
   };
-  const sendOrder=async()=>{
+  const sendOrder=()=>{
+    if(!cart.length || !selectedPhotos.length){
+      setAdminMessage('Seleccioná al menos una foto antes de comprar.');
+      return;
+    }
+
     const order='LA-'+Math.floor(10000+Math.random()*90000);
     let msg=`${EM.hello} Hola Lucas, me gustaría comprar estas fotos en buena calidad y sin marca de agua.
 
@@ -940,6 +945,7 @@ ${EM.image} *Cantidad:* ${cart.length} fotos
 ${EM.point} *${MP_ALIAS}*
 
 A continuación, te envío el comprobante.`;
+
     const orderData={
       id:order,
       date:new Date().toISOString(),
@@ -950,46 +956,49 @@ A continuación, te envío el comprobante.`;
       items:selectedPhotos.map(p=>({id:p.id,albumName:p.albumName,name:p.name,code:p.code,url:p.url,driveLink:p.rawUrl||p.fullUrl||p.url,price:p.price})),
       delivered:false
     };
+
     const whatsappUrl=`https://wa.me/${SELLER_PHONE}?text=${encodeURIComponent(msg)}`;
 
-    // Guardado local inmediato antes de abrir WhatsApp, para que el pedido no se pierda aunque Firebase demore.
+    // 1) Guardado local inmediato para que el pedido nunca se pierda.
     saveLocalOrders(mergeOrders([orderData],readLocalOrders()));
     savePendingOrders(mergeOrders([orderData],readPendingOrders()));
     setOrders(o=>mergeOrders([orderData],o));
 
-    // Abrir WhatsApp sin depender de una pestaña nueva: si el navegador bloquea popups,
-    // navega en la misma pestaña. Además usa número con formato internacional para wa.me.
-    const abrirWhatsApp = () => {
-      try {
-        const nuevaVentana = window.open(whatsappUrl, '_blank', 'noopener,noreferrer');
-        if (!nuevaVentana || nuevaVentana.closed || typeof nuevaVentana.closed === 'undefined') {
-          window.location.href = whatsappUrl;
-        }
-      } catch (e) {
-        window.location.href = whatsappUrl;
-      }
-    };
-
-    // Sincronización remota en segundo plano: Firebase + Apps Script.
-    saveOrderRemote(orderData).then(saveStatus=>{
-      if(!saveStatus.firebase){
-        console.warn(`El pedido ${order} quedó guardado localmente, pero no se subió a Firebase.`, saveStatus);
-        setAdminMessage(`Pedido ${order} guardado localmente. Firebase no confirmó la subida.`);
-      }else{
-        setAdminMessage(`Pedido ${order} guardado correctamente en Firebase.`);
-      }
-    }).catch(err=>{
-      console.warn('No se pudo sincronizar el pedido en segundo plano.',err);
-      setAdminMessage(`Pedido ${order} guardado localmente. Error al sincronizar Firebase.`);
-    }).finally(()=>{
-      setTimeout(abrirWhatsApp, 80);
-    });
-
+    // 2) Cerrar checkout y limpiar selección antes de salir a WhatsApp.
     setCart([]);
     setCheckoutOpen(false);
     setAppliedCoupon(null);
-    setCheckoutCoupon("");
-    setCouponMessage("");
+    setCheckoutCoupon('');
+    setCouponMessage('');
+    setAdminMessage(`Pedido ${order} generado. Abriendo WhatsApp...`);
+
+    // 3) Abrir WhatsApp EN EL MISMO CLICK. No espera Firebase, así el navegador no bloquea el popup.
+    let opened=false;
+    try{
+      const win=window.open(whatsappUrl,'_blank');
+      opened=!!win;
+      if(win){try{win.opener=null;}catch(e){}}
+    }catch(e){opened=false;}
+    if(!opened){
+      try{window.location.assign(whatsappUrl)}catch(e){window.location.href=whatsappUrl}
+    }
+
+    // 4) Sincronización remota después de abrir WhatsApp.
+    // Si falla, el pedido queda en pendientes y el admin lo puede encontrar en este navegador.
+    Promise.resolve()
+      .then(()=>saveOrderRemote(orderData))
+      .then(saveStatus=>{
+        if(saveStatus&&saveStatus.firebase){
+          setAdminMessage(`Pedido ${order} guardado correctamente en Firebase.`);
+        }else{
+          console.warn(`El pedido ${order} quedó local/pendiente. Firebase no confirmó la subida.`, saveStatus);
+          setAdminMessage(`Pedido ${order} generado. Firebase no confirmó la subida todavía.`);
+        }
+      })
+      .catch(err=>{
+        console.warn('No se pudo sincronizar el pedido en segundo plano.',err);
+        setAdminMessage(`Pedido ${order} generado. Error al sincronizar Firebase.`);
+      });
   };
 
   const addCoupon=()=>{
