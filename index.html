@@ -203,6 +203,7 @@ const LS_ALBUM_CACHE_KEY="la_album_cache_v1";
 const LS_COUPONS_KEY="la_coupon_settings_v1";
 const LS_SHARED_STATE_KEY="la_shared_admin_state_v2";
 const PHOTOS_PER_PAGE=70;
+const APP_VERSION="firebase-primary-orders-v3-no-blank-whatsapp";
 
 // Firebase se usa como fuente central para que móvil y PC vean lo mismo.
 // Config integrado para no depender de /__/firebase/init.js.
@@ -333,38 +334,49 @@ function subscribeOrders(onData){
   return ()=>{cancelled=true;if(unsub)unsub()};
 }
 function orderCollections(){
-  return Array.from(new Set([ORDERS_COLLECTION_PATH, LEGACY_ORDERS_COLLECTION_PATH].filter(Boolean)));
+  // Ruta principal real que se ve en Firebase Console: artifacts > lucasabraham-ph-db > orders.
+  // Ya no se toma la ruta legacy como guardado válido, para evitar que el admin local muestre pedidos que no aparecen donde Lucas los controla.
+  return [ORDERS_COLLECTION_PATH];
+}
+function legacyOrderCollections(){
+  return [LEGACY_ORDERS_COLLECTION_PATH].filter(Boolean);
 }
 async function saveOrderFirebase(order){
   const db=await getFirebaseDb();
   if(!db)throw new Error('Firebase no inicializó. Revisá la consola y la configuración del proyecto.');
-  const clean={...order,id:order.id||order.orderId||order.codigo||order.code,updatedAt:new Date().toISOString()};
+  const clean={...order,id:order.id||order.orderId||order.codigo||order.code,updatedAt:new Date().toISOString(),appVersion:APP_VERSION};
   const docId=firebaseDocId(clean.id);
-  const results=[];
-  for(const path of orderCollections()){
-    try{
-      await db.collection(path).doc(docId).set(clean,{merge:true});
-      results.push(path);
-    }catch(e){
-      console.error('No se pudo guardar el pedido en Firebase:', path, e);
-    }
+
+  // Guardado obligatorio: es la ruta que Lucas ve en Firebase Console.
+  try{
+    await db.collection(ORDERS_COLLECTION_PATH).doc(docId).set(clean,{merge:true});
+  }catch(e){
+    console.error('No se pudo guardar el pedido en la ruta principal de Firebase:', ORDERS_COLLECTION_PATH, e);
+    throw new Error('Firebase rechazó la escritura en artifacts/lucasabraham-ph-db/orders. Revisá reglas/permisos de Firestore. Detalle: '+(e&&e.message?e.message:String(e)));
   }
-  if(!results.length)throw new Error('Firebase rechazó la escritura del pedido. Probá revisar reglas/permisos de Firestore.');
-  try{window.LA_LAST_FIREBASE_SAVE={ok:true,id:clean.id,paths:results,at:new Date().toISOString()};}catch(e){}
+
+  // Copia opcional legacy: si falla no invalida el pedido, porque la ruta principal ya quedó guardada.
+  for(const path of legacyOrderCollections()){
+    try{await db.collection(path).doc(docId).set(clean,{merge:true});}
+    catch(e){console.warn('No se pudo guardar copia legacy del pedido:', path, e)}
+  }
+
+  try{window.LA_LAST_FIREBASE_SAVE={ok:true,id:clean.id,paths:[ORDERS_COLLECTION_PATH],at:new Date().toISOString(),appVersion:APP_VERSION};}catch(e){}
   return true;
 }
 async function loadOrdersFirebase(limit=3000){
   const db=await getFirebaseDb();
   if(!db)return [];
   const all=[];
-  for(const path of orderCollections()){
+  const paths=[ORDERS_COLLECTION_PATH,...legacyOrderCollections()];
+  for(const path of paths){
     try{
       const snap=await db.collection(path).orderBy('date','desc').limit(limit).get();
-      all.push(...snap.docs.map(d=>({id:d.data().id||d.id,...d.data()})));
+      all.push(...snap.docs.map(d=>({id:d.data().id||d.id,...d.data(),_firebasePath:path})));
     }catch(e){
       try{
         const snap=await db.collection(path).limit(limit).get();
-        all.push(...snap.docs.map(d=>({id:d.data().id||d.id,...d.data()})));
+        all.push(...snap.docs.map(d=>({id:d.data().id||d.id,...d.data(),_firebasePath:path})));
       }catch(err){
         console.warn('No se pudieron leer pedidos desde Firebase:', path, err);
       }
@@ -390,7 +402,7 @@ async function findOrderEverywhere(code){
   try{
     const db=await getFirebaseDb();
     if(db){
-      for(const path of orderCollections()){
+      for(const path of [ORDERS_COLLECTION_PATH,...legacyOrderCollections()]){
         for(const id of orderCodeVariants(q)){
           const snap=await db.collection(path).doc(firebaseDocId(id)).get();
           if(snap.exists)return {id:snap.data().id||snap.id,...snap.data()};
@@ -939,14 +951,28 @@ A continuación, te envío el comprobante.`;
       delivered:false
     };
     const whatsappUrl=`https://wa.me/${SELLER_PHONE}?text=${encodeURIComponent(msg)}`;
-    const waWindow=window.open('', '_blank');
-    const saveStatus=await saveOrderRemote(orderData);
+
+    // Guardado local inmediato antes de abrir WhatsApp, para que el pedido no se pierda aunque Firebase demore.
+    saveLocalOrders(mergeOrders([orderData],readLocalOrders()));
+    savePendingOrders(mergeOrders([orderData],readPendingOrders()));
     setOrders(o=>mergeOrders([orderData],o));
-    if(!saveStatus.firebase){
-      alert(`El pedido ${order} quedó guardado en este navegador, pero NO pudo subirse a Firebase. Revisá reglas/permisos de Firestore o la consola. Detalle: ${saveStatus.error||'sin detalle'}`);
-    }
-    if(waWindow)waWindow.location.href=whatsappUrl;
-    else window.open(whatsappUrl,'_blank');
+
+    // Abrir WhatsApp directamente evita la pestaña en blanco que quedaba mientras se esperaba a Firebase.
+    window.open(whatsappUrl,'_blank');
+
+    // Sincronización remota en segundo plano: Firebase + Apps Script.
+    saveOrderRemote(orderData).then(saveStatus=>{
+      if(!saveStatus.firebase){
+        console.warn(`El pedido ${order} quedó guardado localmente, pero no se subió a Firebase.`, saveStatus);
+        setAdminMessage(`Pedido ${order} guardado localmente. Firebase no confirmó la subida.`);
+      }else{
+        setAdminMessage(`Pedido ${order} guardado correctamente en Firebase.`);
+      }
+    }).catch(err=>{
+      console.warn('No se pudo sincronizar el pedido en segundo plano.',err);
+      setAdminMessage(`Pedido ${order} guardado localmente. Error al sincronizar Firebase.`);
+    });
+
     setCart([]);
     setCheckoutOpen(false);
     setAppliedCoupon(null);
@@ -1066,7 +1092,7 @@ A continuación, te envío el comprobante.`;
 
     {adminMessage && <div className="mb-4 bg-emerald-600/15 border border-emerald-500/30 text-emerald-300 rounded-2xl px-4 py-3 text-sm">{adminMessage}</div>}
     <div className="mb-4 bg-blue-500/10 border border-blue-500/25 text-blue-100 rounded-2xl px-4 py-3 text-xs leading-relaxed">
-      <b>Firebase:</b> proyecto lucasabraham-b84aa · ruta principal <b>artifacts/lucasabraham-ph-db/orders</b>. Si al comprar aparece un aviso rojo, el pedido quedó local pero Firestore rechazó la escritura.
+      <b>Firebase:</b> proyecto lucasabraham-b84aa · ruta principal <b>artifacts/lucasabraham-ph-db/orders</b> · versión <b>firebase-primary-orders-v2</b>. Si al comprar aparece un aviso rojo, el pedido quedó local pero Firestore rechazó la escritura.
     </div>
 
     <div className="grid md:grid-cols-4 gap-4 mb-6">
