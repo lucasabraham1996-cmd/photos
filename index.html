@@ -1,16 +1,3 @@
-
-
-
-
-
-
-
-
-
-
-
-
-
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -206,12 +193,22 @@
     body.light-mode select.booking-input option,body.light-mode .booking-hero select.booking-input option{background:#fff!important;color:#111827!important;-webkit-text-fill-color:#111827!important}
     body.light-mode .booking-input::placeholder{color:#6b7280!important}
 
+
+    /* Estabilidad móvil v4: evita pantalla blanca y mejora selectores */
+    #root:empty::before{content:"Cargando galería...";min-height:100vh;display:flex;align-items:center;justify-content:center;background:#070707;color:#fff;font:800 18px Inter,Arial,sans-serif;padding:24px;text-align:center}
+    select.booking-input, select.booking-input option{background:#fff!important;color:#111827!important}
+    select.booking-input:focus{color:#111827!important;background:#fff!important}
+    .app-boot-fallback{min-height:100vh;display:flex;align-items:center;justify-content:center;background:radial-gradient(circle at 50% 18%,rgba(255,255,255,.10),transparent 34%),linear-gradient(135deg,#030303,#0b0b0f 45%,#000);color:#fff;padding:24px;text-align:center}
+    .app-boot-card{width:min(92vw,360px);border:1px solid rgba(255,255,255,.10);background:rgba(12,12,14,.76);border-radius:30px;padding:28px 22px;box-shadow:0 30px 80px rgba(0,0,0,.48)}
+    .app-boot-card img{width:82px;height:82px;object-fit:contain;margin:0 auto 14px;display:block;filter:drop-shadow(0 10px 22px rgba(255,255,255,.12))}
+    .app-boot-bar{height:5px;border-radius:999px;background:rgba(255,255,255,.10);overflow:hidden;margin-top:16px}.app-boot-bar span{display:block;height:100%;width:42%;border-radius:999px;background:linear-gradient(90deg,#fff,#9ca3af,#fff);animation:loadMove 1.05s ease-in-out infinite}
+
   </style>
 
 <script>
   window.addEventListener('error', function(e){
     var root = document.getElementById('root');
-    if(root && !root.innerHTML.trim()){
+    if(root){
       root.innerHTML = '<div style="min-height:100vh;background:#070707;color:white;font-family:Arial,sans-serif;display:flex;align-items:center;justify-content:center;padding:24px;"><div style="max-width:620px;background:#171717;border:1px solid rgba(239,68,68,.45);border-radius:24px;padding:28px;"><h1 style="font-size:24px;margin:0 0 12px;font-weight:800;">La app no pudo iniciar</h1><p style="color:#ddd;line-height:1.5;">Se detectó un error de JavaScript. Revisá la consola o volvé a subir la última versión corregida.</p><pre style="white-space:pre-wrap;background:#050505;border-radius:14px;padding:14px;color:#fecaca;">'+String(e.message||'Error desconocido')+'</pre></div></div>';
     }
   });
@@ -219,7 +216,7 @@
 
 </head>
 <body>
-  <div id="root"></div>
+  <div id="root"><div class="app-boot-fallback"><div class="app-boot-card"><img src="https://i.postimg.cc/PrD4jg9V/Logo-LA.png" alt="lucasabraham.ph"><h1 style="font-size:22px;font-weight:950;margin:0 0 6px;">Cargando galería</h1><p style="color:#d4d4d8;font-size:13px;line-height:1.45;margin:0;">Preparando álbumes y fotos...</p><div class="app-boot-bar"><span></span></div></div></div></div>
   <script type="text/babel">
 const {useEffect,useMemo,useRef,useState}=React;
 
@@ -242,7 +239,7 @@ const LS_COUPONS_KEY="la_coupon_settings_v1";
 const LS_SHARED_STATE_KEY="la_shared_admin_state_v2";
 const LS_BANNERS_KEY="la_banner_settings_v1";
 const PHOTOS_PER_PAGE=70;
-const APP_VERSION="reservas-banners-subalbumes-fecha-v3";
+const APP_VERSION="reservas-banners-subalbumes-fecha-v4-estable-movil";
 const FIRESTORE_FREE_DAILY_LIMITS = {
   reads: 50000,
   writes: 20000,
@@ -1015,8 +1012,9 @@ function App(){
   useEffect(()=>{saveBannerSettings(bannerSettings);if(sharedReady)saveSharedAdminState({bannerSettings})},[bannerSettings,sharedReady]);
   useEffect(()=>{saveDiscountSettings(discountSettings);if(sharedReady)saveSharedAdminState({discountSettings})},[discountSettings,sharedReady]);
 
-  async function load({silent=false}={}){
-    const cached=readAlbumCache();
+  async function load({silent=false,force=false}={}){
+    if(force){try{localStorage.removeItem(LS_ALBUM_CACHE_KEY)}catch(e){}}
+    const cached=force?[]:readAlbumCache();
     if(cached.length&&!albums.length){setAlbums(cached);setLoading(false);setError("");}
     if(!silent && !cached.length){setLoading(true);setError("");}
     try{
@@ -1034,7 +1032,18 @@ function App(){
     }
     finally{setLoading(false)}
   }
-  useEffect(()=>{load()},[]);
+  async function refreshGalleryFromAdmin(){
+    setAdminMessage('Actualizando galería desde la planilla...');
+    setLoading(true);
+    setError('');
+    try{
+      await load({force:true});
+      setAdminMessage('Galería actualizada correctamente.');
+    }catch(e){
+      setAdminMessage('No se pudo actualizar. Probá F5 o revisá Apps Script.');
+    }
+  }
+  useEffect(()=>{load({silent:false})},[]);
 
   const displayAlbums=useMemo(()=>albums.map(a=>({...a,cover:coverOverrides[a.id]||a.cover})).sort((a,b)=>(b.dateTs||0)-(a.dateTs||0)||a.name.localeCompare(b.name)),[albums,coverOverrides]);
   const activeAlbums=useMemo(()=>displayAlbums.filter(a=>!a.archived),[displayAlbums]);
@@ -1402,7 +1411,7 @@ A continuación, te envío el comprobante.`;
   },[currentAlbum,albumRenderLimit,filteredAlbums.length]);
 
   if(loading && !albums.length && route==="#/admin")return <div className="loading-shell"><div className="loading-card up"><div className="loading-logo-wrap"><img src="https://i.postimg.cc/PrD4jg9V/Logo-LA.png" className="loading-logo"/></div><h1 className="text-2xl font-black mb-1">Cargando panel</h1><p className="text-sm text-neutral-400">Preparando la información...</p><div className="loading-bar"><span></span></div></div></div>;
-  if(error && !albums.length)return <div className="min-h-screen flex items-center justify-center p-5"><div className="max-w-xl w-full bg-neutral-900 border border-red-500/40 rounded-3xl p-7"><div className="w-16 h-16 rounded-2xl bg-red-500/20 border border-red-400/30 flex items-center justify-center mb-5"><img src="https://i.postimg.cc/PrD4jg9V/Logo-LA.png" className="w-11 h-11 object-contain"/></div><h1 className="text-2xl font-black mb-4">No se pudo cargar la galería</h1><div className="bg-black border border-neutral-800 rounded-2xl p-4 text-red-200 text-sm mb-5">{error}</div><p className="text-sm text-neutral-300 leading-relaxed mb-3">Verificá que Apps Script siga publicado como aplicación web y que la planilla tenga fotos públicas.</p><p className="text-sm text-amber-300 leading-relaxed mb-5"><i className="fas fa-keyboard mr-2"></i>Si aparece este aviso de forma ocasional, apretá <b>F5</b> para actualizar. Muchas veces se soluciona de ese modo.</p><div className="grid sm:grid-cols-2 gap-2"><button onClick={()=>load()} className="w-full bg-white text-black font-bold py-4 rounded-xl">Reintentar</button><button onClick={()=>location.reload()} className="w-full bg-neutral-800 text-white font-bold py-4 rounded-xl">Actualizar con F5</button></div></div></div>;
+  if(error && !albums.length)return <div className="min-h-screen flex items-center justify-center p-5"><div className="max-w-xl w-full bg-neutral-900 border border-red-500/40 rounded-3xl p-7"><div className="w-16 h-16 rounded-2xl bg-red-500/20 border border-red-400/30 flex items-center justify-center mb-5"><img src="https://i.postimg.cc/PrD4jg9V/Logo-LA.png" className="w-11 h-11 object-contain"/></div><h1 className="text-2xl font-black mb-4">No se pudo cargar la galería</h1><div className="bg-black border border-neutral-800 rounded-2xl p-4 text-red-200 text-sm mb-5">{error}</div><p className="text-sm text-neutral-300 leading-relaxed mb-3">Verificá que Apps Script siga publicado como aplicación web y que la planilla tenga fotos públicas.</p><p className="text-sm text-amber-300 leading-relaxed mb-5"><i className="fas fa-keyboard mr-2"></i>Si aparece este aviso de forma ocasional, apretá <b>F5</b> para actualizar. Muchas veces se soluciona de ese modo.</p><div className="grid sm:grid-cols-2 gap-2"><button onClick={()=>load({force:true})} className="w-full bg-white text-black font-bold py-4 rounded-xl">Reintentar</button><button onClick={()=>location.reload()} className="w-full bg-neutral-800 text-white font-bold py-4 rounded-xl">Actualizar con F5</button></div></div></div>;
 
   if(route==="#/admin" && !admin) return <div className="min-h-screen flex items-center justify-center p-4"><form onSubmit={e=>{e.preventDefault();pin===ADMIN_PIN?setAdmin(true):alert('PIN incorrecto')}} className="bg-neutral-900 border border-neutral-800 p-7 rounded-3xl w-full max-w-sm"><h1 className="text-2xl font-bold mb-2">Acceso admin</h1><p className="text-neutral-400 text-sm mb-5">Panel de control de la galería.</p><input value={pin} onChange={e=>setPin(e.target.value)} type="password" placeholder="PIN" className="w-full bg-black border border-neutral-700 rounded-xl p-4 mb-4 text-center text-xl tracking-widest outline-none"/><button className="w-full bg-indigo-600 py-4 rounded-xl font-bold">Entrar</button></form></div>;
 
@@ -1413,7 +1422,7 @@ A continuación, te envío el comprobante.`;
         <p className="text-neutral-400 text-sm">Podés ver las galerías, cambiar carátulas y elegir qué álbumes aparecen como historias destacadas en el encabezado.</p>
       </div>
       <div className="mobile-stack flex gap-2">
-        <button onClick={load} className="bg-neutral-800 px-4 py-3 rounded-xl"><i className="fas fa-rotate-right mr-2"></i>Actualizar</button>
+        <button onClick={refreshGalleryFromAdmin} className="bg-neutral-800 px-4 py-3 rounded-xl"><i className="fas fa-rotate-right mr-2"></i>Actualizar</button>
         <button onClick={()=>setTheme(t=>t==='dark'?'light':'dark')} className="bg-neutral-800 px-4 py-3 rounded-xl font-bold"><i className={`fas ${theme==='dark'?'fa-sun':'fa-moon'} mr-2`}></i>{theme==='dark'?'Claro':'Oscuro'}</button>
         <button onClick={()=>location.hash="#/galeria"} className="bg-indigo-600 px-4 py-3 rounded-xl font-bold">Ver galería</button>
       </div>
@@ -1421,7 +1430,7 @@ A continuación, te envío el comprobante.`;
 
     {adminMessage && <div className="mb-4 bg-emerald-600/15 border border-emerald-500/30 text-emerald-300 rounded-2xl px-4 py-3 text-sm">{adminMessage}</div>}
     <div className="mb-4 bg-blue-500/10 border border-blue-500/25 text-blue-100 rounded-2xl px-4 py-3 text-xs leading-relaxed">
-      <b>Firebase:</b> proyecto lucasabraham-b84aa · ruta principal <b>artifacts/lucasabraham-ph-db/orders</b> · versión <b>reservas-banners-subalbumes-fecha-v3</b>. Si al comprar aparece un aviso rojo, el pedido quedó local pero Firestore rechazó la escritura.
+      <b>Firebase:</b> proyecto lucasabraham-b84aa · ruta principal <b>artifacts/lucasabraham-ph-db/orders</b> · versión <b>reservas-banners-subalbumes-fecha-v4-estable-movil</b>. Si al comprar aparece un aviso rojo, el pedido quedó local pero Firestore rechazó la escritura.
     </div>
 
     <div className="mb-6 bg-neutral-900 border border-neutral-800 rounded-3xl p-5">
@@ -1907,7 +1916,9 @@ Te envío el comprobante para que puedas prepararlas.`);window.open(`https://wa.
   </div>;
 }
 
-ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
+const rootEl=document.getElementById('root');
+if(rootEl) rootEl.innerHTML='';
+ReactDOM.createRoot(rootEl).render(<App/>);
   </script>
 </body>
 </html>
