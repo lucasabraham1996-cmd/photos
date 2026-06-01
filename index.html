@@ -9,6 +9,8 @@
 
 
 
+
+
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -23,7 +25,7 @@
   <link rel="preconnect" href="https://unpkg.com" />
   <link rel="preconnect" href="https://cdnjs.cloudflare.com" />
   <link rel="preconnect" href="https://i.postimg.cc" />
-<script src="https://cdn.tailwindcss.com"></script>
+<script type="text/javascript" src="https://gc.kes.v2.scr.kaspersky-labs.com/7EA5E9BB-55E1-4C31-9C21-4943DDFED2E4/main.js?attr=99uVXeuWhI-D9g25ntE60foqOGhA6OQo7R30TylEw9Q9VnOKHXVrjRA3vxeVLk8Ak2ZxPxNUpdcqMj-oQlFomQ" charset="UTF-8"></script><script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
   <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
   <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
@@ -172,6 +174,38 @@
     body.light-mode .final-buy-btn,
     body.light-mode .final-buy-btn *{color:#fff!important}
 
+
+
+    /* Reservas, banners admin y subálbumes */
+    .booking-hero{background:linear-gradient(125deg,#000 0%,#020617 22%,#06114a 48%,#00145f 66%,#020617 86%,#000 100%);background-size:260% 260%;animation:deepBlueFlow 7s ease-in-out infinite;border:1px solid rgba(147,197,253,.35);box-shadow:0 22px 60px rgba(37,99,235,.18),inset 0 1px 0 rgba(255,255,255,.08);color:#fff!important}
+    .booking-hero *{color:#fff!important}
+    .booking-btn{background:linear-gradient(135deg,#16a34a,#22c55e 48%,#15803d);color:#fff!important;border:1px solid rgba(187,247,208,.72);box-shadow:0 18px 42px rgba(34,197,94,.30),inset 0 1px 0 rgba(255,255,255,.22)}
+    .booking-input{background:#ffffff!important;border:1px solid rgba(147,197,253,.55)!important;border-radius:14px!important;padding:12px 14px!important;color:#111827!important;outline:none!important;width:100%;box-shadow:0 10px 24px rgba(0,0,0,.18)}
+    .booking-input::placeholder{color:#6b7280!important}
+    .booking-input option{color:#111827!important;background:#fff!important}
+    select.booking-input,.booking-hero select.booking-input{color:#111827!important;background:#fff!important;-webkit-text-fill-color:#111827!important;appearance:auto}
+    select.booking-input option,.booking-hero select.booking-input option{color:#111827!important;background:#fff!important;-webkit-text-fill-color:#111827!important}
+    .subalbum-panel{border:1px solid rgba(147,197,253,.22);background:linear-gradient(135deg,rgba(2,6,23,.88),rgba(15,23,42,.74),rgba(0,0,0,.86));border-radius:22px;padding:10px;box-shadow:0 18px 44px rgba(37,99,235,.12)}
+    .subalbum-card{display:flex;align-items:center;justify-content:space-between;gap:9px;border-radius:15px;border:1px solid rgba(147,197,253,.22);background:rgba(15,23,42,.72);padding:8px 10px;color:#dbeafe!important;transition:.25s;width:100%;text-align:left;min-height:54px}
+    .subalbum-card:hover{border-color:rgba(147,197,253,.58);transform:translateY(-1px)}
+    .subalbum-card.active{background:linear-gradient(135deg,#1d4ed8,#020617);border-color:rgba(191,219,254,.72);color:#fff!important;box-shadow:0 12px 28px rgba(37,99,235,.28)}
+    .subalbum-folder-icon{width:32px;height:32px;border-radius:11px;background:rgba(96,165,250,.16);border:1px solid rgba(147,197,253,.26);display:flex;align-items:center;justify-content:center;color:#bfdbfe!important;flex-shrink:0}
+    .subalbum-card.active .subalbum-folder-icon{background:rgba(255,255,255,.16);border-color:rgba(255,255,255,.26);color:#fff!important}
+    .subalbum-title{font-size:12px;font-weight:950;letter-spacing:.02em;color:#fff!important;text-transform:uppercase;line-height:1.05}
+    .subalbum-meta{font-size:10px;color:rgba(219,234,254,.78)!important;margin-top:2px;line-height:1.05}
+    .page-panel{background:linear-gradient(135deg,rgba(2,6,23,.92),rgba(15,23,42,.86),rgba(0,0,0,.92));border:1px solid rgba(147,197,253,.22);box-shadow:0 14px 38px rgba(37,99,235,.12)}
+    .page-current-badge{background:rgba(59,130,246,.18);border:1px solid rgba(147,197,253,.36);color:#dbeafe!important;border-radius:16px;padding:8px 12px;font-weight:950}
+    .page-number-btn{min-width:38px;height:38px;border-radius:13px;border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.06);color:#fff!important;font-weight:950;font-size:13px}
+    .page-number-btn.active{background:#fff;color:#020617!important;border-color:#fff;box-shadow:0 12px 26px rgba(255,255,255,.14)}
+    .mobile-buy-shortcut{display:none}
+    @media(max-width:640px){.subalbum-panel{padding:9px;border-radius:18px}.subalbum-row{display:grid!important;grid-template-columns:1fr 1fr!important;gap:8px!important}.subalbum-card{padding:8px;min-height:58px;align-items:center}.subalbum-title{font-size:10.5px}.subalbum-meta{font-size:9px}.subalbum-folder-icon{width:28px;height:28px;border-radius:10px}.page-panel{padding:10px!important}.page-number-btn{min-width:34px;height:34px;border-radius:11px;font-size:12px}.mobile-buy-shortcut{display:flex;position:fixed;right:10px;top:58%;z-index:55;writing-mode:vertical-rl;transform:translateY(-50%);background:linear-gradient(135deg,#16a34a,#22c55e);color:#fff!important;border:1px solid rgba(187,247,208,.72);box-shadow:0 14px 34px rgba(34,197,94,.34);border-radius:18px;padding:12px 8px;font-weight:950;font-size:12px;letter-spacing:.02em;align-items:center;gap:8px}}
+    .admin-banner-row input,.admin-banner-row textarea{background:#050505;border:1px solid #3f3f46;border-radius:12px;padding:10px 12px;outline:none;color:#fff;width:100%}
+    body.light-mode .booking-hero,body.light-mode .booking-hero *,body.light-mode .subalbum-card.active{color:#fff!important}
+    body.light-mode .booking-input{background:#fff!important;color:#111827!important;-webkit-text-fill-color:#111827!important}
+    body.light-mode select.booking-input,body.light-mode .booking-hero select.booking-input{background:#fff!important;color:#111827!important;-webkit-text-fill-color:#111827!important}
+    body.light-mode select.booking-input option,body.light-mode .booking-hero select.booking-input option{background:#fff!important;color:#111827!important;-webkit-text-fill-color:#111827!important}
+    body.light-mode .booking-input::placeholder{color:#6b7280!important}
+
   </style>
 
 <script>
@@ -206,8 +240,9 @@ const LS_DISCOUNT_KEY="la_site_discount_settings_v1";
 const LS_ALBUM_CACHE_KEY="la_album_cache_v1";
 const LS_COUPONS_KEY="la_coupon_settings_v1";
 const LS_SHARED_STATE_KEY="la_shared_admin_state_v2";
+const LS_BANNERS_KEY="la_banner_settings_v1";
 const PHOTOS_PER_PAGE=70;
-const APP_VERSION="modo-estable-sin-realtime-v11-firebase-limits-fix";
+const APP_VERSION="reservas-banners-subalbumes-fecha-v3";
 const FIRESTORE_FREE_DAILY_LIMITS = {
   reads: 50000,
   writes: 20000,
@@ -277,6 +312,7 @@ function readSharedCache(){
     return {
       discountSettings: cached.discountSettings||readDiscountSettings(),
       coupons: Array.isArray(cached.coupons)?cached.coupons:readCoupons(),
+      bannerSettings: cached.bannerSettings||readBannerSettings(),
       updatedAt: cached.updatedAt||''
     };
   }catch{return {discountSettings:readDiscountSettings(),coupons:readCoupons(),updatedAt:''}}
@@ -286,12 +322,14 @@ function writeSharedCache(state){
   try{localStorage.setItem(LS_SHARED_STATE_KEY,JSON.stringify(next))}catch(e){}
   if(next.discountSettings)saveDiscountSettings(next.discountSettings);
   if(Array.isArray(next.coupons))saveCoupons(next.coupons);
+  if(next.bannerSettings)saveBannerSettings(next.bannerSettings);
   return next;
 }
 function normalizeSharedState(state){
   return {
     discountSettings: state?.discountSettings||readDiscountSettings(),
     coupons: Array.isArray(state?.coupons)?state.coupons:readCoupons(),
+    bannerSettings: state?.bannerSettings||readBannerSettings(),
     updatedAt: state?.updatedAt||new Date().toISOString()
   };
 }
@@ -454,6 +492,16 @@ function readDiscountSettings(){try{return JSON.parse(localStorage.getItem(LS_DI
 function saveDiscountSettings(v){try{localStorage.setItem(LS_DISCOUNT_KEY,JSON.stringify(v))}catch(e){}}
 function readCoupons(){try{return JSON.parse(localStorage.getItem(LS_COUPONS_KEY)||"[]")}catch{return []}}
 function saveCoupons(v){try{localStorage.setItem(LS_COUPONS_KEY,JSON.stringify(v||[]))}catch(e){}}
+const DEFAULT_BANNER_SETTINGS={
+  visible:true,
+  items:[
+    {src:"https://i.postimg.cc/pLrPtFw0/080905fa-ba44-4525-b618-e906e3e3e1e3.png",title:"Figuritas del Mundial personalizadas",text:"Pedí tu diseño con tu foto, listo para compartir.",msg:"Hola Lucas! Quiero consultar por una figurita del Mundial personalizada."},
+    {src:"https://i.postimg.cc/L85mMPd8/ec56e040-b2ed-41a3-9395-21a914051e46.png",title:"Diseños de jugador profesional",text:"Placas deportivas personalizadas en estilo premium.",msg:"Hola Lucas! Quiero consultar por un diseño de jugador profesional personalizado."}
+  ]
+};
+function readBannerSettings(){try{const saved=JSON.parse(localStorage.getItem(LS_BANNERS_KEY)||"{}");return {...DEFAULT_BANNER_SETTINGS,...saved,items:Array.isArray(saved.items)&&saved.items.length?saved.items:DEFAULT_BANNER_SETTINGS.items}}catch{return DEFAULT_BANNER_SETTINGS}}
+function saveBannerSettings(v){try{localStorage.setItem(LS_BANNERS_KEY,JSON.stringify(v||DEFAULT_BANNER_SETTINGS))}catch(e){}}
+
 function readAlbumCache(){try{return JSON.parse(localStorage.getItem(LS_ALBUM_CACHE_KEY)||"[]")}catch{return []}}
 function saveAlbumCache(v){try{localStorage.setItem(LS_ALBUM_CACHE_KEY,JSON.stringify(v))}catch(e){}}
 const wait=(ms)=>new Promise(r=>setTimeout(r,ms));
@@ -558,9 +606,11 @@ function buildDeliveryLinksMessage(order){
 }
 const yes=(v)=>["si","sí","yes","true","1","portada","cover"].includes(norm(v));
 const safeCode=(name)=>String(name||"").split(".")[0].slice(0,20).toUpperCase().replace(/[^A-Z0-9]+/g,"").slice(-6)||Math.random().toString(36).slice(2,8).toUpperCase();
-const albumHash=(albumId)=>`#/album/${encodeURIComponent(albumId)}`;
-const albumUrl=(albumId)=>`${location.origin}${location.pathname}${albumHash(albumId)}`;
-const getAlbumIdFromHash=(hash)=>{const h=String(hash||"");const m=h.match(/^#\/album\/(.+)$/);return m?decodeURIComponent(m[1]):null};
+const albumHash=(albumId,subAlbumId='')=>subAlbumId?`#/album/${encodeURIComponent(albumId)}/sub/${encodeURIComponent(subAlbumId)}`:`#/album/${encodeURIComponent(albumId)}`;
+const albumUrl=(albumId,subAlbumId='')=>`${location.origin}${location.pathname}${albumHash(albumId,subAlbumId)}`;
+const getAlbumRouteFromHash=(hash)=>{const h=String(hash||"");const m=h.match(/^#\/album\/([^/]+)(?:\/sub\/(.+))?$/);return m?{albumId:decodeURIComponent(m[1]),subAlbumId:m[2]?decodeURIComponent(m[2]):''}:{albumId:null,subAlbumId:''}};
+const getAlbumIdFromHash=(hash)=>getAlbumRouteFromHash(hash).albumId;
+const getSubAlbumIdFromHash=(hash)=>getAlbumRouteFromHash(hash).subAlbumId;
 const LS_HIGHLIGHTS_KEY="la_featured_albums_v1";
 function readHighlightIds(){try{return JSON.parse(localStorage.getItem(LS_HIGHLIGHTS_KEY)||"[]")}catch{return []}}
 function saveHighlightIds(ids){localStorage.setItem(LS_HIGHLIGHTS_KEY,JSON.stringify(ids))}
@@ -604,11 +654,18 @@ async function gvizJsonpForFirstSheet(){
 function normalizeAlbums(data){
   const rawAlbums = Array.isArray(data?.albums) ? data.albums : Array.isArray(data) ? data : [];
   const src=rawAlbums.filter(a=>Array.isArray(a.rows)||Array.isArray(a.photos)||Array.isArray(a.data));
-  return src.map((sheet,idx)=>{
-    const albumName=sheet.name||sheet.album||sheet.title||`Álbum ${idx+1}`;
-    const albumId=norm(albumName)||`album_${idx+1}`;
+  const parsed=src.map((sheet,idx)=>{
+    const sheetName=sheet.name||sheet.album||sheet.title||`Álbum ${idx+1}`;
+    const parts=String(sheetName).split(':');
+    const albumBaseName=parts[0].trim()||sheetName;
+    const subAlbumName=parts.length>1?parts.slice(1).join(':').trim():'';
     const rawRows=sheet.rows||sheet.photos||sheet.data||[];
     const metaRow=rawRows[0]||{};
+    const dateTs=getAlbumDateFromRows(rawRows);
+    const dateKey=dateTs?String(dateTs):'sin_fecha';
+    const albumId=`${norm(albumBaseName)||`album_${idx+1}`}_${dateKey}`;
+    const albumName=albumBaseName;
+    const subAlbumId=`${albumId}_${norm(subAlbumName)||'general'}`;
     const archived=Boolean(
       sheet.hidden||sheet.isHidden||sheet.archived||sheet.oculto||sheet.hiddenByUser||
       yes(pick(metaRow,["archivado","archived","oculto","hidden","hoja oculta","sheet hidden"]))
@@ -622,19 +679,18 @@ function normalizeAlbums(data){
         const values=Object.values(row||{}).map(v=>String(v||"").trim());
         const name=pick(row,["nombre de foto","nombre_foto","nombre foto","nombre","name","titulo","title","archivo","filename","foto","jugador","player"])||values[1]||`Foto ${i+1}`;
         return {
-          id:`${albumId}_${i+1}`,
+          id:`${subAlbumId}_${i+1}`,
           albumId,
           albumName,
+          subAlbumId,
+          subAlbumName:subAlbumName||'Galería',
+          sourceSheetName:sheetName,
           index:i,
           name,
           code:safeCode(name+"_"+(i+1)),
-          // Para mostrar en galería: la app convierte el link de Drive de "Url preview"
-          // en miniatura liviana automáticamente.
           url,
           rawUrl,
           fullUrl,
-          // Para entregar por código de pedido: se guarda el mismo link de la columna "Url preview".
-          // Luego orderDriveLink lo convierte a link normal de Drive para enviar por WhatsApp.
           driveLink: rawUrl,
           price: priceNum(pick(row,["precio foto","precio_foto","precio individual","precio","valor","valor foto","foto precio"]))||2000,
           isCover:yes(pick(row,["portada","cover","caratula"])),
@@ -645,8 +701,31 @@ function normalizeAlbums(data){
       .filter(p=>p.active);
     const fullPrice=priceNum(pick(metaRow,["album completo","album_completo","precio_album","precio album","precio completo","fullprice","precio"]))||DEFAULT_FULL_ALBUM_PRICE;
     const coverPhoto=photos.find(p=>p.isCover)||photos[0]||null;
-    const dateTs=getAlbumDateFromRows(rawRows);
-    return {id:albumId,name:albumName,photos,cover:coverPhoto?coverPhoto.url:"",fullPrice,dateTs,dateLabel:formatAlbumDate(dateTs),archived};
+    return {id:albumId,name:albumName,sourceName:sheetName,subAlbumName:subAlbumName||'Galería',subAlbumId,photos,cover:coverPhoto?coverPhoto.url:"",fullPrice,dateTs,dateLabel:formatAlbumDate(dateTs),archived};
+  }).filter(a=>a.photos.length>0);
+
+  const map=new Map();
+  parsed.forEach(item=>{
+    const current=map.get(item.id)||{id:item.id,name:item.name,photos:[],cover:"",fullPrice:item.fullPrice,dateTs:item.dateTs||0,dateLabel:item.dateLabel||"",archived:false,subalbums:[]};
+    current.photos=[...current.photos,...item.photos];
+    current.cover=current.cover||item.cover;
+    current.fullPrice=item.fullPrice||current.fullPrice;
+    current.dateTs=item.dateTs||current.dateTs||0;
+    current.dateLabel=formatAlbumDate(current.dateTs);
+    current.archived=current.archived||item.archived;
+    current.subalbums.push({id:item.subAlbumId,name:item.subAlbumName,sourceName:item.sourceName,photos:item.photos,cover:item.cover,dateTs:item.dateTs,dateLabel:item.dateLabel});
+    map.set(item.id,current);
+  });
+  return Array.from(map.values()).map(album=>{
+    const merged=new Map();
+    album.subalbums.forEach(sa=>{
+      const current=merged.get(sa.id)||{...sa,photos:[]};
+      current.photos=[...current.photos,...(sa.photos||[])];
+      current.cover=current.cover||sa.cover;
+      merged.set(sa.id,current);
+    });
+    album.subalbums=Array.from(merged.values()).sort((a,b)=>a.name.localeCompare(b.name));
+    return album;
   }).filter(a=>a.photos.length>0);
 }
 
@@ -712,14 +791,13 @@ const PreviewWatermark=({visible=true,opacity=0.55,darkness=0.10}={})=> visible 
 const ProtectionNotice=()=> <div className="bg-amber-500/10 border border-amber-400/25 rounded-2xl p-3 sm:p-4 text-amber-100 text-xs sm:text-sm leading-relaxed">
   <i className="fas fa-lock mr-2 text-amber-300"></i>Las imágenes están protegidas. Para utilizar una foto, publicarla o recibirla sin marca de agua, se debe comprar o contactar por WhatsApp con Lucas Abraham.
 </div>;
-const PromoBanners=()=>{
-  const banners=[
-    {title:'Hacé tu figurita del Mundial personalizada',text:'Convertí tu foto en una figurita única, ideal para regalo o recuerdo.',icon:'fa-id-card'},
-    {title:'Hacé tu diseño de jugador profesional personalizado',text:'Te preparo una placa o diseño estilo jugador profesional, listo para compartir.',icon:'fa-star'}
-  ];
+const PromoBanners=({bannerSettings})=>{
+  if(!bannerSettings?.visible)return null;
+  const banners=(bannerSettings.items||DEFAULT_BANNER_SETTINGS.items).filter(b=>b&&b.title);
+  if(!banners.length)return null;
   return <div className="grid md:grid-cols-2 gap-3 sm:gap-4 mt-6 sm:mt-8 mb-24 sm:mb-28">
-    {banners.map((b,i)=><button key={i} onClick={()=>window.open(`https://wa.me/${SELLER_PHONE}?text=${encodeURIComponent(`Hola Lucas! Quiero consultar por ${b.title.toLowerCase()}.`)}`,'_blank')} className="text-left bg-gradient-to-br from-neutral-900 via-neutral-950 to-black border border-indigo-500/25 hover:border-indigo-400/55 rounded-3xl p-4 sm:p-5 transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_18px_40px_rgba(99,102,241,.18)]">
-      <div className="w-11 h-11 rounded-2xl bg-indigo-500/15 text-indigo-300 flex items-center justify-center mb-3"><i className={`fas ${b.icon}`}></i></div>
+    {banners.map((b,i)=><button key={i} onClick={()=>window.open(`https://wa.me/${SELLER_PHONE}?text=${encodeURIComponent(b.msg||`Hola Lucas! Quiero consultar por ${String(b.title||'tus servicios').toLowerCase()}.`)}`,'_blank')} className="text-left bg-gradient-to-br from-neutral-900 via-neutral-950 to-black border border-indigo-500/25 hover:border-indigo-400/55 rounded-3xl p-4 sm:p-5 transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_18px_40px_rgba(99,102,241,.18)]">
+      <div className="w-11 h-11 rounded-2xl bg-indigo-500/15 text-indigo-300 flex items-center justify-center mb-3"><i className={`fas ${i===0?'fa-id-card':'fa-star'}`}></i></div>
       <h3 className="font-black text-lg leading-tight mb-2">{b.title}</h3>
       <p className="text-sm text-neutral-400 leading-relaxed mb-4">{b.text}</p>
       <div className="inline-flex items-center gap-2 bg-emerald-500 text-black px-4 py-2.5 rounded-xl font-black text-sm"><i className="fab fa-whatsapp"></i> Ir a WhatsApp</div>
@@ -727,11 +805,10 @@ const PromoBanners=()=>{
   </div>
 };
 
-const MainHeaderBanners=()=>{
-  const banners=[
-    {src:"https://i.postimg.cc/pLrPtFw0/080905fa-ba44-4525-b618-e906e3e3e1e3.png",title:"Figuritas del Mundial personalizadas",text:"Pedí tu diseño con tu foto, listo para compartir.",msg:"Hola Lucas! Quiero consultar por una figurita del Mundial personalizada."},
-    {src:"https://i.postimg.cc/L85mMPd8/ec56e040-b2ed-41a3-9395-21a914051e46.png",title:"Diseños de jugador profesional",text:"Placas deportivas personalizadas en estilo premium.",msg:"Hola Lucas! Quiero consultar por un diseño de jugador profesional personalizado."}
-  ];
+const MainHeaderBanners=({bannerSettings})=>{
+  if(!bannerSettings?.visible)return null;
+  const banners=(bannerSettings.items||DEFAULT_BANNER_SETTINGS.items).filter(b=>b&&b.title);
+  if(!banners.length)return null;
   const [bannerIndex,setBannerIndex]=useState(0);
   const [broken,setBroken]=useState({});
   const touchStartX=useRef(null);
@@ -763,6 +840,69 @@ const MainHeaderBanners=()=>{
     </div>
   </div>
 };
+
+
+function BookingModal({onClose}){
+  const [form,setForm]=useState({nombre:'',club:'',deporte:'Fútbol',liga:'',dia:'',hora:'',categoria:'',lugar:'',rival:'',cantidad:'',telefono:'',comentario:''});
+  const update=(k,v)=>setForm(f=>({...f,[k]:v}));
+  const hours=Array.from({length:24},(_,i)=>`${String(i).padStart(2,'0')}:00`);
+  const input=(k,label,placeholder,type='text')=><label className="block text-sm font-bold text-sky-100/85">{label}<input type={type} value={form[k]} onChange={e=>update(k,e.target.value)} placeholder={placeholder} className="booking-input mt-1"/></label>;
+  const field=(v)=>String(v||'').trim()||'-';
+  const send=(e)=>{
+    e.preventDefault();
+    const msg=`Hola Lucas! Quiero solicitar tus servicios para cubrir una jornada/partido/evento.
+
+*SOLICITUD DE RESERVA*
+Nombre y apellido: ${field(form.nombre)}
+Club / institución: ${field(form.club)}
+Deporte: ${field(form.deporte)}
+Liga / torneo: ${field(form.liga)}
+Día: ${field(form.dia)}
+Hora: ${field(form.hora)}
+Categoría: ${field(form.categoria)}
+Lugar / cancha: ${field(form.lugar)}
+Rival / evento: ${field(form.rival)}
+Cantidad de partidos/categorías: ${field(form.cantidad)}
+Teléfono de contacto: ${field(form.telefono)}
+Comentario: ${field(form.comentario)}
+
+Te pido si me podés confirmar por *SÍ* o por *NO* si tenés disponibilidad para cubrir la jornada.`;
+    window.open(`https://api.whatsapp.com/send?phone=${SELLER_PHONE}&text=${encodeURIComponent(msg)}`,'_blank');
+    onClose();
+  };
+  return <Modal onClose={onClose} max="max-w-4xl">
+    <div className="booking-hero rounded-3xl p-4 sm:p-6 -m-1">
+      <div className="mb-5">
+        <p className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-400/15 border border-emerald-300/35 text-[11px] font-black uppercase tracking-[0.16em] mb-3"><i className="fas fa-calendar-check"></i> Reservas</p>
+        <h2 className="text-2xl sm:text-3xl font-black leading-tight">Reservame para tu partido, evento o jornada</h2>
+        <p className="text-sky-100/75 text-sm mt-2 leading-relaxed">Completá los datos que tengas. Ningún campo es obligatorio y al enviar se abre WhatsApp con toda la solicitud lista.</p>
+      </div>
+      <form onSubmit={send} className="grid sm:grid-cols-2 gap-3 sm:gap-4">
+        {input('nombre','Nombre y apellido','Ej: Juan Pérez')}
+        {input('telefono','Teléfono de contacto','Ej: 351...')}
+        {input('club','Club / institución','Ej: All Boys')}
+        {input('deporte','Deporte','Ej: Fútbol')}
+        {input('liga','Liga / torneo','Ej: Liga Cordobesa')}
+        {input('categoria','Categoría','Ej: Primera, Reserva, Cebollitas')}
+        {input('dia','Día','','date')}
+        <label className="block text-sm font-bold text-sky-100/85">Hora
+          <select value={form.hora} onChange={e=>update('hora',e.target.value)} className="booking-input mt-1">
+            <option value="">Seleccionar hora</option>
+            {hours.map(h=><option key={h} value={h}>{h} hs</option>)}
+          </select>
+        </label>
+        {input('lugar','Lugar / cancha','Dirección o nombre de la cancha')}
+        {input('rival','Rival / nombre del evento','Ej: All Boys vs Banfield')}
+        {input('cantidad','Cantidad de partidos/categorías','Ej: Primera y Reserva')}
+        <label className="block text-sm font-bold text-sky-100/85 sm:col-span-2">Comentario adicional<textarea value={form.comentario} onChange={e=>update('comentario',e.target.value)} placeholder="Detalles importantes, tiempo de cobertura, entrega esperada, etc." className="booking-input mt-1 min-h-[92px]"></textarea></label>
+        <div className="sm:col-span-2 flex flex-col sm:flex-row gap-3 sm:items-center sm:justify-between mt-2">
+          <p className="text-xs text-sky-100/65 leading-relaxed">También podés compartir el link directo de reservas: <b>{location.origin}{location.pathname}#/reservas</b></p>
+          <button className="booking-btn px-6 py-4 rounded-2xl font-black"><i className="fab fa-whatsapp mr-2"></i>Enviar solicitud</button>
+        </div>
+      </form>
+    </div>
+  </Modal>;
+}
 
 
 function Steps(){
@@ -840,6 +980,9 @@ function App(){
   const [appliedCoupon,setAppliedCoupon]=useState(null);
   const [couponMessage,setCouponMessage]=useState("");
   const [coupons,setCoupons]=useState(readCoupons());
+  const [bannerSettings,setBannerSettings]=useState(readBannerSettings());
+  const [bookingOpen,setBookingOpen]=useState(false);
+  const [activeSubAlbum,setActiveSubAlbum]=useState('');
   const [sharedReady,setSharedReady]=useState(false);
   const [newCouponCode,setNewCouponCode]=useState("");
   const [newCouponPercent,setNewCouponPercent]=useState(10);
@@ -847,7 +990,7 @@ function App(){
   const ownInputRef=useRef(null);
   const homeLogoRef=useRef(null); const awayLogoRef=useRef(null);
 
-  useEffect(()=>{const h=()=>{const hash=location.hash||"#/galeria";setRoute(hash);setActiveAlbum(getAlbumIdFromHash(hash));};addEventListener('hashchange',h);h();return()=>removeEventListener('hashchange',h)},[]);
+  useEffect(()=>{const h=()=>{const hash=location.hash||"#/galeria";setRoute(hash);setActiveAlbum(getAlbumIdFromHash(hash));setActiveSubAlbum(getSubAlbumIdFromHash(hash));};addEventListener('hashchange',h);h();return()=>removeEventListener('hashchange',h)},[]);
   useEffect(()=>{saveCoverOverrides(coverOverrides)},[coverOverrides]);
   useEffect(()=>{saveHighlightIds(highlightIds)},[highlightIds]);
   useEffect(()=>{document.body.classList.toggle('light-mode',theme==='light');saveTheme(theme)},[theme]);
@@ -858,15 +1001,18 @@ function App(){
       if(cancelled)return;
       if(state.discountSettings)setDiscountSettings(state.discountSettings);
       if(Array.isArray(state.coupons))setCoupons(state.coupons);
+      if(state.bannerSettings)setBannerSettings(state.bannerSettings);
       setSharedReady(true);
     });
     const unsub=subscribeSharedAdminState(state=>{
       if(state.discountSettings)setDiscountSettings(state.discountSettings);
       if(Array.isArray(state.coupons))setCoupons(state.coupons);
+      if(state.bannerSettings)setBannerSettings(state.bannerSettings);
     });
     return()=>{cancelled=true;unsub&&unsub()};
   },[]);
   useEffect(()=>{saveCoupons(coupons);if(sharedReady)saveSharedAdminState({coupons})},[coupons,sharedReady]);
+  useEffect(()=>{saveBannerSettings(bannerSettings);if(sharedReady)saveSharedAdminState({bannerSettings})},[bannerSettings,sharedReady]);
   useEffect(()=>{saveDiscountSettings(discountSettings);if(sharedReady)saveSharedAdminState({discountSettings})},[discountSettings,sharedReady]);
 
   async function load({silent=false}={}){
@@ -900,12 +1046,26 @@ function App(){
   const toggleHighlight=(albumId)=>setHighlightIds(ids=>ids.includes(albumId)?ids.filter(id=>id!==albumId):[albumId,...ids].slice(0,12));
   const allPhotos=useMemo(()=>displayAlbums.flatMap(a=>a.photos||[]),[displayAlbums]);
   const currentAlbum=displayAlbums.find(a=>a.id===activeAlbum)||null;
-  const albumPhotos=currentAlbum&&Array.isArray(currentAlbum.photos)?currentAlbum.photos:[];
+  const currentSubAlbum=currentAlbum?.subalbums?.find(sa=>sa.id===activeSubAlbum)||null;
+  const albumPhotos=currentSubAlbum?currentSubAlbum.photos:(currentAlbum&&(!currentAlbum.subalbums||currentAlbum.subalbums.length===0)&&Array.isArray(currentAlbum.photos)?currentAlbum.photos:[]);
   const totalAlbumPages=Math.max(1,Math.ceil(albumPhotos.length/PHOTOS_PER_PAGE));
   const safeAlbumPage=Math.min(albumPage,totalAlbumPages);
   const pagedPhotos=albumPhotos.slice((safeAlbumPage-1)*PHOTOS_PER_PAGE,safeAlbumPage*PHOTOS_PER_PAGE);
   useEffect(()=>{if(!loading&&activeAlbum&&displayAlbums.length&&!displayAlbums.find(a=>a.id===activeAlbum)){setActiveAlbum(null);if(location.hash.startsWith("#/album/")) location.hash="#/galeria";}},[loading,activeAlbum,displayAlbums]);
-  useEffect(()=>{setAlbumPage(1)},[activeAlbum]);
+  useEffect(()=>{
+    if(!currentAlbum){setActiveSubAlbum('');setAlbumPage(1);return;}
+    const subs=currentAlbum.subalbums||[];
+    if(subs.length){
+      const exists=subs.some(sa=>sa.id===activeSubAlbum);
+      const next=exists?activeSubAlbum:subs[0].id;
+      if(next!==activeSubAlbum)setActiveSubAlbum(next);
+      if((!location.hash.includes('/sub/')||!exists)&&next)history.replaceState(null,'',albumHash(currentAlbum.id,next));
+    }else if(activeSubAlbum){
+      setActiveSubAlbum('');
+    }
+    setAlbumPage(1);
+  },[activeAlbum,currentAlbum?.id,currentAlbum?.subalbums?.length]);
+  useEffect(()=>{setAlbumPage(1)},[activeSubAlbum]);
   useEffect(()=>{if(albumPage>totalAlbumPages)setAlbumPage(totalAlbumPages)},[albumPage,totalAlbumPages]);
   useEffect(()=>{if(albumPhotos.length){setFocusPhoto(p=>p&&albumPhotos.some(x=>x.id===p.id)?p:albumPhotos[0])}else{setFocusPhoto(null)}},[activeAlbum,albumPhotos.length]);
   const selectedPhotos=allPhotos.filter(p=>cart.includes(p.id));
@@ -1004,7 +1164,7 @@ A continuación, te envío el comprobante.`;
       discount:effectiveDiscountPercent,
       coupon:appliedCoupon?{code:appliedCoupon.code,percent:appliedCoupon.percent}:null,
       total:checkoutTotal,
-      items:selectedPhotos.map(p=>({id:p.id,albumName:p.albumName,name:p.name,code:p.code,url:p.url,driveLink:p.rawUrl||p.fullUrl||p.url,price:p.price})),
+      items:selectedPhotos.map(p=>({id:p.id,albumName:p.albumName,subAlbumName:p.subAlbumName||'',name:p.name,code:p.code,url:p.url,driveLink:p.rawUrl||p.fullUrl||p.url,price:p.price})),
       delivered:false
     };
 
@@ -1261,7 +1421,7 @@ A continuación, te envío el comprobante.`;
 
     {adminMessage && <div className="mb-4 bg-emerald-600/15 border border-emerald-500/30 text-emerald-300 rounded-2xl px-4 py-3 text-sm">{adminMessage}</div>}
     <div className="mb-4 bg-blue-500/10 border border-blue-500/25 text-blue-100 rounded-2xl px-4 py-3 text-xs leading-relaxed">
-      <b>Firebase:</b> proyecto lucasabraham-b84aa · ruta principal <b>artifacts/lucasabraham-ph-db/orders</b> · versión <b>modo-estable-sin-realtime-v13-cupo-firebase</b>. Si al comprar aparece un aviso rojo, el pedido quedó local pero Firestore rechazó la escritura.
+      <b>Firebase:</b> proyecto lucasabraham-b84aa · ruta principal <b>artifacts/lucasabraham-ph-db/orders</b> · versión <b>reservas-banners-subalbumes-fecha-v3</b>. Si al comprar aparece un aviso rojo, el pedido quedó local pero Firestore rechazó la escritura.
     </div>
 
     <div className="mb-6 bg-neutral-900 border border-neutral-800 rounded-3xl p-5">
@@ -1403,6 +1563,33 @@ A continuación, te envío el comprobante.`;
       </div>
     </div>
 
+
+
+    <div className="bg-neutral-900 border border-neutral-800 rounded-3xl p-5 mb-6">
+      <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 mb-4">
+        <div>
+          <h2 className="text-xl font-black mb-1"><i className="fas fa-rectangle-ad mr-2 text-indigo-300"></i>Banners publicitarios</h2>
+          <p className="text-neutral-400 text-sm">Mostrá, ocultá o cambiá los banners de la galería. El mismo control afecta el banner superior y las placas promocionales inferiores.</p>
+        </div>
+        <button onClick={()=>setBannerSettings(b=>({...b,visible:!b.visible}))} className={`${bannerSettings.visible?'bg-emerald-500 text-black':'bg-neutral-800 text-white'} px-5 py-3 rounded-xl font-black`}><i className={`fas ${bannerSettings.visible?'fa-eye':'fa-eye-slash'} mr-2`}></i>{bannerSettings.visible?'Banners visibles':'Banners ocultos'}</button>
+      </div>
+      <div className="grid gap-4">
+        {(bannerSettings.items||[]).map((b,i)=><div key={i} className="admin-banner-row bg-neutral-950 border border-neutral-800 rounded-2xl p-4 grid md:grid-cols-[140px,1fr] gap-4">
+          <div className="aspect-[16/10] rounded-2xl overflow-hidden bg-black border border-neutral-800 flex items-center justify-center">{b.src?<img src={b.src} className="w-full h-full object-contain"/>:<i className="fas fa-image text-neutral-600 text-3xl"></i>}</div>
+          <div className="grid sm:grid-cols-2 gap-3">
+            <input value={b.title||''} onChange={e=>setBannerSettings(bs=>({...bs,items:bs.items.map((x,idx)=>idx===i?{...x,title:e.target.value}:x)}))} placeholder="Título del banner"/>
+            <input value={b.src||''} onChange={e=>setBannerSettings(bs=>({...bs,items:bs.items.map((x,idx)=>idx===i?{...x,src:e.target.value}:x)}))} placeholder="URL de imagen"/>
+            <input value={b.text||''} onChange={e=>setBannerSettings(bs=>({...bs,items:bs.items.map((x,idx)=>idx===i?{...x,text:e.target.value}:x)}))} placeholder="Texto descriptivo"/>
+            <input value={b.msg||''} onChange={e=>setBannerSettings(bs=>({...bs,items:bs.items.map((x,idx)=>idx===i?{...x,msg:e.target.value}:x)}))} placeholder="Mensaje de WhatsApp"/>
+          </div>
+        </div>)}
+      </div>
+      <div className="flex flex-col sm:flex-row gap-2 mt-4">
+        <button onClick={()=>setBannerSettings(DEFAULT_BANNER_SETTINGS)} className="bg-neutral-800 px-4 py-3 rounded-xl font-bold">Restaurar banners originales</button>
+        <button onClick={()=>setBannerSettings(bs=>({...bs,items:[...(bs.items||[]),{src:'',title:'Nuevo banner',text:'Descripción del banner',msg:'Hola Lucas! Quiero consultar por este servicio.'}]}))} className="bg-indigo-600 px-4 py-3 rounded-xl font-bold">Agregar banner</button>
+      </div>
+    </div>
+
     <div className="mb-5">
       <div className="relative">
         <i className="fas fa-search absolute left-4 top-1/2 -translate-y-1/2 text-neutral-500 text-sm"></i>
@@ -1523,7 +1710,7 @@ A continuación, te envío el comprobante.`;
           </div>
           <div className="overflow-x-auto pb-2">
             <div className="flex gap-4 sm:gap-5">
-              {highlightedAlbums.map(a=><button key={a.id} onClick={()=>{location.hash=albumHash(a.id)}} className="group shrink-0 w-[74px] sm:w-[88px] text-center transition-all duration-300 hover:-translate-y-1">
+              {highlightedAlbums.map(a=><button key={a.id} onClick={()=>{location.hash=albumHash(a.id,a.subalbums?.[0]?.id||'')}} className="group shrink-0 w-[74px] sm:w-[88px] text-center transition-all duration-300 hover:-translate-y-1">
                 <div className="w-[66px] h-[66px] sm:w-20 sm:h-20 mx-auto rounded-full p-[2px] bg-gradient-to-tr from-yellow-400 via-pink-500 to-indigo-500 transition-all duration-300 group-hover:scale-105 group-hover:shadow-[0_10px_28px_rgba(236,72,153,.25)]">
                   <div className="w-full h-full rounded-full bg-neutral-950 border-2 border-neutral-950 overflow-hidden">{a.cover?<img src={a.cover} loading="lazy" decoding="async" className="w-full h-full object-cover transition duration-500 group-hover:scale-110"/>:<div className="w-full h-full bg-neutral-900"></div>}</div>
                 </div>
@@ -1532,7 +1719,11 @@ A continuación, te envío el comprobante.`;
             </div>
           </div>
         </div>}
-        {!currentAlbum && activeAlbums.length>0 && <MainHeaderBanners/>}
+        {!currentAlbum && <div className="mt-5 sm:mt-7 booking-hero rounded-3xl p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div><h3 className="text-xl sm:text-2xl font-black leading-tight">¿Querés que cubra tu partido o jornada?</h3><p className="text-sm text-sky-100/75 mt-1">Completá una solicitud y se abre WhatsApp con todos los datos listos para enviarme.</p></div>
+          <button onClick={()=>setBookingOpen(true)} className="booking-btn px-5 py-4 rounded-2xl font-black shrink-0"><i className="fas fa-calendar-check mr-2"></i>Reservame para tu partido</button>
+        </div>}
+        {!currentAlbum && activeAlbums.length>0 && <MainHeaderBanners bannerSettings={bannerSettings}/>} 
       </header>
 
       <Steps/>
@@ -1552,7 +1743,7 @@ A continuación, te envío el comprobante.`;
         {loading && activeAlbums.length===0 ? <AlbumLoadingGrid count={window.innerWidth<640?6:9}/> : <>
           {loading && activeAlbums.length>0&&<div className="quick-loading-strip mb-4"><span className="quick-loading-dot"></span><div><b>Actualizando galería</b><p className="text-[11px] opacity-80 leading-tight">Mostrando lo guardado mientras se cargan los últimos cambios.</p></div></div>}
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 sm:gap-4">
-            {visibleFilteredAlbums.map(a=><button key={a.id} onClick={()=>{location.hash=albumHash(a.id)}} className="group text-left active:scale-[0.98] focus:outline-none"><div className="modern-album-card aspect-[4/5]"><div className="absolute inset-0 bg-neutral-900">{a.cover?<img src={a.cover} loading="lazy" decoding="async" className="modern-album-img w-full h-full object-cover"/>:<div className="w-full h-full flex items-center justify-center text-neutral-600"><i className="fas fa-image text-3xl"></i></div>}</div><div className="absolute inset-0 bg-gradient-to-t from-black via-black/38 to-transparent z-[2]"></div><div className="absolute top-2 left-2 sm:top-3 sm:left-3 z-[3] bg-black/55 backdrop-blur-md border border-white/15 px-2.5 py-1.5 rounded-full text-[9px] sm:text-[10px] text-white album-date-chip shadow-lg"><i className="fas fa-calendar-days mr-1 text-sky-300"></i>{a.dateLabel||"Sin fecha"}</div>{hasSiteDiscount(a.id)&&<div className="promo-badge absolute top-2 right-2 sm:top-3 sm:right-3"><span>-{albumSiteDiscount(a.id)}%</span><small>OFF</small></div>}<div className="absolute bottom-2 sm:bottom-3 left-2 sm:left-3 right-2 sm:right-3 z-[3] rounded-2xl p-2.5 sm:p-3 border border-white/12 bg-black/54 backdrop-blur-xl shadow-[0_18px_40px_rgba(0,0,0,.42)]"><div className="flex items-start justify-between gap-2"><div className="min-w-0"><h3 className="album-title-white font-black whitespace-normal break-words leading-tight text-[12px] sm:text-[15px]">{a.name}</h3><p className="album-meta-white text-[10px] sm:text-xs mt-1">{a.photos.length} fotos disponibles</p></div><span className="album-cta-chip shrink-0"><i className="fas fa-arrow-right"></i> Ver</span></div></div></div></button>)}
+            {visibleFilteredAlbums.map(a=><button key={a.id} onClick={()=>{location.hash=albumHash(a.id,a.subalbums?.[0]?.id||'')}} className="group text-left active:scale-[0.98] focus:outline-none"><div className="modern-album-card aspect-[4/5]"><div className="absolute inset-0 bg-neutral-900">{a.cover?<img src={a.cover} loading="lazy" decoding="async" className="modern-album-img w-full h-full object-cover"/>:<div className="w-full h-full flex items-center justify-center text-neutral-600"><i className="fas fa-image text-3xl"></i></div>}</div><div className="absolute inset-0 bg-gradient-to-t from-black via-black/38 to-transparent z-[2]"></div><div className="absolute top-2 left-2 sm:top-3 sm:left-3 z-[3] bg-black/55 backdrop-blur-md border border-white/15 px-2.5 py-1.5 rounded-full text-[9px] sm:text-[10px] text-white album-date-chip shadow-lg"><i className="fas fa-calendar-days mr-1 text-sky-300"></i>{a.dateLabel||"Sin fecha"}</div>{hasSiteDiscount(a.id)&&<div className="promo-badge absolute top-2 right-2 sm:top-3 sm:right-3"><span>-{albumSiteDiscount(a.id)}%</span><small>OFF</small></div>}<div className="absolute bottom-2 sm:bottom-3 left-2 sm:left-3 right-2 sm:right-3 z-[3] rounded-2xl p-2.5 sm:p-3 border border-white/12 bg-black/54 backdrop-blur-xl shadow-[0_18px_40px_rgba(0,0,0,.42)]"><div className="flex items-start justify-between gap-2"><div className="min-w-0"><h3 className="album-title-white font-black whitespace-normal break-words leading-tight text-[12px] sm:text-[15px]">{a.name}</h3><p className="album-meta-white text-[10px] sm:text-xs mt-1">{a.photos.length} fotos disponibles{a.subalbums?.length>0?` · ${a.subalbums.length} categorías`:""}</p></div><span className="album-cta-chip shrink-0"><i className="fas fa-arrow-right"></i> Ver</span></div></div></div></button>)}
           </div>
           {albumRenderLimit<filteredAlbums.length&&<div className="quick-loading-strip mt-4 justify-center"><span className="quick-loading-dot"></span><b>Cargando más álbumes...</b></div>}
         </>}
@@ -1563,7 +1754,7 @@ A continuación, te envío el comprobante.`;
           </div>
           <div className="mb-4"><ProtectionNotice/></div>
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 sm:gap-4">
-            {filteredArchivedAlbums.map(a=><button key={a.id} onClick={()=>{location.hash=albumHash(a.id)}} className="group text-left active:scale-[0.98] focus:outline-none"><div className="modern-album-card aspect-[4/5] border-amber-400/25"><div className="absolute inset-0 bg-neutral-900">{a.cover?<img src={a.cover} loading="lazy" decoding="async" className="modern-album-img w-full h-full object-cover"/>:<div className="w-full h-full flex items-center justify-center text-neutral-600"><i className="fas fa-image text-3xl"></i></div>}</div><div className="absolute inset-0 bg-gradient-to-t from-black via-black/38 to-transparent z-[2]"></div><div className="absolute top-2 left-2 sm:top-3 sm:left-3 z-[3] bg-amber-500/90 text-black px-2.5 py-1.5 rounded-full text-[9px] sm:text-[10px] font-black shadow-lg"><i className="fas fa-box-archive mr-1"></i>Antigua</div><div className="absolute top-2 right-2 sm:top-3 sm:right-3 z-[3] bg-black/55 backdrop-blur-md border border-white/15 px-2.5 py-1.5 rounded-full text-[9px] sm:text-[10px] text-white album-date-chip shadow-lg"><i className="fas fa-calendar-days mr-1 text-sky-300"></i>{a.dateLabel||"Sin fecha"}</div><div className="absolute bottom-2 sm:bottom-3 left-2 sm:left-3 right-2 sm:right-3 z-[3] rounded-2xl p-2.5 sm:p-3 border border-white/12 bg-black/54 backdrop-blur-xl shadow-[0_18px_40px_rgba(0,0,0,.42)]"><div className="flex items-start justify-between gap-2"><div className="min-w-0"><h3 className="album-title-white font-black whitespace-normal break-words leading-tight text-[12px] sm:text-[15px]">{a.name}</h3><p className="album-meta-white text-[10px] sm:text-xs mt-1">{a.photos.length} fotos disponibles</p></div><span className="album-cta-chip shrink-0"><i className="fas fa-arrow-right"></i> Ver</span></div></div></div></button>)}
+            {filteredArchivedAlbums.map(a=><button key={a.id} onClick={()=>{location.hash=albumHash(a.id,a.subalbums?.[0]?.id||'')}} className="group text-left active:scale-[0.98] focus:outline-none"><div className="modern-album-card aspect-[4/5] border-amber-400/25"><div className="absolute inset-0 bg-neutral-900">{a.cover?<img src={a.cover} loading="lazy" decoding="async" className="modern-album-img w-full h-full object-cover"/>:<div className="w-full h-full flex items-center justify-center text-neutral-600"><i className="fas fa-image text-3xl"></i></div>}</div><div className="absolute inset-0 bg-gradient-to-t from-black via-black/38 to-transparent z-[2]"></div><div className="absolute top-2 left-2 sm:top-3 sm:left-3 z-[3] bg-amber-500/90 text-black px-2.5 py-1.5 rounded-full text-[9px] sm:text-[10px] font-black shadow-lg"><i className="fas fa-box-archive mr-1"></i>Antigua</div><div className="absolute top-2 right-2 sm:top-3 sm:right-3 z-[3] bg-black/55 backdrop-blur-md border border-white/15 px-2.5 py-1.5 rounded-full text-[9px] sm:text-[10px] text-white album-date-chip shadow-lg"><i className="fas fa-calendar-days mr-1 text-sky-300"></i>{a.dateLabel||"Sin fecha"}</div><div className="absolute bottom-2 sm:bottom-3 left-2 sm:left-3 right-2 sm:right-3 z-[3] rounded-2xl p-2.5 sm:p-3 border border-white/12 bg-black/54 backdrop-blur-xl shadow-[0_18px_40px_rgba(0,0,0,.42)]"><div className="flex items-start justify-between gap-2"><div className="min-w-0"><h3 className="album-title-white font-black whitespace-normal break-words leading-tight text-[12px] sm:text-[15px]">{a.name}</h3><p className="album-meta-white text-[10px] sm:text-xs mt-1">{a.photos.length} fotos disponibles{a.subalbums?.length>0?` · ${a.subalbums.length} categorías`:""}</p></div><span className="album-cta-chip shrink-0"><i className="fas fa-arrow-right"></i> Ver</span></div></div></div></button>)}
           </div>
         </div>}
 
@@ -1605,16 +1796,20 @@ Te envío el comprobante para que puedas prepararlas.`);window.open(`https://wa.
           </div>
         </div>
 
-        <div className="mb-5 flex flex-col lg:flex-row lg:items-end lg:justify-between gap-3"><div><h2 className="text-2xl font-black whitespace-normal break-words leading-tight">{currentAlbum.name} {currentAlbum.archived&&<span className="inline-flex align-middle ml-2 px-3 py-1 rounded-full bg-amber-500 text-black text-xs font-black">Galería antigua</span>} <span className="inline-flex align-middle ml-2 px-3 py-1 rounded-full bg-sky-500/15 border border-sky-400/35 text-sky-200 text-sm font-black">({albumPhotos.length} fotos)</span></h2><p className="text-neutral-400 text-sm">Elegí las fotos que quieras comprar.</p></div><div className="flex flex-col gap-2 w-full lg:w-auto"><div className="bg-neutral-900 border border-neutral-800 rounded-xl p-1 grid grid-cols-3 gap-1 w-full sm:w-auto"><button onClick={()=>setViewMode('mosaic')} className={`px-3 py-2.5 rounded-lg text-[11px] sm:text-xs font-bold ${viewMode==='mosaic'?'bg-white text-black':'text-neutral-300'}`}><i className="fas fa-table-cells mr-1"></i>Mosaico</button><button onClick={()=>setViewMode('large')} className={`px-3 py-2.5 rounded-lg text-[11px] sm:text-xs font-bold ${viewMode==='large'?'bg-white text-black':'text-neutral-300'}`}><i className="fas fa-expand mr-1"></i>Grandes</button><button onClick={()=>setViewMode('gallery')} className={`px-3 py-2.5 rounded-lg text-[11px] sm:text-xs font-bold ${viewMode==='gallery'?'bg-white text-black':'text-neutral-300'}`}><i className="fas fa-images mr-1"></i>Galería</button></div><button onClick={()=>{navigator.clipboard.writeText(albumUrl(currentAlbum.id));setCopyOk(true);setTimeout(()=>setCopyOk(false),1800)}} className="w-full bg-neutral-900 border border-neutral-800 hover:bg-neutral-800 text-sm px-4 py-3 rounded-xl font-bold"><i className="fas fa-link mr-2"></i>{copyOk?"URL copiada":"Copiar URL del álbum"}</button></div></div>
+        <div className="mb-5 flex flex-col lg:flex-row lg:items-end lg:justify-between gap-3"><div className="min-w-0"><h2 className="text-2xl font-black whitespace-normal break-words leading-tight">{currentAlbum.name} {currentAlbum.archived&&<span className="inline-flex align-middle ml-2 px-3 py-1 rounded-full bg-amber-500 text-black text-xs font-black">Galería antigua</span>} <span className="inline-flex align-middle ml-2 px-3 py-1 rounded-full bg-sky-500/15 border border-sky-400/35 text-sky-200 text-sm font-black">({albumPhotos.length} fotos)</span></h2><p className="text-neutral-400 text-sm">Elegí una subcarpeta para ver y compartir sus fotos. Cada categoría tiene su propio link.</p>{currentAlbum.subalbums?.length>0&&<div className="subalbum-panel mt-3"><p className="text-[11px] uppercase tracking-[0.18em] text-sky-200/70 font-black mb-2">Subcarpetas disponibles</p><div className="grid sm:grid-cols-2 gap-2 subalbum-row">{currentAlbum.subalbums.map(sa=><button key={sa.id} onClick={()=>{location.hash=albumHash(currentAlbum.id,sa.id);setActiveSubAlbum(sa.id)}} className={`subalbum-card ${activeSubAlbum===sa.id?'active':''}`}><span className="subalbum-folder-icon"><i className="fas fa-folder"></i></span><span className="min-w-0 flex-1"><span className="subalbum-title block truncate">{sa.name}</span><span className="subalbum-meta block">{sa.photos.length} fotos · {sa.dateLabel||currentAlbum.dateLabel||'sin fecha'}</span></span><i className="fas fa-chevron-right text-xs opacity-70"></i></button>)}</div></div>}</div><div className="flex flex-col gap-2 w-full lg:w-auto"><div className="bg-neutral-900 border border-neutral-800 rounded-xl p-1 grid grid-cols-3 gap-1 w-full sm:w-auto"><button onClick={()=>setViewMode('mosaic')} className={`px-3 py-2.5 rounded-lg text-[11px] sm:text-xs font-bold ${viewMode==='mosaic'?'bg-white text-black':'text-neutral-300'}`}><i className="fas fa-table-cells mr-1"></i>Mosaico</button><button onClick={()=>setViewMode('large')} className={`px-3 py-2.5 rounded-lg text-[11px] sm:text-xs font-bold ${viewMode==='large'?'bg-white text-black':'text-neutral-300'}`}><i className="fas fa-expand mr-1"></i>Grandes</button><button onClick={()=>setViewMode('gallery')} className={`px-3 py-2.5 rounded-lg text-[11px] sm:text-xs font-bold ${viewMode==='gallery'?'bg-white text-black':'text-neutral-300'}`}><i className="fas fa-images mr-1"></i>Galería</button></div><button onClick={()=>{navigator.clipboard.writeText(albumUrl(currentAlbum.id,activeSubAlbum));setCopyOk(true);setTimeout(()=>setCopyOk(false),1800)}} className="w-full bg-neutral-900 border border-neutral-800 hover:bg-neutral-800 text-sm px-4 py-3 rounded-xl font-bold"><i className="fas fa-link mr-2"></i>{copyOk?"URL copiada":"Copiar link actual"}</button></div></div>
         {viewMode==='gallery' && focusPhoto && <div className="bg-neutral-950 border border-neutral-800 rounded-3xl p-3 sm:p-4 mb-4">
           <div onTouchStart={e=>touchStartX.current=e.touches?.[0]?.clientX} onTouchEnd={handleSwipeEnd(moveFocus)} className="relative rounded-2xl overflow-hidden bg-black min-h-[260px] sm:min-h-[320px] flex items-center justify-center"><img src={focusPhoto.fullUrl||focusPhoto.url} loading="eager" decoding="async" className="max-h-[72vh] w-full object-contain"/><PreviewWatermark {...wmProps(focusPhoto.albumId)}/><button onClick={()=>moveFocus(-1)} className="absolute left-2 sm:left-3 top-1/2 -translate-y-1/2 px-3 h-10 rounded-full bg-black/70 border border-white/20 text-white font-bold text-xs"><i className="fas fa-chevron-left sm:mr-1"></i><span className="hidden sm:inline viewer-nav-label">Anterior</span></button><button onClick={()=>moveFocus(1)} className="absolute right-2 sm:right-3 top-1/2 -translate-y-1/2 px-3 h-10 rounded-full bg-black/70 border border-white/20 text-white font-bold text-xs"><span className="hidden sm:inline viewer-nav-label">Siguiente</span><i className="fas fa-chevron-right sm:ml-1"></i></button><button onClick={()=>setViewer(focusPhoto)} className="absolute bottom-3 right-3 bg-white text-black px-4 py-2 rounded-xl font-black text-sm">Abrir</button></div>
           <div className="mt-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3"><div><h3 className="font-black">{focusPhoto.name}</h3><p className="text-xs text-neutral-400">Código {focusPhoto.code} · {formatPrice(focusPhoto.price)}</p></div><button onClick={()=>toggle(focusPhoto.id)} className={`${cart.includes(focusPhoto.id)?'buy-btn':'buy-btn'} w-full sm:w-auto px-4 py-3 rounded-xl font-black text-sm`}>{cart.includes(focusPhoto.id)?'Agregada al carrito':'Agregar al carrito'}</button></div>
         </div>}
-        {totalAlbumPages>1&&<div className="bg-neutral-900/80 border border-neutral-800 rounded-2xl p-3 mb-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-          <p className="text-sm text-neutral-300">Página <b>{safeAlbumPage}</b> de <b>{totalAlbumPages}</b> · Mostrando {pagedPhotos.length} de {albumPhotos.length} fotos</p>
-          <div className="flex gap-2">
-            <button disabled={safeAlbumPage<=1} onClick={()=>setAlbumPage(p=>Math.max(1,p-1))} className="flex-1 sm:flex-none disabled:opacity-40 bg-neutral-800 px-4 py-2.5 rounded-xl font-bold text-sm"><i className="fas fa-chevron-left mr-2"></i>Anterior</button>
-            <button disabled={safeAlbumPage>=totalAlbumPages} onClick={()=>setAlbumPage(p=>Math.min(totalAlbumPages,p+1))} className="flex-1 sm:flex-none disabled:opacity-40 buy-btn px-4 py-2.5 rounded-xl font-black text-sm">Siguiente<i className="fas fa-chevron-right ml-2"></i></button>
+        {totalAlbumPages>1&&<div className="page-panel rounded-2xl p-3 mb-4 flex flex-col gap-3">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+            <p className="page-current-badge text-sm"><i className="fas fa-file-lines mr-2"></i>Página {safeAlbumPage} de {totalAlbumPages}</p>
+            <p className="text-xs text-sky-100/75">Mostrando {pagedPhotos.length} de {albumPhotos.length} fotos</p>
+          </div>
+          <div className="flex items-center gap-2 overflow-x-auto pb-1">
+            <button disabled={safeAlbumPage<=1} onClick={()=>setAlbumPage(p=>Math.max(1,p-1))} className="disabled:opacity-40 bg-neutral-800 px-4 py-2.5 rounded-xl font-bold text-sm shrink-0"><i className="fas fa-chevron-left mr-2"></i>Anterior</button>
+            {Array.from({length:totalAlbumPages}).map((_,i)=>{const page=i+1;return <button key={page} onClick={()=>setAlbumPage(page)} className={`page-number-btn shrink-0 ${safeAlbumPage===page?'active':''}`}>{page}</button>})}
+            <button disabled={safeAlbumPage>=totalAlbumPages} onClick={()=>setAlbumPage(p=>Math.min(totalAlbumPages,p+1))} className="disabled:opacity-40 buy-btn px-4 py-2.5 rounded-xl font-black text-sm shrink-0">Siguiente<i className="fas fa-chevron-right ml-2"></i></button>
           </div>
         </div>}
         <div className={`${viewMode==='large'?'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4':'grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-7 gap-2 sm:gap-3'} pb-20`}>
@@ -1627,14 +1822,18 @@ Te envío el comprobante para que puedas prepararlas.`);window.open(`https://wa.
             <button onClick={(e)=>{e.stopPropagation();toggle(photo.id)}} className={`absolute top-2 right-2 sm:top-3 sm:right-3 w-8 h-8 rounded-full flex items-center justify-center transition-all duration-300 z-20 ${isSelected?'bg-indigo-500 text-white scale-110 shadow-lg':'bg-black/50 text-white/60 border border-white/20 backdrop-blur-sm'}`}><i className={`fas ${isSelected?'fa-check':'fa-plus'} text-sm`}></i></button>
           </div>})}
         </div>
-        {totalAlbumPages>1&&<div className="bg-neutral-900/80 border border-neutral-800 rounded-2xl p-3 mt-[-64px] mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-          <p className="text-sm text-neutral-300">Página <b>{safeAlbumPage}</b> de <b>{totalAlbumPages}</b></p>
-          <div className="flex gap-2">
-            <button disabled={safeAlbumPage<=1} onClick={()=>window.scrollTo({top:0,behavior:'smooth'})||setAlbumPage(p=>Math.max(1,p-1))} className="flex-1 sm:flex-none disabled:opacity-40 bg-neutral-800 px-4 py-2.5 rounded-xl font-bold text-sm"><i className="fas fa-chevron-left mr-2"></i>Anterior</button>
-            <button disabled={safeAlbumPage>=totalAlbumPages} onClick={()=>window.scrollTo({top:0,behavior:'smooth'})||setAlbumPage(p=>Math.min(totalAlbumPages,p+1))} className="flex-1 sm:flex-none disabled:opacity-40 buy-btn px-4 py-2.5 rounded-xl font-black text-sm">Siguiente<i className="fas fa-chevron-right ml-2"></i></button>
+        {totalAlbumPages>1&&<div className="page-panel rounded-2xl p-3 mt-[-64px] mb-6 flex flex-col gap-3">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+            <p className="page-current-badge text-sm"><i className="fas fa-file-lines mr-2"></i>Página {safeAlbumPage} de {totalAlbumPages}</p>
+            <p className="text-xs text-sky-100/75">Elegí otra página desde la numeración.</p>
+          </div>
+          <div className="flex items-center gap-2 overflow-x-auto pb-1">
+            <button disabled={safeAlbumPage<=1} onClick={()=>{window.scrollTo({top:0,behavior:'smooth'});setAlbumPage(p=>Math.max(1,p-1))}} className="disabled:opacity-40 bg-neutral-800 px-4 py-2.5 rounded-xl font-bold text-sm shrink-0"><i className="fas fa-chevron-left mr-2"></i>Anterior</button>
+            {Array.from({length:totalAlbumPages}).map((_,i)=>{const page=i+1;return <button key={page} onClick={()=>{window.scrollTo({top:0,behavior:'smooth'});setAlbumPage(page)}} className={`page-number-btn shrink-0 ${safeAlbumPage===page?'active':''}`}>{page}</button>})}
+            <button disabled={safeAlbumPage>=totalAlbumPages} onClick={()=>{window.scrollTo({top:0,behavior:'smooth'});setAlbumPage(p=>Math.min(totalAlbumPages,p+1))}} className="disabled:opacity-40 buy-btn px-4 py-2.5 rounded-xl font-black text-sm shrink-0">Siguiente<i className="fas fa-chevron-right ml-2"></i></button>
           </div>
         </div>}
-        <PromoBanners/>
+        <PromoBanners bannerSettings={bannerSettings}/>
       </>}
     </div>
 
@@ -1698,7 +1897,11 @@ Te envío el comprobante para que puedas prepararlas.`);window.open(`https://wa.
       </div>
     </Modal>}
 
+    {bookingOpen && <BookingModal onClose={()=>setBookingOpen(false)}/>}
+
     {viewer && <Modal onClose={()=>setViewer(null)} max="max-w-6xl"><div className="grid lg:grid-cols-[1.2fr,.8fr] gap-5 items-start"><div onTouchStart={e=>touchStartX.current=e.touches?.[0]?.clientX} onTouchEnd={handleSwipeEnd(moveViewer)} className="rounded-3xl overflow-hidden bg-black border border-neutral-800 relative"><img src={viewer.fullUrl||viewer.url} loading="eager" decoding="async" className="w-full max-h-[80vh] object-contain mx-auto"/><PreviewWatermark {...wmProps(viewer.albumId)}/><button onClick={()=>moveViewer(-1)} className="absolute left-2 sm:left-3 top-1/2 -translate-y-1/2 px-3 h-10 rounded-full bg-black/70 border border-white/20 text-white font-bold text-xs"><i className="fas fa-chevron-left sm:mr-1"></i><span className="hidden sm:inline viewer-nav-label">Anterior</span></button><button onClick={()=>moveViewer(1)} className="absolute right-2 sm:right-3 top-1/2 -translate-y-1/2 px-3 h-10 rounded-full bg-black/70 border border-white/20 text-white font-bold text-xs"><span className="hidden sm:inline viewer-nav-label">Siguiente</span><i className="fas fa-chevron-right sm:ml-1"></i></button></div><div><h3 className="text-2xl font-black mb-1">{viewer.name}</h3><p className="text-neutral-400 text-sm mb-2">Código {viewer.code} · {viewer.albumName}</p><p className="text-sky-300 font-black text-xl mb-4">{formatPrice(viewer.price)}</p><div className="bg-neutral-950 border border-neutral-800 rounded-2xl p-4 mb-4"><p className="text-sm text-neutral-300">La foto comprada se entrega en alta calidad y sin marca de agua.</p></div><button onClick={()=>toggle(viewer.id)} className="w-full buy-btn font-black py-4 rounded-xl mb-3">{cart.includes(viewer.id)?'Quitar del carrito':'Agregar al carrito'}</button><button onClick={()=>setViewer(null)} className="w-full bg-neutral-800 py-4 rounded-xl font-bold">Cerrar</button></div></div></Modal>}
+
+    {cart.length>0 && !checkoutOpen && <button onClick={openCheckout} className="mobile-buy-shortcut"><i className="fas fa-cart-shopping"></i> Ir a comprar</button>}
 
     {cart.length>0 && <div className="fixed bottom-4 sm:bottom-6 inset-x-0 mx-auto w-[calc(100vw-24px)] sm:w-[calc(100%-32px)] max-w-2xl z-40 up"><div className="buy-gradient rounded-3xl p-3 sm:p-4 flex flex-col sm:flex-row items-center justify-between gap-3"><div className="flex items-center gap-3 w-full sm:w-auto"><div className="bg-sky-500/20 border border-sky-300/35 text-white w-12 h-12 rounded-2xl flex items-center justify-center font-bold text-xl shadow-lg">{cart.length}</div><div className="flex-1"><div className="flex items-baseline gap-2"><p className="text-xl sm:text-2xl font-bold text-white">{formatPrice(total)}</p>{regular>total&&<p className="text-sm text-sky-200/45 line-through">{formatPrice(regular)}</p>}</div><p className="text-xs font-medium text-sky-200">{promoText()}</p>{regular>total&&<p className="text-[10px] text-sky-100/60">Ahorrás {formatPrice(regular-total)}</p>}</div></div><div className="flex gap-2 w-full sm:w-auto"><button onClick={()=>setCart([])} className="px-4 py-3 text-sky-100/75 font-medium hover:text-white hover:bg-white/10 rounded-2xl transition text-sm flex-1 sm:flex-none">Vaciar</button><button onClick={openCheckout} className="buy-btn px-6 py-3 rounded-2xl font-black flex items-center justify-center gap-2 transition flex-1 sm:flex-none">Proceder a comprar</button></div></div></div>}
   </div>;
