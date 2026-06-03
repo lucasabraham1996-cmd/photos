@@ -246,7 +246,7 @@ const LS_COUPONS_KEY = "la_coupon_settings_v1";
 const LS_SHARED_STATE_KEY = "la_shared_admin_state_v2";
 const LS_BANNERS_KEY = "la_banner_settings_v1";
 const PHOTOS_PER_PAGE = 70;
-const APP_VERSION = "reservas-banners-subalbumes-fecha-v7-rapida-firebase-siempre";
+const APP_VERSION = "reservas-banners-subalbumes-fecha-v8-firebase-gate-loading";
 const FIRESTORE_FREE_DAILY_LIMITS = {
     reads: 50000,
     writes: 20000,
@@ -1196,6 +1196,22 @@ function AlbumLoadingGrid({ count = 8 }) {
                 React.createElement("img", { src: "https://i.postimg.cc/PrD4jg9V/Logo-LA.png", className: "w-8 h-8 object-contain opacity-70" })),
             React.createElement("div", { className: "album-skeleton-caption" })))));
 }
+
+function FirebaseGalleryLoading({ error = "", onRetry = null } = {}) {
+    return React.createElement("div", { className: "album-loading-panel up mb-6" },
+        React.createElement("div", { className: "relative z-[2] flex flex-col sm:flex-row sm:items-center gap-4 text-center sm:text-left" },
+            React.createElement("div", { className: "loading-logo-wrap !w-20 !h-20 !rounded-3xl !mb-0 mx-auto sm:mx-0 shrink-0" },
+                React.createElement("img", { src: "https://i.postimg.cc/PrD4jg9V/Logo-LA.png", className: "loading-logo" })),
+            React.createElement("div", { className: "min-w-0 flex-1" },
+                React.createElement("h3", { className: "font-black text-white text-xl leading-tight" }, "Cargando galerías..."),
+                React.createElement("p", { className: "text-sm text-sky-100/80 leading-relaxed mt-1" }, "Estamos conectando Firebase para que los pedidos, el admin y las galerías trabajen correctamente."),
+                React.createElement("div", { className: "loading-bar max-w-sm mx-auto sm:mx-0" }, React.createElement("span", null)),
+                error && React.createElement("div", { className: "mt-4 rounded-2xl border border-amber-400/30 bg-amber-500/10 p-3 text-xs text-amber-100 leading-relaxed" },
+                    React.createElement("b", null, "Firebase está demorando: "),
+                    error,
+                    onRetry && React.createElement("button", { onClick: onRetry, className: "mt-3 w-full sm:w-auto bg-amber-400 text-black px-4 py-2 rounded-xl font-black" }, "Reintentar conexión")))));
+}
+
 function App() {
     var _a, _b, _c, _d, _e;
     const [route, setRoute] = useState(location.hash || "#/galeria");
@@ -1235,12 +1251,34 @@ function App() {
     const [bookingOpen, setBookingOpen] = useState(false);
     const [activeSubAlbum, setActiveSubAlbum] = useState('');
     const [sharedReady, setSharedReady] = useState(false);
+    const [firebaseReady, setFirebaseReady] = useState(false);
+    const [firebaseBootError, setFirebaseBootError] = useState("");
     const [newCouponCode, setNewCouponCode] = useState("");
     const [newCouponPercent, setNewCouponPercent] = useState(10);
     const touchStartX = useRef(null);
     const ownInputRef = useRef(null);
     const homeLogoRef = useRef(null);
     const awayLogoRef = useRef(null);
+    async function ensureFirebaseReady() {
+        setFirebaseBootError("");
+        setFirebaseReady(false);
+        try {
+            const timeout = new Promise((_, reject) => setTimeout(() => reject(new Error("La conexión tarda más de lo normal. Revisá internet o tocá reintentar.")), 15000));
+            const db = await Promise.race([getFirebaseDb(), timeout]);
+            if (db) {
+                setFirebaseReady(true);
+                setFirebaseBootError("");
+            }
+            else {
+                setFirebaseBootError("No se pudo inicializar Firebase. La galería esperará para evitar pedidos desincronizados.");
+            }
+        }
+        catch (e) {
+            console.warn("Firebase demoró o no pudo inicializarse al inicio.", e);
+            setFirebaseBootError((e && e.message) ? e.message : "Firebase no respondió a tiempo.");
+        }
+    }
+    useEffect(() => { ensureFirebaseReady(); }, []);
     useEffect(() => { const h = () => { const hash = location.hash || "#/galeria"; setRoute(hash); setActiveAlbum(getAlbumIdFromHash(hash)); setActiveSubAlbum(getSubAlbumIdFromHash(hash)); }; addEventListener('hashchange', h); h(); return () => removeEventListener('hashchange', h); }, []);
     useEffect(() => { saveCoverOverrides(coverOverrides); }, [coverOverrides]);
     useEffect(() => { saveHighlightIds(highlightIds); }, [highlightIds]);
@@ -1276,19 +1314,15 @@ function App() {
     useEffect(() => { saveDiscountSettings(discountSettings); if (sharedReady)
         saveSharedAdminState({ discountSettings }); }, [discountSettings, sharedReady]);
     async function load({ silent = false, force = false } = {}) {
+        // No mostramos caché vieja al abrir: primero se conecta Firebase y después se trae la planilla actual.
+        // Esto evita que aparezcan galerías desactualizadas durante unos segundos y luego "se transformen".
         if (force) {
             try {
                 localStorage.removeItem(LS_ALBUM_CACHE_KEY);
             }
             catch (e) { }
         }
-        const cached = force ? [] : readAlbumCache();
-        if (cached.length && !albums.length) {
-            setAlbums(cached);
-            setLoading(false);
-            setError("");
-        }
-        if (!silent && !cached.length) {
+        if (!silent) {
             setLoading(true);
             setError("");
         }
@@ -1303,13 +1337,8 @@ function App() {
         }
         catch (e) {
             console.error(e);
-            const cachedNow = readAlbumCache();
-            if (cachedNow.length) {
-                setAlbums(cachedNow);
-                setError("");
-            }
-            else
-                setError(e.message || 'No se pudo cargar la galería');
+            setAlbums([]);
+            setError((e && e.message) || 'No se pudo cargar la galería');
         }
         finally {
             setLoading(false);
@@ -1327,7 +1356,13 @@ function App() {
             setAdminMessage('No se pudo actualizar. Probá F5 o revisá Apps Script.');
         }
     }
-    useEffect(() => { load({ silent: false }); }, []);
+    useEffect(() => {
+        if (!firebaseReady)
+            return;
+        setAlbums([]);
+        setLoading(true);
+        load({ silent: false, force: true });
+    }, [firebaseReady]);
     const displayAlbums = useMemo(() => albums.map(a => ({ ...a, cover: coverOverrides[a.id] || a.cover })).sort((a, b) => (b.dateTs || 0) - (a.dateTs || 0) || a.name.localeCompare(b.name)), [albums, coverOverrides]);
     const activeAlbums = useMemo(() => displayAlbums.filter(a => !a.archived), [displayAlbums]);
     const archivedAlbums = useMemo(() => displayAlbums.filter(a => a.archived), [displayAlbums]);
@@ -2231,7 +2266,7 @@ A continuación, te envío el comprobante.`;
                     React.createElement("div", null,
                         React.createElement("b", { className: "block" }, "HD"),
                         React.createElement("span", { className: "text-xs text-neutral-500" }, "entrega"))),
-                highlightedAlbums.length > 0 && React.createElement("div", { className: "mt-5 sm:mt-7" },
+                firebaseReady && highlightedAlbums.length > 0 && React.createElement("div", { className: "mt-5 sm:mt-7" },
                     React.createElement("div", { className: "flex items-center justify-between mb-2" },
                         React.createElement("p", { className: "text-[11px] sm:text-xs font-bold uppercase tracking-[0.18em] text-neutral-500" }, "Historias destacadas")),
                     React.createElement("div", { className: "overflow-x-auto pb-2" },
@@ -2246,11 +2281,11 @@ A continuación, te envío el comprobante.`;
                     React.createElement("button", { onClick: () => setBookingOpen(true), className: "booking-btn px-5 py-4 rounded-2xl font-black shrink-0" },
                         React.createElement("i", { className: "fas fa-calendar-check mr-2" }),
                         "Reservame para tu partido")),
-                !currentAlbum && activeAlbums.length > 0 && React.createElement(MainHeaderBanners, { bannerSettings: bannerSettings })),
+                !currentAlbum && firebaseReady && activeAlbums.length > 0 && React.createElement(MainHeaderBanners, { bannerSettings: bannerSettings })),
             React.createElement(Steps, null),
             React.createElement("div", { className: "mb-4" },
                 React.createElement(ProtectionNotice, null)),
-            !currentAlbum ? React.createElement(React.Fragment, null,
+            !firebaseReady ? React.createElement(FirebaseGalleryLoading, { error: firebaseBootError, onRetry: ensureFirebaseReady }) : !currentAlbum ? React.createElement(React.Fragment, null,
                 React.createElement("div", { className: "flex justify-center border-t border-neutral-900 mb-4" },
                     React.createElement("div", { className: "flex items-center gap-2 border-t-2 border-white pt-3 pb-2 px-4 -mt-[1px]" },
                         React.createElement("i", { className: "fas fa-th text-xs" }),
