@@ -1,5 +1,4 @@
 
-
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -14,7 +13,7 @@
   <link rel="preconnect" href="https://unpkg.com" />
   <link rel="preconnect" href="https://cdnjs.cloudflare.com" />
   <link rel="preconnect" href="https://i.postimg.cc" />
-<script type="text/javascript" src="https://gc.kes.v2.scr.kaspersky-labs.com/7EA5E9BB-55E1-4C31-9C21-4943DDFED2E4/main.js?attr=2XBMhUA9AmwNQHhys19UJU_3_efh3sj1sdVi5WnettYzc7ufb5bg08JIocUv1npGRmfrxnVixjxSOedUnEXyBw" charset="UTF-8"></script><script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
   <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
   <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
@@ -27,6 +26,7 @@
     /* Estabilidad móvil: evita pantalla blanca aunque el celular tenga tema claro o caché previo */
     html,body,#root{min-height:100%;background:#070707;color:#fff}
     @media(max-width:768px){body{background:#070707!important;color:#fff!important}#root{background:#070707!important}.app-boot-fallback{background:radial-gradient(circle at 50% 18%,rgba(255,255,255,.10),transparent 34%),linear-gradient(135deg,#030303,#0b0b0f 45%,#000)!important;color:#fff!important}.app-boot-card,.loading-card{background:rgba(12,12,14,.88)!important;color:#fff!important;border-color:rgba(255,255,255,.12)!important}.app-boot-card *,.loading-card *{color:#fff!important}}
+    @media(max-width:768px){html,body,#root{min-height:100vh!important;background:#070707!important}.mobile-safe-dark,.mobile-safe-dark *{color:#fff!important}}
     img{-webkit-user-drag:none;user-select:none}
     .glass{background:rgba(20,20,20,.88);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px)}
     .fade{animation:fade .28s ease-out forwards}.up{animation:up .35s cubic-bezier(.16,1,.3,1) forwards}
@@ -169,6 +169,23 @@
     body.light-mode .final-buy-btn *{color:#fff!important}
 
 
+
+
+    /* v17: categorías tipo pestañas diagonales, livianas y rápidas */
+    .subalbum-panel{background:rgba(3,7,18,.78)!important;border-color:rgba(56,189,248,.22)!important;padding:12px!important;overflow:hidden}
+    .subalbum-showcase{display:flex!important;gap:0!important;overflow-x:auto!important;padding:8px 2px 10px 18px!important;scroll-snap-type:x mandatory;align-items:stretch}
+    .subalbum-showcase::-webkit-scrollbar{height:6px}.subalbum-showcase::-webkit-scrollbar-thumb{background:rgba(56,189,248,.35);border-radius:999px}
+    .subalbum-visual-card{display:flex!important;align-items:center!important;justify-content:center!important;min-width:154px!important;max-width:none!important;height:46px!important;padding:0 26px!important;margin-left:-14px!important;border:0!important;border-radius:0!important;clip-path:polygon(0 0,calc(100% - 22px) 0,100% 100%,22px 100%)!important;background:linear-gradient(135deg,#e5efff 0%,#8fb7ff 42%,#3b82f6 74%,#1d4ed8 100%)!important;box-shadow:0 8px 22px rgba(37,99,235,.18),inset 0 1px 0 rgba(255,255,255,.42)!important;scroll-snap-align:start;position:relative;transition:.22s ease!important;color:#fff!important}
+    .subalbum-visual-card:first-child{margin-left:0!important}
+    .subalbum-visual-card:hover{transform:translateY(-2px)!important;filter:brightness(1.06)}
+    .subalbum-visual-card.active{background:linear-gradient(135deg,#dbeafe 0%,#60a5fa 35%,#2563eb 68%,#0b45d9 100%)!important;box-shadow:0 14px 30px rgba(37,99,235,.30),inset 0 1px 0 rgba(255,255,255,.45)!important}
+    .subalbum-thumb-wrap,.subalbum-floating-badge,.subalbum-thumb-overlay{display:none!important}
+    .subalbum-copy-wrap{display:flex!important;align-items:center!important;justify-content:center!important;width:100%!important;min-width:0!important;z-index:2!important}
+    .subalbum-copy-title{color:#fff!important;text-shadow:0 1px 8px rgba(0,0,0,.35);font-size:11px!important;font-weight:950!important;letter-spacing:.08em!important;text-transform:uppercase!important;white-space:nowrap!important;overflow:hidden!important;text-overflow:ellipsis!important;text-align:center!important;line-height:1!important}
+    .subalbum-copy-meta{display:none!important}
+    body.light-mode .subalbum-panel{background:rgba(255,255,255,.88)!important;border-color:rgba(56,189,248,.22)!important}
+    body.light-mode .subalbum-visual-card,body.light-mode .subalbum-visual-card *{color:#fff!important}
+    @media(max-width:640px){.subalbum-panel{padding:10px 8px!important;border-radius:18px!important}.subalbum-showcase{padding-left:12px!important}.subalbum-visual-card{min-width:136px!important;height:42px!important;padding:0 22px!important;margin-left:-12px!important}.subalbum-copy-title{font-size:9.5px!important;letter-spacing:.07em!important}}
 
     /* Reservas, banners admin y subálbumes */
     .booking-hero{background:linear-gradient(125deg,#000 0%,#020617 22%,#06114a 48%,#00145f 66%,#020617 86%,#000 100%);background-size:260% 260%;animation:deepBlueFlow 7s ease-in-out infinite;border:1px solid rgba(147,197,253,.35);box-shadow:0 22px 60px rgba(37,99,235,.18),inset 0 1px 0 rgba(255,255,255,.08);color:#fff!important}
@@ -353,7 +370,7 @@ const LS_COUPONS_KEY = "la_coupon_settings_v1";
 const LS_SHARED_STATE_KEY = "la_shared_admin_state_v2";
 const LS_BANNERS_KEY = "la_banner_settings_v1";
 const PHOTOS_PER_PAGE = 70;
-const APP_VERSION = "reservas-banners-subalbumes-fecha-v10b-mosaic-all-photos-stable";
+const APP_VERSION = "v17-mobile-safe-fast-slanted-tabs";
 const LS_ALBUM_CACHE_META_KEY = "la_album_cache_meta_v1";
 const ALBUM_CACHE_MAX_AGE_MS = 1000 * 60 * 60 * 12;
 const FIRESTORE_FREE_DAILY_LIMITS = {
@@ -967,7 +984,7 @@ function jsonp(url, timeoutMs = 30000, options = {}) { return new Promise((resol
     return; done = true; clearTimeout(timer); delete window[cb]; script.remove(); reject(new Error("No se pudo cargar la fuente de datos")); }; const bust = options.force ? `&_=${Date.now()}` : ""; script.src = `${url}${sep}callback=${cb}${bust}`; document.body.appendChild(script); }); }
 async function fetchGalleryData({ force = false } = {}) { let lastError; for (let i = 0; i < 3; i++) {
     try {
-        return APPS_SCRIPT_URL.trim() ? await jsonp(APPS_SCRIPT_URL.trim(), i === 0 ? 18000 : i === 1 ? 30000 : 42000, { force }) : await gvizJsonpForFirstSheet();
+        return APPS_SCRIPT_URL.trim() ? await jsonp(APPS_SCRIPT_URL.trim(), i === 0 ? 6000 : i === 1 ? 9000 : 12000, { force }) : await gvizJsonpForFirstSheet();
     }
     catch (e) {
         lastError = e;
@@ -2778,10 +2795,29 @@ Te envío el comprobante para que puedas prepararlas.`);
                     React.createElement("button", { onClick: openCheckout, className: "buy-btn px-6 py-3 rounded-2xl font-black flex items-center justify-center gap-2 transition flex-1 sm:flex-none" }, "Proceder a comprar")))));
 }
 const rootEl = document.getElementById('root');
-if (rootEl)
-    rootEl.innerHTML = '';
-ReactDOM.createRoot(rootEl).render(React.createElement(App, null));
+if (rootEl && window.React && window.ReactDOM && ReactDOM.createRoot) {
+    try {
+        rootEl.innerHTML = '';
+        ReactDOM.createRoot(rootEl).render(React.createElement(App, null));
+        window.LA_APP_RENDERED = true;
+    }
+    catch (e) {
+        console.error('Error iniciando app:', e);
+        rootEl.innerHTML = '<div class="app-boot-fallback mobile-safe-dark"><div class="app-boot-card"><img src="https://i.postimg.cc/PrD4jg9V/Logo-LA.png" alt="lucasabraham.ph"><h1 style="font-size:22px;font-weight:950;margin:0 0 6px;color:#fff!important;">No se pudo iniciar</h1><p style="color:#d4d4d8!important;font-size:13px;line-height:1.45;margin:0;">Actualizá la página o tocá Reintentar. La pantalla blanca ya queda bloqueada por este aviso.</p><button onclick="location.reload()" style="margin-top:16px;background:#0ea5e9;color:#fff;border:0;border-radius:14px;padding:12px 18px;font-weight:900;">Reintentar</button></div></div>';
+    }
+} else if (rootEl) {
+    rootEl.innerHTML = '<div class="app-boot-fallback mobile-safe-dark"><div class="app-boot-card"><img src="https://i.postimg.cc/PrD4jg9V/Logo-LA.png" alt="lucasabraham.ph"><h1 style="font-size:22px;font-weight:950;margin:0 0 6px;color:#fff!important;">Cargando recursos</h1><p style="color:#d4d4d8!important;font-size:13px;line-height:1.45;margin:0;">El celular demoró en cargar React. Tocá Reintentar.</p><button onclick="location.reload()" style="margin-top:16px;background:#0ea5e9;color:#fff;border:0;border-radius:14px;padding:12px 18px;font-weight:900;">Reintentar</button></div></div>';
+}
 
+</script>
+
+<script>
+  setTimeout(function(){
+    var root=document.getElementById('root');
+    if(root && !window.LA_APP_RENDERED && !root.textContent.trim()){
+      root.innerHTML='<div class="app-boot-fallback mobile-safe-dark"><div class="app-boot-card"><img src="https://i.postimg.cc/PrD4jg9V/Logo-LA.png" alt="lucasabraham.ph"><h1 style="font-size:22px;font-weight:950;margin:0 0 6px;color:#fff!important;">Cargando galería</h1><p style="color:#d4d4d8!important;font-size:13px;line-height:1.45;margin:0;">El celular tardó en iniciar. Actualizá o tocá Reintentar.</p><button onclick="location.reload()" style="margin-top:16px;background:#0ea5e9;color:#fff;border:0;border-radius:14px;padding:12px 18px;font-weight:900;">Reintentar</button></div></div>';
+    }
+  }, 2500);
 </script>
 </body>
 </html>
