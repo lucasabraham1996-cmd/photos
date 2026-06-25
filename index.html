@@ -1,3 +1,5 @@
+
+
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -12,7 +14,7 @@
   <link rel="preconnect" href="https://unpkg.com" />
   <link rel="preconnect" href="https://cdnjs.cloudflare.com" />
   <link rel="preconnect" href="https://i.postimg.cc" />
-<script src="https://cdn.tailwindcss.com"></script>
+<script type="text/javascript" src="https://gc.kes.v2.scr.kaspersky-labs.com/7EA5E9BB-55E1-4C31-9C21-4943DDFED2E4/main.js?attr=2XBMhUA9AmwNQHhys19UJU_3_efh3sj1sdVi5WnettYzc7ufb5bg08JIocUv1npGRmfrxnVixjxSOedUnEXyBw" charset="UTF-8"></script><script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
   <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
   <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
@@ -183,8 +185,27 @@
     .page-current-badge{background:rgba(59,130,246,.18);border:1px solid rgba(147,197,253,.36);color:#dbeafe!important;border-radius:16px;padding:8px 12px;font-weight:950}
     .page-number-btn{min-width:38px;height:38px;border-radius:13px;border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.06);color:#fff!important;font-weight:950;font-size:13px}
     .page-number-btn.active{background:#fff;color:#020617!important;border-color:#fff;box-shadow:0 12px 26px rgba(255,255,255,.14)}
+
+    .album-mosaic-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;grid-auto-flow:dense;grid-auto-rows:110px}
+    .album-mosaic-grid .mosaic-tile{position:relative;min-height:100%;border-radius:1.15rem;overflow:hidden}
+    .album-mosaic-grid .mosaic-tile.span-standard{grid-column:span 1;grid-row:span 2}
+    .album-mosaic-grid .mosaic-tile.span-vertical{grid-column:span 1;grid-row:span 3}
+    .album-mosaic-grid .mosaic-tile.span-horizontal{grid-column:span 2;grid-row:span 2}
+    .album-mosaic-grid .mosaic-tile.span-featured{grid-column:span 2;grid-row:span 3}
+    .album-mosaic-grid .mosaic-tile img{width:100%;height:100%;object-fit:cover}
+    .subalbum-showcase{display:flex;gap:12px;overflow-x:auto;padding:3px 2px 6px;scroll-snap-type:x proximity}.subalbum-showcase::-webkit-scrollbar{height:8px}.subalbum-showcase::-webkit-scrollbar-thumb{background:rgba(148,163,184,.24);border-radius:999px}
+    .subalbum-visual-card{position:relative;display:grid;grid-template-columns:84px minmax(0,1fr);align-items:center;gap:12px;min-width:280px;max-width:320px;padding:10px 12px;border-radius:22px;border:1px solid rgba(255,255,255,.12);background:linear-gradient(145deg,rgba(2,6,23,.96),rgba(15,23,42,.86),rgba(0,0,0,.98));box-shadow:0 18px 44px rgba(0,0,0,.24);transition:transform .28s cubic-bezier(.16,1,.3,1),border-color .28s,box-shadow .28s;text-align:left;overflow:hidden;scroll-snap-align:start}
+    .subalbum-visual-card:hover{transform:translateY(-3px);border-color:rgba(96,165,250,.5);box-shadow:0 24px 58px rgba(37,99,235,.16)}
+    .subalbum-visual-card.active{border-color:rgba(191,219,254,.7);box-shadow:0 24px 60px rgba(37,99,235,.25), inset 0 0 0 1px rgba(255,255,255,.08)}
+    .subalbum-thumb-wrap{position:relative;border-radius:18px;overflow:hidden;aspect-ratio:1/1;background:#050505;border:1px solid rgba(255,255,255,.08)}
+    .subalbum-thumb-wrap img{width:100%;height:100%;object-fit:cover;display:block;transition:transform .7s cubic-bezier(.16,1,.3,1),filter .35s}
+    .subalbum-visual-card:hover .subalbum-thumb-wrap img{transform:scale(1.08);filter:saturate(1.08)}
+    .subalbum-thumb-overlay{position:absolute;inset:0;background:linear-gradient(180deg,rgba(0,0,0,.04),rgba(0,0,0,.78))}
+    .subalbum-floating-badge{position:absolute;left:8px;right:8px;bottom:8px;display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:6px 8px;border-radius:999px;background:rgba(2,6,23,.82);backdrop-filter:blur(14px);border:1px solid rgba(191,219,254,.24);color:#fff!important;font-size:9px;font-weight:900;letter-spacing:.04em;text-transform:uppercase}
+    .subalbum-copy-title{font-size:13px;font-weight:950;line-height:1.1;color:#fff!important;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .subalbum-copy-meta{font-size:10px;color:rgba(219,234,254,.78)!important;margin-top:5px;line-height:1.3}
     .mobile-buy-shortcut{display:none}
-    @media(max-width:640px){.subalbum-panel{padding:9px;border-radius:18px}.subalbum-row{display:grid!important;grid-template-columns:1fr 1fr!important;gap:8px!important}.subalbum-card{padding:8px;min-height:58px;align-items:center}.subalbum-title{font-size:10.5px}.subalbum-meta{font-size:9px}.subalbum-folder-icon{width:28px;height:28px;border-radius:10px}.page-panel{padding:10px!important}.page-number-btn{min-width:34px;height:34px;border-radius:11px;font-size:12px}.mobile-buy-shortcut{display:flex;position:fixed;right:10px;top:58%;z-index:55;writing-mode:vertical-rl;transform:translateY(-50%);background:linear-gradient(135deg,#16a34a,#22c55e);color:#fff!important;border:1px solid rgba(187,247,208,.72);box-shadow:0 14px 34px rgba(34,197,94,.34);border-radius:18px;padding:12px 8px;font-weight:950;font-size:12px;letter-spacing:.02em;align-items:center;gap:8px}}
+    @media(max-width:640px){.subalbum-panel{padding:9px;border-radius:18px}.subalbum-row{display:grid!important;grid-template-columns:1fr 1fr!important;gap:8px!important}.subalbum-card{padding:8px;min-height:58px;align-items:center}.subalbum-title{font-size:10.5px}.subalbum-meta{font-size:9px}.subalbum-folder-icon{width:28px;height:28px;border-radius:10px}.page-panel{padding:10px!important}.page-number-btn{min-width:34px;height:34px;border-radius:11px;font-size:12px}.mobile-buy-shortcut{display:flex;position:fixed;right:10px;top:58%;z-index:55;writing-mode:vertical-rl;transform:translateY(-50%);background:linear-gradient(135deg,#16a34a,#22c55e);color:#fff!important;border:1px solid rgba(187,247,208,.72);box-shadow:0 14px 34px rgba(34,197,94,.34);border-radius:18px;padding:12px 8px;font-weight:950;font-size:12px;letter-spacing:.02em;align-items:center;gap:8px}.album-mosaic-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;grid-auto-rows:86px}.album-mosaic-grid .mosaic-tile.span-horizontal,.album-mosaic-grid .mosaic-tile.span-featured{grid-column:span 2}.album-mosaic-grid .mosaic-tile.span-featured{grid-row:span 2}.album-mosaic-grid .mosaic-tile.span-vertical{grid-row:span 2}.subalbum-showcase{grid-template-columns:1fr;gap:10px}.subalbum-visual-card{padding:8px;border-radius:18px}.subalbum-thumb-wrap{aspect-ratio:16/9}.subalbum-copy-title{font-size:13px}.subalbum-copy-meta{font-size:10px}}
     .admin-banner-row input,.admin-banner-row textarea{background:#050505;border:1px solid #3f3f46;border-radius:12px;padding:10px 12px;outline:none;color:#fff;width:100%}
     body.light-mode .booking-hero,body.light-mode .booking-hero *,body.light-mode .subalbum-card.active{color:#fff!important}
     body.light-mode .booking-input{background:#fff!important;color:#111827!important;-webkit-text-fill-color:#111827!important}
@@ -201,6 +222,75 @@
     .app-boot-card{width:min(92vw,360px);border:1px solid rgba(255,255,255,.10);background:rgba(12,12,14,.76);border-radius:30px;padding:28px 22px;box-shadow:0 30px 80px rgba(0,0,0,.48)}
     .app-boot-card img{width:82px;height:82px;object-fit:contain;margin:0 auto 14px;display:block;filter:drop-shadow(0 10px 22px rgba(255,255,255,.12))}
     .app-boot-bar{height:5px;border-radius:999px;background:rgba(255,255,255,.10);overflow:hidden;margin-top:16px}.app-boot-bar span{display:block;height:100%;width:42%;border-radius:999px;background:linear-gradient(90deg,#fff,#9ca3af,#fff);animation:loadMove 1.05s ease-in-out infinite}
+
+
+
+    /* FIX rendimiento + encabezado profesional sticky */
+    .la-insta-topbar{position:sticky;top:0;z-index:80;margin:0 auto 16px;max-width:980px;border:1px solid rgba(255,255,255,.10);background:linear-gradient(135deg,rgba(7,7,7,.82),rgba(22,22,24,.58));backdrop-filter:blur(22px);-webkit-backdrop-filter:blur(22px);box-shadow:0 18px 52px rgba(0,0,0,.26);border-radius:0 0 24px 24px;padding:10px 12px;display:flex;align-items:center;justify-content:space-between;gap:12px}
+    .la-insta-brand{display:flex;align-items:center;gap:11px;min-width:0}
+    .la-insta-logo{width:44px;height:44px;border-radius:15px;background:linear-gradient(135deg,rgba(255,255,255,.14),rgba(255,255,255,.04));border:1px solid rgba(255,255,255,.13);display:flex;align-items:center;justify-content:center;overflow:hidden;box-shadow:0 12px 30px rgba(0,0,0,.25)}
+    .la-insta-logo img{width:74%;height:74%;object-fit:contain}
+    .la-insta-title{font-size:14px;font-weight:950;line-height:1.05;letter-spacing:.01em;color:#fff!important}
+    .la-insta-sub{font-size:10px;line-height:1.1;color:rgba(255,255,255,.62)!important;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:52vw}
+    .la-insta-actions{display:flex;align-items:center;gap:8px;flex-shrink:0;flex-wrap:wrap;justify-content:flex-end}
+    .la-insta-btn{height:38px;min-width:38px;border-radius:14px;border:1px solid rgba(255,255,255,.11);background:rgba(255,255,255,.07);display:inline-flex;align-items:center;justify-content:center;color:#fff!important;font-weight:950;padding:0 12px;transition:.22s;gap:8px}
+    .la-insta-btn:hover{background:rgba(255,255,255,.14);transform:translateY(-1px)}
+    .la-insta-whatsapp{background:linear-gradient(135deg,#16a34a,#22c55e)!important;border-color:rgba(187,247,208,.55)!important;box-shadow:0 12px 28px rgba(34,197,94,.20)}
+    .la-insta-follow{background:linear-gradient(135deg,#7c3aed,#ec4899)!important;border-color:rgba(244,114,182,.45)!important;box-shadow:0 12px 28px rgba(236,72,153,.20)}
+    .la-top-alias{border-color:rgba(125,211,252,.95)!important;background:linear-gradient(135deg,#00b8e6,#00a3d9 55%,#007eb8)!important;box-shadow:0 14px 34px rgba(0,184,230,.34)!important;color:#fff!important;text-shadow:0 1px 6px rgba(0,0,0,.18)}
+    .la-top-alias img{height:16px;width:auto;object-fit:contain;display:block}
+    .la-top-alias *,.mp-copy-btn *,.checkout-copy-alias *{color:#fff!important}
+    .profile-logo-core{background:#0f172a;border-color:#0f172a;box-shadow:0 14px 30px rgba(0,0,0,.24)}
+    .header-logo{filter:drop-shadow(0 4px 10px rgba(0,0,0,.35))}
+    .la-profile-card{border:1px solid rgba(255,255,255,.10);background:radial-gradient(circle at 10% 0%,rgba(255,255,255,.12),transparent 30%),linear-gradient(135deg,rgba(16,16,18,.82),rgba(5,5,5,.92));backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);border-radius:32px;padding:18px;box-shadow:0 24px 70px rgba(0,0,0,.32)}
+    .la-profile-pill{display:inline-flex;align-items:center;gap:7px;border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.07);border-radius:999px;padding:8px 11px;font-size:12px;font-weight:900;color:#fff!important}
+    .mp-copy-btn{border-color:rgba(125,211,252,.95)!important;background:linear-gradient(135deg,#00b8e6,#00a3d9 55%,#007eb8)!important;box-shadow:0 14px 34px rgba(0,184,230,.32)!important;color:#fff!important;text-shadow:0 1px 6px rgba(0,0,0,.18)}
+    .mp-copy-btn img{height:18px;width:auto;object-fit:contain;display:block;filter:drop-shadow(0 2px 8px rgba(255,255,255,.12))}
+    .checkout-shell{display:flex;flex-direction:column;max-height:min(86vh,820px);overflow:hidden}
+    .checkout-main{display:grid;grid-template-columns:minmax(0,1fr) minmax(330px,.72fr);gap:18px;min-height:0;flex:1}
+    .checkout-panel{min-height:0}
+    .checkout-photo-list{max-height:100%;overflow:auto}
+    .checkout-summary{display:flex;flex-direction:column;gap:12px;height:100%;min-height:0}
+    .checkout-pay-card{border:1px solid rgba(56,189,248,.45);background:linear-gradient(135deg,rgba(255,255,255,.08),rgba(14,165,233,.18));border-radius:24px;padding:14px;box-shadow:0 14px 36px rgba(14,165,233,.16)}
+    .checkout-pay-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:12px}
+    .checkout-pay-logo{height:24px;width:auto;object-fit:contain;display:block;filter:drop-shadow(0 2px 8px rgba(255,255,255,.18))}
+    .checkout-copy-alias{width:100%;display:flex;align-items:center;justify-content:space-between;gap:12px;border-radius:18px;border:1px solid rgba(125,211,252,.95);background:linear-gradient(135deg,#00b8e6,#00a3d9 55%,#007eb8);padding:12px 14px;color:#fff!important;box-shadow:0 14px 34px rgba(0,184,230,.30),inset 0 1px 0 rgba(255,255,255,.18);text-shadow:0 1px 6px rgba(0,0,0,.18)}
+    .checkout-copy-alias:hover{background:linear-gradient(135deg,#20c7ef,#00aee3 55%,#0088c7);transform:translateY(-1px)}
+    .checkout-copy-left{display:flex;align-items:center;gap:10px;min-width:0}
+    .checkout-copy-left img{height:20px;width:auto;object-fit:contain;flex-shrink:0}
+    .checkout-action-bar{position:sticky;bottom:-1px;margin-top:auto;padding-top:10px;padding-bottom:max(2px,env(safe-area-inset-bottom));background:linear-gradient(180deg,rgba(2,6,23,0),rgba(2,6,23,.92) 20%,rgba(2,6,23,.99) 70%)}
+    .checkout-hint{font-size:11px;line-height:1.35;color:rgba(224,242,254,.78)!important;text-align:center;margin-top:8px}
+    .checkout-mini-list{display:grid;gap:10px}
+    .checkout-mini-item{display:grid;grid-template-columns:54px minmax(0,1fr) auto;gap:10px;align-items:center;background:rgba(255,255,255,.055);border:1px solid rgba(255,255,255,.10);border-radius:18px;padding:9px}
+    .checkout-mini-thumb{width:54px;height:58px;border-radius:13px;overflow:hidden;background:#020617;border:1px solid rgba(255,255,255,.10)}
+    .checkout-mini-more{border-radius:16px;border:1px dashed rgba(125,211,252,.28);background:rgba(14,165,233,.08);padding:10px 12px;color:#dbeafe!important;font-size:12px;font-weight:900;text-align:center}
+    .checkout-primary-btn{min-height:56px;font-size:14px;letter-spacing:.01em}
+    .checkout-simple-shell{background:linear-gradient(135deg,#020617 0%,#06112f 56%,#020617 100%);border:1px solid rgba(56,189,248,.30);box-shadow:0 22px 70px rgba(14,165,233,.12);color:#fff!important}
+    .checkout-simple-card{border:1px solid rgba(148,163,184,.18);background:rgba(2,6,23,.72);border-radius:24px;padding:14px;box-shadow:inset 0 1px 0 rgba(255,255,255,.06)}
+    .checkout-simple-total{display:flex;align-items:flex-end;justify-content:space-between;gap:14px;padding:14px;border-radius:22px;background:linear-gradient(135deg,rgba(14,165,233,.18),rgba(255,255,255,.05));border:1px solid rgba(56,189,248,.28)}
+    .checkout-simple-row{display:flex;align-items:center;justify-content:space-between;gap:12px;font-size:13px;padding:7px 0;border-bottom:1px solid rgba(148,163,184,.12)}
+    .checkout-simple-row:last-child{border-bottom:0}
+    .checkout-simple-alias{display:flex;align-items:center;gap:10px;width:100%;padding:12px 13px;border-radius:18px;background:#fff;color:#0f172a!important;border:1px solid rgba(125,211,252,.38);box-shadow:0 14px 30px rgba(14,165,233,.14)}
+    .checkout-simple-alias img{height:22px;width:auto;object-fit:contain;flex-shrink:0}.checkout-simple-alias *{color:#0f172a!important}
+    .checkout-simple-coupon summary{cursor:pointer;list-style:none}.checkout-simple-coupon summary::-webkit-details-marker{display:none}
+    .checkout-simple-coupon[open] summary{margin-bottom:10px}
+    .checkout-simple-cta{min-height:60px;font-size:15px;letter-spacing:.01em;box-shadow:0 18px 42px rgba(34,197,94,.32)!important}
+    @media(max-width:640px){.checkout-simple-shell{border-radius:22px!important;padding:14px!important}.checkout-simple-card{border-radius:20px;padding:12px}.checkout-simple-total{padding:12px}.checkout-simple-cta{min-height:58px;font-size:14px}.checkout-simple-row{font-size:12px}}
+    @media(min-width:768px){.album-mosaic-grid{grid-template-columns:repeat(4,minmax(0,1fr));grid-auto-rows:104px}}
+    body.light-mode .la-insta-topbar{background:rgba(255,255,255,.84);border-color:rgba(0,0,0,.10)}
+    body.light-mode .la-insta-title,body.light-mode .la-insta-btn{color:#111827!important}
+    body.light-mode .la-insta-sub{color:#4b5563!important}
+    body.light-mode .la-profile-card{background:rgba(255,255,255,.92);border-color:rgba(0,0,0,.10)}
+    body.light-mode .la-profile-pill{background:rgba(255,255,255,.92);border-color:rgba(15,23,42,.10);color:#111827!important}
+    body.light-mode .la-insta-logo{background:linear-gradient(135deg,#0f172a,#1e293b);border-color:rgba(15,23,42,.18)}
+    body.light-mode .profile-logo-core{background:#0f172a!important;border-color:#0f172a!important}
+    body.light-mode .mp-copy-btn,body.light-mode .la-top-alias{background:linear-gradient(135deg,#00b8e6,#00a3d9 55%,#007eb8)!important;color:#fff!important;border-color:rgba(125,211,252,.95)!important}
+    body.light-mode .subalbum-panel{background:linear-gradient(135deg,rgba(255,255,255,.95),rgba(241,245,249,.96));border-color:rgba(148,163,184,.22)}
+    body.light-mode .subalbum-visual-card{background:linear-gradient(145deg,rgba(255,255,255,.98),rgba(241,245,249,.98));border-color:rgba(148,163,184,.20);box-shadow:0 18px 40px rgba(15,23,42,.08)}
+    body.light-mode .subalbum-visual-card.active{background:linear-gradient(145deg,rgba(224,242,254,.98),rgba(239,246,255,.98));border-color:rgba(56,189,248,.4)}
+    body.light-mode .subalbum-copy-title{color:#0f172a!important}
+    body.light-mode .subalbum-copy-meta{color:#475569!important}
+    @media(max-width:640px){.la-insta-topbar{border-radius:0 0 20px 20px;margin-left:-4px;margin-right:-4px;align-items:flex-start}.la-insta-btn span{display:none}.la-profile-card{border-radius:26px;padding:14px}.la-insta-logo{width:40px;height:40px}.mp-copy-btn{padding:10px 12px}.checkout-shell{max-height:min(92vh,900px);border-radius:22px!important;padding:12px!important}.checkout-main{display:flex;flex-direction:column;gap:10px}.checkout-summary{order:1;gap:10px;padding:12px!important;border-radius:22px!important}.checkout-photo-list{order:2;max-height:none;overflow:visible;padding:12px!important;border-radius:22px!important}.checkout-photo-list .checkout-mini-list{gap:8px}.checkout-pay-card{padding:11px;border-radius:18px}.checkout-copy-alias{padding:10px 12px;border-radius:16px}.checkout-primary-btn{min-height:58px;font-size:13px}.checkout-hint{display:none}.checkout-pay-head{align-items:flex-start;flex-direction:column}.checkout-pay-logo{height:22px}.checkout-action-bar{padding-bottom:max(10px,env(safe-area-inset-bottom))}.subalbum-showcase{gap:10px}.subalbum-visual-card{min-width:255px;padding:9px;grid-template-columns:74px minmax(0,1fr)}.la-insta-actions{width:100%;justify-content:flex-start}.la-top-alias .alias-text{display:none}}
 
   </style>
 
@@ -233,6 +323,7 @@ const BRAND = "lucasabraham.ph";
 const HANDLE = "@lucasabraham.ph";
 const SELLER_PHONE = "5493515580770";
 const MP_ALIAS = "lucasabraham.mp";
+const MP_LOGO = "https://images.cults3d.com/uR8gWslmgoDYdkHjEcZfN9aMA9k=/516x516/filters:no_upscale()/https://fbi.cults3d.com/uploaders/29809200/illustration-file/42fe9a48-e8dd-4162-93b4-afddc0bee16d/MP_RGB_HANDSHAKE_pluma_horizontal.png";
 const DEFAULT_FULL_ALBUM_PRICE = 50000;
 const ADMIN_PIN = "1234";
 const LS_COVER_KEY = "la_cover_overrides_v2";
@@ -246,7 +337,9 @@ const LS_COUPONS_KEY = "la_coupon_settings_v1";
 const LS_SHARED_STATE_KEY = "la_shared_admin_state_v2";
 const LS_BANNERS_KEY = "la_banner_settings_v1";
 const PHOTOS_PER_PAGE = 70;
-const APP_VERSION = "reservas-banners-subalbumes-fecha-v8-firebase-gate-loading";
+const APP_VERSION = "reservas-banners-subalbumes-fecha-v10b-mosaic-all-photos-stable";
+const LS_ALBUM_CACHE_META_KEY = "la_album_cache_meta_v1";
+const ALBUM_CACHE_MAX_AGE_MS = 1000 * 60 * 60 * 12;
 const FIRESTORE_FREE_DAILY_LIMITS = {
     reads: 50000,
     writes: 20000,
@@ -638,8 +731,11 @@ catch (_a) {
 } }
 function saveAlbumCache(v) { try {
     localStorage.setItem(LS_ALBUM_CACHE_KEY, JSON.stringify(v));
+    localStorage.setItem(LS_ALBUM_CACHE_META_KEY, JSON.stringify({savedAt: Date.now(), version: APP_VERSION, count: Array.isArray(v) ? v.length : 0}));
 }
 catch (e) { } }
+function readAlbumCacheMeta() { try { return JSON.parse(localStorage.getItem(LS_ALBUM_CACHE_META_KEY) || "{}"); } catch(_a){ return {}; } }
+function hasUsableAlbumCache() { const cached = readAlbumCache(); return Array.isArray(cached) && cached.length > 0; }
 const wait = (ms) => new Promise(r => setTimeout(r, ms));
 function apiAction(params) { const q = new URLSearchParams(params); return jsonp(APPS_SCRIPT_URL + (APPS_SCRIPT_URL.includes("?") ? "&" : "?") + q.toString()); }
 async function syncPendingOrders() {
@@ -822,6 +918,25 @@ function formatAlbumDate(ts) {
         return "";
     return new Intl.DateTimeFormat("es-AR", { day: "2-digit", month: "short", year: "numeric" }).format(new Date(ts)).replace(".", "");
 }
+function getMosaicSpanClass(photo, idx, total = 0) {
+    const safeTotal = Number(total) || 0;
+    const blocks = [
+        ['span-featured'],
+        ['span-vertical', 'span-standard', 'span-standard'],
+        ['span-horizontal', 'span-standard', 'span-standard'],
+        ['span-standard', 'span-standard', 'span-standard', 'span-standard']
+    ];
+    const pattern = [];
+    while (pattern.length < Math.max(safeTotal, 24)) {
+        blocks.forEach(block => pattern.push(...block));
+    }
+    const remaining = safeTotal - idx;
+    if (remaining > 0 && remaining <= 2)
+        return 'span-standard';
+    if (remaining === 3)
+        return ['span-horizontal', 'span-standard', 'span-standard'][idx - (safeTotal - 3)] || 'span-standard';
+    return pattern[idx] || 'span-standard';
+}
 function getAlbumDateFromRows(rows) {
     for (const r of rows || []) {
         const raw = pick(r, ["fecha", "date", "día", "dia", "fecha album", "fecha_album", "evento fecha", "fecha evento"]);
@@ -836,17 +951,17 @@ function getAlbumDateFromRows(rows) {
 const looksLikeImageUrl = (v) => { const s = String(v || "").trim(); return /^https?:\/\//i.test(s) && (/drive\.google\.com|googleusercontent|postimg|imgur|cloudinary|firebasestorage|\.jpg|\.jpeg|\.png|\.webp|\.gif/i.test(s)); };
 const findAnyImageUrl = (row) => { const direct = pick(row, ["url", "imagen", "image", "foto", "preview", "link", "enlace", "archivo", "photo", "src", "miniatura", "thumbnail"]); if (looksLikeImageUrl(direct))
     return direct; const vals = Object.values(row || {}); return vals.find(looksLikeImageUrl) || ""; };
-function jsonp(url, timeoutMs = 12000) { return new Promise((resolve, reject) => { const cb = "cb_" + Date.now() + "_" + Math.random().toString(36).slice(2); const sep = url.includes("?") ? "&" : "?"; const script = document.createElement("script"); let done = false; const timer = setTimeout(() => { if (done)
-    return; done = true; delete window[cb]; script.remove(); reject(new Error("No respondió la fuente de datos")); }, timeoutMs); window[cb] = (data) => { if (done)
+function jsonp(url, timeoutMs = 30000, options = {}) { return new Promise((resolve, reject) => { const cb = "cb_" + Date.now() + "_" + Math.random().toString(36).slice(2); const sep = url.includes("?") ? "&" : "?"; const script = document.createElement("script"); let done = false; const timer = setTimeout(() => { if (done)
+    return; done = true; delete window[cb]; script.remove(); reject(new Error("La fuente de datos demoró más de lo esperado")); }, timeoutMs); window[cb] = (data) => { if (done)
     return; done = true; clearTimeout(timer); delete window[cb]; script.remove(); resolve(data); }; script.onerror = () => { if (done)
-    return; done = true; clearTimeout(timer); delete window[cb]; script.remove(); reject(new Error("No se pudo cargar la fuente de datos")); }; script.src = `${url}${sep}callback=${cb}&_=${Date.now()}`; document.body.appendChild(script); }); }
-async function fetchGalleryData() { let lastError; for (let i = 0; i < 2; i++) {
+    return; done = true; clearTimeout(timer); delete window[cb]; script.remove(); reject(new Error("No se pudo cargar la fuente de datos")); }; const bust = options.force ? `&_=${Date.now()}` : ""; script.src = `${url}${sep}callback=${cb}${bust}`; document.body.appendChild(script); }); }
+async function fetchGalleryData({ force = false } = {}) { let lastError; for (let i = 0; i < 3; i++) {
     try {
-        return APPS_SCRIPT_URL.trim() ? await jsonp(APPS_SCRIPT_URL.trim(), i === 0 ? 8500 : 12000) : await gvizJsonpForFirstSheet();
+        return APPS_SCRIPT_URL.trim() ? await jsonp(APPS_SCRIPT_URL.trim(), i === 0 ? 18000 : i === 1 ? 30000 : 42000, { force }) : await gvizJsonpForFirstSheet();
     }
     catch (e) {
         lastError = e;
-        await wait(700 + i * 900);
+        await wait(650 + i * 850);
     }
 } throw lastError || new Error("No respondió la fuente de datos"); }
 async function gvizJsonpForFirstSheet() {
@@ -1223,7 +1338,8 @@ function App() {
     const [viewer, setViewer] = useState(null);
     const [pin, setPin] = useState("");
     const [admin, setAdmin] = useState(false);
-    const [copyOk, setCopyOk] = useState(false);
+    const [aliasCopied, setAliasCopied] = useState(false);
+    const [linkCopied, setLinkCopied] = useState(false);
     const [theme, setTheme] = useState(readTheme());
     const [watermarkSettings, setWatermarkSettings] = useState(readWatermarkSettings());
     const [discountSettings, setDiscountSettings] = useState(readDiscountSettings());
@@ -1314,11 +1430,19 @@ function App() {
     useEffect(() => { saveDiscountSettings(discountSettings); if (sharedReady)
         saveSharedAdminState({ discountSettings }); }, [discountSettings, sharedReady]);
     async function load({ silent = false, force = false } = {}) {
-        // No mostramos caché vieja al abrir: primero se conecta Firebase y después se trae la planilla actual.
-        // Esto evita que aparezcan galerías desactualizadas durante unos segundos y luego "se transformen".
+        const cached = readAlbumCache();
+        const hasCache = Array.isArray(cached) && cached.length > 0;
+        if (!force && hasCache) {
+            // Entrada rápida: se muestra lo último guardado en este dispositivo y la planilla se actualiza en segundo plano.
+            setAlbums(cached);
+            setError("");
+            setLoading(false);
+            silent = true;
+        }
         if (force) {
             try {
                 localStorage.removeItem(LS_ALBUM_CACHE_KEY);
+                localStorage.removeItem(LS_ALBUM_CACHE_META_KEY);
             }
             catch (e) { }
         }
@@ -1327,7 +1451,7 @@ function App() {
             setError("");
         }
         try {
-            const data = await fetchGalleryData();
+            const data = await fetchGalleryData({ force });
             const normalized = normalizeAlbums(data);
             if (!normalized.length)
                 throw new Error('La planilla cargó, pero no encontré fotos. Esta versión acepta links públicos en columnas URL, Imagen, Foto, Link o cualquier columna que contenga una URL de imagen/Drive.');
@@ -1337,8 +1461,14 @@ function App() {
         }
         catch (e) {
             console.error(e);
-            setAlbums([]);
-            setError((e && e.message) || 'No se pudo cargar la galería');
+            const fallback = hasCache ? cached : readAlbumCache();
+            if (Array.isArray(fallback) && fallback.length) {
+                setAlbums(fallback);
+                setError('Mostrando la última galería guardada. La planilla demoró en responder, pero ya no bloquea el ingreso. Tocá “Actualizar galería” para forzar una lectura nueva.');
+            }
+            else {
+                setError((e && e.message) || 'No se pudo cargar la galería');
+            }
         }
         finally {
             setLoading(false);
@@ -1356,12 +1486,11 @@ function App() {
             setAdminMessage('No se pudo actualizar. Probá F5 o revisá Apps Script.');
         }
     }
+    useEffect(() => { load({ silent: false, force: false }); }, []);
     useEffect(() => {
+        // Firebase ya no bloquea la galería: solamente acompaña pedidos/admin.
         if (!firebaseReady)
             return;
-        setAlbums([]);
-        setLoading(true);
-        load({ silent: false, force: true });
     }, [firebaseReady]);
     const displayAlbums = useMemo(() => albums.map(a => ({ ...a, cover: coverOverrides[a.id] || a.cover })).sort((a, b) => (b.dateTs || 0) - (a.dateTs || 0) || a.name.localeCompare(b.name)), [albums, coverOverrides]);
     const activeAlbums = useMemo(() => displayAlbums.filter(a => !a.archived), [displayAlbums]);
@@ -1377,9 +1506,9 @@ function App() {
     const currentAlbum = displayAlbums.find(a => a.id === activeAlbum) || null;
     const currentSubAlbum = ((_a = currentAlbum === null || currentAlbum === void 0 ? void 0 : currentAlbum.subalbums) === null || _a === void 0 ? void 0 : _a.find(sa => sa.id === activeSubAlbum)) || null;
     const albumPhotos = currentSubAlbum ? currentSubAlbum.photos : (currentAlbum && (!currentAlbum.subalbums || currentAlbum.subalbums.length === 0) && Array.isArray(currentAlbum.photos) ? currentAlbum.photos : []);
-    const totalAlbumPages = Math.max(1, Math.ceil(albumPhotos.length / PHOTOS_PER_PAGE));
-    const safeAlbumPage = Math.min(albumPage, totalAlbumPages);
-    const pagedPhotos = albumPhotos.slice((safeAlbumPage - 1) * PHOTOS_PER_PAGE, safeAlbumPage * PHOTOS_PER_PAGE);
+    const totalAlbumPages = 1;
+    const safeAlbumPage = 1;
+    const pagedPhotos = albumPhotos;
     useEffect(() => { if (!loading && activeAlbum && displayAlbums.length && !displayAlbums.find(a => a.id === activeAlbum)) {
         setActiveAlbum(null);
         if (location.hash.startsWith("#/album/"))
@@ -1515,7 +1644,7 @@ ${EM.image} *Cantidad:* ${cart.length} fotos
         selectedPhotos.forEach(p => msg += `${EM.dot} ${p.albumName} - ${p.name} - ${formatPrice(p.price)} - Código ${p.code}
 `);
         msg += `
-*ALIAS PARA TRANSFERENCIA:*
+*MERCADO PAGO · ALIAS:*
 ${EM.point} *${MP_ALIAS}*
 
 A continuación, te envío el comprobante.`;
@@ -2218,23 +2347,47 @@ A continuación, te envío el comprobante.`;
                             "Generar y guardar car\u00E1tula")))));
     return React.createElement("div", { className: "min-h-screen pb-36", onContextMenu: e => e.preventDefault() },
         React.createElement("div", { className: "max-w-6xl mx-auto px-4 py-8" },
-            React.createElement("header", { className: "max-w-5xl mx-auto pt-6 sm:pt-10 pb-4 px-0" },
+            React.createElement("div", { className: "la-insta-topbar" },
+                React.createElement("div", { className: "la-insta-brand" },
+                    React.createElement("div", { className: "la-insta-logo" }, React.createElement("img", { src: "https://i.postimg.cc/PrD4jg9V/Logo-LA.png", alt: BRAND })),
+                    React.createElement("div", { className: "min-w-0" },
+                        React.createElement("div", { className: "la-insta-title" }, BRAND),
+                        React.createElement("div", { className: "la-insta-sub" }, "Lucas Abraham · Fotografía deportiva · ", HANDLE))),
+                React.createElement("div", { className: "la-insta-actions" },
+                    React.createElement("button", { onClick: () => { navigator.clipboard.writeText(MP_ALIAS); setAliasCopied(true); setTimeout(() => setAliasCopied(false), 1800); }, className: "la-insta-btn la-top-alias", title: "Copiar alias" },
+                        React.createElement("img", { src: MP_LOGO, alt: "Mercado Pago" }),
+                        React.createElement("span", { className: "alias-text" }, aliasCopied ? "Alias copiado" : "Copiar alias")),
+                    React.createElement("button", { onClick: () => window.open(`https://instagram.com/${HANDLE.replace('@', '')}`, '_blank'), className: "la-insta-btn la-insta-follow", title: "Seguir en Instagram" },
+                        React.createElement("i", { className: "fab fa-instagram" }),
+                        React.createElement("span", null, "Seguir")),
+                    React.createElement("button", { onClick: () => window.open(`https://wa.me/${SELLER_PHONE}`, '_blank'), className: "la-insta-btn la-insta-whatsapp", title: "WhatsApp" },
+                        React.createElement("i", { className: "fab fa-whatsapp" }),
+                        React.createElement("span", null, "WhatsApp")),
+                    React.createElement("button", { onClick: () => setTheme(t => t === 'dark' ? 'light' : 'dark'), className: "la-insta-btn", title: "Cambiar modo" }, React.createElement("i", { className: `fas ${theme === 'dark' ? 'fa-sun' : 'fa-moon'}` })))),
+            React.createElement("header", { className: "max-w-5xl mx-auto pt-2 sm:pt-4 pb-4 px-0" },
                 React.createElement("div", { className: "sm:hidden sticky top-0 z-40 -mx-4 px-4 py-3 bg-[#070707]/90 backdrop-blur border-b border-neutral-900 mb-4 flex items-center justify-between" },
                     React.createElement("h1", { className: "text-lg font-bold" }, BRAND)),
-                React.createElement("div", { className: "grid grid-cols-[90px,1fr] sm:grid-cols-[170px,1fr] gap-5 sm:gap-10 items-start" },
+                React.createElement("div", { className: "la-profile-card grid grid-cols-[90px,1fr] sm:grid-cols-[170px,1fr] gap-5 sm:gap-10 items-start" },
                     React.createElement("div", { className: "flex justify-center" },
                         React.createElement("div", { className: "w-20 h-20 sm:w-36 sm:h-36 rounded-full p-[3px] bg-gradient-to-tr from-yellow-500 via-pink-500 to-indigo-500" },
-                            React.createElement("div", { className: "w-full h-full rounded-full bg-neutral-950 border-4 border-neutral-950 flex items-center justify-center overflow-hidden" },
+                            React.createElement("div", { className: "profile-logo-core w-full h-full rounded-full border-4 flex items-center justify-center overflow-hidden" },
                                 React.createElement("img", { src: "https://i.postimg.cc/PrD4jg9V/Logo-LA.png", className: "header-logo w-[72%] h-[72%] object-contain" })))),
                     React.createElement("div", { className: "min-w-0" },
                         React.createElement("div", { className: "flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-5 mb-4" },
                             React.createElement("h1", { className: "text-xl sm:text-2xl font-semibold truncate" }, BRAND),
                             React.createElement("div", { className: "flex gap-2 flex-wrap w-full sm:w-auto" },
-                                React.createElement("button", { onClick: () => window.open(`https://wa.me/${SELLER_PHONE}`, '_blank'), className: "w-full sm:w-auto justify-center bg-neutral-800 hover:bg-neutral-700 border border-neutral-700 px-4 py-2.5 rounded-lg text-sm font-bold inline-flex items-center" },
+                                React.createElement("button", { onClick: () => window.open(`https://wa.me/${SELLER_PHONE}`, '_blank'), className: "la-profile-pill w-full sm:w-auto justify-center inline-flex" },
                                     React.createElement("i", { className: "fab fa-whatsapp mr-2 text-emerald-400" }),
                                     "WhatsApp"),
-                                React.createElement("button", { onClick: () => { navigator.clipboard.writeText(MP_ALIAS); setCopyOk(true); setTimeout(() => setCopyOk(false), 1800); }, className: "w-full sm:w-auto justify-center bg-neutral-800 hover:bg-neutral-700 border border-neutral-700 px-4 py-2.5 rounded-lg text-sm font-bold inline-flex items-center" }, copyOk ? 'Copiado' : 'Alias'),
-                                React.createElement("button", { onClick: () => setTheme(t => t === 'dark' ? 'light' : 'dark'), className: "w-full sm:w-auto justify-center bg-neutral-800 hover:bg-neutral-700 border border-neutral-700 px-4 py-2.5 rounded-lg text-sm font-bold inline-flex items-center" },
+                                React.createElement("button", { onClick: () => window.open(`https://instagram.com/${HANDLE.replace('@', '')}`, '_blank'), className: "la-profile-pill w-full sm:w-auto justify-center inline-flex" },
+                                    React.createElement("i", { className: "fab fa-instagram mr-2 text-pink-400" }),
+                                    "Seguir en Instagram"),
+                                React.createElement("button", { onClick: () => { navigator.clipboard.writeText(MP_ALIAS); setAliasCopied(true); setTimeout(() => setAliasCopied(false), 1800); }, className: "la-profile-pill mp-copy-btn w-full sm:w-auto justify-center inline-flex" },
+                                    React.createElement("img", { src: MP_LOGO, alt: "Mercado Pago" }),
+                                    React.createElement("span", { className: "flex flex-col items-start leading-none" },
+                                        React.createElement("span", { className: "text-sky-100 font-black" }, aliasCopied ? 'Alias copiado' : 'Copiar alias'),
+                                        React.createElement("span", { className: "text-[10px] text-sky-200/75 font-bold" }, MP_ALIAS))),
+                                React.createElement("button", { onClick: () => setTheme(t => t === 'dark' ? 'light' : 'dark'), className: "la-profile-pill w-full sm:w-auto justify-center inline-flex" },
                                     React.createElement("i", { className: `fas ${theme === 'dark' ? 'fa-sun' : 'fa-moon'} mr-2` }),
                                     theme === 'dark' ? 'Claro' : 'Oscuro'))),
                         React.createElement("div", { className: "hidden sm:flex gap-8 mb-4" },
@@ -2266,7 +2419,7 @@ A continuación, te envío el comprobante.`;
                     React.createElement("div", null,
                         React.createElement("b", { className: "block" }, "HD"),
                         React.createElement("span", { className: "text-xs text-neutral-500" }, "entrega"))),
-                firebaseReady && highlightedAlbums.length > 0 && React.createElement("div", { className: "mt-5 sm:mt-7" },
+                false && highlightedAlbums.length > 0 && React.createElement("div", { className: "mt-5 sm:mt-7" },
                     React.createElement("div", { className: "flex items-center justify-between mb-2" },
                         React.createElement("p", { className: "text-[11px] sm:text-xs font-bold uppercase tracking-[0.18em] text-neutral-500" }, "Historias destacadas")),
                     React.createElement("div", { className: "overflow-x-auto pb-2" },
@@ -2281,11 +2434,11 @@ A continuación, te envío el comprobante.`;
                     React.createElement("button", { onClick: () => setBookingOpen(true), className: "booking-btn px-5 py-4 rounded-2xl font-black shrink-0" },
                         React.createElement("i", { className: "fas fa-calendar-check mr-2" }),
                         "Reservame para tu partido")),
-                !currentAlbum && firebaseReady && activeAlbums.length > 0 && React.createElement(MainHeaderBanners, { bannerSettings: bannerSettings })),
+                !currentAlbum && activeAlbums.length > 0 && React.createElement(MainHeaderBanners, { bannerSettings: bannerSettings })),
             React.createElement(Steps, null),
             React.createElement("div", { className: "mb-4" },
                 React.createElement(ProtectionNotice, null)),
-            !firebaseReady ? React.createElement(FirebaseGalleryLoading, { error: firebaseBootError, onRetry: ensureFirebaseReady }) : !currentAlbum ? React.createElement(React.Fragment, null,
+            !currentAlbum ? React.createElement(React.Fragment, null,
                 React.createElement("div", { className: "flex justify-center border-t border-neutral-900 mb-4" },
                     React.createElement("div", { className: "flex items-center gap-2 border-t-2 border-white pt-3 pb-2 px-4 -mt-[1px]" },
                         React.createElement("i", { className: "fas fa-th text-xs" }),
@@ -2393,7 +2546,7 @@ A continuación, te envío el comprobante.`;
 Hola Lucas! Quiero comprar TODAS las fotos del evento "${currentAlbum.name}".
 💰 *TOTAL: ${formatPrice(hasSiteDiscount(currentAlbum.id) ? albumPriceWithDiscount(currentAlbum) : currentAlbum.fullPrice)}*
 
-*ALIAS PARA TRANSFERENCIA:*
+*MERCADO PAGO · ALIAS:*
 👉 *${MP_ALIAS}*
 
 Te envío el comprobante para que puedas prepararlas.`);
@@ -2412,19 +2565,22 @@ Te envío el comprobante para que puedas prepararlas.`);
                                 "(",
                                 albumPhotos.length,
                                 " fotos)")),
-                        React.createElement("p", { className: "text-neutral-400 text-sm" }, "Eleg\u00ED una subcarpeta para ver y compartir sus fotos. Cada categor\u00EDa tiene su propio link."),
+                        React.createElement("p", { className: "text-neutral-400 text-sm" }, "Elegí una cobertura dentro del álbum con una vista más visual y profesional. Cada categoría conserva su propio link."),
                         ((_e = currentAlbum.subalbums) === null || _e === void 0 ? void 0 : _e.length) > 0 && React.createElement("div", { className: "subalbum-panel mt-3" },
-                            React.createElement("p", { className: "text-[11px] uppercase tracking-[0.18em] text-sky-200/70 font-black mb-2" }, "Subcarpetas disponibles"),
-                            React.createElement("div", { className: "grid sm:grid-cols-2 gap-2 subalbum-row" }, currentAlbum.subalbums.map(sa => React.createElement("button", { key: sa.id, onClick: () => { location.hash = albumHash(currentAlbum.id, sa.id); setActiveSubAlbum(sa.id); }, className: `subalbum-card ${activeSubAlbum === sa.id ? 'active' : ''}` },
-                                React.createElement("span", { className: "subalbum-folder-icon" },
-                                    React.createElement("i", { className: "fas fa-folder" })),
-                                React.createElement("span", { className: "min-w-0 flex-1" },
-                                    React.createElement("span", { className: "subalbum-title block truncate" }, sa.name),
-                                    React.createElement("span", { className: "subalbum-meta block" },
+                            React.createElement("p", { className: "text-[11px] uppercase tracking-[0.18em] text-sky-200/70 font-black mb-3" }, "Categorías del álbum"),
+                            React.createElement("div", { className: "subalbum-showcase" }, currentAlbum.subalbums.map(sa => React.createElement("button", { key: sa.id, onClick: () => { location.hash = albumHash(currentAlbum.id, sa.id); setActiveSubAlbum(sa.id); }, className: `subalbum-visual-card ${activeSubAlbum === sa.id ? 'active' : ''}` },
+                                React.createElement("div", { className: "subalbum-thumb-wrap" },
+                                    React.createElement("img", { src: sa.cover || (((sa.photos || [])[0] || {}).url) || currentAlbum.cover, loading: "lazy", decoding: "async", alt: sa.name }),
+                                    React.createElement("div", { className: "subalbum-thumb-overlay" }),
+                                    React.createElement("span", { className: "subalbum-floating-badge" },
+                                        React.createElement("i", { className: "fas fa-images" }),
                                         sa.photos.length,
-                                        " fotos \u00B7 ",
-                                        sa.dateLabel || currentAlbum.dateLabel || 'sin fecha')),
-                                React.createElement("i", { className: "fas fa-chevron-right text-xs opacity-70" })))))),
+                                        " fotos")),
+                                React.createElement("div", { className: "subalbum-copy-wrap" },
+                                    React.createElement("p", { className: "subalbum-copy-title" }, sa.name),
+                                    React.createElement("p", { className: "subalbum-copy-meta" },
+                                        sa.dateLabel || currentAlbum.dateLabel || 'sin fecha',
+                                        " · abrir cobertura"))))))),
                     React.createElement("div", { className: "flex flex-col gap-2 w-full lg:w-auto" },
                         React.createElement("div", { className: "bg-neutral-900 border border-neutral-800 rounded-xl p-1 grid grid-cols-3 gap-1 w-full sm:w-auto" },
                             React.createElement("button", { onClick: () => setViewMode('mosaic'), className: `px-3 py-2.5 rounded-lg text-[11px] sm:text-xs font-bold ${viewMode === 'mosaic' ? 'bg-white text-black' : 'text-neutral-300'}` },
@@ -2436,9 +2592,9 @@ Te envío el comprobante para que puedas prepararlas.`);
                             React.createElement("button", { onClick: () => setViewMode('gallery'), className: `px-3 py-2.5 rounded-lg text-[11px] sm:text-xs font-bold ${viewMode === 'gallery' ? 'bg-white text-black' : 'text-neutral-300'}` },
                                 React.createElement("i", { className: "fas fa-images mr-1" }),
                                 "Galer\u00EDa")),
-                        React.createElement("button", { onClick: () => { navigator.clipboard.writeText(albumUrl(currentAlbum.id, activeSubAlbum)); setCopyOk(true); setTimeout(() => setCopyOk(false), 1800); }, className: "w-full bg-neutral-900 border border-neutral-800 hover:bg-neutral-800 text-sm px-4 py-3 rounded-xl font-bold" },
+                        React.createElement("button", { onClick: () => { navigator.clipboard.writeText(albumUrl(currentAlbum.id, activeSubAlbum)); setLinkCopied(true); setTimeout(() => setLinkCopied(false), 1800); }, className: "w-full bg-neutral-900 border border-neutral-800 hover:bg-neutral-800 text-sm px-4 py-3 rounded-xl font-bold" },
                             React.createElement("i", { className: "fas fa-link mr-2" }),
-                            copyOk ? "URL copiada" : "Copiar link actual"))),
+                            linkCopied ? "URL copiada" : "Copiar link actual"))),
                 viewMode === 'gallery' && focusPhoto && React.createElement("div", { className: "bg-neutral-950 border border-neutral-800 rounded-3xl p-3 sm:p-4 mb-4" },
                     React.createElement("div", { onTouchStart: e => { var _a, _b; return touchStartX.current = (_b = (_a = e.touches) === null || _a === void 0 ? void 0 : _a[0]) === null || _b === void 0 ? void 0 : _b.clientX; }, onTouchEnd: handleSwipeEnd(moveFocus), className: "relative rounded-2xl overflow-hidden bg-black min-h-[260px] sm:min-h-[320px] flex items-center justify-center" },
                         React.createElement("img", { src: focusPhoto.fullUrl || focusPhoto.url, loading: "eager", decoding: "async", className: "max-h-[72vh] w-full object-contain" }),
@@ -2459,7 +2615,7 @@ Te envío el comprobante para que puedas prepararlas.`);
                                 " \u00B7 ",
                                 formatPrice(focusPhoto.price))),
                         React.createElement("button", { onClick: () => toggle(focusPhoto.id), className: `${cart.includes(focusPhoto.id) ? 'buy-btn' : 'buy-btn'} w-full sm:w-auto px-4 py-3 rounded-xl font-black text-sm` }, cart.includes(focusPhoto.id) ? 'Agregada al carrito' : 'Agregar al carrito'))),
-                totalAlbumPages > 1 && React.createElement("div", { className: "page-panel rounded-2xl p-3 mb-4 flex flex-col gap-3" },
+                false && React.createElement("div", { className: "page-panel rounded-2xl p-3 mb-4 flex flex-col gap-3" },
                     React.createElement("div", { className: "flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2" },
                         React.createElement("p", { className: "page-current-badge text-sm" },
                             React.createElement("i", { className: "fas fa-file-lines mr-2" }),
@@ -2481,10 +2637,10 @@ Te envío el comprobante para que puedas prepararlas.`);
                         React.createElement("button", { disabled: safeAlbumPage >= totalAlbumPages, onClick: () => setAlbumPage(p => Math.min(totalAlbumPages, p + 1)), className: "disabled:opacity-40 buy-btn px-4 py-2.5 rounded-xl font-black text-sm shrink-0" },
                             "Siguiente",
                             React.createElement("i", { className: "fas fa-chevron-right ml-2" })))),
-                React.createElement("div", { className: `${viewMode === 'large' ? 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4' : 'grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-7 gap-2 sm:gap-3'} pb-20` }, pagedPhotos.map(photo => {
+                React.createElement("div", { className: `${viewMode === 'mosaic' ? 'album-mosaic-grid' : viewMode === 'large' ? 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4' : 'grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-7 gap-2 sm:gap-3'} pb-20` }, pagedPhotos.map((photo, photoIndex) => {
                     const isSelected = cart.includes(photo.id);
                     const isFocus = (focusPhoto === null || focusPhoto === void 0 ? void 0 : focusPhoto.id) === photo.id;
-                    return React.createElement("div", { key: photo.id, className: `contain-strict relative rounded-xl overflow-hidden ${viewMode === 'large' ? 'aspect-[4/5]' : 'aspect-[4/5]'} cursor-pointer transition-all duration-300 ${isSelected ? 'ring-2 ring-indigo-500 scale-[0.97] shadow-[0_0_30px_rgba(99,102,241,0.2)]' : isFocus && viewMode === 'gallery' ? 'ring-2 ring-emerald-400 bg-neutral-900' : 'hover:opacity-90 bg-neutral-900 border border-neutral-800'}` },
+                    return React.createElement("div", { key: photo.id, className: `contain-strict mosaic-tile relative overflow-hidden ${viewMode === 'mosaic' ? getMosaicSpanClass(photo, photoIndex, pagedPhotos.length) : 'rounded-xl aspect-[4/5]'} cursor-pointer transition-all duration-300 ${isSelected ? 'ring-2 ring-indigo-500 scale-[0.97] shadow-[0_0_30px_rgba(99,102,241,0.2)]' : isFocus && viewMode === 'gallery' ? 'ring-2 ring-emerald-400 bg-neutral-900' : 'hover:opacity-90 bg-neutral-900 border border-neutral-800'}` },
                         React.createElement("button", { onClick: () => viewMode === 'gallery' ? setFocusPhoto(photo) : setViewer(photo), className: "absolute inset-0 z-10", "aria-label": "Ver foto" }),
                         React.createElement("img", { src: photo.url, loading: "lazy", decoding: "async", className: "w-full h-full object-cover pointer-events-none" }),
                         React.createElement(PreviewWatermark, { ...wmProps(photo.albumId) }),
@@ -2495,7 +2651,7 @@ Te envío el comprobante para que puedas prepararlas.`);
                         React.createElement("button", { onClick: (e) => { e.stopPropagation(); toggle(photo.id); }, className: `absolute top-2 right-2 sm:top-3 sm:right-3 w-8 h-8 rounded-full flex items-center justify-center transition-all duration-300 z-20 ${isSelected ? 'bg-indigo-500 text-white scale-110 shadow-lg' : 'bg-black/50 text-white/60 border border-white/20 backdrop-blur-sm'}` },
                             React.createElement("i", { className: `fas ${isSelected ? 'fa-check' : 'fa-plus'} text-sm` })));
                 })),
-                totalAlbumPages > 1 && React.createElement("div", { className: "page-panel rounded-2xl p-3 mt-[-64px] mb-6 flex flex-col gap-3" },
+                false && React.createElement("div", { className: "page-panel rounded-2xl p-3 mt-[-64px] mb-6 flex flex-col gap-3" },
                     React.createElement("div", { className: "flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2" },
                         React.createElement("p", { className: "page-current-badge text-sm" },
                             React.createElement("i", { className: "fas fa-file-lines mr-2" }),
@@ -2513,77 +2669,60 @@ Te envío el comprobante para que puedas prepararlas.`);
                             "Siguiente",
                             React.createElement("i", { className: "fas fa-chevron-right ml-2" })))),
                 React.createElement(PromoBanners, { bannerSettings: bannerSettings }))),
-        checkoutOpen && React.createElement(Modal, { onClose: () => setCheckoutOpen(false), max: "max-w-5xl" },
-            React.createElement("div", { className: "buy-gradient rounded-3xl p-4 sm:p-5 -m-1" },
-                React.createElement("div", { className: "flex items-start justify-between gap-3 mb-4" },
+        checkoutOpen && React.createElement(Modal, { onClose: () => setCheckoutOpen(false), max: "max-w-lg" },
+            React.createElement("div", { className: "checkout-simple-shell rounded-3xl p-4 sm:p-5 -m-1" },
+                React.createElement("div", { className: "mb-4" },
+                    React.createElement("p", { className: "inline-flex items-center gap-2 px-3 py-1 rounded-full bg-sky-400/15 border border-sky-300/30 text-sky-100 text-[11px] font-black uppercase tracking-[0.16em] mb-3" },
+                        React.createElement("i", { className: "fas fa-bag-shopping" }),
+                        " Revisar compra"),
+                    React.createElement("h2", { className: "text-2xl sm:text-3xl font-black mb-1 text-white" }, "Confirmá tu compra"),
+                    React.createElement("p", { className: "text-sky-100/75 text-sm leading-relaxed" }, "Copiá el alias, transferí por Mercado Pago y enviá el comprobante por WhatsApp.")),
+                React.createElement("div", { className: "checkout-simple-total mb-3" },
                     React.createElement("div", null,
-                        React.createElement("p", { className: "inline-flex items-center gap-2 px-3 py-1 rounded-full bg-sky-400/15 border border-sky-300/30 text-sky-100 text-[11px] font-black uppercase tracking-[0.16em] mb-3" },
-                            React.createElement("i", { className: "fas fa-bag-shopping" }),
-                            " Revisar compra"),
-                        React.createElement("h2", { className: "text-2xl sm:text-3xl font-black mb-1 text-white" }, "Confirm\u00E1 tus fotos antes de comprar"),
-                        React.createElement("p", { className: "text-sky-100/75 text-sm leading-relaxed" }, "Toc\u00E1 cualquier foto para verla grande sin salir de esta revisi\u00F3n. Siempre se muestra con marca de agua."))),
-                React.createElement("div", { className: "grid lg:grid-cols-[1.25fr,.75fr] gap-5" },
-                    React.createElement("div", { className: "bg-black/34 border border-sky-300/15 rounded-3xl p-3 sm:p-4 max-h-[62vh] overflow-y-auto backdrop-blur-xl" },
-                        React.createElement("h3", { className: "font-black mb-3 text-white" }, "Fotos seleccionadas"),
-                        React.createElement("div", { className: "grid gap-3" }, selectedPhotos.map(p => React.createElement("div", { key: p.id, className: "flex gap-3 bg-white/6 border border-white/10 rounded-2xl p-3 shadow-[inset_0_1px_0_rgba(255,255,255,.08)]" },
-                            React.createElement("button", { onClick: () => setViewer(p), className: "relative w-16 h-20 shrink-0 overflow-hidden rounded-xl bg-black border border-white/10 group" },
-                                React.createElement("img", { src: p.url, className: "w-full h-full object-cover group-hover:scale-110 transition duration-500" }),
-                                React.createElement(PreviewWatermark, { ...wmProps(p.albumId) })),
-                            React.createElement("div", { className: "min-w-0 flex-1" },
-                                React.createElement("p", { className: "font-bold text-sm truncate text-white" }, p.name),
-                                React.createElement("p", { className: "text-xs text-sky-100/70 truncate" }, p.albumName),
-                                React.createElement("p", { className: "text-xs text-sky-200/50" },
-                                    "C\u00F3digo ",
-                                    p.code),
-                                React.createElement("button", { onClick: () => setViewer(p), className: "mt-2 text-[11px] text-sky-200 font-bold" },
-                                    React.createElement("i", { className: "fas fa-magnifying-glass-plus mr-1" }),
-                                    "Ver foto")),
-                            React.createElement("div", { className: "text-right" },
-                                React.createElement("p", { className: "font-black text-sm text-white" }, formatPrice(p.price)),
-                                React.createElement("button", { onClick: () => toggle(p.id), className: "text-xs text-sky-200/80 mt-2 hover:text-white" }, "Quitar")))))),
-                    React.createElement("div", { className: "bg-black/42 border border-sky-300/15 rounded-3xl p-4 backdrop-blur-xl" },
-                        React.createElement("h3", { className: "font-black mb-3 text-white" }, "Resumen"),
-                        React.createElement("div", { className: "space-y-2 text-sm" },
-                            React.createElement("div", { className: "flex justify-between" },
-                                React.createElement("span", { className: "text-sky-100/65" }, "Cantidad"),
-                                React.createElement("b", { className: "text-white" },
-                                    cart.length,
-                                    " fotos")),
-                            React.createElement("div", { className: "flex justify-between" },
-                                React.createElement("span", { className: "text-sky-100/65" }, "Subtotal"),
-                                React.createElement("b", { className: "text-white" }, formatPrice(regular))),
-                            React.createElement("div", { className: "flex justify-between" },
-                                React.createElement("span", { className: "text-sky-100/65" }, "Descuento por cantidad/web"),
-                                React.createElement("b", { className: "text-sky-200" }, formatPrice(regular - total))),
-                            appliedCoupon && React.createElement("div", { className: "flex justify-between text-sky-300" },
-                                React.createElement("span", null,
-                                    "Cup\u00F3n ",
-                                    appliedCoupon.code),
-                                React.createElement("b", null,
-                                    "-",
-                                    formatPrice(couponSavings))),
-                            React.createElement("div", { className: "border-t border-sky-300/20 pt-3 flex justify-between items-end" },
-                                React.createElement("span", { className: "text-sky-100/70" }, "Total final"),
-                                React.createElement("b", { className: "text-3xl text-white drop-shadow-[0_0_18px_rgba(96,165,250,.35)]" }, formatPrice(checkoutTotal)))),
-                        React.createElement("div", { className: "mt-5 bg-white/6 border border-white/10 rounded-2xl p-3" },
-                            React.createElement("label", { className: "block text-xs text-sky-100/65 mb-2" }, "Cup\u00F3n de descuento"),
-                            React.createElement("div", { className: "flex flex-col sm:flex-row gap-2" },
-                                React.createElement("input", { value: checkoutCoupon, onChange: e => setCheckoutCoupon(e.target.value), placeholder: "Ingresar cup\u00F3n", className: "flex-1 bg-black/55 border border-sky-300/20 rounded-xl px-3 py-2 outline-none uppercase text-white" }),
-                                React.createElement("button", { onClick: applyCoupon, className: "buy-btn px-4 py-2 rounded-xl font-black text-sm transition-all" }, "Aplicar")),
-                            couponMessage && React.createElement("p", { className: `text-xs mt-2 ${appliedCoupon ? 'text-sky-200' : 'text-amber-300'}` }, couponMessage)),
-                        React.createElement("div", { className: "mp-alert mt-5 rounded-2xl p-3 text-sm leading-relaxed" },
-                            React.createElement("div", { className: "flex gap-3 items-start" },
-                                React.createElement("div", { className: "w-9 h-9 rounded-xl bg-sky-400/25 border border-sky-200/30 flex items-center justify-center shrink-0" },
-                                    React.createElement("i", { className: "fas fa-wallet text-sky-100" })),
-                                React.createElement("p", null,
-                                    "Al confirmar, se abrir\u00E1 el chat de WhatsApp con ",
-                                    React.createElement("b", null, "Lucas Abraham"),
-                                    ". Ah\u00ED deber\u00E1s enviar el comprobante de transferencia al alias ",
-                                    React.createElement("b", null, MP_ALIAS),
-                                    " de Mercado Pago."))),
-                        React.createElement("button", { type: "button", onClick: sendOrder, disabled: !cart.length, className: `final-buy-btn mt-4 w-full py-4 rounded-2xl font-black transition-all flex items-center justify-center ${!cart.length ? 'opacity-40 pointer-events-none' : ''}` },
-                            React.createElement("i", { className: "fab fa-whatsapp mr-2" }),
-                            "COMPRAR"))))),
+                        React.createElement("p", { className: "text-[11px] uppercase tracking-[0.16em] text-sky-100/70 font-black" }, "Total a pagar"),
+                        React.createElement("p", { className: "text-xs text-sky-100/65 mt-1" },
+                            cart.length,
+                            " fotos seleccionadas")),
+                    React.createElement("b", { className: "text-3xl sm:text-4xl text-white leading-none" }, formatPrice(checkoutTotal))),
+                React.createElement("div", { className: "checkout-simple-card mb-3" },
+                    React.createElement("div", { className: "checkout-simple-row" },
+                        React.createElement("span", { className: "text-sky-100/70" }, "Subtotal"),
+                        React.createElement("b", { className: "text-white" }, formatPrice(regular))),
+                    (regular > total || couponSavings > 0) && React.createElement("div", { className: "checkout-simple-row" },
+                        React.createElement("span", { className: "text-sky-100/70" }, "Descuentos"),
+                        React.createElement("b", { className: "text-sky-200" },
+                            "-",
+                            formatPrice((regular - total) + couponSavings))),
+                    appliedCoupon && React.createElement("div", { className: "checkout-simple-row" },
+                        React.createElement("span", { className: "text-sky-100/70" }, "Cupón"),
+                        React.createElement("b", { className: "text-sky-200" }, appliedCoupon.code)),
+                    React.createElement("div", { className: "checkout-simple-row" },
+                        React.createElement("span", { className: "text-sky-100/70" }, "Entrega"),
+                        React.createElement("b", { className: "text-white" }, "WhatsApp"))),
+                React.createElement("div", { className: "checkout-simple-card mb-3" },
+                    React.createElement("div", { className: "flex items-start justify-between gap-3 mb-3" },
+                        React.createElement("div", null,
+                            React.createElement("p", { className: "text-[11px] uppercase tracking-[0.16em] text-sky-100/70 font-black mb-1" }, "Forma de pago"),
+                            React.createElement("h3", { className: "text-base font-black text-white" }, "Transferencia por Mercado Pago")),
+                        React.createElement("img", { src: MP_LOGO, alt: "Mercado Pago", className: "checkout-pay-logo" })),
+                    React.createElement("button", { type: "button", onClick: () => { navigator.clipboard.writeText(MP_ALIAS); setAliasCopied(true); setTimeout(() => setAliasCopied(false), 1800); }, className: "checkout-simple-alias" },
+                        React.createElement("img", { src: MP_LOGO, alt: "Mercado Pago" }),
+                        React.createElement("span", { className: "min-w-0 flex-1 text-left" },
+                            React.createElement("span", { className: "block text-[11px] uppercase tracking-[0.14em] font-black opacity-70" }, aliasCopied ? "Alias copiado" : "Copiar alias"),
+                            React.createElement("span", { className: "block text-base font-black truncate" }, MP_ALIAS)),
+                        React.createElement("i", { className: `fas ${aliasCopied ? 'fa-circle-check' : 'fa-copy'} text-lg` }))),
+                React.createElement("details", { className: "checkout-simple-card checkout-simple-coupon mb-3" },
+                    React.createElement("summary", { className: "flex items-center justify-between gap-3 text-sm font-black text-white" },
+                        React.createElement("span", null, "Tengo cupón de descuento"),
+                        React.createElement("i", { className: "fas fa-chevron-down text-xs text-sky-200" })),
+                    React.createElement("div", { className: "flex flex-col sm:flex-row gap-2" },
+                        React.createElement("input", { value: checkoutCoupon, onChange: e => setCheckoutCoupon(e.target.value), placeholder: "Ingresar cupón", className: "flex-1 bg-black/55 border border-sky-300/20 rounded-xl px-3 py-3 outline-none uppercase text-white" }),
+                        React.createElement("button", { onClick: applyCoupon, className: "buy-btn px-4 py-3 rounded-xl font-black text-sm transition-all" }, "Aplicar")),
+                    couponMessage && React.createElement("p", { className: `text-xs mt-2 ${appliedCoupon ? 'text-sky-200' : 'text-amber-300'}` }, couponMessage)),
+                React.createElement("button", { type: "button", onClick: sendOrder, disabled: !cart.length, className: `final-buy-btn checkout-simple-cta w-full py-4 rounded-2xl font-black transition-all flex items-center justify-center ${!cart.length ? 'opacity-40 pointer-events-none' : ''}` },
+                    React.createElement("i", { className: "fab fa-whatsapp mr-2" }),
+                    "ENVIAR COMPROBANTE"),
+                React.createElement("p", { className: "text-center text-[11px] text-sky-100/65 leading-relaxed mt-3" }, "Se abre WhatsApp con el pedido listo para enviarle el comprobante a Lucas."))),
         bookingOpen && React.createElement(BookingModal, { onClose: () => setBookingOpen(false) }),
         viewer && React.createElement(Modal, { onClose: () => setViewer(null), max: "max-w-6xl" },
             React.createElement("div", { className: "grid lg:grid-cols-[1.2fr,.8fr] gap-5 items-start" },
