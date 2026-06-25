@@ -23,6 +23,10 @@
   <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js"></script>
   <style>
     body{font-family:Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:#070707;color:#fff;-webkit-tap-highlight-color:transparent}
+
+    /* Estabilidad móvil: evita pantalla blanca aunque el celular tenga tema claro o caché previo */
+    html,body,#root{min-height:100%;background:#070707;color:#fff}
+    @media(max-width:768px){body{background:#070707!important;color:#fff!important}#root{background:#070707!important}.app-boot-fallback{background:radial-gradient(circle at 50% 18%,rgba(255,255,255,.10),transparent 34%),linear-gradient(135deg,#030303,#0b0b0f 45%,#000)!important;color:#fff!important}.app-boot-card,.loading-card{background:rgba(12,12,14,.88)!important;color:#fff!important;border-color:rgba(255,255,255,.12)!important}.app-boot-card *,.loading-card *{color:#fff!important}}
     img{-webkit-user-drag:none;user-select:none}
     .glass{background:rgba(20,20,20,.88);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px)}
     .fade{animation:fade .28s ease-out forwards}.up{animation:up .35s cubic-bezier(.16,1,.3,1) forwards}
@@ -106,6 +110,8 @@
     body.light-mode .loading-card{background:rgba(255,255,255,.84);color:#111827;border-color:#d4d4d8}
     body.light-mode .loading-logo-wrap{background:#111827}
     @media(max-width:640px){.loading-card{border-radius:28px;padding:26px 20px}.loading-logo-wrap{width:86px;height:86px}.promo-badge{width:52px;height:52px;font-size:13px}.promo-badge small{font-size:7px}}
+
+    @media(max-width:768px){body.light-mode{background:#070707!important;color:#fff!important}body.light-mode #root{background:#070707!important}body.light-mode .text-white,body.light-mode .text-neutral-100,body.light-mode .text-neutral-200,body.light-mode .text-neutral-300,body.light-mode .text-neutral-400,body.light-mode .text-neutral-500{color:inherit!important}body.light-mode .bg-neutral-950,body.light-mode .bg-neutral-900,body.light-mode .bg-black{background:rgba(10,10,12,.96)!important;color:#fff!important}body.light-mode input{background:#050505!important;color:#fff!important;-webkit-text-fill-color:#fff!important}body.light-mode input::placeholder{color:rgba(255,255,255,.55)!important}}
 
 
 
@@ -309,6 +315,16 @@
         root.innerHTML='<div style="min-height:100vh;background:#070707;color:white;font-family:Arial,sans-serif;display:flex;align-items:center;justify-content:center;padding:24px;"><div style="max-width:620px;background:#171717;border:1px solid rgba(239,68,68,.45);border-radius:24px;padding:28px;"><h1 style="font-size:24px;margin:0 0 12px;font-weight:800;">La app no pudo iniciar</h1><p style="color:#ddd;line-height:1.5;">Se detectó un error de JavaScript. Probá actualizar o subí la última versión corregida.</p><pre style="white-space:pre-wrap;background:#050505;border-radius:14px;padding:14px;color:#fecaca;">'+(msg||'Error desconocido')+'</pre></div></div>';
       }
     },900);
+  });
+
+  window.addEventListener('DOMContentLoaded', function(){
+    try { localStorage.setItem('la_theme_mode_v1', 'dark'); document.body.classList.remove('light-mode'); } catch(e) {}
+    setTimeout(function(){
+      var root=document.getElementById('root');
+      if(root && !window.LA_APP_RENDERED && !root.innerText.trim().includes('Cargando')){
+        root.innerHTML='<div class="app-boot-fallback"><div class="app-boot-card"><img src="https://i.postimg.cc/PrD4jg9V/Logo-LA.png" alt="lucasabraham.ph"><h1 style="font-size:22px;font-weight:950;margin:0 0 6px;color:#fff!important;">Cargando galería</h1><p style="color:#d4d4d8!important;font-size:13px;line-height:1.45;margin:0;">Preparando álbumes y fotos...</p><div class="app-boot-bar"><span></span></div></div></div>';
+      }
+    }, 800);
   });
 </script>
 
@@ -659,18 +675,12 @@ function mergeOrders(...lists) {
     });
     return Array.from(map.values()).sort((a, b) => new Date(b.date || 0) - new Date(a.date || 0));
 }
-function systemTheme() { try {
-    return window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
-}
-catch (_a) {
+function systemTheme() { return 'dark'; }
+function readTheme() {
+    // Estabilidad móvil: arrancamos siempre en modo oscuro para evitar pantallas blancas por preferencias del sistema o caché viejo.
+    // El usuario puede cambiar el modo desde el botón, pero cada carga limpia vuelve a oscuro.
     return 'dark';
-} }
-function readTheme() { try {
-    return localStorage.getItem(LS_THEME_KEY) || systemTheme();
 }
-catch (_a) {
-    return systemTheme();
-} }
 function saveTheme(v) { try {
     localStorage.setItem(LS_THEME_KEY, v);
 }
@@ -1329,6 +1339,7 @@ function FirebaseGalleryLoading({ error = "", onRetry = null } = {}) {
 
 function App() {
     var _a, _b, _c, _d, _e;
+    try { window.LA_APP_RENDERED = true; window.LA_APP_MOBILE_OK = true; } catch(e) {}
     const [route, setRoute] = useState(location.hash || "#/galeria");
     const [albums, setAlbums] = useState([]);
     const [loading, setLoading] = useState(true);
