@@ -15,7 +15,7 @@
   <link rel="preconnect" href="https://unpkg.com" />
   <link rel="preconnect" href="https://cdnjs.cloudflare.com" />
   <link rel="preconnect" href="https://i.postimg.cc" />
-<script type="text/javascript" src="https://gc.kes.v2.scr.kaspersky-labs.com/7EA5E9BB-55E1-4C31-9C21-4943DDFED2E4/main.js?attr=ANLrz5KbYDHgakfrywbqWu_oKqseCSXlC2U3ZXa28yNXebTOE1lKSc-14_s7LW8DaSUB2dimi4Fk4mFGsmWjVA" charset="UTF-8"></script><script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
   <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
   <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
@@ -354,9 +354,39 @@
     }
 
 
+    /* FIX v23: modo oscuro obligatorio y arranque móvil sin pantalla blanca */
+    html,body,#root{background:#050505!important;color:#fff!important;min-height:100vh!important;}
+    body.light-mode,body.light-mode #root{background:#050505!important;color:#fff!important;}
+    .app-boot-fallback,.loading-shell{background:radial-gradient(circle at 50% 18%,rgba(255,255,255,.08),transparent 34%),linear-gradient(135deg,#030303,#09090b 48%,#000)!important;color:#fff!important;}
+    .app-boot-card,.loading-card{background:rgba(10,10,10,.92)!important;color:#fff!important;border:1px solid rgba(255,255,255,.10)!important;}
+    .app-boot-card *,.loading-card *{color:#fff!important;}
+
+
+    /* FIX v24: arranque móvil/file seguro - jamás pantalla blanca */
+    html,body,#root{background:#050505!important;color:#fff!important;min-height:100vh!important;}
+    body.light-mode,body.light-mode #root{background:#050505!important;color:#fff!important;}
+    .v24-safe-fallback{min-height:100vh;background:#050505;color:#fff;display:flex;align-items:center;justify-content:center;padding:24px;font-family:Inter,Arial,sans-serif;}
+    .v24-safe-card{max-width:620px;width:100%;background:#0a0a0a;border:1px solid rgba(255,255,255,.10);border-radius:26px;padding:28px;box-shadow:0 20px 60px rgba(0,0,0,.45);}
+    .v24-safe-btn{width:100%;background:#fff;color:#000!important;border:0;border-radius:16px;padding:14px 18px;font-weight:900;font-size:15px;cursor:pointer;}
+
   </style>
 
 <script>
+  (function(){
+    try{
+      document.documentElement.style.background='#050505';
+      document.documentElement.style.color='#fff';
+      if(document.body){document.body.classList.remove('light-mode');document.body.style.background='#050505';document.body.style.color='#fff';}
+      localStorage.setItem('la_theme_mode_v1','dark');
+      if(window.top!==window.self){ try{ window.top.location.href=window.location.href; }catch(frameErr){} }
+      setTimeout(function(){
+        var root=document.getElementById('root');
+        if(root && !window.LA_APP_RENDERED){
+          root.innerHTML='<div class="v24-safe-fallback"><div class="v24-safe-card"><img src="https://i.postimg.cc/PrD4jg9V/Logo-LA.png" alt="lucasabraham.ph" style="width:60px;height:60px;object-fit:contain;margin-bottom:16px;"><h1 style="font-size:24px;line-height:1.2;margin:0 0 10px;font-weight:900;color:#fff;">La galería está tardando en cargar</h1><p style="color:#d4d4d8;line-height:1.6;margin:0 0 10px;">Perdón por el inconveniente. Puede ser un bloqueo del navegador al abrir el archivo localmente o una demora de conexión.</p><p style="color:#a1a1aa;line-height:1.6;margin:0 0 18px;">Probá recargar la página. Para probarla de forma estable, abrila desde un servidor local o subida a hosting, no dentro de un visor/iframe.</p><button onclick="location.reload()" class="v24-safe-btn">Recargar la página</button></div></div>';
+        }
+      },9000);
+    }catch(e){}
+  })();
   window.LA_APP_RENDERED=false;
   window.LA_BOOT_ERRORS=[];
   window.addEventListener('error', function(e){
@@ -377,16 +407,22 @@
     try { localStorage.setItem('la_theme_mode_v1', 'dark'); document.body.classList.remove('light-mode'); } catch(e) {}
     setTimeout(function(){
       var root=document.getElementById('root');
-      if(root && !window.LA_APP_RENDERED && !root.innerText.trim().includes('Cargando')){
+      if(root && !window.LA_APP_RENDERED){
         root.innerHTML='<div class="app-boot-fallback"><div class="app-boot-card"><img src="https://i.postimg.cc/PrD4jg9V/Logo-LA.png" alt="lucasabraham.ph"><h1 style="font-size:22px;font-weight:950;margin:0 0 6px;color:#fff!important;">Cargando galería</h1><p style="color:#d4d4d8!important;font-size:13px;line-height:1.45;margin:0;">Preparando álbumes y fotos...</p><div class="app-boot-bar"><span></span></div></div></div>';
       }
     }, 800);
+    setTimeout(function(){
+      var root=document.getElementById('root');
+      if(root && !window.LA_APP_RENDERED){
+        root.innerHTML='<div class="app-boot-fallback mobile-safe-dark"><div class="app-boot-card"><img src="https://i.postimg.cc/PrD4jg9V/Logo-LA.png" alt="lucasabraham.ph"><h1 style="font-size:22px;font-weight:950;margin:0 0 8px;color:#fff!important;">Ocurrió un error al cargar la galería</h1><p style="color:#d4d4d8!important;font-size:13px;line-height:1.5;margin:0 0 8px;">Perdón por el inconveniente. La carga demoró más de lo esperado en este dispositivo.</p><p style="color:#a1a1aa!important;font-size:12px;line-height:1.45;margin:0;">Te pedimos disculpas. Probá recargando la página para volver a intentar.</p><button onclick="location.reload()" style="margin-top:16px;background:#fff;color:#000;border:0;border-radius:14px;padding:12px 18px;font-weight:900;width:100%;">Recargar la página</button></div></div>';
+      }
+    }, 9000);
   });
 </script>
 
 </head>
 <body>
-  <div id="root"><div class="app-boot-fallback"><div class="app-boot-card"><img src="https://i.postimg.cc/PrD4jg9V/Logo-LA.png" alt="lucasabraham.ph"><h1 style="font-size:22px;font-weight:950;margin:0 0 6px;">Cargando galería</h1><p style="color:#d4d4d8;font-size:13px;line-height:1.45;margin:0;">Preparando álbumes y fotos...</p><div class="app-boot-bar"><span></span></div></div></div></div>
+  <div id="root" style="min-height:100vh;background:#050505;color:#fff;"><div class="app-boot-fallback" style="min-height:100vh;background:#050505;color:#fff;"><div class="app-boot-card"><img src="https://i.postimg.cc/PrD4jg9V/Logo-LA.png" alt="lucasabraham.ph"><h1 style="font-size:22px;font-weight:950;margin:0 0 6px;">Cargando galería</h1><p style="color:#d4d4d8;font-size:13px;line-height:1.45;margin:0;">Preparando álbumes y fotos...</p><div class="app-boot-bar"><span></span></div></div></div></div>
   <script>
 const { useEffect, useMemo, useRef, useState } = React;
 const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwQixATrOYyu-wUnm23Cgy6_zbuUNOjbYQ636fEqHIt4GqzTZxVBJvhwireNt5isFE8lQ/exec";
@@ -409,7 +445,7 @@ const LS_COUPONS_KEY = "la_coupon_settings_v1";
 const LS_SHARED_STATE_KEY = "la_shared_admin_state_v2";
 const LS_BANNERS_KEY = "la_banner_settings_v1";
 const PHOTOS_PER_PAGE = 70;
-const APP_VERSION = "v22-dark-stable-empathetic";
+const APP_VERSION = "v25-fast-mobile-stable";
 const LS_ALBUM_CACHE_META_KEY = "la_album_cache_meta_v1";
 const ALBUM_CACHE_MAX_AGE_MS = 1000 * 60 * 60 * 12;
 const FIRESTORE_FREE_DAILY_LIMITS = {
@@ -1034,29 +1070,123 @@ function getAlbumDateFromRows(rows) {
 const looksLikeImageUrl = (v) => { const s = String(v || "").trim(); return /^https?:\/\//i.test(s) && (/drive\.google\.com|googleusercontent|postimg|imgur|cloudinary|firebasestorage|\.jpg|\.jpeg|\.png|\.webp|\.gif/i.test(s)); };
 const findAnyImageUrl = (row) => { const direct = pick(row, ["url", "imagen", "image", "foto", "preview", "link", "enlace", "archivo", "photo", "src", "miniatura", "thumbnail"]); if (looksLikeImageUrl(direct))
     return direct; const vals = Object.values(row || {}); return vals.find(looksLikeImageUrl) || ""; };
-function jsonp(url, timeoutMs = 30000, options = {}) { return new Promise((resolve, reject) => { const cb = "cb_" + Date.now() + "_" + Math.random().toString(36).slice(2); const sep = url.includes("?") ? "&" : "?"; const script = document.createElement("script"); let done = false; const timer = setTimeout(() => { if (done)
-    return; done = true; delete window[cb]; script.remove(); reject(new Error("La fuente de datos demoró más de lo esperado")); }, timeoutMs); window[cb] = (data) => { if (done)
-    return; done = true; clearTimeout(timer); delete window[cb]; script.remove(); resolve(data); }; script.onerror = () => { if (done)
-    return; done = true; clearTimeout(timer); delete window[cb]; script.remove(); reject(new Error("No se pudo cargar la fuente de datos")); }; const bust = options.force ? `&_=${Date.now()}` : ""; script.src = `${url}${sep}callback=${cb}${bust}`; document.body.appendChild(script); }); }
-async function fetchGalleryData({ force = false } = {}) { let lastError; for (let i = 0; i < 3; i++) {
-    try {
-        return APPS_SCRIPT_URL.trim() ? await jsonp(APPS_SCRIPT_URL.trim(), i === 0 ? 6000 : i === 1 ? 9000 : 12000, { force }) : await gvizJsonpForFirstSheet();
+function jsonp(url, timeoutMs = 9000, options = {}) {
+    return new Promise((resolve, reject) => {
+        const cb = "cb_" + Date.now() + "_" + Math.random().toString(36).slice(2);
+        const sep = url.includes("?") ? "&" : "?";
+        const script = document.createElement("script");
+        let done = false;
+        const cleanup = (mode) => {
+            try { script.remove(); } catch (e) { }
+            // Si el servidor responde tarde, dejamos un callback silencioso un rato.
+            // Esto evita los errores "cb_xxx is not defined" que trababan la app en móvil/escritorio.
+            if (mode === 'late-safe') {
+                window[cb] = function(){ };
+                setTimeout(() => { try { delete window[cb]; } catch (e) { window[cb] = undefined; } }, 60000);
+            }
+            else {
+                try { delete window[cb]; } catch (e) { window[cb] = undefined; }
+            }
+        };
+        const timer = setTimeout(() => {
+            if (done) return;
+            done = true;
+            cleanup('late-safe');
+            reject(new Error("La fuente de datos demoró más de lo esperado"));
+        }, timeoutMs);
+        window[cb] = (data) => {
+            if (done) return;
+            done = true;
+            clearTimeout(timer);
+            cleanup('done');
+            resolve(data);
+        };
+        script.onerror = () => {
+            if (done) return;
+            done = true;
+            clearTimeout(timer);
+            cleanup('late-safe');
+            reject(new Error("No se pudo cargar la fuente de datos"));
+        };
+        const bust = options.force ? `&_=${Date.now()}` : "";
+        script.src = `${url}${sep}callback=${cb}${bust}`;
+        document.head.appendChild(script);
+    });
+}
+function promiseAnySafe(promises) {
+    return new Promise((resolve, reject) => {
+        let pending = promises.length;
+        let lastError = null;
+        if (!pending) return reject(new Error("No hay fuentes de datos configuradas"));
+        promises.forEach(p => Promise.resolve(p).then(resolve).catch(e => {
+            lastError = e;
+            pending -= 1;
+            if (!pending) reject(lastError || new Error("No respondió la fuente de datos"));
+        }));
+    });
+}
+async function fetchGalleryData({ force = false } = {}) {
+    const sources = [];
+    if (APPS_SCRIPT_URL && APPS_SCRIPT_URL.trim()) {
+        sources.push(jsonp(APPS_SCRIPT_URL.trim(), force ? 12000 : 8500, { force }));
     }
-    catch (e) {
-        lastError = e;
-        await wait(650 + i * 850);
+    if (FALLBACK_PUBLISHED_SHEET_URL && FALLBACK_PUBLISHED_SHEET_URL.trim()) {
+        sources.push(gvizJsonpForFirstSheet(force ? 10000 : 7500, { force }));
     }
-} throw lastError || new Error("No respondió la fuente de datos"); }
-async function gvizJsonpForFirstSheet() {
-    const base = FALLBACK_PUBLISHED_SHEET_URL.replace(/pub\?output=csv/i, 'gviz/tq?tqx=out:json');
-    const txt = await fetch(base).then(r => r.text());
-    const m = txt.match(/google\.visualization\.Query\.setResponse\((.*)\);/s);
-    if (!m)
-        throw new Error("Google Sheets bloqueó la lectura directa. Usá Apps Script.");
-    const obj = JSON.parse(m[1]);
-    const cols = (obj.table.cols || []).map(c => c.label || c.id || "");
-    const rows = (obj.table.rows || []).map(r => { const out = {}; (r.c || []).forEach((c, i) => out[cols[i]] = c && c.v !== undefined ? c.v : ""); return out; });
+    return promiseAnySafe(sources);
+}
+function parseGvizTable(obj) {
+    const cols = (obj && obj.table && obj.table.cols ? obj.table.cols : []).map(c => c.label || c.id || "");
+    const rows = (obj && obj.table && obj.table.rows ? obj.table.rows : []).map(r => {
+        const out = {};
+        (r.c || []).forEach((c, i) => out[cols[i] || `Col ${i + 1}`] = c && c.v !== undefined ? c.v : "");
+        return out;
+    });
     return { ok: true, albums: [{ name: "Álbum", rows }] };
+}
+function gvizJsonpForFirstSheet(timeoutMs = 7500, options = {}) {
+    return new Promise((resolve, reject) => {
+        const cb = "gviz_cb_" + Date.now() + "_" + Math.random().toString(36).slice(2);
+        let done = false;
+        const script = document.createElement("script");
+        const base = FALLBACK_PUBLISHED_SHEET_URL.replace(/\/pub\?output=csv/i, '/gviz/tq');
+        const sep = base.includes('?') ? '&' : '?';
+        const cleanup = (mode) => {
+            try { script.remove(); } catch (e) { }
+            if (mode === 'late-safe') {
+                window[cb] = function(){ };
+                setTimeout(() => { try { delete window[cb]; } catch (e) { window[cb] = undefined; } }, 60000);
+            }
+            else {
+                try { delete window[cb]; } catch (e) { window[cb] = undefined; }
+            }
+        };
+        const timer = setTimeout(() => {
+            if (done) return;
+            done = true;
+            cleanup('late-safe');
+            reject(new Error("Google Sheets demoró más de lo esperado"));
+        }, timeoutMs);
+        window[cb] = (obj) => {
+            if (done) return;
+            done = true;
+            clearTimeout(timer);
+            cleanup('done');
+            try { resolve(parseGvizTable(obj)); }
+            catch (e) { reject(e); }
+        };
+        script.onerror = () => {
+            if (done) return;
+            done = true;
+            clearTimeout(timer);
+            cleanup('late-safe');
+            reject(new Error("Google Sheets bloqueó la lectura directa"));
+        };
+        const tqx = encodeURIComponent(`out:json;responseHandler:${cb}`);
+        const bust = options.force ? `&_=${Date.now()}` : "";
+        script.src = `${base}${sep}tqx=${tqx}${bust}`;
+        document.head.appendChild(script);
+    });
 }
 function normalizeAlbums(data) {
     const rawAlbums = Array.isArray(data === null || data === void 0 ? void 0 : data.albums) ? data.albums : Array.isArray(data) ? data : [];
@@ -1549,7 +1679,7 @@ function App() {
             setError("");
         }
         catch (e) {
-            console.error(e);
+            console.warn("La galería usará caché o mostrará aviso amigable.", e);
             const fallback = hasCache ? cached : readAlbumCache();
             if (Array.isArray(fallback) && fallback.length) {
                 setAlbums(fallback);
@@ -2873,7 +3003,7 @@ if (rootEl && window.React && window.ReactDOM && ReactDOM.createRoot) {
         rootEl.innerHTML = '<div class="app-boot-fallback mobile-safe-dark"><div class="app-boot-card"><img src="https://i.postimg.cc/PrD4jg9V/Logo-LA.png" alt="lucasabraham.ph"><h1 style="font-size:22px;font-weight:950;margin:0 0 6px;color:#fff!important;">Ocurrió un inconveniente</h1><p style="color:#d4d4d8!important;font-size:13px;line-height:1.45;margin:0;">Perdón por el inconveniente. Probá recargando la página para volver a intentar.</p><button onclick="location.reload()" style="margin-top:16px;background:#0ea5e9;color:#fff;border:0;border-radius:14px;padding:12px 18px;font-weight:900;">Recargar la página</button></div></div>';
     }
 } else if (rootEl) {
-    rootEl.innerHTML = '<div class="app-boot-fallback mobile-safe-dark"><div class="app-boot-card"><img src="https://i.postimg.cc/PrD4jg9V/Logo-LA.png" alt="lucasabraham.ph"><h1 style="font-size:22px;font-weight:950;margin:0 0 6px;color:#fff!important;">Cargando recursos</h1><p style="color:#d4d4d8!important;font-size:13px;line-height:1.45;margin:0;">Perdón, la carga tardó más de lo esperado. Probá recargando la página.</p><button onclick="location.reload()" style="margin-top:16px;background:#0ea5e9;color:#fff;border:0;border-radius:14px;padding:12px 18px;font-weight:900;">Recargar la página</button></div></div>';
+    rootEl.innerHTML = '<div class="app-boot-fallback mobile-safe-dark"><div class="app-boot-card"><img src="https://i.postimg.cc/PrD4jg9V/Logo-LA.png" alt="lucasabraham.ph"><h1 style="font-size:22px;font-weight:950;margin:0 0 6px;color:#fff!important;">Ocurrió un error al cargar la galería</h1><p style="color:#d4d4d8!important;font-size:13px;line-height:1.45;margin:0;">Perdón, la carga tardó más de lo esperado. Probá recargando la página.</p><button onclick="location.reload()" style="margin-top:16px;background:#0ea5e9;color:#fff;border:0;border-radius:14px;padding:12px 18px;font-weight:900;">Recargar la página</button></div></div>';
 }
 
 </script>
