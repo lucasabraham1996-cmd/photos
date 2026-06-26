@@ -1,6 +1,5 @@
 
 
-
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -192,6 +191,13 @@
     /* Reservas, banners admin y subálbumes */
     .booking-hero{background:linear-gradient(125deg,#000 0%,#020617 22%,#06114a 48%,#00145f 66%,#020617 86%,#000 100%);background-size:260% 260%;animation:deepBlueFlow 7s ease-in-out infinite;border:1px solid rgba(147,197,253,.35);box-shadow:0 22px 60px rgba(37,99,235,.18),inset 0 1px 0 rgba(255,255,255,.08);color:#fff!important}
     .booking-hero *{color:#fff!important}
+    .missing-photos-banner{position:relative;overflow:hidden;background:radial-gradient(circle at top left,rgba(59,130,246,.22),transparent 30%),linear-gradient(135deg,#020617 0%,#071225 38%,#0b1220 70%,#020617 100%);border:1px solid rgba(96,165,250,.22);box-shadow:0 20px 50px rgba(2,6,23,.36), inset 0 1px 0 rgba(255,255,255,.06)}
+    .missing-photos-banner:before{content:"";position:absolute;inset:auto -40px -40px auto;width:150px;height:150px;border-radius:999px;background:radial-gradient(circle,rgba(34,197,94,.18),transparent 68%);pointer-events:none}
+    .missing-photos-banner:after{content:"";position:absolute;inset:-30px auto auto -30px;width:120px;height:120px;border-radius:999px;background:radial-gradient(circle,rgba(59,130,246,.18),transparent 70%);pointer-events:none}
+    .missing-photos-chip{display:inline-flex;align-items:center;gap:8px;padding:8px 12px;border-radius:999px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.10);font-size:11px;font-weight:900;letter-spacing:.12em;text-transform:uppercase;color:#bfdbfe!important}
+    .missing-photos-cta{display:inline-flex;align-items:center;justify-content:center;gap:10px;background:linear-gradient(135deg,#22c55e,#16a34a);color:#04110a!important;border:0;border-radius:18px;padding:13px 18px;font-weight:950;font-size:14px;box-shadow:0 18px 38px rgba(34,197,94,.24);transition:transform .2s ease, filter .2s ease}
+    .missing-photos-cta:hover{transform:translateY(-1px);filter:brightness(1.03)}
+    .missing-photos-cta *{color:#04110a!important}
     .booking-btn{background:linear-gradient(135deg,#16a34a,#22c55e 48%,#15803d);color:#fff!important;border:1px solid rgba(187,247,208,.72);box-shadow:0 18px 42px rgba(34,197,94,.30),inset 0 1px 0 rgba(255,255,255,.22)}
     .booking-input{background:#ffffff!important;border:1px solid rgba(147,197,253,.55)!important;border-radius:14px!important;padding:12px 14px!important;color:#111827!important;outline:none!important;width:100%;box-shadow:0 10px 24px rgba(0,0,0,.18)}
     .booking-input::placeholder{color:#6b7280!important}
@@ -445,7 +451,7 @@ const LS_COUPONS_KEY = "la_coupon_settings_v1";
 const LS_SHARED_STATE_KEY = "la_shared_admin_state_v2";
 const LS_BANNERS_KEY = "la_banner_settings_v1";
 const PHOTOS_PER_PAGE = 70;
-const APP_VERSION = "v25-fast-mobile-stable";
+const APP_VERSION = "v26-missing-photos-banner-mobile-watermark";
 const LS_ALBUM_CACHE_META_KEY = "la_album_cache_meta_v1";
 const ALBUM_CACHE_MAX_AGE_MS = 1000 * 60 * 60 * 12;
 const FIRESTORE_FREE_DAILY_LIMITS = {
@@ -1369,12 +1375,27 @@ const Modal = ({ children, onClose, max = 'max-w-5xl' }) => React.createElement(
             React.createElement("i", { className: "fas fa-times" })),
         children));
 const WATERMARK_LOGO = "https://i.postimg.cc/Bny3x871/marca-de-agua.png";
-const PreviewWatermark = ({ visible = true, opacity = 0.55, darkness = 0.10 } = {}) => visible ? React.createElement("div", { className: "absolute inset-0 pointer-events-none overflow-hidden" },
-    React.createElement("div", { className: "absolute inset-[-28%] -rotate-12 grid grid-cols-4 sm:grid-cols-5 gap-5 sm:gap-7 place-items-center", style: { opacity: Math.min(1, Math.max(0, opacity)) } }, Array.from({ length: 60 }).map((_, i) => React.createElement("img", { key: i, src: WATERMARK_LOGO, className: "w-24 sm:w-32 md:w-40 drop-shadow-[0_2px_10px_rgba(0,0,0,.95)]" }))),
+const PreviewWatermark = ({ visible = true, opacity = 0.55, darkness = 0.10, compact = false } = {}) => visible ? React.createElement("div", { className: "absolute inset-0 pointer-events-none overflow-hidden" },
+    React.createElement("div", { className: compact
+            ? "absolute inset-[-16%] -rotate-12 grid grid-cols-5 sm:grid-cols-6 gap-2 sm:gap-4 place-items-center"
+            : "absolute inset-[-28%] -rotate-12 grid grid-cols-4 sm:grid-cols-5 gap-5 sm:gap-7 place-items-center", style: { opacity: Math.min(1, Math.max(0, opacity)) } }, Array.from({ length: compact ? 90 : 60 }).map((_, i) => React.createElement("img", { key: i, src: WATERMARK_LOGO, className: compact
+            ? "w-10 sm:w-16 md:w-20 drop-shadow-[0_2px_8px_rgba(0,0,0,.9)]"
+            : "w-24 sm:w-32 md:w-40 drop-shadow-[0_2px_10px_rgba(0,0,0,.95)]" }))),
     React.createElement("div", { className: "absolute inset-0", style: { background: `rgba(0,0,0,${Math.min(.35, Math.max(0, darkness))})` } })) : null;
 const ProtectionNotice = () => React.createElement("div", { className: "bg-amber-500/10 border border-amber-400/25 rounded-2xl p-3 sm:p-4 text-amber-100 text-xs sm:text-sm leading-relaxed" },
     React.createElement("i", { className: "fas fa-lock mr-2 text-amber-300" }),
     "Las im\u00E1genes est\u00E1n protegidas. Para utilizar una foto, publicarla o recibirla sin marca de agua, se debe comprar o contactar por WhatsApp con Lucas Abraham.");
+const MissingPhotosBanner = () => React.createElement("div", { className: "missing-photos-banner rounded-3xl p-4 sm:p-6 mt-5 sm:mt-7" },
+    React.createElement("div", { className: "relative z-[1] flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 sm:gap-5" },
+        React.createElement("div", { className: "max-w-2xl" },
+            React.createElement("div", { className: "missing-photos-chip mb-3" },
+                React.createElement("i", { className: "fas fa-camera-retro text-sky-300" }),
+                "¿No encontrás tus fotos?"),
+            React.createElement("h3", { className: "text-xl sm:text-2xl font-black leading-tight text-white" }, "¿Me viste en un partido y no encontrás las fotos?"),
+            React.createElement("p", { className: "text-sm sm:text-[15px] text-slate-300 leading-relaxed mt-2" }, "Contactame y pedímelas por WhatsApp. Contame de qué partido eran y te ayudo a encontrarlas para que puedas comprarlas.")),
+        React.createElement("button", { onClick: () => window.open(`https://wa.me/${SELLER_PHONE}?text=${encodeURIComponent('Hola Lucas! Me viste en un partido y no encuentro las fotos. Quiero pedirte las fotos para comprar del partido de: [escribí acá]. Mi nombre es: [escribí acá].')}`, '_blank'), className: "missing-photos-cta w-full sm:w-auto" },
+            React.createElement("i", { className: "fab fa-whatsapp text-lg" }),
+            React.createElement("span", null, "Contactame acá"))));
 const PromoBanners = ({ bannerSettings }) => {
     if (!(bannerSettings === null || bannerSettings === void 0 ? void 0 : bannerSettings.visible))
         return null;
@@ -2688,6 +2709,7 @@ A continuación, te envío el comprobante.`;
                     albumRenderLimit < filteredAlbums.length && React.createElement("div", { className: "quick-loading-strip mt-4 justify-center" },
                         React.createElement("span", { className: "quick-loading-dot" }),
                         React.createElement("b", null, "Cargando m\u00E1s \u00E1lbumes..."))),
+                filteredAlbums.length > 0 && React.createElement(MissingPhotosBanner, null),
                 !loading && filteredAlbums.length === 0 && filteredArchivedAlbums.length === 0 && React.createElement("div", { className: "text-center text-neutral-500 py-12 text-sm" }, "No se encontraron \u00E1lbumes."),
                 filteredArchivedAlbums.length > 0 && React.createElement("div", { id: "galerias-antiguas", className: "mt-8 sm:mt-10" },
                     React.createElement("div", { className: "flex justify-center border-t border-neutral-900 mb-4" },
@@ -2847,7 +2869,7 @@ Te envío el comprobante para que puedas prepararlas.`);
                     return React.createElement("div", { key: photo.id, className: `contain-strict mosaic-tile relative overflow-hidden ${viewMode === 'mosaic' ? getMosaicSpanClass(photo, photoIndex, pagedPhotos.length) : 'rounded-xl aspect-[4/5]'} cursor-pointer transition-all duration-300 ${isSelected ? 'ring-2 ring-indigo-500 scale-[0.97] shadow-[0_0_30px_rgba(99,102,241,0.2)]' : isFocus && viewMode === 'gallery' ? 'ring-2 ring-emerald-400 bg-neutral-900' : 'hover:opacity-90 bg-neutral-900 border border-neutral-800'}` },
                         React.createElement("button", { onClick: () => viewMode === 'gallery' ? setFocusPhoto(photo) : setViewer(photo), className: "absolute inset-0 z-10", "aria-label": "Ver foto" }),
                         React.createElement("img", { src: photo.url, loading: "lazy", decoding: "async", className: "w-full h-full object-cover pointer-events-none" }),
-                        React.createElement(PreviewWatermark, { ...wmProps(photo.albumId) }),
+                        React.createElement(PreviewWatermark, { ...wmProps(photo.albumId), compact: viewMode === 'mosaic' }),
                         React.createElement("div", { className: `absolute inset-0 ${isSelected ? 'bg-indigo-900/40' : 'bg-transparent'} pointer-events-none` }),
                         React.createElement("div", { className: "absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent p-2 pt-6 pointer-events-none" },
                             React.createElement("p", { className: "text-white/80 font-mono text-[9px] sm:text-[10px] truncate" }, photo.name),
