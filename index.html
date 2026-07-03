@@ -1,7 +1,6 @@
 
 
 
-
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -468,7 +467,7 @@ const LS_COUPONS_KEY = "la_coupon_settings_v1";
 const LS_SHARED_STATE_KEY = "la_shared_admin_state_v2";
 const LS_BANNERS_KEY = "la_banner_settings_v1";
 const PHOTOS_PER_PAGE = 70;
-const APP_VERSION = "v30-prices-stable";
+const APP_VERSION = "v31-prices-admin-modal-fix";
 const LS_ALBUM_CACHE_META_KEY = "la_album_cache_meta_v1";
 const ALBUM_CACHE_MAX_AGE_MS = 1000 * 60 * 60 * 12;
 const FIRESTORE_FREE_DAILY_LIMITS = {
@@ -2320,7 +2319,7 @@ A continuación, te envío el comprobante.`;
                 " proyecto lucasabraham-b84aa \u00B7 ruta principal ",
                 React.createElement("b", null, "artifacts/lucasabraham-ph-db/orders"),
                 " \u00B7 versi\u00F3n ",
-                React.createElement("b", null, "v30-precios-estable"),
+                React.createElement("b", null, "v31-precios-admin-modal-fix"),
                 ". Si al comprar aparece un aviso rojo, el pedido qued\u00F3 local pero Firestore rechaz\u00F3 la escritura."),
             React.createElement("div", { className: "mb-6 bg-neutral-900 border border-neutral-800 rounded-3xl p-5" },
                 React.createElement("div", { className: "flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4 mb-4" },
@@ -2599,6 +2598,7 @@ A continuación, te envío el comprobante.`;
                     React.createElement("div", { className: "aspect-[4/5] rounded-2xl overflow-hidden border border-neutral-800 bg-neutral-950" },
                         React.createElement("img", { src: photo.url, className: "w-full h-full object-cover group-hover:scale-105 transition duration-300" })),
                     React.createElement("p", { className: "text-xs text-neutral-400 truncate mt-2" }, photo.name))))),
+            priceAdminOpen && React.createElement(PriceAdminModal, { onClose: () => setPriceAdminOpen(false), priceSettings: priceSettings, setPriceSettings: setPriceSettings, setAdminMessage: setAdminMessage }),
             (editor === null || editor === void 0 ? void 0 : editor.type) === 'uploadOwn' && React.createElement(Modal, { onClose: () => setEditor(null), max: "max-w-2xl" },
                 React.createElement("h2", { className: "text-2xl font-black mb-2" }, "Subir una car\u00E1tula propia"),
                 React.createElement("p", { className: "text-neutral-400 text-sm mb-5" }, "Pod\u00E9s cargar una imagen tuya para usarla como portada del \u00E1lbum."),
