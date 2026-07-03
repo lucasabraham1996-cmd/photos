@@ -1,6 +1,7 @@
 
 
 
+
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -406,7 +407,7 @@
         if(root && !window.LA_APP_RENDERED){
           root.innerHTML='<div class="v24-safe-fallback"><div class="v24-safe-card"><img src="https://i.postimg.cc/PrD4jg9V/Logo-LA.png" alt="lucasabraham.ph" style="width:60px;height:60px;object-fit:contain;margin-bottom:16px;"><h1 style="font-size:24px;line-height:1.2;margin:0 0 10px;font-weight:900;color:#fff;">La galería está tardando en cargar</h1><p style="color:#d4d4d8;line-height:1.6;margin:0 0 10px;">Perdón por el inconveniente. Puede ser un bloqueo del navegador al abrir el archivo localmente o una demora de conexión.</p><p style="color:#a1a1aa;line-height:1.6;margin:0 0 18px;">Probá recargar la página. Para probarla de forma estable, abrila desde un servidor local o subida a hosting, no dentro de un visor/iframe.</p><button onclick="location.reload()" class="v24-safe-btn" style="background:linear-gradient(135deg,#0ea5e9,#2563eb 56%,#1d4ed8);color:#fff!important;box-shadow:0 18px 40px rgba(37,99,235,.30);animation:errorIconPulse 2.2s ease-in-out infinite;">Reintentar y recargar</button></div></div>';
         }
-      },9000);
+      },45000);
     }catch(e){}
   })();
   window.LA_APP_RENDERED=false;
@@ -420,7 +421,7 @@
     setTimeout(function(){
       var root=document.getElementById('root');
       if(root && !window.LA_APP_RENDERED){
-        root.innerHTML='<div style="min-height:100vh;background:#050505;color:#fff;font-family:Arial,sans-serif;display:flex;align-items:center;justify-content:center;padding:24px;"><div style="max-width:620px;width:100%;background:#0a0a0a;border:1px solid rgba(255,255,255,.10);border-radius:26px;padding:28px;box-shadow:0 20px 60px rgba(0,0,0,.45);"><div style="width:64px;height:64px;border-radius:18px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.10);display:flex;align-items:center;justify-content:center;margin-bottom:18px;"><img src="https://i.postimg.cc/PrD4jg9V/Logo-LA.png" alt="lucasabraham.ph" style="width:44px;height:44px;object-fit:contain;"></div><h1 style="font-size:24px;line-height:1.2;margin:0 0 10px;font-weight:900;color:#fff;">Ocurrió un error al cargar la galería</h1><p style="color:#d4d4d8;line-height:1.6;margin:0 0 10px;">Perdón por el inconveniente. Puede tratarse de un problema momentáneo de conexión o de carga.</p><p style="color:#a1a1aa;line-height:1.6;margin:0 0 18px;">Te pedimos disculpas. Probá recargando la página para volver a intentar.</p><button onclick="location.reload()" style="width:100%;background:linear-gradient(135deg,#0ea5e9,#2563eb 56%,#1d4ed8);color:#fff;border:0;border-radius:16px;padding:14px 18px;font-weight:900;font-size:15px;cursor:pointer;box-shadow:0 18px 40px rgba(37,99,235,.30);animation:errorIconPulse 2.2s ease-in-out infinite;">Reintentar y recargar</button><div style="margin-top:14px;font-size:12px;color:#71717a;background:rgba(0,0,0,.5);border:1px solid rgba(255,255,255,.08);border-radius:14px;padding:12px;word-break:break-word;">'+(msg||'Error desconocido')+'</div></div></div>';
+        root.innerHTML='<div style="min-height:100vh;background:#050505;color:#fff;font-family:Arial,sans-serif;display:flex;align-items:center;justify-content:center;padding:24px;"><div style="max-width:620px;width:100%;background:#0a0a0a;border:1px solid rgba(255,255,255,.10);border-radius:26px;padding:28px;box-shadow:0 20px 60px rgba(0,0,0,.45);"><div style="width:64px;height:64px;border-radius:18px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.10);display:flex;align-items:center;justify-content:center;margin-bottom:18px;"><img src="https://i.postimg.cc/PrD4jg9V/Logo-LA.png" alt="lucasabraham.ph" style="width:44px;height:44px;object-fit:contain;"></div><h1 style="font-size:24px;line-height:1.2;margin:0 0 10px;font-weight:900;color:#fff;">Cargando galería</h1><p style="color:#d4d4d8;line-height:1.6;margin:0 0 10px;">Perdón por el inconveniente. Puede tratarse de un problema momentáneo de conexión o de carga.</p><p style="color:#a1a1aa;line-height:1.6;margin:0 0 18px;">Podés esperar unos segundos o tocar el botón para reintentar.</p><button onclick="location.reload()" style="width:100%;background:linear-gradient(135deg,#0ea5e9,#2563eb 56%,#1d4ed8);color:#fff;border:0;border-radius:16px;padding:14px 18px;font-weight:900;font-size:15px;cursor:pointer;box-shadow:0 18px 40px rgba(37,99,235,.30);animation:errorIconPulse 2.2s ease-in-out infinite;">Reintentar y recargar</button><div style="margin-top:14px;font-size:12px;color:#71717a;background:rgba(0,0,0,.5);border:1px solid rgba(255,255,255,.08);border-radius:14px;padding:12px;word-break:break-word;">'+(msg||'Error desconocido')+'</div></div></div>';
       }
     },900);
   });
@@ -436,9 +437,9 @@
     setTimeout(function(){
       var root=document.getElementById('root');
       if(root && !window.LA_APP_RENDERED){
-        root.innerHTML='<div class="app-boot-fallback mobile-safe-dark"><div class="app-boot-card"><img src="https://i.postimg.cc/PrD4jg9V/Logo-LA.png" alt="lucasabraham.ph"><h1 style="font-size:22px;font-weight:950;margin:0 0 8px;color:#fff!important;">Ocurrió un error al cargar la galería</h1><p style="color:#d4d4d8!important;font-size:13px;line-height:1.5;margin:0 0 8px;">Perdón por el inconveniente. La carga demoró más de lo esperado en este dispositivo.</p><p style="color:#a1a1aa!important;font-size:12px;line-height:1.45;margin:0;">Te pedimos disculpas. Probá recargando la página para volver a intentar.</p><button onclick="location.reload()" style="margin-top:16px;background:linear-gradient(135deg,#0ea5e9,#2563eb 56%,#1d4ed8);color:#fff;border:0;border-radius:14px;padding:12px 18px;font-weight:900;width:100%;box-shadow:0 18px 40px rgba(37,99,235,.30);animation:errorIconPulse 2.2s ease-in-out infinite;">Reintentar y recargar</button></div></div>';
+        root.innerHTML='<div class="app-boot-fallback mobile-safe-dark"><div class="app-boot-card"><img src="https://i.postimg.cc/PrD4jg9V/Logo-LA.png" alt="lucasabraham.ph"><h1 style="font-size:22px;font-weight:950;margin:0 0 8px;color:#fff!important;">Cargando galería</h1><p style="color:#d4d4d8!important;font-size:13px;line-height:1.5;margin:0 0 8px;">La app está tardando un poco más, pero seguimos intentando cargarla.</p><p style="color:#a1a1aa!important;font-size:12px;line-height:1.45;margin:0;">Podés esperar unos segundos o tocar el botón para reintentar.</p><button onclick="location.reload()" style="margin-top:16px;background:linear-gradient(135deg,#0ea5e9,#2563eb 56%,#1d4ed8);color:#fff;border:0;border-radius:14px;padding:12px 18px;font-weight:900;width:100%;box-shadow:0 18px 40px rgba(37,99,235,.30);animation:errorIconPulse 2.2s ease-in-out infinite;">Reintentar y recargar</button></div></div>';
       }
-    }, 9000);
+    }, 45000);
   });
 </script>
 
@@ -467,7 +468,7 @@ const LS_COUPONS_KEY = "la_coupon_settings_v1";
 const LS_SHARED_STATE_KEY = "la_shared_admin_state_v2";
 const LS_BANNERS_KEY = "la_banner_settings_v1";
 const PHOTOS_PER_PAGE = 70;
-const APP_VERSION = "v27-sheet-only-soft-watermark";
+const APP_VERSION = "v30-prices-stable";
 const LS_ALBUM_CACHE_META_KEY = "la_album_cache_meta_v1";
 const ALBUM_CACHE_MAX_AGE_MS = 1000 * 60 * 60 * 12;
 const FIRESTORE_FREE_DAILY_LIMITS = {
@@ -491,6 +492,37 @@ function pctOfLimit(value, limit) {
     const n = Number(value) || 0;
     const l = Number(limit) || 1;
     return Math.max(0, Math.min(100, Math.round((n / l) * 100)));
+}
+function defaultPriceSettings() {
+    return {
+        photoAppPrice: "$1.800",
+        photoAppNote: "con descuentos correspondientes para comprar por cantidad.",
+        albumAllBoysPrice: "$40.000",
+        albumAllBoysNote: "cuando el partido se juegue en el estadio del Club Atlético All Boys de Córdoba, Barrio Rosedal.",
+        albumCordobaPrice: "$50.000",
+        albumCordobaNote: "en cualquier otro estadio, dentro de la Ciudad de Córdoba.",
+        albumOutsideCordobaPrice: "$65.000",
+        albumOutsideCordobaNote: "fuera de la Ciudad de Córdoba.",
+        sessionPrice: "$10.000",
+        sessionNote: "con el requisito de que haya, al menos, 5 jugadores que me hayan contratado de la categoría para asistir.",
+        multiCategoryNote: "Se aplican descuentos cuando en una jornada me contratan más de una categoría. Los mismos serán aclarados en el contacto."
+    };
+}
+function normalizePriceSettings(v) { return { ...defaultPriceSettings(), ...(v || {}) }; }
+function currentMonthLabel() { const txt = new Date().toLocaleDateString('es-AR', { month: 'long', year: 'numeric' }); return txt.charAt(0).toUpperCase() + txt.slice(1); }
+function buildPricesWhatsappMessage(priceSettings) {
+    const p = normalizePriceSettings(priceSettings);
+    return `Hola Lucas! Quiero consultar o reservar una cobertura. Vi tus precios vigentes en la app.
+
+*PRECIOS VIGENTES*
+• Foto por la app: ${p.photoAppPrice} ${p.photoAppNote}
+• Álbum completo en All Boys (Barrio Rosedal): ${p.albumAllBoysPrice} ${p.albumAllBoysNote}
+• Álbum completo en otro estadio dentro de Córdoba Capital: ${p.albumCordobaPrice} ${p.albumCordobaNote}
+• Álbum completo fuera de Córdoba Capital: ${p.albumOutsideCordobaPrice} ${p.albumOutsideCordobaNote}
+• Sesión individual en partido: ${p.sessionPrice} ${p.sessionNote}
+• ${p.multiCategoryNote}
+
+Quiero que me pases más información para reservar.`;
 }
 // Firebase se usa como fuente central para que móvil y PC vean lo mismo.
 // Config integrado para no depender de /__/firebase/init.js.
@@ -554,11 +586,12 @@ function readSharedCache() {
             discountSettings: cached.discountSettings || readDiscountSettings(),
             coupons: Array.isArray(cached.coupons) ? cached.coupons : readCoupons(),
             bannerSettings: cached.bannerSettings || readBannerSettings(),
+            priceSettings: normalizePriceSettings(cached.priceSettings),
             updatedAt: cached.updatedAt || ''
         };
     }
     catch (_a) {
-        return { discountSettings: readDiscountSettings(), coupons: readCoupons(), updatedAt: '' };
+        return { discountSettings: readDiscountSettings(), coupons: readCoupons(), bannerSettings: readBannerSettings(), priceSettings: defaultPriceSettings(), updatedAt: '' };
     }
 }
 function writeSharedCache(state) {
@@ -573,6 +606,8 @@ function writeSharedCache(state) {
         saveCoupons(next.coupons);
     if (next.bannerSettings)
         saveBannerSettings(next.bannerSettings);
+    if (next.priceSettings)
+        next.priceSettings = normalizePriceSettings(next.priceSettings);
     return next;
 }
 function normalizeSharedState(state) {
@@ -580,6 +615,7 @@ function normalizeSharedState(state) {
         discountSettings: (state === null || state === void 0 ? void 0 : state.discountSettings) || readDiscountSettings(),
         coupons: Array.isArray(state === null || state === void 0 ? void 0 : state.coupons) ? state.coupons : readCoupons(),
         bannerSettings: (state === null || state === void 0 ? void 0 : state.bannerSettings) || readBannerSettings(),
+        priceSettings: normalizePriceSettings((state === null || state === void 0 ? void 0 : state.priceSettings) || defaultPriceSettings()),
         updatedAt: (state === null || state === void 0 ? void 0 : state.updatedAt) || new Date().toISOString()
     };
 }
@@ -1388,6 +1424,27 @@ function wrapText(ctx, text, x, y, maxWidth, lineHeight) { const words = String(
     }
 } if (line)
     lines.push(line); lines.forEach((ln, i) => ctx.fillText(ln, x, y + i * lineHeight)); }
+function downloadDataUrl(filename, dataUrl) { const a = document.createElement('a'); a.href = dataUrl; a.download = filename; document.body.appendChild(a); a.click(); a.remove(); }
+function buildPricesStoryImage(priceSettings) {
+    const p = normalizePriceSettings(priceSettings);
+    return new Promise((resolve, reject) => {
+        const canvas = document.createElement('canvas'); canvas.width = 1080; canvas.height = 1920;
+        const ctx = canvas.getContext('2d'); const logo = new Image(); logo.crossOrigin = 'anonymous';
+        const draw = (logoOk) => {
+            const grad = ctx.createLinearGradient(0, 0, canvas.width, canvas.height); grad.addColorStop(0, '#020617'); grad.addColorStop(.55, '#0b1128'); grad.addColorStop(1, '#000'); ctx.fillStyle = grad; ctx.fillRect(0, 0, canvas.width, canvas.height);
+            ctx.fillStyle = 'rgba(56,189,248,.10)'; ctx.beginPath(); ctx.arc(180, 170, 180, 0, Math.PI * 2); ctx.fill(); ctx.fillStyle = 'rgba(255,255,255,.05)'; ctx.beginPath(); ctx.arc(930, 250, 170, 0, Math.PI * 2); ctx.fill();
+            ctx.fillStyle = 'rgba(255,255,255,.06)'; ctx.beginPath(); ctx.roundRect(54, 54, 972, 1812, 42); ctx.fill(); ctx.strokeStyle = 'rgba(125,211,252,.20)'; ctx.lineWidth = 2; ctx.strokeRect(70, 70, 940, 1780);
+            if (logoOk) drawContain(ctx, logo, 420, 90, 240, 240);
+            ctx.textAlign = 'center'; ctx.fillStyle = '#fff'; ctx.font = '900 72px Arial'; ctx.fillText('PRECIOS VIGENTES', 540, 370); ctx.fillStyle = 'rgba(191,219,254,.96)'; ctx.font = '700 34px Arial'; ctx.fillText(currentMonthLabel().toUpperCase(), 540, 420);
+            const cards = [['Foto por la app', p.photoAppPrice, p.photoAppNote], ['Álbum completo · All Boys', p.albumAllBoysPrice, p.albumAllBoysNote], ['Álbum completo · Córdoba Capital', p.albumCordobaPrice, p.albumCordobaNote], ['Álbum completo · Fuera de Córdoba Capital', p.albumOutsideCordobaPrice, p.albumOutsideCordobaNote], ['Sesión individual en partido', p.sessionPrice, p.sessionNote]];
+            let y = 500; cards.forEach(([title, price, note]) => { ctx.fillStyle = 'rgba(2,6,23,.80)'; ctx.beginPath(); ctx.roundRect(95, y, 890, 180, 30); ctx.fill(); ctx.strokeStyle = 'rgba(125,211,252,.16)'; ctx.stroke(); ctx.textAlign = 'left'; ctx.fillStyle = '#e0f2fe'; ctx.font = '800 28px Arial'; wrapText(ctx, title, 130, y + 42, 500, 34); ctx.fillStyle = '#67e8f9'; ctx.font = '900 44px Arial'; ctx.fillText(price, 130, y + 102); ctx.fillStyle = 'rgba(255,255,255,.78)'; ctx.font = '500 25px Arial'; wrapText(ctx, note, 130, y + 140, 820, 30); y += 205; });
+            ctx.fillStyle = 'rgba(255,255,255,.08)'; ctx.beginPath(); ctx.roundRect(95, 1540, 890, 150, 28); ctx.fill(); ctx.textAlign = 'left'; ctx.fillStyle = '#f8fafc'; ctx.font = '800 26px Arial'; wrapText(ctx, p.multiCategoryNote, 130, 1595, 820, 31);
+            ctx.fillStyle = '#22c55e'; ctx.beginPath(); ctx.roundRect(95, 1730, 890, 88, 24); ctx.fill(); ctx.textAlign = 'center'; ctx.fillStyle = '#03120a'; ctx.font = '900 34px Arial'; ctx.fillText('RESERVAS POR WHATSAPP', 540, 1787); ctx.fillStyle = 'rgba(255,255,255,.78)'; ctx.font = '700 26px Arial'; ctx.fillText(BRAND, 540, 1845);
+            try { resolve(canvas.toDataURL('image/png')); } catch (err) { reject(err); }
+        };
+        logo.onload = () => draw(true); logo.onerror = () => draw(false); logo.src = 'https://i.postimg.cc/PrD4jg9V/Logo-LA.png';
+    });
+}
 function loadCoverOverrides() { try {
     return JSON.parse(localStorage.getItem(LS_COVER_KEY) || '{}');
 }
@@ -1465,75 +1522,48 @@ const MainHeaderBanners = ({ bannerSettings }) => {
                 React.createElement("img", { src: "https://i.postimg.cc/PrD4jg9V/Logo-LA.png", className: "w-20 h-20 sm:w-32 sm:h-32 object-contain shrink-0 opacity-90" }))),
         React.createElement("div", { className: "flex justify-center gap-2 mt-2" }, banners.map((_, i) => React.createElement("button", { key: i, onClick: () => setBannerIndex(i), className: `h-1.5 rounded-full transition-all ${i === bannerIndex ? 'w-6 bg-white dark:bg-white' : 'w-1.5 bg-neutral-500/50'}`, "aria-label": `Ver banner ${i + 1}` }))));
 };
-function BookingModal({ onClose }) {
-    const [form, setForm] = useState({ nombre: '', club: '', deporte: 'Fútbol', liga: '', dia: '', hora: '', categoria: '', lugar: '', rival: '', cantidad: '', telefono: '', comentario: '' });
-    const update = (k, v) => setForm(f => ({ ...f, [k]: v }));
-    const hours = Array.from({ length: 24 }, (_, i) => `${String(i).padStart(2, '0')}:00`);
-    const input = (k, label, placeholder, type = 'text') => React.createElement("label", { className: "block text-sm font-bold text-sky-100/85" },
-        label,
-        React.createElement("input", { type: type, value: form[k], onChange: e => update(k, e.target.value), placeholder: placeholder, className: "booking-input mt-1" }));
-    const field = (v) => String(v || '').trim() || '-';
-    const send = (e) => {
-        e.preventDefault();
-        const msg = `Hola Lucas! Quiero solicitar tus servicios para cubrir una jornada/partido/evento.
-
-*SOLICITUD DE RESERVA*
-Nombre y apellido: ${field(form.nombre)}
-Club / institución: ${field(form.club)}
-Deporte: ${field(form.deporte)}
-Liga / torneo: ${field(form.liga)}
-Día: ${field(form.dia)}
-Hora: ${field(form.hora)}
-Categoría: ${field(form.categoria)}
-Lugar / cancha: ${field(form.lugar)}
-Rival / evento: ${field(form.rival)}
-Cantidad de partidos/categorías: ${field(form.cantidad)}
-Teléfono de contacto: ${field(form.telefono)}
-Comentario: ${field(form.comentario)}
-
-Te pido si me podés confirmar por *SÍ* o por *NO* si tenés disponibilidad para cubrir la jornada.`;
-        window.open(`https://api.whatsapp.com/send?phone=${SELLER_PHONE}&text=${encodeURIComponent(msg)}`, '_blank');
-        onClose();
-    };
+function PriceModal({ onClose, priceSettings }) {
+    const p = normalizePriceSettings(priceSettings);
+    const openWhatsApp = () => { window.open(`https://api.whatsapp.com/send?phone=${SELLER_PHONE}&text=${encodeURIComponent(buildPricesWhatsappMessage(p))}`, '_blank'); onClose(); };
+    const PriceItem = ({ title, price, note, icon }) => React.createElement("div", { className: "bg-black/25 border border-white/10 rounded-2xl p-4 sm:p-5" },
+        React.createElement("div", { className: "flex items-start justify-between gap-3" },
+            React.createElement("div", { className: "min-w-0" },
+                React.createElement("p", { className: "text-[11px] uppercase tracking-[0.14em] font-black text-sky-200/80 mb-1" }, React.createElement("i", { className: `${icon} mr-2` }), title),
+                React.createElement("p", { className: "text-2xl sm:text-3xl font-black text-white leading-none" }, price)),
+            React.createElement("span", { className: "inline-flex shrink-0 bg-white/10 border border-white/10 px-3 py-1 rounded-full text-[11px] font-black text-sky-100" }, "Vigente")),
+        React.createElement("p", { className: "text-sm text-sky-100/80 leading-relaxed mt-3" }, note));
     return React.createElement(Modal, { onClose: onClose, max: "max-w-4xl" },
         React.createElement("div", { className: "booking-hero rounded-3xl p-4 sm:p-6 -m-1" },
             React.createElement("div", { className: "mb-5" },
-                React.createElement("p", { className: "inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-400/15 border border-emerald-300/35 text-[11px] font-black uppercase tracking-[0.16em] mb-3" },
-                    React.createElement("i", { className: "fas fa-calendar-check" }),
-                    " Reservas"),
-                React.createElement("h2", { className: "text-2xl sm:text-3xl font-black leading-tight" }, "Reservame para tu partido, evento o jornada"),
-                React.createElement("p", { className: "text-sky-100/75 text-sm mt-2 leading-relaxed" }, "Complet\u00E1 los datos que tengas. Ning\u00FAn campo es obligatorio y al enviar se abre WhatsApp con toda la solicitud lista.")),
-            React.createElement("form", { onSubmit: send, className: "grid sm:grid-cols-2 gap-3 sm:gap-4" },
-                input('nombre', 'Nombre y apellido', 'Ej: Juan Pérez'),
-                input('telefono', 'Teléfono de contacto', 'Ej: 351...'),
-                input('club', 'Club / institución', 'Ej: All Boys'),
-                input('deporte', 'Deporte', 'Ej: Fútbol'),
-                input('liga', 'Liga / torneo', 'Ej: Liga Cordobesa'),
-                input('categoria', 'Categoría', 'Ej: Primera, Reserva, Cebollitas'),
-                input('dia', 'Día', '', 'date'),
-                React.createElement("label", { className: "block text-sm font-bold text-sky-100/85" },
-                    "Hora",
-                    React.createElement("select", { value: form.hora, onChange: e => update('hora', e.target.value), className: "booking-input mt-1" },
-                        React.createElement("option", { value: "" }, "Seleccionar hora"),
-                        hours.map(h => React.createElement("option", { key: h, value: h },
-                            h,
-                            " hs")))),
-                input('lugar', 'Lugar / cancha', 'Dirección o nombre de la cancha'),
-                input('rival', 'Rival / nombre del evento', 'Ej: All Boys vs Banfield'),
-                input('cantidad', 'Cantidad de partidos/categorías', 'Ej: Primera y Reserva'),
-                React.createElement("label", { className: "block text-sm font-bold text-sky-100/85 sm:col-span-2" },
-                    "Comentario adicional",
-                    React.createElement("textarea", { value: form.comentario, onChange: e => update('comentario', e.target.value), placeholder: "Detalles importantes, tiempo de cobertura, entrega esperada, etc.", className: "booking-input mt-1 min-h-[92px]" })),
-                React.createElement("div", { className: "sm:col-span-2 flex flex-col sm:flex-row gap-3 sm:items-center sm:justify-between mt-2" },
-                    React.createElement("p", { className: "text-xs text-sky-100/65 leading-relaxed" },
-                        "Tambi\u00E9n pod\u00E9s compartir el link directo de reservas: ",
-                        React.createElement("b", null,
-                            location.origin,
-                            location.pathname,
-                            "#/reservas")),
-                    React.createElement("button", { className: "booking-btn px-6 py-4 rounded-2xl font-black" },
-                        React.createElement("i", { className: "fab fa-whatsapp mr-2" }),
-                        "Enviar solicitud")))));
+                React.createElement("p", { className: "inline-flex items-center gap-2 px-3 py-1 rounded-full bg-sky-400/15 border border-sky-300/35 text-[11px] font-black uppercase tracking-[0.16em] mb-3" }, React.createElement("i", { className: "fas fa-tags" }), " Precios vigentes"),
+                React.createElement("h2", { className: "text-2xl sm:text-3xl font-black leading-tight" }, "Precios vigentes · ", currentMonthLabel()),
+                React.createElement("p", { className: "text-sky-100/75 text-sm mt-2 leading-relaxed" }, "Consultá los valores actualizados y, si querés reservar, tocá el botón de abajo para hablar conmigo por WhatsApp.")),
+            React.createElement("div", { className: "grid sm:grid-cols-2 gap-3 sm:gap-4" },
+                React.createElement(PriceItem, { title: "Foto por la app", price: p.photoAppPrice, note: p.photoAppNote, icon: "fas fa-image" }),
+                React.createElement(PriceItem, { title: "Álbum completo · All Boys", price: p.albumAllBoysPrice, note: p.albumAllBoysNote, icon: "fas fa-futbol" }),
+                React.createElement(PriceItem, { title: "Álbum completo · Córdoba Capital", price: p.albumCordobaPrice, note: p.albumCordobaNote, icon: "fas fa-location-dot" }),
+                React.createElement(PriceItem, { title: "Álbum completo · Fuera de Córdoba Capital", price: p.albumOutsideCordobaPrice, note: p.albumOutsideCordobaNote, icon: "fas fa-road" }),
+                React.createElement("div", { className: "sm:col-span-2" }, React.createElement(PriceItem, { title: "Sesión individual en partido", price: p.sessionPrice, note: p.sessionNote, icon: "fas fa-user-group" }))),
+            React.createElement("div", { className: "mt-4 bg-white/5 border border-white/10 rounded-2xl p-4" }, React.createElement("p", { className: "text-[11px] uppercase tracking-[0.14em] font-black text-amber-200/80 mb-2" }, React.createElement("i", { className: "fas fa-badge-percent mr-2" }), "Descuentos y aclaración"), React.createElement("p", { className: "text-sm text-sky-100/80 leading-relaxed" }, p.multiCategoryNote)),
+            React.createElement("button", { onClick: openWhatsApp, className: "booking-btn w-full mt-5 px-6 py-4 rounded-2xl font-black text-base" }, React.createElement("i", { className: "fab fa-whatsapp mr-2" }), "Reservar")));
+}
+function PriceAdminModal({ onClose, priceSettings, setPriceSettings, setAdminMessage }) {
+    const p = normalizePriceSettings(priceSettings);
+    const update = (k, v) => setPriceSettings(x => ({ ...normalizePriceSettings(x), [k]: v }));
+    const download = async () => { try { const dataUrl = await buildPricesStoryImage(p); const fileMonth = currentMonthLabel().toLowerCase().replace(/\s+/g, '-'); downloadDataUrl(`precios-vigentes-${fileMonth}.png`, dataUrl); setAdminMessage('Historia de precios descargada correctamente.'); } catch (e) { console.warn(e); setAdminMessage('No se pudo generar la historia de precios.'); } };
+    const Field = ({k,label,big=false}) => React.createElement("label", { className: "block text-sm font-bold text-sky-100/85" }, label, big ? React.createElement("textarea", { value: p[k] || '', onChange: e => update(k, e.target.value), className: "booking-input mt-1 min-h-[88px]" }) : React.createElement("input", { value: p[k] || '', onChange: e => update(k, e.target.value), className: "booking-input mt-1" }));
+    return React.createElement(Modal, { onClose: onClose, max: "max-w-5xl" },
+        React.createElement("div", { className: "booking-hero rounded-3xl p-4 sm:p-6 -m-1" },
+            React.createElement("div", { className: "flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 mb-5" },
+                React.createElement("div", null, React.createElement("p", { className: "inline-flex items-center gap-2 px-3 py-1 rounded-full bg-sky-400/15 border border-sky-300/35 text-[11px] font-black uppercase tracking-[0.16em] mb-3" }, React.createElement("i", { className: "fas fa-tags" }), " Admin precios"), React.createElement("h2", { className: "text-2xl sm:text-3xl font-black leading-tight" }, "Editar precios vigentes"), React.createElement("p", { className: "text-sky-100/75 text-sm mt-2 leading-relaxed" }, "Estos valores se muestran en Consultar precios y en la historia descargable.")),
+                React.createElement("div", { className: "flex gap-2" }, React.createElement("button", { onClick: () => setPriceSettings(defaultPriceSettings()), className: "bg-neutral-800 px-4 py-3 rounded-xl font-bold" }, "Restaurar"), React.createElement("button", { onClick: download, className: "booking-btn px-4 py-3 rounded-xl font-black" }, React.createElement("i", { className: "fas fa-download mr-2" }), "Descargar historia"))),
+            React.createElement("div", { className: "grid sm:grid-cols-2 gap-3 sm:gap-4" },
+                React.createElement(Field, { k: "photoAppPrice", label: "Foto por la app" }), React.createElement(Field, { k: "photoAppNote", label: "Aclaración foto por app", big: true }),
+                React.createElement(Field, { k: "albumAllBoysPrice", label: "Álbum completo · All Boys" }), React.createElement(Field, { k: "albumAllBoysNote", label: "Aclaración All Boys", big: true }),
+                React.createElement(Field, { k: "albumCordobaPrice", label: "Álbum completo · Córdoba Capital" }), React.createElement(Field, { k: "albumCordobaNote", label: "Aclaración Córdoba Capital", big: true }),
+                React.createElement(Field, { k: "albumOutsideCordobaPrice", label: "Álbum completo · fuera de Córdoba" }), React.createElement(Field, { k: "albumOutsideCordobaNote", label: "Aclaración fuera de Córdoba", big: true }),
+                React.createElement(Field, { k: "sessionPrice", label: "Sesión individual en partido" }), React.createElement(Field, { k: "sessionNote", label: "Requisito sesión individual", big: true }),
+                React.createElement("div", { className: "sm:col-span-2" }, React.createElement(Field, { k: "multiCategoryNote", label: "Descuentos por más de una categoría", big: true })))));
 }
 function Steps() {
     const steps = [
@@ -1625,7 +1655,9 @@ function App() {
     const [couponMessage, setCouponMessage] = useState("");
     const [coupons, setCoupons] = useState(readCoupons());
     const [bannerSettings, setBannerSettings] = useState(readBannerSettings());
+    const [priceSettings, setPriceSettings] = useState(defaultPriceSettings());
     const [bookingOpen, setBookingOpen] = useState(false);
+    const [priceAdminOpen, setPriceAdminOpen] = useState(false);
     const [purchaseHelpOpen, setPurchaseHelpOpen] = useState(false);
     const [activeSubAlbum, setActiveSubAlbum] = useState('');
     const [sharedReady, setSharedReady] = useState(false);
@@ -1677,6 +1709,8 @@ function App() {
                 setCoupons(state.coupons);
             if (state.bannerSettings)
                 setBannerSettings(state.bannerSettings);
+            if (state.priceSettings)
+                setPriceSettings(normalizePriceSettings(state.priceSettings));
             setSharedReady(true);
         });
         const unsub = subscribeSharedAdminState(state => {
@@ -1686,6 +1720,8 @@ function App() {
                 setCoupons(state.coupons);
             if (state.bannerSettings)
                 setBannerSettings(state.bannerSettings);
+            if (state.priceSettings)
+                setPriceSettings(normalizePriceSettings(state.priceSettings));
         });
         return () => { cancelled = true; unsub && unsub(); };
     }, []);
@@ -1695,6 +1731,8 @@ function App() {
         saveSharedAdminState({ bannerSettings }); }, [bannerSettings, sharedReady]);
     useEffect(() => { saveDiscountSettings(discountSettings); if (sharedReady)
         saveSharedAdminState({ discountSettings }); }, [discountSettings, sharedReady]);
+    useEffect(() => { if (sharedReady)
+        saveSharedAdminState({ priceSettings: normalizePriceSettings(priceSettings) }); }, [priceSettings, sharedReady]);
     async function load({ silent = false, force = false } = {}) {
         // v27: visualizador directo de la hoja de cálculo. Sin álbumes guardados en el código ni caché local.
         try {
@@ -2239,7 +2277,7 @@ A continuación, te envío el comprobante.`;
                         "Esto suele tener solución rápida"),
                     React.createElement("div", { className: "w-16 h-16 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center mb-5 error-icon-pulse" },
                         React.createElement("img", { src: "https://i.postimg.cc/PrD4jg9V/Logo-LA.png", className: "w-11 h-11 object-contain" })),
-                    React.createElement("h1", { className: "text-2xl font-black mb-3 text-white" }, "Ocurrió un error al cargar la galería"),
+                    React.createElement("h1", { className: "text-2xl font-black mb-3 text-white" }, "Cargando galería"),
                     React.createElement("p", { className: "text-sm text-neutral-200 leading-relaxed mb-2" }, "No te preocupes: normalmente se resuelve volviendo a intentar o recargando la página."),
                     React.createElement("p", { className: "text-sm text-neutral-400 leading-relaxed mb-5" }, "Si la hoja o la conexión tardaron en responder, la app puede recuperarse sola con alguno de los botones de abajo."),
                     React.createElement("div", { className: "bg-black/65 border border-sky-400/15 rounded-2xl p-4 text-neutral-300 text-xs mb-5" },
@@ -2274,6 +2312,7 @@ A continuación, te envío el comprobante.`;
                     React.createElement("button", { onClick: refreshGalleryFromAdmin, className: "bg-neutral-800 px-4 py-3 rounded-xl" },
                         React.createElement("i", { className: "fas fa-rotate-right mr-2" }),
                         "Actualizar"),
+                    React.createElement("button", { onClick: () => setPriceAdminOpen(true), className: "bg-emerald-500 text-black px-4 py-3 rounded-xl font-black" }, React.createElement("i", { className: "fas fa-tags mr-2" }), "Precios"),
                     React.createElement("button", { onClick: () => location.hash = "#/galeria", className: "bg-indigo-600 px-4 py-3 rounded-xl font-bold" }, "Ver galer\u00EDa"))),
             adminMessage && React.createElement("div", { className: "mb-4 bg-emerald-600/15 border border-emerald-500/30 text-emerald-300 rounded-2xl px-4 py-3 text-sm" }, adminMessage),
             React.createElement("div", { className: "mb-4 bg-blue-500/10 border border-blue-500/25 text-blue-100 rounded-2xl px-4 py-3 text-xs leading-relaxed" },
@@ -2281,7 +2320,7 @@ A continuación, te envío el comprobante.`;
                 " proyecto lucasabraham-b84aa \u00B7 ruta principal ",
                 React.createElement("b", null, "artifacts/lucasabraham-ph-db/orders"),
                 " \u00B7 versi\u00F3n ",
-                React.createElement("b", null, "v27-hoja-unica-sin-cache-marca-suave"),
+                React.createElement("b", null, "v30-precios-estable"),
                 ". Si al comprar aparece un aviso rojo, el pedido qued\u00F3 local pero Firestore rechaz\u00F3 la escritura."),
             React.createElement("div", { className: "mb-6 bg-neutral-900 border border-neutral-800 rounded-3xl p-5" },
                 React.createElement("div", { className: "flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4 mb-4" },
@@ -2678,11 +2717,11 @@ A continuación, te envío el comprobante.`;
                             React.createElement("p", { className: "text-[10px] sm:text-[11px] text-neutral-300 mt-1.5 leading-tight whitespace-normal break-words line-clamp-2" }, a.name)))))),
                 !currentAlbum && React.createElement("div", { className: "mt-5 sm:mt-7 booking-hero rounded-3xl p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4" },
                     React.createElement("div", null,
-                        React.createElement("h3", { className: "text-xl sm:text-2xl font-black leading-tight" }, "\u00BFQuer\u00E9s que cubra tu partido o jornada?"),
-                        React.createElement("p", { className: "text-sm text-sky-100/75 mt-1" }, "Complet\u00E1 una solicitud y se abre WhatsApp con todos los datos listos para enviarme.")),
+                        React.createElement("h3", { className: "text-xl sm:text-2xl font-black leading-tight" }, "Consultá mis precios vigentes"),
+                        React.createElement("p", { className: "text-sm text-sky-100/75 mt-1" }, "Tocá el botón para ver los valores actualizados del mes y reservar directamente por WhatsApp.")),
                     React.createElement("button", { onClick: () => setBookingOpen(true), className: "booking-btn px-5 py-4 rounded-2xl font-black shrink-0" },
-                        React.createElement("i", { className: "fas fa-calendar-check mr-2" }),
-                        "Reservame para tu partido")),
+                        React.createElement("i", { className: "fas fa-tags mr-2" }),
+                        "Consultar precios")),
                 !currentAlbum && activeAlbums.length > 0 && React.createElement(MainHeaderBanners, { bannerSettings: bannerSettings })),
             React.createElement(Steps, null),
             React.createElement("div", { className: "mb-4" },
@@ -2994,7 +3033,8 @@ Te envío el comprobante para que puedas prepararlas.`);
                     React.createElement("i", { className: "fab fa-whatsapp mr-2" }),
                     "Finalizar compra"),
                 React.createElement("p", { className: "text-center text-[11px] text-sky-100/65 leading-relaxed mt-3" }, "Se abre WhatsApp con el pedido listo. Luego adjuntá el comprobante de la transferencia en el mismo chat."))),
-        bookingOpen && React.createElement(BookingModal, { onClose: () => setBookingOpen(false) }),
+        priceAdminOpen && admin && React.createElement(PriceAdminModal, { onClose: () => setPriceAdminOpen(false), priceSettings: priceSettings, setPriceSettings: setPriceSettings, setAdminMessage: setAdminMessage }),
+        bookingOpen && React.createElement(PriceModal, { onClose: () => setBookingOpen(false), priceSettings: priceSettings }),
         viewer && React.createElement(Modal, { onClose: () => setViewer(null), max: "max-w-6xl" },
             React.createElement("div", { className: "grid lg:grid-cols-[1.2fr,.8fr] gap-5 items-start" },
                 React.createElement("div", { onTouchStart: e => { var _a, _b; return touchStartX.current = (_b = (_a = e.touches) === null || _a === void 0 ? void 0 : _a[0]) === null || _b === void 0 ? void 0 : _b.clientX; }, onTouchEnd: handleSwipeEnd(moveViewer), className: "rounded-3xl overflow-hidden bg-black border border-neutral-800 relative" },
@@ -3049,7 +3089,7 @@ if (rootEl && window.React && window.ReactDOM && ReactDOM.createRoot) {
         rootEl.innerHTML = '<div class="app-boot-fallback mobile-safe-dark"><div class="app-boot-card"><img src="https://i.postimg.cc/PrD4jg9V/Logo-LA.png" alt="lucasabraham.ph"><h1 style="font-size:22px;font-weight:950;margin:0 0 6px;color:#fff!important;">Ocurrió un inconveniente</h1><p style="color:#d4d4d8!important;font-size:13px;line-height:1.45;margin:0;">Perdón por el inconveniente. Probá recargando la página para volver a intentar.</p><button onclick="location.reload()" style="margin-top:16px;background:linear-gradient(135deg,#0ea5e9,#2563eb 56%,#1d4ed8);color:#fff;border:0;border-radius:14px;padding:12px 18px;font-weight:900;box-shadow:0 18px 40px rgba(37,99,235,.30);animation:errorIconPulse 2.2s ease-in-out infinite;">Reintentar y recargar</button></div></div>';
     }
 } else if (rootEl) {
-    rootEl.innerHTML = '<div class="app-boot-fallback mobile-safe-dark"><div class="app-boot-card"><img src="https://i.postimg.cc/PrD4jg9V/Logo-LA.png" alt="lucasabraham.ph"><h1 style="font-size:22px;font-weight:950;margin:0 0 6px;color:#fff!important;">Ocurrió un error al cargar la galería</h1><p style="color:#d4d4d8!important;font-size:13px;line-height:1.45;margin:0;">Perdón, la carga tardó más de lo esperado. Probá recargando la página.</p><button onclick="location.reload()" style="margin-top:16px;background:linear-gradient(135deg,#0ea5e9,#2563eb 56%,#1d4ed8);color:#fff;border:0;border-radius:14px;padding:12px 18px;font-weight:900;box-shadow:0 18px 40px rgba(37,99,235,.30);animation:errorIconPulse 2.2s ease-in-out infinite;">Reintentar y recargar</button></div></div>';
+    rootEl.innerHTML = '<div class="app-boot-fallback mobile-safe-dark"><div class="app-boot-card"><img src="https://i.postimg.cc/PrD4jg9V/Logo-LA.png" alt="lucasabraham.ph"><h1 style="font-size:22px;font-weight:950;margin:0 0 6px;color:#fff!important;">Cargando galería</h1><p style="color:#d4d4d8!important;font-size:13px;line-height:1.45;margin:0;">Perdón, la carga tardó más de lo esperado. Probá recargando la página.</p><button onclick="location.reload()" style="margin-top:16px;background:linear-gradient(135deg,#0ea5e9,#2563eb 56%,#1d4ed8);color:#fff;border:0;border-radius:14px;padding:12px 18px;font-weight:900;box-shadow:0 18px 40px rgba(37,99,235,.30);animation:errorIconPulse 2.2s ease-in-out infinite;">Reintentar y recargar</button></div></div>';
 }
 
 </script>
