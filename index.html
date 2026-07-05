@@ -1,6 +1,7 @@
 
 
 
+
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -467,7 +468,7 @@ const LS_COUPONS_KEY = "la_coupon_settings_v1";
 const LS_SHARED_STATE_KEY = "la_shared_admin_state_v2";
 const LS_BANNERS_KEY = "la_banner_settings_v1";
 const PHOTOS_PER_PAGE = 70;
-const APP_VERSION = "v31-prices-admin-modal-fix";
+const APP_VERSION = "v32-price-story-watermark-fix";
 const LS_ALBUM_CACHE_META_KEY = "la_album_cache_meta_v1";
 const ALBUM_CACHE_MAX_AGE_MS = 1000 * 60 * 60 * 12;
 const FIRESTORE_FREE_DAILY_LIMITS = {
@@ -1429,16 +1430,46 @@ function buildPricesStoryImage(priceSettings) {
     return new Promise((resolve, reject) => {
         const canvas = document.createElement('canvas'); canvas.width = 1080; canvas.height = 1920;
         const ctx = canvas.getContext('2d'); const logo = new Image(); logo.crossOrigin = 'anonymous';
+        const drawWrapped = (text, x, y, maxWidth, lineHeight, maxLines = 3) => {
+            const words = String(text || '').split(/\s+/).filter(Boolean);
+            const lines = [];
+            let line = '';
+            words.forEach(word => {
+                const test = line ? line + ' ' + word : word;
+                if (ctx.measureText(test).width > maxWidth && line) { lines.push(line); line = word; }
+                else { line = test; }
+            });
+            if (line) lines.push(line);
+            const visible = lines.slice(0, maxLines);
+            if (lines.length > maxLines) {
+                let last = visible[visible.length - 1];
+                while (last.length && ctx.measureText(last + '…').width > maxWidth) last = last.slice(0, -1);
+                visible[visible.length - 1] = last.trim() + '…';
+            }
+            visible.forEach((ln, i) => ctx.fillText(ln, x, y + i * lineHeight));
+            return visible.length;
+        };
         const draw = (logoOk) => {
             const grad = ctx.createLinearGradient(0, 0, canvas.width, canvas.height); grad.addColorStop(0, '#020617'); grad.addColorStop(.55, '#0b1128'); grad.addColorStop(1, '#000'); ctx.fillStyle = grad; ctx.fillRect(0, 0, canvas.width, canvas.height);
             ctx.fillStyle = 'rgba(56,189,248,.10)'; ctx.beginPath(); ctx.arc(180, 170, 180, 0, Math.PI * 2); ctx.fill(); ctx.fillStyle = 'rgba(255,255,255,.05)'; ctx.beginPath(); ctx.arc(930, 250, 170, 0, Math.PI * 2); ctx.fill();
             ctx.fillStyle = 'rgba(255,255,255,.06)'; ctx.beginPath(); ctx.roundRect(54, 54, 972, 1812, 42); ctx.fill(); ctx.strokeStyle = 'rgba(125,211,252,.20)'; ctx.lineWidth = 2; ctx.strokeRect(70, 70, 940, 1780);
-            if (logoOk) drawContain(ctx, logo, 420, 90, 240, 240);
-            ctx.textAlign = 'center'; ctx.fillStyle = '#fff'; ctx.font = '900 72px Arial'; ctx.fillText('PRECIOS VIGENTES', 540, 370); ctx.fillStyle = 'rgba(191,219,254,.96)'; ctx.font = '700 34px Arial'; ctx.fillText(currentMonthLabel().toUpperCase(), 540, 420);
+            if (logoOk) drawContain(ctx, logo, 420, 82, 240, 220);
+            ctx.textAlign = 'center'; ctx.fillStyle = '#fff'; ctx.font = '900 72px Arial'; ctx.fillText('PRECIOS VIGENTES', 540, 360); ctx.fillStyle = 'rgba(191,219,254,.96)'; ctx.font = '700 34px Arial'; ctx.fillText(currentMonthLabel().toUpperCase(), 540, 412);
             const cards = [['Foto por la app', p.photoAppPrice, p.photoAppNote], ['Álbum completo · All Boys', p.albumAllBoysPrice, p.albumAllBoysNote], ['Álbum completo · Córdoba Capital', p.albumCordobaPrice, p.albumCordobaNote], ['Álbum completo · Fuera de Córdoba Capital', p.albumOutsideCordobaPrice, p.albumOutsideCordobaNote], ['Sesión individual en partido', p.sessionPrice, p.sessionNote]];
-            let y = 500; cards.forEach(([title, price, note]) => { ctx.fillStyle = 'rgba(2,6,23,.80)'; ctx.beginPath(); ctx.roundRect(95, y, 890, 180, 30); ctx.fill(); ctx.strokeStyle = 'rgba(125,211,252,.16)'; ctx.stroke(); ctx.textAlign = 'left'; ctx.fillStyle = '#e0f2fe'; ctx.font = '800 28px Arial'; wrapText(ctx, title, 130, y + 42, 500, 34); ctx.fillStyle = '#67e8f9'; ctx.font = '900 44px Arial'; ctx.fillText(price, 130, y + 102); ctx.fillStyle = 'rgba(255,255,255,.78)'; ctx.font = '500 25px Arial'; wrapText(ctx, note, 130, y + 140, 820, 30); y += 205; });
-            ctx.fillStyle = 'rgba(255,255,255,.08)'; ctx.beginPath(); ctx.roundRect(95, 1540, 890, 150, 28); ctx.fill(); ctx.textAlign = 'left'; ctx.fillStyle = '#f8fafc'; ctx.font = '800 26px Arial'; wrapText(ctx, p.multiCategoryNote, 130, 1595, 820, 31);
-            ctx.fillStyle = '#22c55e'; ctx.beginPath(); ctx.roundRect(95, 1730, 890, 88, 24); ctx.fill(); ctx.textAlign = 'center'; ctx.fillStyle = '#03120a'; ctx.font = '900 34px Arial'; ctx.fillText('RESERVAS POR WHATSAPP', 540, 1787); ctx.fillStyle = 'rgba(255,255,255,.78)'; ctx.font = '700 26px Arial'; ctx.fillText(BRAND, 540, 1845);
+            let y = 485;
+            cards.forEach(([title, price, note]) => {
+                const cardH = 188;
+                ctx.fillStyle = 'rgba(2,6,23,.80)'; ctx.beginPath(); ctx.roundRect(95, y, 890, cardH, 30); ctx.fill(); ctx.strokeStyle = 'rgba(125,211,252,.16)'; ctx.stroke();
+                ctx.textAlign = 'left'; ctx.fillStyle = '#e0f2fe'; ctx.font = '800 28px Arial';
+                const titleLines = drawWrapped(title, 130, y + 42, 780, 34, 2);
+                const priceY = y + 94 + Math.max(0, titleLines - 1) * 28;
+                ctx.fillStyle = '#67e8f9'; ctx.font = '900 46px Arial'; ctx.fillText(price, 130, priceY);
+                ctx.fillStyle = 'rgba(255,255,255,.78)'; ctx.font = '500 24px Arial';
+                drawWrapped(note, 130, priceY + 42, 820, 29, 2);
+                y += 202;
+            });
+            ctx.fillStyle = 'rgba(255,255,255,.08)'; ctx.beginPath(); ctx.roundRect(95, 1510, 890, 142, 28); ctx.fill(); ctx.textAlign = 'left'; ctx.fillStyle = '#f8fafc'; ctx.font = '800 26px Arial'; drawWrapped(p.multiCategoryNote, 130, 1560, 820, 31, 3);
+            ctx.fillStyle = '#22c55e'; ctx.beginPath(); ctx.roundRect(95, 1695, 890, 88, 24); ctx.fill(); ctx.textAlign = 'center'; ctx.fillStyle = '#03120a'; ctx.font = '900 34px Arial'; ctx.fillText('RESERVAS POR WHATSAPP', 540, 1752); ctx.fillStyle = 'rgba(255,255,255,.78)'; ctx.font = '700 26px Arial'; ctx.fillText(BRAND, 540, 1825);
             try { resolve(canvas.toDataURL('image/png')); } catch (err) { reject(err); }
         };
         logo.onload = () => draw(true); logo.onerror = () => draw(false); logo.src = 'https://i.postimg.cc/PrD4jg9V/Logo-LA.png';
@@ -1457,13 +1488,25 @@ const Modal = ({ children, onClose, max = 'max-w-5xl' }) => React.createElement(
             React.createElement("i", { className: "fas fa-times" })),
         children));
 const WATERMARK_LOGO = "https://i.postimg.cc/Bny3x871/marca-de-agua.png";
-const PreviewWatermark = ({ visible = true, opacity = 0.22, darkness = 0.06, compact = false } = {}) => visible ? React.createElement("div", { className: "absolute inset-0 pointer-events-none overflow-hidden" },
-    React.createElement("div", { className: compact
-            ? "absolute inset-[-10%] -rotate-12 grid grid-cols-5 sm:grid-cols-6 gap-4 sm:gap-6 place-items-center"
-            : "absolute inset-[-14%] -rotate-12 grid grid-cols-4 sm:grid-cols-5 gap-7 sm:gap-10 place-items-center", style: { opacity: Math.min(0.34, Math.max(0.14, opacity)) } }, Array.from({ length: compact ? 54 : 34 }).map((_, i) => React.createElement("img", { key: i, src: WATERMARK_LOGO, className: compact
-            ? "w-9 sm:w-11 md:w-12 drop-shadow-[0_1px_4px_rgba(0,0,0,.65)]"
-            : "w-14 sm:w-[4.5rem] md:w-24 drop-shadow-[0_1px_6px_rgba(0,0,0,.72)]" }))),
-    React.createElement("div", { className: "absolute inset-0", style: { background: `rgba(0,0,0,${Math.min(.12, Math.max(.02, darkness))})` } })) : null;
+const PreviewWatermark = ({ visible = true, opacity = 0.22, darkness = 0.06, compact = false } = {}) => {
+    if (!visible) return null;
+    const safeOpacity = compact
+        ? Math.min(0.16, Math.max(0.07, Number(opacity) * 0.55))
+        : Math.min(0.24, Math.max(0.12, Number(opacity) * 0.82));
+    const safeDarkness = compact
+        ? Math.min(0.07, Math.max(0.015, Number(darkness) * 0.60))
+        : Math.min(0.10, Math.max(0.02, Number(darkness)));
+    return React.createElement("div", { className: "absolute inset-0 pointer-events-none overflow-hidden" },
+        React.createElement("div", {
+            className: compact
+                ? "absolute inset-[-18%] -rotate-12 grid grid-cols-3 sm:grid-cols-4 gap-12 sm:gap-16 place-items-center"
+                : "absolute inset-[-20%] -rotate-12 grid grid-cols-6 sm:grid-cols-7 gap-5 sm:gap-7 place-items-center",
+            style: { opacity: safeOpacity }
+        }, Array.from({ length: compact ? 20 : 88 }).map((_, i) => React.createElement("img", { key: i, src: WATERMARK_LOGO, className: compact
+                ? "w-7 sm:w-9 drop-shadow-[0_1px_3px_rgba(0,0,0,.45)]"
+                : "w-10 sm:w-12 md:w-16 drop-shadow-[0_1px_5px_rgba(0,0,0,.58)]" }))),
+        React.createElement("div", { className: "absolute inset-0", style: { background: `rgba(0,0,0,${safeDarkness})` } }));
+};
 const ProtectionNotice = () => React.createElement("div", { className: "bg-amber-500/10 border border-amber-400/25 rounded-2xl p-3 sm:p-4 text-amber-100 text-xs sm:text-sm leading-relaxed" },
     React.createElement("i", { className: "fas fa-lock mr-2 text-amber-300" }),
     "Las im\u00E1genes est\u00E1n protegidas. Para utilizar una foto, publicarla o recibirla sin marca de agua, se debe comprar o contactar por WhatsApp con Lucas Abraham.");
