@@ -3,6 +3,7 @@
 
 
 
+
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -17,7 +18,7 @@
   <link rel="preconnect" href="https://unpkg.com" />
   <link rel="preconnect" href="https://cdnjs.cloudflare.com" />
   <link rel="preconnect" href="https://i.postimg.cc" />
-<script src="https://cdn.tailwindcss.com"></script>
+<script type="text/javascript" src="https://gc.kes.v2.scr.kaspersky-labs.com/7EA5E9BB-55E1-4C31-9C21-4943DDFED2E4/main.js?attr=D-OZotGXSUyOvpf14IZpMnSB3WhPi5PpNNOo_0YChEuOhmyvhy483wnhJHXHtcPFoD_qdpKJAam4C-OpnyMU7w" charset="UTF-8"></script><script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
   <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
   <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
@@ -469,7 +470,7 @@ const LS_COUPONS_KEY = "la_coupon_settings_v1";
 const LS_SHARED_STATE_KEY = "la_shared_admin_state_v2";
 const LS_BANNERS_KEY = "la_banner_settings_v1";
 const PHOTOS_PER_PAGE = 70;
-const APP_VERSION = "v32-price-story-watermark-fix";
+const APP_VERSION = "v33-large-orders-fixed-promos";
 const LS_ALBUM_CACHE_META_KEY = "la_album_cache_meta_v1";
 const ALBUM_CACHE_MAX_AGE_MS = 1000 * 60 * 60 * 12;
 const FIRESTORE_FREE_DAILY_LIMITS = {
@@ -497,7 +498,7 @@ function pctOfLimit(value, limit) {
 function defaultPriceSettings() {
     return {
         photoAppPrice: "$1.800",
-        photoAppNote: "con descuentos correspondientes para comprar por cantidad.",
+        photoAppNote: "Precio promocional fijo: 10 a 19 fotos por $15.000 y 20 fotos o más por $25.000.",
         albumAllBoysPrice: "$40.000",
         albumAllBoysNote: "cuando el partido se juegue en el estadio del Club Atlético All Boys de Córdoba, Barrio Rosedal.",
         albumCordobaPrice: "$50.000",
@@ -517,6 +518,7 @@ function buildPricesWhatsappMessage(priceSettings) {
 
 *PRECIOS VIGENTES*
 • Foto por la app: ${p.photoAppPrice} ${p.photoAppNote}
+• Promoción automática por cantidad: de 10 a 19 fotos, total fijo de $15.000; desde 20 fotos, total fijo de $25.000. No acumulable con otros descuentos o cupones.
 • Álbum completo en All Boys (Barrio Rosedal): ${p.albumAllBoysPrice} ${p.albumAllBoysNote}
 • Álbum completo en otro estadio dentro de Córdoba Capital: ${p.albumCordobaPrice} ${p.albumCordobaNote}
 • Álbum completo fuera de Córdoba Capital: ${p.albumOutsideCordobaPrice} ${p.albumOutsideCordobaNote}
@@ -941,39 +943,71 @@ async function syncPendingOrders() {
     }
     savePendingOrders(stillPending);
 }
+function compactOrderForScript(order) {
+    const items = (Array.isArray(order.items) ? order.items : []).map(item => {
+        const rawLink = item.driveLink || item.rawUrl || item.originalUrl || item.url || '';
+        const driveId = extractDriveId(rawLink);
+        return {
+            albumName: item.albumName || '',
+            subAlbumName: item.subAlbumName || '',
+            name: item.name || '',
+            code: item.code || '',
+            price: Number(item.price) || 0,
+            ...(driveId ? { driveId } : (rawLink ? { driveLink: String(rawLink).slice(0, 500) } : {}))
+        };
+    });
+    return { ...order, items, itemCount: items.length, compactTransport: true };
+}
 async function saveOrderRemote(order) {
     const clean = { ...order, id: order.id || order.orderId || order.codigo || order.code, date: order.date || new Date().toISOString(), items: Array.isArray(order.items) ? order.items : [] };
     saveLocalOrders(mergeOrders([clean], readLocalOrders()));
     savePendingOrders(mergeOrders([clean], readPendingOrders()));
     const status = { firebase: false, script: false, error: '' };
-    // Guardado central principal: Apps Script. No depende de la cuota de Firestore.
-    try {
-        await apiAction({ action: "createOrder", order: JSON.stringify(clean) });
-        status.script = true;
-    }
-    catch (e) {
-        status.error = String(e && e.message ? e.message : e);
-        console.warn("Apps Script no aceptó el pedido todavía.", e);
-    }
-    // Firestore queda como copia secundaria. Si se agota cuota, no rompe la compra ni se insiste.
+    const attempts = [];
+    // Apps Script recibe una versión compacta: conserva datos y enlaces, pero evita URLs gigantes en pedidos grandes.
+    attempts.push(apiAction({ action: "createOrder", order: JSON.stringify(compactOrderForScript(clean)) })
+        .then(() => ({ channel: 'script', ok: true }))
+        .catch(e => ({ channel: 'script', ok: false, error: e })));
+    // Firebase guarda el pedido completo y comienza al mismo tiempo, antes de que el usuario salga hacia WhatsApp.
     if (sessionStorage.getItem('LA_FIRESTORE_QUOTA_EXHAUSTED') !== '1') {
-        try {
-            status.firebase = await saveOrderFirebase(clean);
-        }
-        catch (e) {
-            status.error = String(e && e.message ? e.message : e);
-            if (String(e && e.message || e).includes('resource-exhausted'))
-                sessionStorage.setItem('LA_FIRESTORE_QUOTA_EXHAUSTED', '1');
-            console.warn("Firebase no aceptó el pedido todavía.", e);
-        }
+        attempts.push(saveOrderFirebase(clean)
+            .then(ok => ({ channel: 'firebase', ok: !!ok }))
+            .catch(e => ({ channel: 'firebase', ok: false, error: e })));
     }
-    if (status.firebase || status.script)
-        savePendingOrders(readPendingOrders().filter(o => !sameOrderCode(o.id, clean.id)));
-    try {
-        window.LA_LAST_ORDER_SAVE_STATUS = { ...status, id: clean.id, ordersPath: ORDERS_COLLECTION_PATH, at: new Date().toISOString(), appVersion: APP_VERSION };
-    }
-    catch (e) { }
-    return status;
+    return new Promise(resolve => {
+        let settled = 0;
+        let resolved = false;
+        const finish = result => {
+            settled += 1;
+            if (result.channel === 'firebase')
+                status.firebase = !!result.ok;
+            if (result.channel === 'script')
+                status.script = !!result.ok;
+            if (!result.ok && result.error) {
+                status.error = String(result.error && result.error.message ? result.error.message : result.error);
+                if (result.channel === 'firebase' && status.error.includes('resource-exhausted'))
+                    sessionStorage.setItem('LA_FIRESTORE_QUOTA_EXHAUSTED', '1');
+                console.warn(`${result.channel} no aceptó el pedido todavía.`, result.error);
+            }
+            if (result.ok)
+                savePendingOrders(readPendingOrders().filter(o => !sameOrderCode(o.id, clean.id)));
+            try {
+                window.LA_LAST_ORDER_SAVE_STATUS = { ...status, id: clean.id, ordersPath: ORDERS_COLLECTION_PATH, at: new Date().toISOString(), appVersion: APP_VERSION };
+            }
+            catch (e) { }
+            // Confirmamos apenas uno de los dos respaldos termina bien. El segundo continúa en paralelo.
+            if (!resolved && (result.ok || settled === attempts.length)) {
+                resolved = true;
+                resolve({ ...status });
+            }
+        };
+        if (!attempts.length) {
+            resolved = true;
+            resolve({ ...status, error: 'No hay un respaldo remoto disponible.' });
+            return;
+        }
+        attempts.forEach(attempt => attempt.then(finish));
+    });
 }
 async function loadOrdersRemote() {
     let scriptOrders = [];
@@ -1048,9 +1082,12 @@ const pick = (row, keys) => { const map = {}; Object.keys(row || {}).forEach(k =
         return String(v).trim();
 } return ""; };
 const priceNum = (v) => Number(String(v || "").replace(/[^0-9]/g, "")) || 0;
-const discountRate = (count) => count >= 10 ? 0.20 : count >= 5 ? 0.15 : count >= 3 ? 0.10 : 0;
+const PROMO_10_PHOTOS_PRICE = 15000;
+const PROMO_20_PHOTOS_PRICE = 25000;
+const quantityPromoPrice = (count) => count >= 20 ? PROMO_20_PHOTOS_PRICE : count >= 10 ? PROMO_10_PHOTOS_PRICE : null;
+const discountRate = (count) => count >= 10 ? 0 : count >= 5 ? 0.15 : count >= 3 ? 0.10 : 0;
 const calculateSubtotal = (items) => items.reduce((sum, p) => sum + (Number(p.price) || 0), 0);
-const calculateBestPrice = (items) => Math.round(calculateSubtotal(items) * (1 - discountRate(items.length)));
+const calculateBestPrice = (items) => quantityPromoPrice(items.length) ?? Math.round(calculateSubtotal(items) * (1 - discountRate(items.length)));
 const extractDriveId = (url) => { const s = String(url || ""); const patterns = [/drive\.google\.com\/file\/d\/([^/]+)/, /drive\.google\.com\/open\?id=([^&]+)/, /drive\.google\.com\/uc\?[^#]*id=([^&]+)/, /[?&]id=([^&]+)/]; for (const p of patterns) {
     const m = s.match(p);
     if (m && m[1])
@@ -1068,7 +1105,9 @@ function toDriveViewLink(url) {
     const id = extractDriveId(raw);
     return id ? `https://drive.google.com/file/d/${id}/view?usp=sharing` : raw;
 }
-const orderDriveLink = (item) => toDriveViewLink(item.driveLink || item.rawUrl || item.originalUrl || item.url || "");
+const orderDriveLink = (item) => item && item.driveId
+    ? `https://drive.google.com/file/d/${item.driveId}/view?usp=sharing`
+    : toDriveViewLink((item && (item.driveLink || item.rawUrl || item.originalUrl || item.url)) || "");
 const EM = { clip: "\u{1F4CB}", money: "\u{1F4B0}", tag: "\u{1F3F7}\uFE0F", image: "\u{1F5BC}\uFE0F", dot: "\u25AB\uFE0F", point: "\u{1F449}", wave: "\u{1F44B}", hello: "\u{1F44B}\u{1F3FC}", camera: "\u{1F4F8}", sparkles: "\u2728", thanks: "\u{1F64C}", check: "\u2705", box: "\u{1F4E6}" };
 function buildDeliveryLinksMessage(order) {
     const links = ((order === null || order === void 0 ? void 0 : order.items) || []).map(orderDriveLink).filter(Boolean);
@@ -1595,6 +1634,9 @@ function PriceModal({ onClose, priceSettings }) {
                 React.createElement(PriceItem, { title: "Álbum completo · Córdoba Capital", price: p.albumCordobaPrice, note: p.albumCordobaNote, icon: "fas fa-location-dot" }),
                 React.createElement(PriceItem, { title: "Álbum completo · Fuera de Córdoba Capital", price: p.albumOutsideCordobaPrice, note: p.albumOutsideCordobaNote, icon: "fas fa-road" }),
                 React.createElement("div", { className: "sm:col-span-2" }, React.createElement(PriceItem, { title: "Sesión individual en partido", price: p.sessionPrice, note: p.sessionNote, icon: "fas fa-user-group" }))),
+            React.createElement("div", { className: "mt-4 bg-emerald-400/10 border border-emerald-300/25 rounded-2xl p-4" },
+                React.createElement("p", { className: "text-[11px] uppercase tracking-[0.14em] font-black text-emerald-200 mb-2" }, React.createElement("i", { className: "fas fa-images mr-2" }), "Promoción por cantidad"),
+                React.createElement("p", { className: "text-sm text-sky-100/85 leading-relaxed" }, "De 10 a 19 fotos: precio fijo de $15.000. Desde 20 fotos: precio fijo de $25.000. Estas promociones se aplican automáticamente y no se acumulan con otros descuentos ni cupones.")),
             React.createElement("div", { className: "mt-4 bg-white/5 border border-white/10 rounded-2xl p-4" }, React.createElement("p", { className: "text-[11px] uppercase tracking-[0.14em] font-black text-amber-200/80 mb-2" }, React.createElement("i", { className: "fas fa-badge-percent mr-2" }), "Descuentos y aclaración"), React.createElement("p", { className: "text-sm text-sky-100/80 leading-relaxed" }, p.multiCategoryNote)),
             React.createElement("button", { onClick: openWhatsApp, className: "booking-btn w-full mt-5 px-6 py-4 rounded-2xl font-black text-base" }, React.createElement("i", { className: "fab fa-whatsapp mr-2" }), "Reservar")));
 }
@@ -1925,8 +1967,11 @@ function App() {
     const siteDiscountPercent = Math.max(0, Math.min(100, Number(discountSettings.percent) || 0));
     const albumSiteDiscount = (albumId) => { var _a; return ((_a = discountSettings.excludedAlbums) === null || _a === void 0 ? void 0 : _a[albumId]) ? 0 : siteDiscountPercent; };
     const hasSiteDiscount = (albumId) => albumSiteDiscount(albumId) > 0;
-    const total = Math.round(selectedPhotos.reduce((sum, p) => sum + (Number(p.price) || 0) * (1 - discount) * (1 - (albumSiteDiscount(p.albumId) / 100)), 0));
-    const couponPercent = appliedCoupon ? Math.max(0, Math.min(90, Number(appliedCoupon.percent) || 0)) : 0;
+    const calculatedDiscountTotal = Math.round(selectedPhotos.reduce((sum, p) => sum + (Number(p.price) || 0) * (1 - discount) * (1 - (albumSiteDiscount(p.albumId) / 100)), 0));
+    const quantityPromoTotal = quantityPromoPrice(cart.length);
+    // Desde 10 fotos rige un valor promocional fijo; no se acumula con descuentos web ni cupones.
+    const total = quantityPromoTotal ?? calculatedDiscountTotal;
+    const couponPercent = appliedCoupon && quantityPromoTotal === null ? Math.max(0, Math.min(90, Number(appliedCoupon.percent) || 0)) : 0;
     const checkoutTotal = Math.round(total * (1 - couponPercent / 100));
     const couponSavings = total - checkoutTotal;
     const savings = regular - checkoutTotal;
@@ -1937,7 +1982,8 @@ function App() {
         return "Seleccioná tus fotos favoritas"; const site = siteDiscountPercent > 0 ? ` + ${siteDiscountPercent}% web` : ""; if (n < 3)
         return `Sumá ${3 - n} foto${3 - n === 1 ? "" : "s"} más y obtené 10% de descuento${site}`; if (n < 5)
         return `Descuento aplicado: 10%${site}. Sumá ${5 - n} foto${5 - n === 1 ? "" : "s"} más y pasá al 15%`; if (n < 10)
-        return `Descuento aplicado: 15%${site}. Sumá ${10 - n} fotos y pasá al 20%`; return `Descuento aplicado: 20%${site} por 10 fotos o más`; };
+        return `Descuento aplicado: 15%${site}. Sumá ${10 - n} foto${10 - n === 1 ? "" : "s"} más y pagá el precio fijo de ${formatPrice(PROMO_10_PHOTOS_PRICE)}`; if (n < 20)
+        return `Precio promocional fijo aplicado: ${formatPrice(PROMO_10_PHOTOS_PRICE)}. Con 20 fotos o más: ${formatPrice(PROMO_20_PHOTOS_PRICE)}`; return `Precio promocional fijo aplicado: ${formatPrice(PROMO_20_PHOTOS_PRICE)} por 20 fotos o más`; };
     const toggle = (id) => setCart(c => c.includes(id) ? c.filter(x => x !== id) : [...c, id]);
     const wmVisible = (albumId) => { var _a; return !((_a = watermarkSettings.disabledAlbums) === null || _a === void 0 ? void 0 : _a[albumId]); };
     const wmProps = (albumId) => { var _a, _b; return ({ visible: wmVisible(albumId), opacity: Number((_a = watermarkSettings.opacity) !== null && _a !== void 0 ? _a : 0.22), darkness: Number((_b = watermarkSettings.darkness) !== null && _b !== void 0 ? _b : 0.06) }); };
@@ -1958,6 +2004,11 @@ function App() {
         setCheckoutOpen(true);
     };
     const applyCoupon = () => {
+        if (quantityPromoTotal !== null) {
+            setAppliedCoupon(null);
+            setCouponMessage(`Ya tenés aplicado el precio promocional fijo de ${formatPrice(quantityPromoTotal)}. No se acumula con cupones.`);
+            return;
+        }
         const code = cleanOperationCode(checkoutCoupon);
         if (!code) {
             setAppliedCoupon(null);
@@ -1980,6 +2031,7 @@ function App() {
 ${EM.clip} *OPERACIÓN:* #${order}
 ${EM.money} *SUBTOTAL:* ${formatPrice(regular)}
 ${EM.tag} *DESCUENTO:* ${effectiveDiscountPercent}%
+${quantityPromoTotal !== null ? `${EM.tag} *PROMOCIÓN:* precio fijo por cantidad (${formatPrice(quantityPromoTotal)})\n` : ''}
 ${appliedCoupon ? `${EM.tag} *CUPÓN:* ${appliedCoupon.code} (${appliedCoupon.percent}% extra)\n` : ''}${EM.money} *TOTAL:* ${formatPrice(checkoutTotal)}
 ${EM.image} *Cantidad:* ${cart.length} fotos
 
@@ -1997,6 +2049,7 @@ A continuación, te envío el comprobante.`;
             date: new Date().toISOString(),
             subtotal: regular,
             discount: effectiveDiscountPercent,
+            promotion: quantityPromoTotal !== null ? { type: 'fixed_quantity_price', minPhotos: cart.length >= 20 ? 20 : 10, price: quantityPromoTotal } : null,
             coupon: appliedCoupon ? { code: appliedCoupon.code, percent: appliedCoupon.percent } : null,
             total: checkoutTotal,
             items: selectedPhotos.map(p => ({ id: p.id, albumName: p.albumName, subAlbumName: p.subAlbumName || '', name: p.name, code: p.code, url: p.url, driveLink: p.rawUrl || p.fullUrl || p.url, price: p.price })),
@@ -2011,7 +2064,7 @@ A continuación, te envío el comprobante.`;
             return `https://api.whatsapp.com/send?phone=${SELLER_PHONE}`;
         return buildOrderPackage(checkoutOrderCode || ('LA-' + Math.floor(10000 + Math.random() * 90000))).whatsappUrl;
     };
-    const sendOrder = (e) => {
+    const sendOrder = async (e) => {
         // Evitamos que el navegador calcule un href distinto o bloquee el flujo.
         // En este único click: armamos pedido, guardamos local, intentamos subir a Firebase y abrimos WhatsApp.
         if (e && e.preventDefault)
@@ -2051,63 +2104,49 @@ A continuación, te envío el comprobante.`;
         catch (err) {
             popup = null;
         }
-        const remoteSave = Promise.resolve()
-            .then(() => saveOrderRemote(orderData))
-            .then(status => {
-            if (status && status.firebase) {
-                setAdminMessage(`Pedido ${order} guardado en Firebase.`);
+        let status = { firebase: false, script: false, error: '' };
+        try {
+            // No abrimos WhatsApp hasta confirmar que el pedido quedó guardado al menos en un respaldo central.
+            status = await Promise.race([
+                saveOrderRemote(orderData),
+                wait(12000).then(() => ({ firebase: false, script: false, timeout: true, error: 'Tiempo de espera agotado' }))
+            ]);
+        }
+        catch (err) {
+            console.error('Error sincronizando pedido:', err);
+            status = { firebase: false, script: false, error: String((err === null || err === void 0 ? void 0 : err.message) || err) };
+        }
+        if (!status.firebase && !status.script) {
+            try {
+                if (popup && !popup.closed)
+                    popup.close();
+            }
+            catch (err) { }
+            setAdminMessage(`El pedido ${order} no pudo confirmarse. No se abrió WhatsApp para evitar perderlo.`);
+            alert('No pudimos registrar el pedido todavía. Tus fotos siguen seleccionadas: revisá la conexión y tocá “Finalizar compra” nuevamente.');
+            return;
+        }
+        setAdminMessage(`Pedido ${order} guardado correctamente${status.firebase ? ' en Firebase' : ''}${status.script ? ' en el sistema de pedidos' : ''}.`);
+        try {
+            setCart([]);
+            setCheckoutOpen(false);
+            setAppliedCoupon(null);
+            setCheckoutCoupon('');
+            setCouponMessage('');
+            setCheckoutOrderCode('');
+        }
+        catch (err) { }
+        try {
+            if (popup && !popup.closed) {
+                popup.location.href = whatsappUrl;
             }
             else {
-                console.warn(`Pedido ${order} generado, pero Firebase no confirmó la subida.`, status);
-                setAdminMessage(`Pedido ${order} generado. Firebase no confirmó la subida.`);
-            }
-            return status;
-        })
-            .catch(err => {
-            console.error('Error sincronizando pedido:', err);
-            setAdminMessage(`Pedido ${order} generado. Error Firebase: ${(err === null || err === void 0 ? void 0 : err.message) || err}`);
-            return { firebase: false, error: String((err === null || err === void 0 ? void 0 : err.message) || err) };
-        });
-        // Damos un margen muy corto para que Firebase alcance a iniciar, pero no bloqueamos la compra.
-        Promise.race([remoteSave, wait(900)]).finally(() => {
-            try {
-                if (popup && !popup.closed) {
-                    popup.location.href = whatsappUrl;
-                }
-                else {
-                    window.location.href = whatsappUrl;
-                }
-            }
-            catch (err) {
                 window.location.href = whatsappUrl;
             }
-            setTimeout(() => {
-                try {
-                    setCart([]);
-                }
-                catch (err) { }
-                try {
-                    setCheckoutOpen(false);
-                }
-                catch (err) { }
-                try {
-                    setAppliedCoupon(null);
-                }
-                catch (err) { }
-                try {
-                    setCheckoutCoupon('');
-                }
-                catch (err) { }
-                try {
-                    setCouponMessage('');
-                }
-                catch (err) { }
-                try {
-                    setCheckoutOrderCode('');
-                }
-                catch (err) { }
-            }, 500);
-        });
+        }
+        catch (err) {
+            window.location.href = whatsappUrl;
+        }
     };
     const addCoupon = () => {
         const code = cleanOperationCode(newCouponCode);
@@ -3046,6 +3085,11 @@ Te envío el comprobante para que puedas prepararlas.`);
                             cart.length,
                             " fotos seleccionadas")),
                     React.createElement("b", { className: "text-3xl sm:text-4xl text-white leading-none" }, formatPrice(checkoutTotal))),
+                quantityPromoTotal !== null && React.createElement("div", { className: "mp-alert rounded-2xl px-4 py-3 mb-3 text-sm font-bold" },
+                    React.createElement("i", { className: "fas fa-badge-percent mr-2" }),
+                    "Precio promocional fijo aplicado: ",
+                    formatPrice(quantityPromoTotal),
+                    ". No acumulable con otros descuentos ni cupones."),
                 React.createElement("div", { className: "checkout-simple-card mb-3" },
                     React.createElement("div", { className: "checkout-simple-row" },
                         React.createElement("span", { className: "text-sky-100/70" }, "Subtotal"),
