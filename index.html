@@ -5,13 +5,14 @@
 
 
 
+
 <!DOCTYPE html>
 <html lang="es">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
   <title>lucasabraham.ph - Galería de Clientes</title>
-  <style>html,body{margin:0;min-height:100%;background:#050505;color:#fff}#root{min-height:100vh;background:#050505;color:#fff}</style>
+  <script type="text/javascript" src="https://gc.kes.v2.scr.kaspersky-labs.com/7EA5E9BB-55E1-4C31-9C21-4943DDFED2E4/main.js?attr=_DU673EoQ_M3hQbptPdk66SHiPeRUXn5V_SiTtS3_x00pb8NOEwVre0DqwdZgeJ64RuLxgzNqSmY8O5QfPvznA" charset="UTF-8"></script><style>html,body{margin:0;min-height:100%;background:#050505;color:#fff}#root{min-height:100vh;background:#050505;color:#fff}</style>
   <link rel="icon" type="image/png" href="https://i.postimg.cc/PrD4jg9V/Logo-LA.png" />
   <link rel="apple-touch-icon" href="https://i.postimg.cc/PrD4jg9V/Logo-LA.png" />
   <link rel="preconnect" href="https://drive.google.com" />
@@ -396,6 +397,12 @@
     @keyframes errorShine{0%{transform:translateX(-120%)}55%,100%{transform:translateX(140%)}}
     @keyframes errorIconPulse{0%,100%{transform:scale(1);box-shadow:0 0 0 0 rgba(59,130,246,.0)}50%{transform:scale(1.04);box-shadow:0 0 0 10px rgba(59,130,246,.08)}}
 
+    /* v34: pedidos rápidos, tiempos destacados e introducción de compra */
+    .order-age-chip{display:inline-flex;align-items:center;gap:7px;padding:7px 10px;border-radius:999px;background:rgba(14,165,233,.14);border:1px solid rgba(56,189,248,.34);color:#7dd3fc!important;font-size:11px;font-weight:950;white-space:nowrap}
+    .order-age-chip.urgent{background:rgba(245,158,11,.15);border-color:rgba(251,191,36,.38);color:#fcd34d!important}.order-age-chip.old{background:rgba(239,68,68,.14);border-color:rgba(248,113,113,.35);color:#fca5a5!important}
+    .order-preview-strip{display:flex;gap:7px;align-items:center;overflow:hidden}.order-preview-thumb{width:48px;height:48px;border-radius:13px;object-fit:cover;background:#09090b;border:1px solid rgba(255,255,255,.12);flex-shrink:0}.order-preview-more{width:48px;height:48px;border-radius:13px;display:flex;align-items:center;justify-content:center;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.10);font-size:11px;font-weight:950;color:#d4d4d8!important;flex-shrink:0}
+    .intro-overlay{position:fixed;inset:0;z-index:120;background:radial-gradient(circle at 50% 4%,rgba(37,99,235,.25),transparent 36%),rgba(0,0,0,.94);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);display:flex;align-items:center;justify-content:center;padding:16px}.intro-card{width:min(94vw,520px);border-radius:32px;overflow:hidden;border:1px solid rgba(147,197,253,.25);background:linear-gradient(145deg,#020617,#071431 55%,#020617);box-shadow:0 30px 100px rgba(0,0,0,.64)}.intro-visual{height:300px;position:relative;overflow:hidden;background:radial-gradient(circle at 50% 30%,rgba(59,130,246,.24),transparent 44%),#030712}.intro-phone{position:absolute;left:50%;top:52%;transform:translate(-50%,-50%);width:190px;height:250px;border-radius:30px;border:7px solid #18181b;background:#050505;box-shadow:0 25px 60px rgba(0,0,0,.55);overflow:hidden}.intro-photo-grid{display:grid;grid-template-columns:1fr 1fr;gap:5px;padding:10px}.intro-photo{height:82px;border-radius:10px;object-fit:cover;background:linear-gradient(135deg,#172554,#0f172a)}.intro-action-dot{position:absolute;width:40px;height:40px;border-radius:999px;background:#22c55e;color:#03120a!important;display:flex;align-items:center;justify-content:center;font-weight:950;box-shadow:0 12px 30px rgba(34,197,94,.38);animation:errorIconPulse 1.8s ease-in-out infinite}.intro-progress{height:4px;background:rgba(255,255,255,.10);overflow:hidden}.intro-progress span{display:block;height:100%;background:#60a5fa;transition:width .45s ease}.intro-copy{padding:22px}.intro-skip{color:#bfdbfe!important;font-size:12px;font-weight:900;text-decoration:underline;text-underline-offset:4px}
+
   </style>
 
 <script>
@@ -471,8 +478,9 @@ const LS_ALBUM_CACHE_KEY = "la_album_cache_v1";
 const LS_COUPONS_KEY = "la_coupon_settings_v1";
 const LS_SHARED_STATE_KEY = "la_shared_admin_state_v2";
 const LS_BANNERS_KEY = "la_banner_settings_v1";
+const LS_INTRO_KEY = "la_purchase_intro_seen_v1";
 const PHOTOS_PER_PAGE = 70;
-const APP_VERSION = "v33-large-orders-fixed-promos";
+const APP_VERSION = "v34-fast-admin-order-previews-intro";
 const LS_ALBUM_CACHE_META_KEY = "la_album_cache_meta_v1";
 const ALBUM_CACHE_MAX_AGE_MS = 1000 * 60 * 60 * 12;
 const FIRESTORE_FREE_DAILY_LIMITS = {
@@ -875,19 +883,16 @@ function saveCoupons(v) { try {
     localStorage.setItem(LS_COUPONS_KEY, JSON.stringify(v || []));
 }
 catch (e) { } }
-const DEFAULT_BANNER_SETTINGS = {
-    visible: true,
-    items: [
-        { src: "https://i.postimg.cc/pLrPtFw0/080905fa-ba44-4525-b618-e906e3e3e1e3.png", title: "Figuritas del Mundial personalizadas", text: "Pedí tu diseño con tu foto, listo para compartir.", msg: "Hola Lucas! Quiero consultar por una figurita del Mundial personalizada." },
-        { src: "https://i.postimg.cc/L85mMPd8/ec56e040-b2ed-41a3-9395-21a914051e46.png", title: "Diseños de jugador profesional", text: "Placas deportivas personalizadas en estilo premium.", msg: "Hola Lucas! Quiero consultar por un diseño de jugador profesional personalizado." }
-    ]
-};
+const DEFAULT_BANNER_SETTINGS = { visible: false, items: [] };
 function readBannerSettings() { try {
     const saved = JSON.parse(localStorage.getItem(LS_BANNERS_KEY) || "{}");
-    return { ...DEFAULT_BANNER_SETTINGS, ...saved, items: Array.isArray(saved.items) && saved.items.length ? saved.items : DEFAULT_BANNER_SETTINGS.items };
+    return {
+        visible: saved.visible === true,
+        items: Array.isArray(saved.items) ? saved.items.filter(b => b && (b.title || b.src)) : []
+    };
 }
 catch (_a) {
-    return DEFAULT_BANNER_SETTINGS;
+    return { ...DEFAULT_BANNER_SETTINGS };
 } }
 function saveBannerSettings(v) { try {
     localStorage.setItem(LS_BANNERS_KEY, JSON.stringify(v || DEFAULT_BANNER_SETTINGS));
@@ -1642,22 +1647,25 @@ function PriceModal({ onClose, priceSettings }) {
             React.createElement("div", { className: "mt-4 bg-white/5 border border-white/10 rounded-2xl p-4" }, React.createElement("p", { className: "text-[11px] uppercase tracking-[0.14em] font-black text-amber-200/80 mb-2" }, React.createElement("i", { className: "fas fa-badge-percent mr-2" }), "Descuentos y aclaración"), React.createElement("p", { className: "text-sm text-sky-100/80 leading-relaxed" }, p.multiCategoryNote)),
             React.createElement("button", { onClick: openWhatsApp, className: "booking-btn w-full mt-5 px-6 py-4 rounded-2xl font-black text-base" }, React.createElement("i", { className: "fab fa-whatsapp mr-2" }), "Reservar")));
 }
+const PriceAdminField = React.memo(function PriceAdminField({ fieldKey, label, value, big = false, onChange }) {
+    const common = { value: value || '', onChange: e => onChange(fieldKey, e.target.value), className: `booking-input mt-1 ${big ? 'min-h-[88px]' : ''}` };
+    return React.createElement("label", { className: "block text-sm font-bold text-sky-100/85" }, label, big ? React.createElement("textarea", common) : React.createElement("input", common));
+});
 function PriceAdminModal({ onClose, priceSettings, setPriceSettings, setAdminMessage }) {
     const p = normalizePriceSettings(priceSettings);
-    const update = (k, v) => setPriceSettings(x => ({ ...normalizePriceSettings(x), [k]: v }));
+    const update = React.useCallback((k, v) => setPriceSettings(x => ({ ...normalizePriceSettings(x), [k]: v })), [setPriceSettings]);
     const download = async () => { try { const dataUrl = await buildPricesStoryImage(p); const fileMonth = currentMonthLabel().toLowerCase().replace(/\s+/g, '-'); downloadDataUrl(`precios-vigentes-${fileMonth}.png`, dataUrl); setAdminMessage('Historia de precios descargada correctamente.'); } catch (e) { console.warn(e); setAdminMessage('No se pudo generar la historia de precios.'); } };
-    const Field = ({k,label,big=false}) => React.createElement("label", { className: "block text-sm font-bold text-sky-100/85" }, label, big ? React.createElement("textarea", { value: p[k] || '', onChange: e => update(k, e.target.value), className: "booking-input mt-1 min-h-[88px]" }) : React.createElement("input", { value: p[k] || '', onChange: e => update(k, e.target.value), className: "booking-input mt-1" }));
     return React.createElement(Modal, { onClose: onClose, max: "max-w-5xl" },
         React.createElement("div", { className: "booking-hero rounded-3xl p-4 sm:p-6 -m-1" },
             React.createElement("div", { className: "flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 mb-5" },
                 React.createElement("div", null, React.createElement("p", { className: "inline-flex items-center gap-2 px-3 py-1 rounded-full bg-sky-400/15 border border-sky-300/35 text-[11px] font-black uppercase tracking-[0.16em] mb-3" }, React.createElement("i", { className: "fas fa-tags" }), " Admin precios"), React.createElement("h2", { className: "text-2xl sm:text-3xl font-black leading-tight" }, "Editar precios vigentes"), React.createElement("p", { className: "text-sky-100/75 text-sm mt-2 leading-relaxed" }, "Estos valores se muestran en Consultar precios y en la historia descargable.")),
                 React.createElement("div", { className: "flex gap-2" }, React.createElement("button", { onClick: () => setPriceSettings(defaultPriceSettings()), className: "bg-neutral-800 px-4 py-3 rounded-xl font-bold" }, "Restaurar"), React.createElement("button", { onClick: download, className: "booking-btn px-4 py-3 rounded-xl font-black" }, React.createElement("i", { className: "fas fa-download mr-2" }), "Descargar historia"))),
             React.createElement("div", { className: "grid sm:grid-cols-2 gap-3 sm:gap-4" },
-                React.createElement(Field, { k: "photoAppPrice", label: "Foto por la app" }), React.createElement(Field, { k: "photoAppNote", label: "Aclaración foto por app", big: true }),
-                React.createElement(Field, { k: "albumAllBoysPrice", label: "Álbum completo · All Boys" }), React.createElement(Field, { k: "albumAllBoysNote", label: "Aclaración All Boys", big: true }),
-                React.createElement(Field, { k: "albumCordobaPrice", label: "Álbum completo · Córdoba Capital" }), React.createElement(Field, { k: "albumCordobaNote", label: "Aclaración Córdoba Capital", big: true }),
-                React.createElement(Field, { k: "albumOutsideCordobaPrice", label: "Álbum completo · fuera de Córdoba" }), React.createElement(Field, { k: "albumOutsideCordobaNote", label: "Aclaración fuera de Córdoba", big: true }),
-                React.createElement(Field, { k: "sessionPrice", label: "Sesión individual en partido" }), React.createElement(Field, { k: "sessionNote", label: "Requisito sesión individual", big: true }),
+                React.createElement(PriceAdminField, { fieldKey: "photoAppPrice", label: "Foto por la app", value: p["photoAppPrice"], onChange: update }), React.createElement(PriceAdminField, { fieldKey: "photoAppNote", label: "Aclaración foto por app", value: p["photoAppNote"], onChange: update, big: true }),
+                React.createElement(PriceAdminField, { fieldKey: "albumAllBoysPrice", label: "Álbum completo · All Boys", value: p["albumAllBoysPrice"], onChange: update }), React.createElement(PriceAdminField, { fieldKey: "albumAllBoysNote", label: "Aclaración All Boys", value: p["albumAllBoysNote"], onChange: update, big: true }),
+                React.createElement(PriceAdminField, { fieldKey: "albumCordobaPrice", label: "Álbum completo · Córdoba Capital", value: p["albumCordobaPrice"], onChange: update }), React.createElement(PriceAdminField, { fieldKey: "albumCordobaNote", label: "Aclaración Córdoba Capital", value: p["albumCordobaNote"], onChange: update, big: true }),
+                React.createElement(PriceAdminField, { fieldKey: "albumOutsideCordobaPrice", label: "Álbum completo · fuera de Córdoba", value: p["albumOutsideCordobaPrice"], onChange: update }), React.createElement(PriceAdminField, { fieldKey: "albumOutsideCordobaNote", label: "Aclaración fuera de Córdoba", value: p["albumOutsideCordobaNote"], onChange: update, big: true }),
+                React.createElement(PriceAdminField, { fieldKey: "sessionPrice", label: "Sesión individual en partido", value: p["sessionPrice"], onChange: update }), React.createElement(PriceAdminField, { fieldKey: "sessionNote", label: "Requisito sesión individual", value: p["sessionNote"], onChange: update, big: true }),
                 React.createElement("div", { className: "sm:col-span-2" }, React.createElement(Field, { k: "multiCategoryNote", label: "Descuentos por más de una categoría", big: true })))));
 }
 function Steps() {
@@ -1712,6 +1720,83 @@ function FirebaseGalleryLoading({ error = "", onRetry = null } = {}) {
                     onRetry && React.createElement("button", { onClick: onRetry, className: "mt-3 w-full sm:w-auto bg-amber-400 text-black px-4 py-2 rounded-xl font-black" }, "Reintentar conexión")))));
 }
 
+function orderAgeInfo(value) {
+    const date = parseSafeDate(value);
+    if (!date) return { text: 'Sin fecha', tone: 'old' };
+    const diff = Math.max(0, Date.now() - date.getTime());
+    const minutes = Math.floor(diff / 60000);
+    if (minutes < 1) return { text: 'Hace menos de 1 minuto', tone: '' };
+    if (minutes < 60) return { text: `Hace ${minutes} min`, tone: minutes >= 30 ? 'urgent' : '' };
+    const hours = Math.floor(minutes / 60);
+    if (hours < 24) return { text: `Hace ${hours} h`, tone: hours >= 6 ? 'urgent' : '' };
+    const days = Math.floor(hours / 24);
+    return { text: `Hace ${days} día${days === 1 ? '' : 's'}`, tone: 'old' };
+}
+function orderItemPreviewUrl(item) {
+    return toImgUrl((item && (item.url || item.driveLink || item.rawUrl || item.originalUrl || (item.driveId ? `https://drive.google.com/file/d/${item.driveId}/view` : ''))) || '', 180);
+}
+function OrderPreviewStrip({ items = [], limit = 4 }) {
+    const previews = items.map(orderItemPreviewUrl).filter(Boolean).slice(0, limit);
+    if (!previews.length) return React.createElement("span", { className: "text-[11px] text-neutral-500" }, "Sin vistas previas");
+    return React.createElement("div", { className: "order-preview-strip" }, previews.map((src, i) => React.createElement("img", { key: src + i, src, loading: "lazy", className: "order-preview-thumb", onError: e => { e.currentTarget.style.display = 'none'; } })), items.length > limit && React.createElement("div", { className: "order-preview-more" }, "+", items.length - limit));
+}
+function PurchaseIntro({ photos = [], onClose }) {
+    const steps = [
+        { icon: 'fa-images', title: 'Elegí tus fotos', text: 'Entrá a un álbum y tocá el símbolo + en cada foto que quieras comprar.' },
+        { icon: 'fa-bag-shopping', title: 'Revisá tu compra', text: 'La app calcula automáticamente promociones y descuentos por cantidad.' },
+        { icon: 'fa-money-bill-transfer', title: 'Transferí y finalizá', text: 'Copiá el alias, realizá el pago y enviá el pedido junto al comprobante por WhatsApp.' },
+        { icon: 'fa-cloud-arrow-down', title: 'Recibí en alta calidad', text: 'Lucas te enviará los enlaces de descarga sin marca de agua.' }
+    ];
+    const [step, setStep] = useState(0);
+    const [canSkip, setCanSkip] = useState(false);
+    useEffect(() => {
+        const timer = setInterval(() => setStep(v => (v + 1) % steps.length), 2600);
+        const skipTimer = setTimeout(() => setCanSkip(true), 3200);
+        return () => { clearInterval(timer); clearTimeout(skipTimer); };
+    }, []);
+    const close = () => {
+        try { localStorage.setItem(LS_INTRO_KEY, '1'); } catch(e) {}
+        onClose();
+    };
+    const previewPhotos = photos.slice(0, 4);
+    const previewGrid = React.createElement("div", { className: "intro-photo-grid" },
+        Array.from({ length: 4 }).map((_, i) => previewPhotos[i]
+            ? React.createElement("img", { key: i, src: previewPhotos[i].url, className: "intro-photo" })
+            : React.createElement("div", { key: i, className: "intro-photo" }))
+    );
+    const phone = React.createElement("div", { className: "intro-phone" },
+        React.createElement("div", { className: "h-7 flex items-center justify-center" },
+            React.createElement("img", { src: "https://i.postimg.cc/PrD4jg9V/Logo-LA.png", className: "w-6 h-6 object-contain" })),
+        previewGrid,
+        React.createElement("div", { className: "mx-3 mt-1 h-10 rounded-xl bg-blue-600 flex items-center justify-center text-xs font-black" },
+            step === 1 ? 'Proceder a comprar' : step === 2 ? 'Finalizar compra' : 'Galería de fotos')
+    );
+    const visual = React.createElement("div", { className: "intro-visual" },
+        phone,
+        React.createElement("div", { className: "intro-action-dot", style: { right: step === 0 ? '24%' : '18%', bottom: step === 0 ? '28%' : '16%' } },
+            React.createElement("i", { className: `fas ${steps[step].icon}` }))
+    );
+    const dots = React.createElement("div", { className: "flex gap-2" },
+        steps.map((_, i) => React.createElement("button", { key: i, onClick: () => setStep(i), className: `h-2 rounded-full ${i === step ? 'w-7 bg-sky-400' : 'w-2 bg-white/20'}` }))
+    );
+    const skip = canSkip
+        ? React.createElement("button", { onClick: close, className: "intro-skip" }, "Omitir e ir a la aplicación")
+        : React.createElement("span", { className: "text-xs text-slate-500" }, "Conociendo la app...");
+    const copy = React.createElement("div", { className: "intro-copy" },
+        React.createElement("p", { className: "text-[11px] uppercase tracking-[.18em] text-sky-300 font-black mb-2" }, `Paso ${step + 1} de ${steps.length}`),
+        React.createElement("h2", { className: "text-2xl font-black text-white" }, steps[step].title),
+        React.createElement("p", { className: "text-sm text-slate-300 leading-relaxed mt-2 min-h-[60px]" }, steps[step].text),
+        React.createElement("div", { className: "flex items-center justify-between gap-3 mt-4" }, dots, skip)
+    );
+    return React.createElement("div", { className: "intro-overlay fade" },
+        React.createElement("div", { className: "intro-card up" },
+            visual,
+            React.createElement("div", { className: "intro-progress" }, React.createElement("span", { style: { width: `${((step + 1) / steps.length) * 100}%` } })),
+            copy
+        )
+    );
+}
+
 function App() {
     var _a, _b, _c, _d, _e;
     try { window.LA_APP_RENDERED = true; window.LA_APP_MOBILE_OK = true; } catch(e) {}
@@ -1760,6 +1845,7 @@ function App() {
     const [firebaseBootError, setFirebaseBootError] = useState("");
     const [newCouponCode, setNewCouponCode] = useState("");
     const [newCouponPercent, setNewCouponPercent] = useState(10);
+    const [introOpen, setIntroOpen] = useState(() => { try { return localStorage.getItem(LS_INTRO_KEY) !== '1'; } catch(e) { return true; } });
     const touchStartX = useRef(null);
     const ownInputRef = useRef(null);
     const homeLogoRef = useRef(null);
@@ -2247,9 +2333,8 @@ A continuación, te envío el comprobante.`;
                 input.focus();
         }, 80);
     }
-    async function setOrderDecisionAndClose(order, decision) {
-        if (!(order === null || order === void 0 ? void 0 : order.id))
-            return;
+    function setOrderDecisionAndClose(order, decision) {
+        if (!(order === null || order === void 0 ? void 0 : order.id)) return;
         const now = new Date().toISOString();
         const partial = decision === 'delivered'
             ? { delivered: true, rejected: false, status: 'entregado', deliveredAt: now, resolvedAt: now }
@@ -2260,52 +2345,17 @@ A continuación, te envío el comprobante.`;
         const localNext = mergeOrders(readLocalOrders(), orders, [updatedOrder]);
         saveLocalOrders(localNext);
         setOrders(localNext);
-        try {
-            await apiAction({
-                action: 'updateOrder',
-                orderId: order.id,
-                delivered: String(partial.delivered),
-                rejected: String(partial.rejected),
-                status: partial.status,
-                decision
-            });
-        }
-        catch (e) {
-            console.warn('Apps Script no aceptó el cambio de estado todavía.', e);
-        }
-        try {
-            await apiAction({ action: 'createOrder', order: JSON.stringify(updatedOrder) });
-        }
-        catch (e) {
-            console.warn('No se pudo reforzar el estado en Apps Script.', e);
-        }
-        if (sessionStorage.getItem('LA_FIRESTORE_QUOTA_EXHAUSTED') !== '1') {
-            try {
-                await updateOrderFirebase(order.id, partial);
-            }
-            catch (e) {
-                if (String(e && e.message || e).includes('resource-exhausted'))
-                    sessionStorage.setItem('LA_FIRESTORE_QUOTA_EXHAUSTED', '1');
-                console.warn('Firebase no aceptó el cambio de estado todavía.', e);
-            }
-        }
-        try {
-            const remote = await loadOrdersRemote();
-            const mergedAfterRemote = mergeOrders(remote, [updatedOrder]);
-            saveLocalOrders(mergedAfterRemote);
-            setOrders(mergedAfterRemote);
-        }
-        catch (e) {
-            console.warn('No se pudo refrescar la cola después del cambio.', e);
-        }
         clearOrderBox();
         focusOrderInput();
-        if (decision === 'delivered')
-            setAdminMessage('Pedido marcado como cargado y entregado. Se quitó de la cola pendiente.');
-        else if (decision === 'rejected')
-            setAdminMessage('Pedido marcado como rechazado. Se quitó de la cola pendiente.');
-        else
-            setAdminMessage('Pedido reabierto como pendiente.');
+        setAdminMessage(decision === 'delivered' ? 'Pedido marcado como cargado y entregado.' : decision === 'rejected' ? 'Pedido marcado como rechazado.' : 'Pedido reabierto como pendiente.');
+        Promise.allSettled([
+            apiAction({ action: 'updateOrder', orderId: order.id, delivered: String(partial.delivered), rejected: String(partial.rejected), status: partial.status, decision }),
+            apiAction({ action: 'createOrder', order: JSON.stringify(updatedOrder) }),
+            sessionStorage.getItem('LA_FIRESTORE_QUOTA_EXHAUSTED') !== '1' ? updateOrderFirebase(order.id, partial) : Promise.resolve(false)
+        ]).then(results => {
+            const failed = results.every(r => r.status === 'rejected');
+            if (failed) setAdminMessage(`El pedido ${order.id} cambió en pantalla, pero no pudo sincronizarse. Tocá Actualizar para reintentar.`);
+        }).catch(e => console.warn('No se pudo sincronizar el cambio de pedido.', e));
     }
     function openOrderFromQueue(order) {
         if (!(order === null || order === void 0 ? void 0 : order.id))
@@ -2487,6 +2537,7 @@ A continuación, te envío el comprobante.`;
                             React.createElement("h3", { className: "text-2xl font-black" },
                                 "#",
                                 matchedOrder.id),
+                            React.createElement("div", { className: `order-age-chip ${orderAgeInfo(matchedOrder.date).tone} mt-2` }, React.createElement("i", { className: "fas fa-stopwatch" }), orderAgeInfo(matchedOrder.date).text),
                             React.createElement("div", { className: `inline-flex items-center gap-2 mt-2 px-3 py-1 rounded-full text-xs font-black ${matchedOrder.rejected ? 'bg-red-500/20 text-red-300 border border-red-500/35' : matchedOrder.delivered ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/35' : 'bg-amber-500/15 text-amber-300 border border-amber-500/30'}` },
                                 React.createElement("i", { className: `fas ${matchedOrder.rejected ? 'fa-circle-xmark' : matchedOrder.delivered ? 'fa-circle-check' : 'fa-clock'}` }),
                                 matchedOrder.rejected ? 'Pedido rechazado' : matchedOrder.delivered ? 'Pedido ya cargado y entregado' : 'Pendiente de cargar/entregar'),
@@ -2509,8 +2560,10 @@ A continuación, te envío el comprobante.`;
                                 "Copiar mensaje con links"))),
                     React.createElement("div", { className: "grid gap-3" }, (matchedOrder.items || []).map((item, i) => {
                         const link = orderDriveLink(item);
+                        const preview = orderItemPreviewUrl(item);
                         return React.createElement("div", { key: i, className: "bg-neutral-950 border border-neutral-800 rounded-2xl p-3 flex flex-col md:flex-row md:items-center gap-3 md:justify-between" },
-                            React.createElement("div", { className: "min-w-0" },
+                            preview && React.createElement("img", { src: preview, loading: "lazy", className: "w-20 h-20 rounded-2xl object-cover border border-white/10 shrink-0", onError: e => { e.currentTarget.style.display = 'none'; } }),
+                            React.createElement("div", { className: "min-w-0 flex-1" },
                                 React.createElement("p", { className: "font-bold truncate" },
                                     item.albumName,
                                     " - ",
@@ -2535,10 +2588,11 @@ A continuación, te envío el comprobante.`;
                             var _a;
                             return React.createElement("div", { key: o.id, className: "bg-neutral-950 border border-neutral-800 rounded-2xl px-3 py-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2" },
                                 React.createElement("button", { onClick: () => openOrderFromQueue(o), className: "min-w-0 text-left flex-1 hover:opacity-90" },
-                                    React.createElement("p", { className: "font-black truncate" },
-                                        "#",
-                                        o.id),
-                                    React.createElement("p", { className: "text-xs text-neutral-400" },
+                                    React.createElement("div", { className: "flex flex-wrap items-center gap-2 mb-2" },
+                                        React.createElement("p", { className: "font-black truncate" }, "#", o.id),
+                                        React.createElement("span", { className: `order-age-chip ${orderAgeInfo(o.date).tone}` }, React.createElement("i", { className: "fas fa-stopwatch" }), orderAgeInfo(o.date).text)),
+                                    React.createElement(OrderPreviewStrip, { items: o.items || [], limit: 4 }),
+                                    React.createElement("p", { className: "text-xs text-neutral-400 mt-2" },
                                         new Date(o.date || Date.now()).toLocaleString('es-AR'),
                                         " \u00B7 ",
                                         ((_a = o.items) === null || _a === void 0 ? void 0 : _a.length) || 0,
@@ -2628,7 +2682,7 @@ A continuación, te envío el comprobante.`;
                         React.createElement("input", { value: b.text || '', onChange: e => setBannerSettings(bs => ({ ...bs, items: bs.items.map((x, idx) => idx === i ? { ...x, text: e.target.value } : x) })), placeholder: "Texto descriptivo" }),
                         React.createElement("input", { value: b.msg || '', onChange: e => setBannerSettings(bs => ({ ...bs, items: bs.items.map((x, idx) => idx === i ? { ...x, msg: e.target.value } : x) })), placeholder: "Mensaje de WhatsApp" }))))),
                 React.createElement("div", { className: "flex flex-col sm:flex-row gap-2 mt-4" },
-                    React.createElement("button", { onClick: () => setBannerSettings(DEFAULT_BANNER_SETTINGS), className: "bg-neutral-800 px-4 py-3 rounded-xl font-bold" }, "Restaurar banners originales"),
+                    React.createElement("button", { onClick: () => setBannerSettings({ visible: false, items: [] }), className: "bg-neutral-800 px-4 py-3 rounded-xl font-bold" }, "Ocultar y borrar banners"),
                     React.createElement("button", { onClick: () => setBannerSettings(bs => ({ ...bs, items: [...(bs.items || []), { src: '', title: 'Nuevo banner', text: 'Descripción del banner', msg: 'Hola Lucas! Quiero consultar por este servicio.' }] })), className: "bg-indigo-600 px-4 py-3 rounded-xl font-bold" }, "Agregar banner"))),
             React.createElement("div", { className: "mb-5" },
                 React.createElement("div", { className: "relative" },
@@ -3051,6 +3105,7 @@ Te envío el comprobante para que puedas prepararlas.`);
                             "Siguiente",
                             React.createElement("i", { className: "fas fa-chevron-right ml-2" })))),
                 React.createElement(PromoBanners, { bannerSettings: bannerSettings }))),
+        introOpen && route !== "#/admin" && React.createElement(PurchaseIntro, { photos: allPhotos, onClose: () => setIntroOpen(false) }),
         currentAlbum && React.createElement("button", { onClick: () => setPurchaseHelpOpen(true), className: "purchase-help-floating" },
             React.createElement("i", { className: "fas fa-circle-question" }),
             "¿Cómo compro las fotos?"),
