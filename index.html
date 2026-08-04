@@ -15,8 +15,7 @@
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <meta name="apple-mobile-web-app-title" content="lucasabraham.ph" />
-  <title>lucasabraham.ph - Galería de Clientes</title>
-  <script type="text/javascript" src="https://gc.kes.v2.scr.kaspersky-labs.com/7EA5E9BB-55E1-4C31-9C21-4943DDFED2E4/main.js?attr=_DU673EoQ_M3hQbptPdk66SHiPeRUXn5V_SiTtS3_x00pb8NOEwVre0DqwdZgeJ64RuLxgzNqSmY8O5QfPvznA" charset="UTF-8"></script><style>html,body{margin:0;min-height:100%;background:#050505;color:#fff}#root{min-height:100vh;background:#050505;color:#fff}</style>
+  <title>lucasabraham.ph - Galería de Clientes</title><style>html,body{margin:0;min-height:100%;background:#050505;color:#fff}#root{min-height:100vh;background:#050505;color:#fff}</style>
   <link rel="icon" type="image/png" href="https://i.postimg.cc/PrD4jg9V/Logo-LA.png" />
   <link rel="apple-touch-icon" id="la-apple-touch-icon" href="https://i.postimg.cc/PrD4jg9V/Logo-LA.png" />
   <link rel="preconnect" href="https://drive.google.com" />
@@ -27,11 +26,17 @@
   <link rel="preconnect" href="https://i.postimg.cc" />
 <script src="https://cdn.tailwindcss.com" onerror="console.warn('Tailwind no pudo cargar')"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
-  <script crossorigin src="https://cdn.jsdelivr.net/npm/react@18/umd/react.production.min.js" onerror="this.onerror=null;this.src='https://unpkg.com/react@18/umd/react.production.min.js'"></script>
-  <script crossorigin src="https://cdn.jsdelivr.net/npm/react-dom@18/umd/react-dom.production.min.js" onerror="this.onerror=null;this.src='https://unpkg.com/react-dom@18/umd/react-dom.production.min.js'"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js" onerror="this.onerror=null;this.src='https://cdn.jsdelivr.net/npm/firebase@10.12.5/firebase-app-compat.js'"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js" onerror="this.onerror=null;this.src='https://cdn.jsdelivr.net/npm/firebase@10.12.5/firebase-auth-compat.js'"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js" onerror="this.onerror=null;this.src='https://cdn.jsdelivr.net/npm/firebase@10.12.5/firebase-firestore-compat.js'"></script>
+  <!-- Dependencias críticas con fallback secuencial: la app no continúa hasta tener React listo. -->
+  <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script>if(!window.React){document.write('<script crossorigin src="https://cdn.jsdelivr.net/npm/react@18/umd/react.production.min.js"><\/script>')}</script>
+  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <script>if(!window.ReactDOM){document.write('<script crossorigin src="https://cdn.jsdelivr.net/npm/react-dom@18/umd/react-dom.production.min.js"><\/script>')}</script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
+  <script>if(!window.firebase){document.write('<script src="https://cdn.jsdelivr.net/npm/firebase@10.12.5/firebase-app-compat.js"><\/script>')}</script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js"></script>
+  <script>if(window.firebase && !firebase.auth){document.write('<script src="https://cdn.jsdelivr.net/npm/firebase@10.12.5/firebase-auth-compat.js"><\/script>')}</script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js"></script>
+  <script>if(window.firebase && !firebase.firestore){document.write('<script src="https://cdn.jsdelivr.net/npm/firebase@10.12.5/firebase-firestore-compat.js"><\/script>')}</script>
   <style>
     body{font-family:Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:#070707;color:#fff;-webkit-tap-highlight-color:transparent}
 
@@ -467,6 +472,9 @@
 <body>
   <div id="root" style="min-height:100vh;background:#050505;color:#fff;"><div class="app-boot-fallback" style="min-height:100vh;background:#050505;color:#fff;"><div class="app-boot-card"><img src="https://i.postimg.cc/PrD4jg9V/Logo-LA.png" alt="lucasabraham.ph"><h1 style="font-size:22px;font-weight:950;margin:0 0 6px;">Cargando galería</h1><p style="color:#d4d4d8;font-size:13px;line-height:1.45;margin:0;">Preparando álbumes y fotos...</p><div class="app-boot-bar"><span></span></div></div></div></div>
   <script>
+if (!window.React || !window.ReactDOM) {
+    throw new Error('No se pudieron cargar React y ReactDOM. Revisá la conexión o el bloqueo de contenido del navegador.');
+}
 const { useEffect, useMemo, useRef, useState } = React;
 const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwQixATrOYyu-wUnm23Cgy6_zbuUNOjbYQ636fEqHIt4GqzTZxVBJvhwireNt5isFE8lQ/exec";
 const FALLBACK_PUBLISHED_SHEET_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQvPPaZazUa43TBu127nq74y-UMDRRMKdQpOCWOWT6cc5YnsRwcTrzGA7NYM-QbYEnFSkMbdkgkaOn8/pub?output=csv";
@@ -489,7 +497,7 @@ const LS_SHARED_STATE_KEY = "la_shared_admin_state_v2";
 const LS_BANNERS_KEY = "la_banner_settings_v1";
 const LS_INTRO_KEY = "la_purchase_intro_seen_v2";
 const PHOTOS_PER_PAGE = 70;
-const APP_VERSION = "v36.1-iphone-install-fix";
+const APP_VERSION = "v37-mobile-boot-locked-banners-hidden";
 const LS_ALBUM_CACHE_META_KEY = "la_album_cache_meta_v1";
 const ALBUM_CACHE_MAX_AGE_MS = 1000 * 60 * 60 * 12;
 const FIRESTORE_FREE_DAILY_LIMITS = {
@@ -709,13 +717,13 @@ function readSharedCache() {
         return {
             discountSettings: cached.discountSettings || readDiscountSettings(),
             coupons: Array.isArray(cached.coupons) ? cached.coupons : readCoupons(),
-            bannerSettings: cached.bannerSettings || readBannerSettings(),
+            bannerSettings: { ...(cached.bannerSettings || readBannerSettings()), visible: false },
             priceSettings: normalizePriceSettings(cached.priceSettings),
             updatedAt: cached.updatedAt || ''
         };
     }
     catch (_a) {
-        return { discountSettings: readDiscountSettings(), coupons: readCoupons(), bannerSettings: readBannerSettings(), priceSettings: defaultPriceSettings(), updatedAt: '' };
+        return { discountSettings: readDiscountSettings(), coupons: readCoupons(), bannerSettings: { ...readBannerSettings(), visible: false }, priceSettings: defaultPriceSettings(), updatedAt: '' };
     }
 }
 function writeSharedCache(state) {
@@ -738,7 +746,7 @@ function normalizeSharedState(state) {
     return {
         discountSettings: (state === null || state === void 0 ? void 0 : state.discountSettings) || readDiscountSettings(),
         coupons: Array.isArray(state === null || state === void 0 ? void 0 : state.coupons) ? state.coupons : readCoupons(),
-        bannerSettings: (state === null || state === void 0 ? void 0 : state.bannerSettings) || readBannerSettings(),
+        bannerSettings: { ...((state === null || state === void 0 ? void 0 : state.bannerSettings) || readBannerSettings()), visible: false },
         priceSettings: normalizePriceSettings((state === null || state === void 0 ? void 0 : state.priceSettings) || defaultPriceSettings()),
         updatedAt: (state === null || state === void 0 ? void 0 : state.updatedAt) || new Date().toISOString()
     };
@@ -751,6 +759,7 @@ async function loadSharedAdminState() {
         const r = await apiAction({ action: 'getSiteState' });
         if (r && r.state) {
             const remote = normalizeSharedState(r.state);
+            remote.bannerSettings = { ...(remote.bannerSettings || DEFAULT_BANNER_SETTINGS), visible: false };
             writeSharedCache(remote);
             return remote;
         }
@@ -998,8 +1007,10 @@ const DEFAULT_BANNER_SETTINGS = { visible: false, items: [] };
 function readBannerSettings() { try {
     const saved = JSON.parse(localStorage.getItem(LS_BANNERS_KEY) || "{}");
     return {
-        visible: saved.visible === true,
-        items: Array.isArray(saved.items) ? saved.items.filter(b => b && (b.title || b.src)) : []
+        ...DEFAULT_BANNER_SETTINGS,
+        ...saved,
+        visible: false,
+        items: Array.isArray(saved.items) ? saved.items : []
     };
 }
 catch (_a) {
@@ -3468,7 +3479,7 @@ if (rootEl && window.React && window.ReactDOM && ReactDOM.createRoot) {
         rootEl.innerHTML = '<div class="app-boot-fallback mobile-safe-dark"><div class="app-boot-card"><img src="https://i.postimg.cc/PrD4jg9V/Logo-LA.png" alt="lucasabraham.ph"><h1 style="font-size:22px;font-weight:950;margin:0 0 6px;color:#fff!important;">Ocurrió un inconveniente</h1><p style="color:#d4d4d8!important;font-size:13px;line-height:1.45;margin:0;">Perdón por el inconveniente. Probá recargando la página para volver a intentar.</p><button onclick="location.reload()" style="margin-top:16px;background:linear-gradient(135deg,#0ea5e9,#2563eb 56%,#1d4ed8);color:#fff;border:0;border-radius:14px;padding:12px 18px;font-weight:900;box-shadow:0 18px 40px rgba(37,99,235,.30);animation:errorIconPulse 2.2s ease-in-out infinite;">Reintentar y recargar</button></div></div>';
     }
 } else if (rootEl) {
-    rootEl.innerHTML = '<div class="app-boot-fallback mobile-safe-dark"><div class="app-boot-card"><img src="https://i.postimg.cc/PrD4jg9V/Logo-LA.png" alt="lucasabraham.ph"><h1 style="font-size:22px;font-weight:950;margin:0 0 6px;color:#fff!important;">Cargando galería</h1><p style="color:#d4d4d8!important;font-size:13px;line-height:1.45;margin:0;">Perdón, la carga tardó más de lo esperado. Probá recargando la página.</p><button onclick="location.reload()" style="margin-top:16px;background:linear-gradient(135deg,#0ea5e9,#2563eb 56%,#1d4ed8);color:#fff;border:0;border-radius:14px;padding:12px 18px;font-weight:900;box-shadow:0 18px 40px rgba(37,99,235,.30);animation:errorIconPulse 2.2s ease-in-out infinite;">Reintentar y recargar</button></div></div>';
+    rootEl.innerHTML = '<div class="app-boot-fallback mobile-safe-dark"><div class="app-boot-card"><img src="https://i.postimg.cc/PrD4jg9V/Logo-LA.png" alt="lucasabraham.ph"><h1 style="font-size:22px;font-weight:950;margin:0 0 6px;color:#fff!important;">Cargando galería</h1><p style="color:#d4d4d8!important;font-size:13px;line-height:1.45;margin:0;">La app no pudo completar el arranque. Revisá la conexión y tocá reintentar. React: ' + (window.React ? 'OK' : 'sin cargar') + ' · ReactDOM: ' + (window.ReactDOM ? 'OK' : 'sin cargar') + ' · Firebase: ' + (window.firebase ? 'OK' : 'en espera') + '</p><button onclick="location.reload()" style="margin-top:16px;background:linear-gradient(135deg,#0ea5e9,#2563eb 56%,#1d4ed8);color:#fff;border:0;border-radius:14px;padding:12px 18px;font-weight:900;box-shadow:0 18px 40px rgba(37,99,235,.30);animation:errorIconPulse 2.2s ease-in-out infinite;">Reintentar y recargar</button></div></div>';
 }
 
 </script>
