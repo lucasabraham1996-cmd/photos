@@ -1,3 +1,13 @@
+
+
+
+
+
+
+
+
+
+
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -292,6 +302,37 @@
     .duel-mobile-safe.hero .duel-mobile-grid{padding:12px 12px 14px}
     .duel-mobile-safe.hero .duel-mobile-mark{width:56px;height:56px}
     .duel-mobile-safe.hero .duel-mobile-name{font-size:clamp(12px,4vw,16px)}
+
+  
+    /* v51: layout unificado y mobile-safe */
+    .versus-universal{position:relative;overflow:hidden;border-radius:24px;border:1px solid rgba(255,255,255,.10);background:#07080b;min-height:160px}
+    .versus-universal.compact{width:100%;height:100%;min-height:100%;border-radius:28px}
+    .versus-universal::before{content:"";position:absolute;inset:0;background:repeating-linear-gradient(135deg,rgba(255,255,255,.06) 0 2px,transparent 2px 12px);pointer-events:none;mix-blend-mode:screen;opacity:.9}
+    .versus-grid{position:relative;z-index:1;display:grid;grid-template-columns:1fr 1fr;gap:10px;min-height:100%;padding:14px 12px 16px}
+    .versus-universal.compact .versus-grid{padding:18px 12px 16px;height:100%}
+    .versus-side{min-width:0;display:grid;grid-template-rows:minmax(0,1fr) auto;justify-items:center;align-items:center;gap:12px;padding:0 4px}
+    .versus-universal.compact .versus-side{gap:16px}
+    .versus-mark{position:relative;width:72px;height:72px;display:flex;align-items:center;justify-content:center;align-self:center}
+    .versus-universal.compact .versus-mark{width:92px;height:92px}
+    .versus-mark .sight-corner{width:16px;height:16px;border-color:rgba(255,255,255,.96)}
+    .versus-universal.compact .versus-mark .sight-corner{width:22px;height:22px}
+    .versus-logo{width:72%;height:72%;object-fit:contain;display:block}
+    .versus-fallback{font-size:16px;line-height:.92;font-weight:1000;letter-spacing:-.03em;text-transform:uppercase;color:#fff!important;text-align:center;padding:0 2px}
+    .versus-name{width:100%;display:flex;align-items:flex-start;justify-content:center;text-align:center;font-size:clamp(22px,3vw,40px);line-height:.92;font-weight:1000;letter-spacing:-.04em;text-transform:uppercase;color:#fff!important;white-space:normal;overflow:visible;text-overflow:clip;overflow-wrap:anywhere;word-break:normal;padding:0 4px 2px;text-shadow:0 3px 12px rgba(0,0,0,.22)}
+    .versus-universal.compact .versus-name{font-size:clamp(16px,2.2vw,26px);line-height:.94;padding-bottom:0}
+    @media(max-width:768px),(hover:none),(pointer:coarse){
+      html,body,#root{background:#050505!important;overflow-x:hidden!important}
+      .glass,.album-info-panel,.app-boot-card,[class*="backdrop"]{-webkit-backdrop-filter:none!important;backdrop-filter:none!important}
+      .versus-universal{min-height:120px;border-radius:22px}
+      .versus-grid{padding:10px 8px 12px;gap:6px}
+      .versus-universal.compact .versus-grid{padding:12px 8px 12px}
+      .versus-mark{width:50px;height:50px}.versus-universal.compact .versus-mark{width:62px;height:62px}
+      .versus-mark .sight-corner{width:12px;height:12px}.versus-universal.compact .versus-mark .sight-corner{width:16px;height:16px}
+      .versus-fallback{font-size:12px}
+      .versus-name{font-size:clamp(12px,4.2vw,18px);line-height:1.04;padding:0 2px 1px}
+      .versus-universal.compact .versus-name{font-size:clamp(12px,4.6vw,18px);line-height:1.04}
+      .duel-scene,.duel-mobile-safe,.match-versus-hero,.team-album-reveal{filter:none!important}
+    }
 
   </style>
   <link rel="icon" type="image/png" href="https://i.postimg.cc/PrD4jg9V/Logo-LA.png" />
@@ -1947,17 +1988,19 @@ function renderVersusBand(team, options = {}) {
 function duelSceneGradient(teamA, teamB) {
     const colorA = validHexColor((teamA && teamA.color) || '');
     const colorB = validHexColor((teamB && teamB.color) || '');
-    const mid = '#07090d';
+    const edge = '#040506';
+    const midA = '#050608';
+    const midB = '#06070a';
     if (colorA && colorB) {
-        return `linear-gradient(90deg,${shiftHexColor(colorA,-0.16)} 0%,${colorA} 28%,${mid} 50%,${colorB} 72%,${shiftHexColor(colorB,-0.16)} 100%)`;
+        return `linear-gradient(90deg,${edge} 0%,${shiftHexColor(colorA,-0.18)} 8%,${colorA} 24%,${midA} 42%,${midB} 58%,${colorB} 76%,${shiftHexColor(colorB,-0.18)} 92%,${edge} 100%)`;
     }
     if (colorA) {
-        return `linear-gradient(90deg,${shiftHexColor(colorA,-0.16)} 0%,${colorA} 38%,${mid} 68%,#050505 100%)`;
+        return `linear-gradient(90deg,${edge} 0%,${shiftHexColor(colorA,-0.18)} 12%,${colorA} 34%,${midA} 66%,${edge} 100%)`;
     }
     if (colorB) {
-        return `linear-gradient(90deg,#050505 0%,${mid} 32%,${colorB} 62%,${shiftHexColor(colorB,-0.16)} 100%)`;
+        return `linear-gradient(90deg,${edge} 0%,${midA} 34%,${colorB} 66%,${shiftHexColor(colorB,-0.18)} 88%,${edge} 100%)`;
     }
-    return 'linear-gradient(90deg,#0b1220 0%,#06080c 50%,#0b1220 100%)';
+    return 'linear-gradient(90deg,#0b1220 0%,#040506 50%,#0b1220 100%)';
 }
 function renderTeamSight(team, side, compact = false) {
     const teamName = String((team && team.name) || '').trim();
@@ -2032,21 +2075,22 @@ function renderVersusScene(teamA, teamB, options = {}) {
     const compact = Boolean(options.compact);
     const leftName = String((teamA && teamA.name) || (options.leftName || 'Equipo local')).trim();
     const rightName = String((teamB && teamB.name) || (options.rightName || 'Equipo visitante')).trim();
-    if (isMobileLike()) {
-        return renderMobileSafeVersus({ ...(teamA || {}), name: leftName }, { ...(teamB || {}), name: rightName }, { compact, leftName, rightName });
-    }
-    return React.createElement("div", { className: `duel-scene ${compact ? 'compact' : 'hero'}`.trim(), style: { background: duelSceneGradient(teamA, teamB) } },
-        compact
-            ? React.createElement(React.Fragment, null,
-                renderCompactCoverMark({ ...(teamA || {}), name: leftName }, 'left', leftName),
-                renderCompactCoverMark({ ...(teamB || {}), name: rightName }, 'right', rightName),
-                React.createElement("div", { className: "duel-scene-body" }))
-            : React.createElement("div", { className: "duel-scene-body" },
-                renderTeamSight({ ...(teamA || {}), name: leftName }, 'left', compact),
-                renderTeamSight({ ...(teamB || {}), name: rightName }, 'right', compact)),
-        React.createElement("div", { className: "duel-team-names" },
-            React.createElement("div", { className: "duel-team-name" }, leftName),
-            React.createElement("div", { className: "duel-team-name" }, rightName)));
+    const leftLogo = String((teamA && teamA.logo) || '').trim();
+    const rightLogo = String((teamB && teamB.logo) || '').trim();
+    const sideNode = (name, logo) => React.createElement("div", { className: "versus-side" },
+        React.createElement("div", { className: "versus-mark" },
+            React.createElement("span", { className: "sight-corner tl" }),
+            React.createElement("span", { className: "sight-corner tr" }),
+            React.createElement("span", { className: "sight-corner bl" }),
+            React.createElement("span", { className: "sight-corner br" }),
+            logo ? React.createElement("img", { src: logo, alt: name || 'Equipo', className: "versus-logo", loading: "lazy", referrerPolicy: "no-referrer", onError: e => { e.currentTarget.style.display = 'none'; const next = e.currentTarget.nextElementSibling; if (next)
+                    next.style.display = 'block'; } }) : null,
+            React.createElement("div", { className: "versus-fallback", style: { display: logo ? 'none' : 'block' } }, name || 'Equipo')),
+        React.createElement("div", { className: "versus-name" }, name));
+    return React.createElement("div", { className: `versus-universal ${compact ? 'compact' : 'hero'}`.trim(), style: { background: duelSceneGradient(teamA, teamB) } },
+        React.createElement("div", { className: "versus-grid" },
+            sideNode(leftName, leftLogo),
+            sideNode(rightName, rightLogo)));
 }
 
 function normalizeAlbums(data) {
