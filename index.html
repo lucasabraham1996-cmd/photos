@@ -7,6 +7,7 @@
 
 
 
+
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -219,6 +220,27 @@
       .duel-scene.hero .duel-team-names{grid-template-columns:58px minmax(0,1fr) minmax(0,1fr) 58px!important;gap:6px!important}
       .duel-scene.hero .duel-team-name{font-size:clamp(12px,4.2vw,18px)!important;line-height:1.06!important;white-space:normal!important;overflow:visible!important;text-overflow:clip!important;overflow-wrap:anywhere!important;word-break:break-word!important}
       .duel-scene.hero .team-sight-box{width:52px!important;height:52px!important}
+    }
+
+  
+    /* v48: móvil estable + fallback nombres de hoja + centro oscuro + alineación final */
+    html{-webkit-text-size-adjust:100%}
+    .duel-scene.hero .duel-scene-body{display:grid!important;grid-template-columns:88px minmax(0,1fr) minmax(0,1fr) 88px!important;align-items:center!important;gap:14px!important;padding:14px 18px!important}
+    .duel-scene.hero .team-sight{height:100%;display:flex;align-items:center;justify-content:center}
+    .duel-scene.hero .duel-team-names{position:absolute;inset:0;display:grid!important;grid-template-columns:88px minmax(0,1fr) minmax(0,1fr) 88px!important;align-items:center!important;gap:14px!important;transform:none!important;left:0!important;right:0!important;top:0!important;bottom:0!important}
+    .duel-scene.hero .duel-team-name{display:flex!important;align-items:center!important;justify-content:center!important;min-height:0!important;margin:0!important;padding:0 4px!important;white-space:normal!important;overflow:visible!important;text-overflow:clip!important;overflow-wrap:anywhere!important;word-break:normal!important;text-align:center!important}
+    .duel-scene.hero .duel-team-name:first-child{grid-column:2}
+    .duel-scene.hero .duel-team-name:last-child{grid-column:3}
+    .duel-scene.hero .team-sight.left{grid-column:1}.duel-scene.hero .team-sight.right{grid-column:4}
+    .duel-scene.compact .duel-team-name{white-space:normal!important;overflow:visible!important;text-overflow:clip!important;overflow-wrap:anywhere!important;word-break:normal!important;text-align:center!important}
+    .duel-scene.compact .duel-cover-mark,.duel-scene.compact .duel-team-names{left:auto;right:auto}
+    @media(max-width:768px),(hover:none),(pointer:coarse){
+      .duel-scene.hero .duel-scene-body{grid-template-columns:58px minmax(0,1fr) minmax(0,1fr) 58px!important;gap:6px!important;padding:10px 8px!important}
+      .duel-scene.hero .duel-team-names{grid-template-columns:58px minmax(0,1fr) minmax(0,1fr) 58px!important;gap:6px!important}
+      .duel-scene.hero .duel-team-name{font-size:clamp(12px,4.2vw,18px)!important;line-height:1.06!important;padding:0 2px!important}
+      .duel-scene.hero .team-sight-box{width:52px!important;height:52px!important}
+      .duel-scene.compact .duel-team-names{top:auto!important;bottom:14px!important;left:3%!important;right:3%!important;display:grid!important;grid-template-columns:minmax(0,1fr) minmax(0,1fr)!important;gap:4%!important;align-items:end!important}
+      .duel-scene.compact .duel-team-name{display:block!important;width:100%!important;min-width:0!important;max-height:none!important;padding:0 3px!important;font-size:clamp(12px,4.3vw,18px)!important;line-height:1.08!important}
     }
 
   </style>
@@ -1784,21 +1806,23 @@ function getTeamMetaCandidates(sheet, rawRows) {
 function resolveAlbumTeams(sheet, rawRows, albumBaseName) {
     const fallbackNames = parseTeamsFromAlbumName(albumBaseName);
     const candidates = getTeamMetaCandidates(sheet, rawRows);
-    const homeRaw = String(candidates[0] || firstCellValue((rawRows || [])[1]) || firstCellValue((rawRows || [])[0]) || '').trim();
-    const awayRaw = String(candidates[1] || firstCellValue((rawRows || [])[2]) || firstCellValue((rawRows || [])[1]) || '').trim();
+    const homeRaw = String(candidates[0] || '').trim();
+    const awayRaw = String(candidates[1] || '').trim();
     const home = parseTeamCell(homeRaw, fallbackNames[0] || albumBaseName);
     const away = parseTeamCell(awayRaw, fallbackNames[1] || '');
     if (!home.structured && !away.structured) {
         const legacyColors = parseTeamColors(sheet, rawRows);
         const legacyLogo = parseTeamLogo(sheet, rawRows);
-        home.name = home.name || fallbackNames[0] || albumBaseName;
-        away.name = away.name || fallbackNames[1] || '';
+        home.name = fallbackNames[0] || albumBaseName;
+        away.name = fallbackNames[1] || '';
         home.color = home.color || legacyColors[0] || '';
         away.color = away.color || legacyColors[1] || legacyColors[0] || '';
         home.logo = home.logo || legacyLogo || '';
     }
-    home.name = home.name || fallbackNames[0] || albumBaseName;
-    away.name = away.name || fallbackNames[1] || '';
+    if (!home.name)
+        home.name = fallbackNames[0] || albumBaseName;
+    if (!away.name)
+        away.name = fallbackNames[1] || '';
     home.color = home.color || '';
     away.color = away.color || '';
     return [home, away];
@@ -1873,16 +1897,17 @@ function renderVersusBand(team, options = {}) {
 function duelSceneGradient(teamA, teamB) {
     const colorA = validHexColor((teamA && teamA.color) || '');
     const colorB = validHexColor((teamB && teamB.color) || '');
+    const mid = '#07090d';
     if (colorA && colorB) {
-        return `linear-gradient(90deg,${shiftHexColor(colorA,-0.18)} 0%,${colorA} 36%,${colorB} 64%,${shiftHexColor(colorB,-0.18)} 100%)`;
+        return `linear-gradient(90deg,${shiftHexColor(colorA,-0.16)} 0%,${colorA} 28%,${mid} 50%,${colorB} 72%,${shiftHexColor(colorB,-0.16)} 100%)`;
     }
     if (colorA) {
-        return `linear-gradient(90deg,${shiftHexColor(colorA,-0.18)} 0%,${colorA} 58%,#0b1220 100%)`;
+        return `linear-gradient(90deg,${shiftHexColor(colorA,-0.16)} 0%,${colorA} 38%,${mid} 68%,#050505 100%)`;
     }
     if (colorB) {
-        return `linear-gradient(90deg,#0b1220 0%,${colorB} 42%,${shiftHexColor(colorB,-0.18)} 100%)`;
+        return `linear-gradient(90deg,#050505 0%,${mid} 32%,${colorB} 62%,${shiftHexColor(colorB,-0.16)} 100%)`;
     }
-    return 'linear-gradient(90deg,#0b1220 0%,#172554 50%,#0b1220 100%)';
+    return 'linear-gradient(90deg,#0b1220 0%,#06080c 50%,#0b1220 100%)';
 }
 function renderTeamSight(team, side, compact = false) {
     const teamName = String((team && team.name) || '').trim();
