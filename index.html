@@ -147,6 +147,60 @@
       .duel-cover-target .sight-corner{width:14px;height:14px}
     }
 
+  
+    /* v45: alinear miras y nombres + quitar mira central + logos compactos a color */
+    .sight-line-h,.sight-line-v,.duel-cover-target .sight-line-h,.duel-cover-target .sight-line-v{display:none!important}
+    .duel-scene::after{background:repeating-linear-gradient(135deg,rgba(255,255,255,.055) 0 2px,transparent 2px 11px),linear-gradient(90deg,rgba(255,255,255,.06),transparent 18%,transparent 82%,rgba(255,255,255,.06))!important;mix-blend-mode:screen;pointer-events:none}
+    .duel-scene.hero .duel-team-names{left:138px;right:138px;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:26px;align-items:center}
+    .duel-scene.hero .duel-team-name{font-size:clamp(24px,3.6vw,44px)!important;white-space:normal;overflow:visible;text-overflow:clip;text-align:center}
+    .duel-scene.compact .duel-team-names{left:16px;right:16px;bottom:18px;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:14px;align-items:end}
+    .duel-scene.compact .duel-team-name{font-size:clamp(16px,2.2vw,26px)!important;white-space:normal;overflow:visible;text-overflow:clip;text-align:center}
+    .duel-cover-mark{top:46%}
+    .duel-cover-mark.left{left:10.5%}
+    .duel-cover-mark.right{right:10.5%}
+    .duel-cover-logo{width:74%;height:74%;object-fit:contain;filter:drop-shadow(0 10px 18px rgba(0,0,0,.28));opacity:.96;mix-blend-mode:normal}
+    .duel-cover-fallback{color:rgba(255,255,255,.88)!important;text-shadow:0 3px 12px rgba(0,0,0,.24)}
+    @media(max-width:640px){.duel-scene.hero .duel-team-names{left:76px;right:76px;gap:12px}.duel-scene.hero .duel-team-name{font-size:clamp(16px,5vw,24px)!important}.duel-cover-mark{top:45%}.duel-cover-mark.left{left:8%}.duel-cover-mark.right{right:8%}.duel-scene.compact .duel-team-name{font-size:clamp(15px,5.2vw,22px)!important}}
+
+  
+    /* v46: móvil estable + alineación exacta entre escudos y nombres */
+    .duel-scene.compact .duel-cover-mark{top:38%;width:34%;max-width:138px}
+    .duel-scene.compact .duel-cover-mark.left{left:8%}
+    .duel-scene.compact .duel-cover-mark.right{right:8%}
+    .duel-scene.compact .duel-team-names{top:63%;bottom:auto;left:5%;right:5%;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:8%;align-items:start;transform:none}
+    .duel-scene.compact .duel-team-name{display:flex;align-items:flex-start;justify-content:center;min-height:2.2em;padding:0 2px;font-size:clamp(14px,2vw,23px)!important;line-height:1.02!important;white-space:normal!important;overflow:visible!important;text-overflow:clip!important;overflow-wrap:anywhere;word-break:normal;text-align:center}
+    .duel-scene.hero .duel-scene-body{display:grid;grid-template-columns:110px minmax(0,1fr) minmax(0,1fr) 110px;align-items:center;gap:18px}
+    .duel-scene.hero .team-sight.left{grid-column:1}.duel-scene.hero .team-sight.right{grid-column:4}
+    .duel-scene.hero .duel-team-names{position:absolute;inset:0;display:grid;grid-template-columns:110px minmax(0,1fr) minmax(0,1fr) 110px;gap:18px;align-items:center;transform:none}
+    .duel-scene.hero .duel-team-name:first-child{grid-column:2}.duel-scene.hero .duel-team-name:last-child{grid-column:3}
+    .duel-scene.hero .duel-team-name{white-space:normal!important;overflow:visible!important;text-overflow:clip!important;overflow-wrap:anywhere;word-break:normal;text-align:center}
+    @media(hover:none),(pointer:coarse){
+      .modern-album-card{transform:none!important}
+      .modern-album-card.team-open .team-album-reveal{opacity:1!important;transform:scale(1)!important}
+      .modern-album-card.team-open .album-info-panel{opacity:0!important;transform:translateY(10px)!important;pointer-events:none!important}
+      .team-album-reveal{transition:opacity .18s ease,transform .24s ease!important}
+    }
+    @media(max-width:640px){
+      .modern-album-card{border-radius:22px!important}
+      .team-album-reveal{padding:8px!important}
+      .duel-scene.compact{border-radius:20px!important}
+      .duel-scene.compact .duel-cover-mark{top:36%;width:36%;max-width:none}
+      .duel-scene.compact .duel-cover-mark.left{left:5%}
+      .duel-scene.compact .duel-cover-mark.right{right:5%}
+      .duel-scene.compact .duel-team-names{top:61%;left:3%;right:3%;gap:4%}
+      .duel-scene.compact .duel-team-name{font-size:clamp(12px,4.2vw,18px)!important;line-height:1.04!important;min-height:2.4em;max-height:none}
+      .duel-scene.hero{min-height:154px!important}
+      .duel-scene.hero .duel-scene-body{grid-template-columns:66px minmax(0,1fr) minmax(0,1fr) 66px;gap:8px;padding:12px 10px!important}
+      .duel-scene.hero .duel-team-names{grid-template-columns:66px minmax(0,1fr) minmax(0,1fr) 66px;gap:8px}
+      .duel-scene.hero .team-sight-box{width:58px!important;height:58px!important}
+      .duel-scene.hero .duel-team-name{font-size:clamp(13px,4.4vw,20px)!important;line-height:1.02!important;padding:0 2px}
+      .sight-corner{width:11px!important;height:11px!important}
+    }
+    @media(max-width:390px){
+      .duel-scene.compact .duel-team-name{font-size:clamp(11px,4vw,16px)!important}
+      .duel-scene.hero .duel-team-name{font-size:clamp(12px,4.1vw,18px)!important}
+    }
+
   </style>
   <link rel="icon" type="image/png" href="https://i.postimg.cc/PrD4jg9V/Logo-LA.png" />
   <link rel="apple-touch-icon" id="la-apple-touch-icon" href="https://i.postimg.cc/PrD4jg9V/Logo-LA.png" />
@@ -1766,6 +1820,14 @@ function albumTeamSide(album, index) {
         logo: entry.logo || (index === 0 ? (album === null || album === void 0 ? void 0 : album.teamLogo) || '' : ''),
         color: entry.color || colors[index] || colors[0] || ''
     };
+}
+function isTouchDevice() {
+    try {
+        return Boolean((navigator && navigator.maxTouchPoints > 0) || window.matchMedia('(hover: none), (pointer: coarse)').matches || window.innerWidth <= 768);
+    }
+    catch (e) {
+        return window.innerWidth <= 768;
+    }
 }
 function teamInitials(name) {
     const words = String(name || '').trim().split(/\s+/).filter(Boolean);
@@ -3565,7 +3627,7 @@ A continuación, te envío el comprobante.`;
                         React.createElement("div", null,
                             React.createElement("b", null, "Actualizando galer\u00EDa"),
                             React.createElement("p", { className: "text-[11px] opacity-80 leading-tight" }, "Mostrando lo guardado mientras se cargan los \u00FAltimos cambios."))),
-                    React.createElement("div", { className: "grid grid-cols-2 sm:grid-cols-3 gap-3 sm:gap-4" }, visibleFilteredAlbums.map(a => { var _a; return React.createElement("button", { key: a.id, onClick: e => { var _a, _b; const card = e.currentTarget.querySelector('.modern-album-card'); if (card && window.matchMedia('(hover: none)').matches && !card.classList.contains('team-open')) { e.preventDefault(); card.classList.add('team-open'); setTimeout(() => { location.hash = albumHash(a.id, ((_b = (_a = a.subalbums) === null || _a === void 0 ? void 0 : _a[0]) === null || _b === void 0 ? void 0 : _b.id) || ''); }, 720); return; } location.hash = albumHash(a.id, ((_b = (_a = a.subalbums) === null || _a === void 0 ? void 0 : _a[0]) === null || _b === void 0 ? void 0 : _b.id) || ''); }, className: "group text-left active:scale-[0.98] focus:outline-none" },
+                    React.createElement("div", { className: "grid grid-cols-2 sm:grid-cols-3 gap-3 sm:gap-4" }, visibleFilteredAlbums.map(a => { var _a; return React.createElement("button", { key: a.id, onClick: e => { var _a, _b; const card = e.currentTarget.querySelector('.modern-album-card'); if (card && isTouchDevice() && !card.classList.contains('team-open')) { e.preventDefault(); e.stopPropagation(); document.querySelectorAll('.modern-album-card.team-open').forEach(el => { if (el !== card) el.classList.remove('team-open'); }); card.classList.add('team-open'); const targetHash = albumHash(a.id, ((_b = (_a = a.subalbums) === null || _a === void 0 ? void 0 : _a[0]) === null || _b === void 0 ? void 0 : _b.id) || ''); setTimeout(() => { location.hash = targetHash; }, 850); return; } location.hash = albumHash(a.id, ((_b = (_a = a.subalbums) === null || _a === void 0 ? void 0 : _a[0]) === null || _b === void 0 ? void 0 : _b.id) || ''); }, className: "group text-left active:scale-[0.98] focus:outline-none" },
                         React.createElement("div", { className: "modern-album-card aspect-[4/5]" },
                             React.createElement("div", { className: "absolute inset-0 bg-neutral-900" }, a.cover ? React.createElement("img", { src: a.cover, loading: "lazy", decoding: "async", className: "modern-album-img w-full h-full object-cover" }) : React.createElement("div", { className: "w-full h-full flex items-center justify-center text-neutral-600" },
                                 React.createElement("i", { className: "fas fa-image text-3xl" }))),
@@ -3605,7 +3667,7 @@ A continuación, te envío el comprobante.`;
                             React.createElement("span", { className: "text-[11px] font-semibold text-white uppercase tracking-widest" }, "Galer\u00EDas antiguas"))),
                     React.createElement("div", { className: "mb-4" },
                         React.createElement(ProtectionNotice, null)),
-                    React.createElement("div", { className: "grid grid-cols-2 sm:grid-cols-3 gap-3 sm:gap-4" }, filteredArchivedAlbums.map(a => { var _a; return React.createElement("button", { key: a.id, onClick: e => { var _a, _b; const card = e.currentTarget.querySelector('.modern-album-card'); if (card && window.matchMedia('(hover: none)').matches && !card.classList.contains('team-open')) { e.preventDefault(); card.classList.add('team-open'); setTimeout(() => { location.hash = albumHash(a.id, ((_b = (_a = a.subalbums) === null || _a === void 0 ? void 0 : _a[0]) === null || _b === void 0 ? void 0 : _b.id) || ''); }, 720); return; } location.hash = albumHash(a.id, ((_b = (_a = a.subalbums) === null || _a === void 0 ? void 0 : _a[0]) === null || _b === void 0 ? void 0 : _b.id) || ''); }, className: "group text-left active:scale-[0.98] focus:outline-none" },
+                    React.createElement("div", { className: "grid grid-cols-2 sm:grid-cols-3 gap-3 sm:gap-4" }, filteredArchivedAlbums.map(a => { var _a; return React.createElement("button", { key: a.id, onClick: e => { var _a, _b; const card = e.currentTarget.querySelector('.modern-album-card'); if (card && isTouchDevice() && !card.classList.contains('team-open')) { e.preventDefault(); e.stopPropagation(); document.querySelectorAll('.modern-album-card.team-open').forEach(el => { if (el !== card) el.classList.remove('team-open'); }); card.classList.add('team-open'); const targetHash = albumHash(a.id, ((_b = (_a = a.subalbums) === null || _a === void 0 ? void 0 : _a[0]) === null || _b === void 0 ? void 0 : _b.id) || ''); setTimeout(() => { location.hash = targetHash; }, 850); return; } location.hash = albumHash(a.id, ((_b = (_a = a.subalbums) === null || _a === void 0 ? void 0 : _a[0]) === null || _b === void 0 ? void 0 : _b.id) || ''); }, className: "group text-left active:scale-[0.98] focus:outline-none" },
                         React.createElement("div", { className: "modern-album-card aspect-[4/5] border-amber-400/25" },
                             React.createElement("div", { className: "absolute inset-0 bg-neutral-900" }, a.cover ? React.createElement("img", { src: a.cover, loading: "lazy", decoding: "async", className: "modern-album-img w-full h-full object-cover" }) : React.createElement("div", { className: "w-full h-full flex items-center justify-center text-neutral-600" },
                                 React.createElement("i", { className: "fas fa-image text-3xl" }))),
