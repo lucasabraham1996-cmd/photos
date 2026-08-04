@@ -489,7 +489,7 @@ const LS_SHARED_STATE_KEY = "la_shared_admin_state_v2";
 const LS_BANNERS_KEY = "la_banner_settings_v1";
 const LS_INTRO_KEY = "la_purchase_intro_seen_v2";
 const PHOTOS_PER_PAGE = 70;
-const APP_VERSION = "v36-iphone-install-admin";
+const APP_VERSION = "v36.1-iphone-install-fix";
 const LS_ALBUM_CACHE_META_KEY = "la_album_cache_meta_v1";
 const ALBUM_CACHE_MAX_AGE_MS = 1000 * 60 * 60 * 12;
 const FIRESTORE_FREE_DAILY_LIMITS = {
@@ -1921,6 +1921,46 @@ function PurchaseIntro({ photos = [], onClose }) {
                 React.createElement("p", { className: "text-sm text-slate-300 leading-relaxed mt-2 min-h-[60px]" }, steps[step].text),
                 React.createElement("div", { className: "flex items-center justify-between gap-3 mt-4" }, dots, skip)))
         );
+}
+
+function IphoneInstallModal({ onClose, onDownload, onCopy, onOpen }) {
+    return React.createElement(Modal, { onClose, max: "max-w-2xl" },
+        React.createElement("div", { className: "bg-neutral-950 border border-neutral-800 rounded-3xl p-5 sm:p-6" },
+            React.createElement("div", { className: "flex flex-col sm:flex-row sm:items-start gap-4 mb-5" },
+                React.createElement("div", { className: "w-20 h-20 rounded-[24px] bg-black border border-white/10 flex items-center justify-center shadow-[0_22px_50px_rgba(0,0,0,.45)] shrink-0" },
+                    React.createElement("img", { src: BRAND_LOGO_URL, alt: BRAND, className: "w-12 h-12 object-contain" })),
+                React.createElement("div", null,
+                    React.createElement("p", { className: "inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/5 border border-white/10 text-[11px] font-black uppercase tracking-[0.16em] mb-3" },
+                        React.createElement("i", { className: "fab fa-apple" }),
+                        " Instalación iPhone"),
+                    React.createElement("h2", { className: "text-2xl sm:text-3xl font-black leading-tight mb-2" }, "Descargar / instalar la app en iPhone"),
+                    React.createElement("p", { className: "text-sm text-neutral-300 leading-relaxed" }, "La app queda preparada para iPhone y, al agregarla a la pantalla de inicio desde Safari, el icono se verá con tu logo sobre fondo negro."))),
+            React.createElement("div", { className: "grid md:grid-cols-2 gap-4" },
+                React.createElement("div", { className: "bg-black/40 border border-white/10 rounded-2xl p-4" },
+                    React.createElement("p", { className: "text-xs uppercase tracking-[0.18em] text-sky-200 font-black mb-2" }, "Opción 1"),
+                    React.createElement("h3", { className: "text-lg font-black mb-2" }, "Descargar la app"),
+                    React.createElement("p", { className: "text-sm text-neutral-300 leading-relaxed mb-4" }, "Descargá una copia del archivo HTML para compartirla o abrirla directamente en tu iPhone."),
+                    React.createElement("button", { onClick: onDownload, className: "w-full bg-white text-black px-4 py-3 rounded-xl font-black" },
+                        React.createElement("i", { className: "fas fa-download mr-2" }),
+                        "Descargar archivo para iPhone")),
+                React.createElement("div", { className: "bg-black/40 border border-white/10 rounded-2xl p-4" },
+                    React.createElement("p", { className: "text-xs uppercase tracking-[0.18em] text-emerald-200 font-black mb-2" }, "Opción 2"),
+                    React.createElement("h3", { className: "text-lg font-black mb-2" }, "Instalar como app"),
+                    React.createElement("ol", { className: "space-y-2 text-sm text-neutral-300 leading-relaxed list-decimal pl-5 mb-4" },
+                        React.createElement("li", null, "Abrí el link de la app en Safari desde tu iPhone."),
+                        React.createElement("li", null, "Tocá el botón Compartir."),
+                        React.createElement("li", null, "Elegí “Agregar a pantalla de inicio”."),
+                        React.createElement("li", null, "Guardala y se instalará con el icono negro de tu marca.")),
+                    React.createElement("div", { className: "grid gap-2" },
+                        React.createElement("button", { onClick: onCopy, className: "w-full bg-emerald-500 text-black px-4 py-3 rounded-xl font-black" },
+                            React.createElement("i", { className: "fas fa-link mr-2" }),
+                            "Copiar link de instalación"),
+                        React.createElement("button", { onClick: onOpen, className: "w-full bg-neutral-800 px-4 py-3 rounded-xl font-bold" },
+                            React.createElement("i", { className: "fas fa-arrow-up-right-from-square mr-2" }),
+                            "Abrir link de la app")))),
+            React.createElement("div", { className: "mt-5 bg-sky-500/10 border border-sky-400/20 rounded-2xl px-4 py-3 text-xs text-sky-100 leading-relaxed" },
+                React.createElement("b", null, "Tip:"),
+                " si abrís el archivo local en el iPhone, conviene hacerlo desde Safari. Si la app está publicada en internet, usá el link para instalarla como acceso directo.")));
 }
 
 function App() {
@@ -3371,43 +3411,7 @@ Te envío el comprobante para que puedas prepararlas.`);
                     React.createElement("i", { className: "fab fa-whatsapp mr-2" }),
                     "Finalizar compra"),
                 React.createElement("p", { className: "text-center text-[11px] text-sky-100/65 leading-relaxed mt-3" }, "Se abre WhatsApp con el pedido listo. Luego adjuntá el comprobante de la transferencia en el mismo chat."))),
-        iphoneInstallOpen && admin && React.createElement(Modal, { onClose: () => setIphoneInstallOpen(false), max: "max-w-2xl" },
-            React.createElement("div", { className: "bg-neutral-950 border border-neutral-800 rounded-3xl p-5 sm:p-6" },
-                React.createElement("div", { className: "flex flex-col sm:flex-row sm:items-start gap-4 mb-5" },
-                    React.createElement("div", { className: "w-20 h-20 rounded-[24px] bg-black border border-white/10 flex items-center justify-center shadow-[0_22px_50px_rgba(0,0,0,.45)] shrink-0" },
-                        React.createElement("img", { src: BRAND_LOGO_URL, alt: BRAND, className: "w-12 h-12 object-contain" })),
-                    React.createElement("div", null,
-                        React.createElement("p", { className: "inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/5 border border-white/10 text-[11px] font-black uppercase tracking-[0.16em] mb-3" },
-                            React.createElement("i", { className: "fab fa-apple" }),
-                            " Instalación iPhone"),
-                        React.createElement("h2", { className: "text-2xl sm:text-3xl font-black leading-tight mb-2" }, "Descargar / instalar la app en iPhone"),
-                        React.createElement("p", { className: "text-sm text-neutral-300 leading-relaxed" }, "La app queda preparada para iPhone y, al agregarla a la pantalla de inicio desde Safari, el icono se verá con tu logo sobre fondo negro."))),
-                React.createElement("div", { className: "grid md:grid-cols-2 gap-4" },
-                    React.createElement("div", { className: "bg-black/40 border border-white/10 rounded-2xl p-4" },
-                        React.createElement("p", { className: "text-xs uppercase tracking-[0.18em] text-sky-200 font-black mb-2" }, "Opción 1"),
-                        React.createElement("h3", { className: "text-lg font-black mb-2" }, "Descargar la app"),
-                        React.createElement("p", { className: "text-sm text-neutral-300 leading-relaxed mb-4" }, "Descargá una copia del archivo HTML para compartirla o abrirla directamente en tu iPhone."),
-                        React.createElement("button", { onClick: downloadAppForIphone, className: "w-full bg-white text-black px-4 py-3 rounded-xl font-black" },
-                            React.createElement("i", { className: "fas fa-download mr-2" }),
-                            "Descargar archivo para iPhone"))),
-                    React.createElement("div", { className: "bg-black/40 border border-white/10 rounded-2xl p-4" },
-                        React.createElement("p", { className: "text-xs uppercase tracking-[0.18em] text-emerald-200 font-black mb-2" }, "Opción 2"),
-                        React.createElement("h3", { className: "text-lg font-black mb-2" }, "Instalar como app"),
-                        React.createElement("ol", { className: "space-y-2 text-sm text-neutral-300 leading-relaxed list-decimal pl-5 mb-4" },
-                            React.createElement("li", null, "Abrí el link de la app en Safari desde tu iPhone."),
-                            React.createElement("li", null, "Tocá el botón Compartir."),
-                            React.createElement("li", null, "Elegí “Agregar a pantalla de inicio”."),
-                            React.createElement("li", null, "Guardala y se instalará con el icono negro de tu marca.")),
-                        React.createElement("div", { className: "grid gap-2" },
-                            React.createElement("button", { onClick: copyGalleryInstallUrl, className: "w-full bg-emerald-500 text-black px-4 py-3 rounded-xl font-black" },
-                                React.createElement("i", { className: "fas fa-link mr-2" }),
-                                "Copiar link de instalación"),
-                            React.createElement("button", { onClick: () => window.open(getGalleryInstallUrl(), '_blank'), className: "w-full bg-neutral-800 px-4 py-3 rounded-xl font-bold" },
-                                React.createElement("i", { className: "fas fa-arrow-up-right-from-square mr-2" }),
-                                "Abrir link de la app"))))),
-                React.createElement("div", { className: "mt-5 bg-sky-500/10 border border-sky-400/20 rounded-2xl px-4 py-3 text-xs text-sky-100 leading-relaxed" },
-                    React.createElement("b", null, "Tip:"),
-                    " si abrís el archivo local en el iPhone, conviene hacerlo desde Safari. Si la app está publicada en internet, usá el link para instalarla como acceso directo.")),
+        iphoneInstallOpen && admin && React.createElement(IphoneInstallModal, { onClose: () => setIphoneInstallOpen(false), onDownload: downloadAppForIphone, onCopy: copyGalleryInstallUrl, onOpen: () => window.open(getGalleryInstallUrl(), '_blank') }),
         priceAdminOpen && admin && React.createElement(PriceAdminModal, { onClose: () => setPriceAdminOpen(false), priceSettings: priceSettings, setPriceSettings: setPriceSettings, setAdminMessage: setAdminMessage }),
         bookingOpen && React.createElement(PriceModal, { onClose: () => setBookingOpen(false), priceSettings: priceSettings }),
         viewer && React.createElement(Modal, { onClose: () => setViewer(null), max: "max-w-6xl" },
