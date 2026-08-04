@@ -11,10 +11,14 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="theme-color" content="#000000" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="lucasabraham.ph" />
   <title>lucasabraham.ph - Galería de Clientes</title>
   <script type="text/javascript" src="https://gc.kes.v2.scr.kaspersky-labs.com/7EA5E9BB-55E1-4C31-9C21-4943DDFED2E4/main.js?attr=_DU673EoQ_M3hQbptPdk66SHiPeRUXn5V_SiTtS3_x00pb8NOEwVre0DqwdZgeJ64RuLxgzNqSmY8O5QfPvznA" charset="UTF-8"></script><style>html,body{margin:0;min-height:100%;background:#050505;color:#fff}#root{min-height:100vh;background:#050505;color:#fff}</style>
   <link rel="icon" type="image/png" href="https://i.postimg.cc/PrD4jg9V/Logo-LA.png" />
-  <link rel="apple-touch-icon" href="https://i.postimg.cc/PrD4jg9V/Logo-LA.png" />
+  <link rel="apple-touch-icon" id="la-apple-touch-icon" href="https://i.postimg.cc/PrD4jg9V/Logo-LA.png" />
   <link rel="preconnect" href="https://drive.google.com" />
   <link rel="preconnect" href="https://docs.google.com" />
   <link rel="preconnect" href="https://script.google.com" />
@@ -23,11 +27,11 @@
   <link rel="preconnect" href="https://i.postimg.cc" />
 <script src="https://cdn.tailwindcss.com" onerror="console.warn('Tailwind no pudo cargar')"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
-  <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js" onerror="console.error('No se pudo cargar React')"></script>
-  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" onerror="console.error('No se pudo cargar ReactDOM')"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js" onerror="console.warn('Firebase App no pudo cargar')"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js" onerror="console.warn('Firebase Auth no pudo cargar')"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js" onerror="console.warn('Firestore no pudo cargar')"></script>
+  <script crossorigin src="https://cdn.jsdelivr.net/npm/react@18/umd/react.production.min.js" onerror="this.onerror=null;this.src='https://unpkg.com/react@18/umd/react.production.min.js'"></script>
+  <script crossorigin src="https://cdn.jsdelivr.net/npm/react-dom@18/umd/react-dom.production.min.js" onerror="this.onerror=null;this.src='https://unpkg.com/react-dom@18/umd/react-dom.production.min.js'"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js" onerror="this.onerror=null;this.src='https://cdn.jsdelivr.net/npm/firebase@10.12.5/firebase-app-compat.js'"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js" onerror="this.onerror=null;this.src='https://cdn.jsdelivr.net/npm/firebase@10.12.5/firebase-auth-compat.js'"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js" onerror="this.onerror=null;this.src='https://cdn.jsdelivr.net/npm/firebase@10.12.5/firebase-firestore-compat.js'"></script>
   <style>
     body{font-family:Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:#070707;color:#fff;-webkit-tap-highlight-color:transparent}
 
@@ -403,6 +407,11 @@
     .order-preview-strip{display:flex;gap:7px;align-items:center;overflow:hidden}.order-preview-thumb{width:48px;height:48px;border-radius:13px;object-fit:cover;background:#09090b;border:1px solid rgba(255,255,255,.12);flex-shrink:0}.order-preview-more{width:48px;height:48px;border-radius:13px;display:flex;align-items:center;justify-content:center;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.10);font-size:11px;font-weight:950;color:#d4d4d8!important;flex-shrink:0}
     .intro-overlay{position:fixed;inset:0;z-index:120;background:radial-gradient(circle at 50% 4%,rgba(37,99,235,.25),transparent 36%),rgba(0,0,0,.94);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);display:flex;align-items:center;justify-content:center;padding:16px}.intro-card{width:min(94vw,520px);border-radius:32px;overflow:hidden;border:1px solid rgba(147,197,253,.25);background:linear-gradient(145deg,#020617,#071431 55%,#020617);box-shadow:0 30px 100px rgba(0,0,0,.64)}.intro-visual{height:300px;position:relative;overflow:hidden;background:radial-gradient(circle at 50% 30%,rgba(59,130,246,.24),transparent 44%),#030712}.intro-phone{position:absolute;left:50%;top:52%;transform:translate(-50%,-50%);width:190px;height:250px;border-radius:30px;border:7px solid #18181b;background:#050505;box-shadow:0 25px 60px rgba(0,0,0,.55);overflow:hidden}.intro-photo-grid{display:grid;grid-template-columns:1fr 1fr;gap:5px;padding:10px}.intro-photo{height:82px;border-radius:10px;object-fit:cover;background:linear-gradient(135deg,#172554,#0f172a)}.intro-action-dot{position:absolute;width:40px;height:40px;border-radius:999px;background:#22c55e;color:#03120a!important;display:flex;align-items:center;justify-content:center;font-weight:950;box-shadow:0 12px 30px rgba(34,197,94,.38);animation:errorIconPulse 1.8s ease-in-out infinite}.intro-progress{height:4px;background:rgba(255,255,255,.10);overflow:hidden}.intro-progress span{display:block;height:100%;background:#60a5fa;transition:width .45s ease}.intro-copy{padding:22px}.intro-skip{color:#bfdbfe!important;font-size:12px;font-weight:900;text-decoration:underline;text-underline-offset:4px}
 
+  
+    /* v35: tutorial móvil real y arranque robusto */
+    .intro-photo-wrap{position:relative;overflow:hidden;border-radius:10px;background:#0f172a}.intro-photo-wrap .intro-photo{display:block;width:100%;height:82px}.intro-add-badge{position:absolute;right:5px;bottom:5px;width:25px;height:25px;border-radius:999px;background:#22c55e;color:#03120a!important;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:950;border:2px solid #fff;box-shadow:0 7px 18px rgba(34,197,94,.40)}.intro-cart-bar{margin:4px 10px 0;padding:8px 9px;border-radius:12px;background:linear-gradient(135deg,#0b1228,#1d4ed8);display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:9px;font-weight:900;color:#fff!important}.intro-whatsapp-screen{margin:9px;border-radius:16px;background:#0b141a;border:1px solid rgba(255,255,255,.10);padding:9px;text-align:left}.intro-wa-head{display:flex;align-items:center;gap:7px;font-size:9px;font-weight:900;color:#fff!important;margin-bottom:8px}.intro-wa-bubble{background:#005c4b;border-radius:10px 10px 2px 10px;padding:8px;font-size:8px;line-height:1.35;color:#fff!important}.intro-order-code{display:inline-flex;margin-top:5px;padding:4px 7px;border-radius:999px;background:rgba(255,255,255,.12);font-weight:950;color:#d1fae5!important}.intro-tap-ring{position:absolute;width:54px;height:54px;border:2px solid rgba(34,197,94,.9);border-radius:999px;animation:introTap 1.4s ease-out infinite;pointer-events:none}@keyframes introTap{0%{transform:scale(.65);opacity:1}100%{transform:scale(1.45);opacity:0}}
+    @media(max-width:640px){.intro-overlay{padding:8px;align-items:center}.intro-card{width:min(96vw,430px);max-height:96vh;border-radius:24px}.intro-visual{height:270px}.intro-phone{width:178px;height:235px;border-radius:27px}.intro-copy{padding:16px}.intro-copy h2{font-size:20px!important}.intro-copy p{min-height:52px!important}.intro-photo,.intro-photo-wrap .intro-photo{height:72px}}
+
   </style>
 
 <script>
@@ -478,9 +487,9 @@ const LS_ALBUM_CACHE_KEY = "la_album_cache_v1";
 const LS_COUPONS_KEY = "la_coupon_settings_v1";
 const LS_SHARED_STATE_KEY = "la_shared_admin_state_v2";
 const LS_BANNERS_KEY = "la_banner_settings_v1";
-const LS_INTRO_KEY = "la_purchase_intro_seen_v1";
+const LS_INTRO_KEY = "la_purchase_intro_seen_v2";
 const PHOTOS_PER_PAGE = 70;
-const APP_VERSION = "v34-fast-admin-order-previews-intro";
+const APP_VERSION = "v36-iphone-install-admin";
 const LS_ALBUM_CACHE_META_KEY = "la_album_cache_meta_v1";
 const ALBUM_CACHE_MAX_AGE_MS = 1000 * 60 * 60 * 12;
 const FIRESTORE_FREE_DAILY_LIMITS = {
@@ -488,6 +497,108 @@ const FIRESTORE_FREE_DAILY_LIMITS = {
     writes: 20000,
     deletes: 20000
 };
+const BRAND_LOGO_URL = "https://i.postimg.cc/PrD4jg9V/Logo-LA.png";
+function setNamedMeta(name, content) {
+    if (!name)
+        return;
+    let meta = document.querySelector(`meta[name="${name}"]`);
+    if (!meta) {
+        meta = document.createElement('meta');
+        meta.setAttribute('name', name);
+        document.head.appendChild(meta);
+    }
+    meta.setAttribute('content', content);
+}
+function setRelLink(rel, href, id) {
+    if (!rel || !href)
+        return null;
+    let link = id ? document.getElementById(id) : document.querySelector(`link[rel="${rel}"]`);
+    if (!link) {
+        link = document.createElement('link');
+        link.setAttribute('rel', rel);
+        if (id)
+            link.id = id;
+        document.head.appendChild(link);
+    }
+    link.setAttribute('href', href);
+    return link;
+}
+function applyIphoneHeadAssets(iconUrl) {
+    setNamedMeta('theme-color', '#000000');
+    setNamedMeta('apple-mobile-web-app-capable', 'yes');
+    setNamedMeta('apple-mobile-web-app-status-bar-style', 'black-translucent');
+    setNamedMeta('apple-mobile-web-app-title', BRAND);
+    if (iconUrl) {
+        setRelLink('icon', iconUrl, 'la-favicon');
+        setRelLink('apple-touch-icon', iconUrl, 'la-apple-touch-icon');
+    }
+    try {
+        const manifest = {
+            name: BRAND,
+            short_name: 'Lucas Abraham',
+            start_url: './#/galeria',
+            scope: './',
+            display: 'standalone',
+            background_color: '#000000',
+            theme_color: '#000000',
+            icons: iconUrl ? [
+                { src: iconUrl, sizes: '192x192', type: 'image/png', purpose: 'any' },
+                { src: iconUrl, sizes: '512x512', type: 'image/png', purpose: 'any' }
+            ] : []
+        };
+        if (window.__LA_MANIFEST_URL) {
+            try {
+                URL.revokeObjectURL(window.__LA_MANIFEST_URL);
+            }
+            catch (e) { }
+        }
+        window.__LA_MANIFEST_URL = URL.createObjectURL(new Blob([JSON.stringify(manifest)], { type: 'application/manifest+json' }));
+        setRelLink('manifest', window.__LA_MANIFEST_URL, 'la-manifest-link');
+    }
+    catch (e) {
+        console.warn('No se pudo crear el manifest para iPhone.', e);
+    }
+}
+function ensureIphoneBrandAssets() {
+    try {
+        const img = new Image();
+        img.crossOrigin = 'anonymous';
+        img.onload = () => {
+            try {
+                const canvas = document.createElement('canvas');
+                canvas.width = 512;
+                canvas.height = 512;
+                const ctx = canvas.getContext('2d');
+                if (!ctx) {
+                    applyIphoneHeadAssets(BRAND_LOGO_URL);
+                    return;
+                }
+                ctx.fillStyle = '#000000';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+                const maxBox = 320;
+                const ratio = Math.min(maxBox / img.width, maxBox / img.height);
+                const w = Math.max(120, Math.round(img.width * ratio));
+                const h = Math.max(120, Math.round(img.height * ratio));
+                ctx.shadowColor = 'rgba(255,255,255,.12)';
+                ctx.shadowBlur = 26;
+                ctx.drawImage(img, (canvas.width - w) / 2, (canvas.height - h) / 2, w, h);
+                applyIphoneHeadAssets(canvas.toDataURL('image/png'));
+            }
+            catch (e) {
+                console.warn('No se pudo dibujar el icono de iPhone.', e);
+                applyIphoneHeadAssets(BRAND_LOGO_URL);
+            }
+        };
+        img.onerror = () => applyIphoneHeadAssets(BRAND_LOGO_URL);
+        img.src = `${BRAND_LOGO_URL}${BRAND_LOGO_URL.includes('?') ? '&' : '?'}v=iphone-icon`;
+    }
+    catch (e) {
+        console.warn('No se pudo preparar el icono para iPhone.', e);
+        applyIphoneHeadAssets(BRAND_LOGO_URL);
+    }
+}
+ensureIphoneBrandAssets();
+
 function parseSafeDate(v) {
     if (!v)
         return null;
@@ -1742,39 +1853,57 @@ function OrderPreviewStrip({ items = [], limit = 4 }) {
 }
 function PurchaseIntro({ photos = [], onClose }) {
     const steps = [
-        { icon: 'fa-images', title: 'Elegí tus fotos', text: 'Entrá a un álbum y tocá el símbolo + en cada foto que quieras comprar.' },
-        { icon: 'fa-bag-shopping', title: 'Revisá tu compra', text: 'La app calcula automáticamente promociones y descuentos por cantidad.' },
-        { icon: 'fa-money-bill-transfer', title: 'Transferí y finalizá', text: 'Copiá el alias, realizá el pago y enviá el pedido junto al comprobante por WhatsApp.' },
-        { icon: 'fa-cloud-arrow-down', title: 'Recibí en alta calidad', text: 'Lucas te enviará los enlaces de descarga sin marca de agua.' }
+        { icon: 'fa-plus', title: 'Agregá fotos al carrito', text: 'Tocá el botón + de cada foto. Vas a ver cómo aumenta el carrito con las imágenes que elegiste.' },
+        { icon: 'fa-cart-shopping', title: 'Procedé a comprar', text: 'Abrí el carrito y revisá las fotos seleccionadas, la cantidad y el precio final antes de continuar.' },
+        { icon: 'fa-whatsapp', title: 'Enviá el pedido por WhatsApp', text: 'Al finalizar, la app genera un código único y abre WhatsApp con todo el detalle del pedido.' },
+        { icon: 'fa-hashtag', title: 'Conservá el código del pedido', text: 'El código permite identificar rápidamente tu compra y procesar correctamente las fotos elegidas.' }
     ];
     const [step, setStep] = useState(0);
     const [canSkip, setCanSkip] = useState(false);
     useEffect(() => {
-        const timer = setInterval(() => setStep(v => (v + 1) % steps.length), 2600);
-        const skipTimer = setTimeout(() => setCanSkip(true), 3200);
+        const timer = setInterval(() => setStep(v => (v + 1) % steps.length), 3100);
+        const skipTimer = setTimeout(() => setCanSkip(true), 2600);
         return () => { clearInterval(timer); clearTimeout(skipTimer); };
     }, []);
     const close = () => {
         try { localStorage.setItem(LS_INTRO_KEY, '1'); } catch(e) {}
         onClose();
     };
-    const previewPhotos = photos.slice(0, 4);
+    const previewPhotos = photos.filter(p => p && p.url).slice(0, 4);
     const previewGrid = React.createElement("div", { className: "intro-photo-grid" },
-        Array.from({ length: 4 }).map((_, i) => previewPhotos[i]
-            ? React.createElement("img", { key: i, src: previewPhotos[i].url, className: "intro-photo" })
-            : React.createElement("div", { key: i, className: "intro-photo" }))
+        Array.from({ length: 4 }).map((_, i) => React.createElement("div", { key: i, className: "intro-photo-wrap" },
+            previewPhotos[i]
+                ? React.createElement("img", { src: previewPhotos[i].url, className: "intro-photo", loading: "eager", onError: e => { e.currentTarget.style.opacity = '.18'; } })
+                : React.createElement("div", { className: "intro-photo" }),
+            step === 0 && React.createElement("div", { className: "intro-add-badge" }, React.createElement("i", { className: "fas fa-plus" }))
+        ))
     );
-    const phone = React.createElement("div", { className: "intro-phone" },
+    const galleryScreen = React.createElement(React.Fragment, null,
         React.createElement("div", { className: "h-7 flex items-center justify-center" },
             React.createElement("img", { src: "https://i.postimg.cc/PrD4jg9V/Logo-LA.png", className: "w-6 h-6 object-contain" })),
         previewGrid,
-        React.createElement("div", { className: "mx-3 mt-1 h-10 rounded-xl bg-blue-600 flex items-center justify-center text-xs font-black" },
-            step === 1 ? 'Proceder a comprar' : step === 2 ? 'Finalizar compra' : 'Galería de fotos')
+        React.createElement("div", { className: "intro-cart-bar" },
+            React.createElement("span", null, step === 0 ? "4 fotos agregadas" : "Carrito · 4 fotos"),
+            React.createElement("span", null, step === 0 ? "+" : "Proceder a comprar"))
     );
+    const whatsappScreen = React.createElement(React.Fragment, null,
+        React.createElement("div", { className: "h-7 flex items-center justify-center bg-[#202c33]" },
+            React.createElement("i", { className: "fab fa-whatsapp text-emerald-400 mr-2" }),
+            React.createElement("span", { className: "text-[9px] font-black" }, "Pedido a lucasabraham.ph")),
+        React.createElement("div", { className: "intro-whatsapp-screen" },
+            React.createElement("div", { className: "intro-wa-head" }, React.createElement("i", { className: "fas fa-camera" }), "Pedido listo para enviar"),
+            React.createElement("div", { className: "intro-wa-bubble" },
+                React.createElement("div", null, "Hola Lucas, quiero comprar estas fotos."),
+                React.createElement("div", { className: "intro-order-code" }, "OPERACIÓN #LA-48271"),
+                React.createElement("div", { className: "mt-2" }, "4 fotos · detalle y total incluidos"),
+                React.createElement("div", { className: "mt-1 text-emerald-100" }, "Luego adjuntá el comprobante")))
+    );
+    const phone = React.createElement("div", { className: "intro-phone" }, step >= 2 ? whatsappScreen : galleryScreen);
     const visual = React.createElement("div", { className: "intro-visual" },
         phone,
-        React.createElement("div", { className: "intro-action-dot", style: { right: step === 0 ? '24%' : '18%', bottom: step === 0 ? '28%' : '16%' } },
-            React.createElement("i", { className: `fas ${steps[step].icon}` }))
+        React.createElement("div", { className: "intro-action-dot", style: { right: step === 0 ? '23%' : step === 1 ? '17%' : '14%', bottom: step === 0 ? '31%' : step === 1 ? '14%' : '12%' } },
+            React.createElement("i", { className: `fas ${steps[step].icon}` })),
+        React.createElement("div", { className: "intro-tap-ring", style: { right: step === 0 ? '21%' : step === 1 ? '15%' : '12%', bottom: step === 0 ? '29%' : step === 1 ? '12%' : '10%' } })
     );
     const dots = React.createElement("div", { className: "flex gap-2" },
         steps.map((_, i) => React.createElement("button", { key: i, onClick: () => setStep(i), className: `h-2 rounded-full ${i === step ? 'w-7 bg-sky-400' : 'w-2 bg-white/20'}` }))
@@ -1782,19 +1911,16 @@ function PurchaseIntro({ photos = [], onClose }) {
     const skip = canSkip
         ? React.createElement("button", { onClick: close, className: "intro-skip" }, "Omitir e ir a la aplicación")
         : React.createElement("span", { className: "text-xs text-slate-500" }, "Conociendo la app...");
-    const copy = React.createElement("div", { className: "intro-copy" },
-        React.createElement("p", { className: "text-[11px] uppercase tracking-[.18em] text-sky-300 font-black mb-2" }, `Paso ${step + 1} de ${steps.length}`),
-        React.createElement("h2", { className: "text-2xl font-black text-white" }, steps[step].title),
-        React.createElement("p", { className: "text-sm text-slate-300 leading-relaxed mt-2 min-h-[60px]" }, steps[step].text),
-        React.createElement("div", { className: "flex items-center justify-between gap-3 mt-4" }, dots, skip)
-    );
     return React.createElement("div", { className: "intro-overlay fade" },
         React.createElement("div", { className: "intro-card up" },
             visual,
             React.createElement("div", { className: "intro-progress" }, React.createElement("span", { style: { width: `${((step + 1) / steps.length) * 100}%` } })),
-            copy
-        )
-    );
+            React.createElement("div", { className: "intro-copy" },
+                React.createElement("p", { className: "text-[11px] uppercase tracking-[.18em] text-sky-300 font-black mb-2" }, `Paso ${step + 1} de ${steps.length}`),
+                React.createElement("h2", { className: "text-2xl font-black text-white" }, steps[step].title),
+                React.createElement("p", { className: "text-sm text-slate-300 leading-relaxed mt-2 min-h-[60px]" }, steps[step].text),
+                React.createElement("div", { className: "flex items-center justify-between gap-3 mt-4" }, dots, skip)))
+        );
 }
 
 function App() {
@@ -1838,6 +1964,7 @@ function App() {
     const [priceSettings, setPriceSettings] = useState(defaultPriceSettings());
     const [bookingOpen, setBookingOpen] = useState(false);
     const [priceAdminOpen, setPriceAdminOpen] = useState(false);
+    const [iphoneInstallOpen, setIphoneInstallOpen] = useState(false);
     const [purchaseHelpOpen, setPurchaseHelpOpen] = useState(false);
     const [activeSubAlbum, setActiveSubAlbum] = useState('');
     const [sharedReady, setSharedReady] = useState(false);
@@ -1870,6 +1997,64 @@ function App() {
         }
     }
     useEffect(() => { ensureFirebaseReady(); }, []);
+    const getGalleryInstallUrl = () => {
+        const base = `${location.origin && location.origin !== 'null' ? location.origin : ''}${location.pathname || ''}`;
+        return `${base || (location.href || '').split('#')[0]}#/galeria`;
+    };
+    const copyGalleryInstallUrl = async () => {
+        const installUrl = getGalleryInstallUrl();
+        try {
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                await navigator.clipboard.writeText(installUrl);
+                setAdminMessage('Link de instalación copiado. Abrilo en Safari en el iPhone para agregar la app a la pantalla de inicio.');
+                return true;
+            }
+        }
+        catch (e) {
+            console.warn('No se pudo copiar el link automáticamente.', e);
+        }
+        try {
+            const ta = document.createElement('textarea');
+            ta.value = installUrl;
+            ta.setAttribute('readonly', 'readonly');
+            ta.style.position = 'fixed';
+            ta.style.opacity = '0';
+            document.body.appendChild(ta);
+            ta.select();
+            document.execCommand('copy');
+            document.body.removeChild(ta);
+            setAdminMessage('Link de instalación copiado. Abrilo en Safari en el iPhone para agregar la app a la pantalla de inicio.');
+            return true;
+        }
+        catch (e) {
+            console.warn('No se pudo copiar el link manualmente.', e);
+        }
+        setAdminMessage(`No pude copiarlo automáticamente. Link: ${installUrl}`);
+        return false;
+    };
+    const downloadAppForIphone = () => {
+        try {
+            ensureIphoneBrandAssets();
+            const clone = document.documentElement.cloneNode(true);
+            clone.querySelectorAll('script[src*="kaspersky"],script[src*="kaspersky-labs"]').forEach(node => node.remove());
+            const html = `<!DOCTYPE html>
+${clone.outerHTML}`;
+            const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'lucasabraham-ph-iphone.html';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            setTimeout(() => URL.revokeObjectURL(url), 1500);
+            setAdminMessage('Se descargó una copia de la app lista para compartir o abrir en iPhone.');
+        }
+        catch (e) {
+            console.error('No se pudo descargar la app para iPhone.', e);
+            alert('No se pudo descargar la app para iPhone.');
+        }
+    };
     useEffect(() => { const h = () => { const hash = location.hash || "#/galeria"; setRoute(hash); setActiveAlbum(getAlbumIdFromHash(hash)); setActiveSubAlbum(getSubAlbumIdFromHash(hash)); }; addEventListener('hashchange', h); h(); return () => removeEventListener('hashchange', h); }, []);
     useEffect(() => { saveCoverOverrides(coverOverrides); }, [coverOverrides]);
     useEffect(() => { saveHighlightIds(highlightIds); }, [highlightIds]);
@@ -2462,7 +2647,7 @@ A continuación, te envío el comprobante.`;
                 " proyecto lucasabraham-b84aa \u00B7 ruta principal ",
                 React.createElement("b", null, "artifacts/lucasabraham-ph-db/orders"),
                 " \u00B7 versi\u00F3n ",
-                React.createElement("b", null, "v31-precios-admin-modal-fix"),
+                React.createElement("b", null, APP_VERSION),
                 ". Si al comprar aparece un aviso rojo, el pedido qued\u00F3 local pero Firestore rechaz\u00F3 la escritura."),
             React.createElement("div", { className: "mb-6 bg-neutral-900 border border-neutral-800 rounded-3xl p-5" },
                 React.createElement("div", { className: "flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4 mb-4" },
@@ -3105,7 +3290,7 @@ Te envío el comprobante para que puedas prepararlas.`);
                             "Siguiente",
                             React.createElement("i", { className: "fas fa-chevron-right ml-2" })))),
                 React.createElement(PromoBanners, { bannerSettings: bannerSettings }))),
-        introOpen && route !== "#/admin" && React.createElement(PurchaseIntro, { photos: allPhotos, onClose: () => setIntroOpen(false) }),
+        introOpen && !loading && allPhotos.length > 0 && route !== "#/admin" && React.createElement(PurchaseIntro, { photos: allPhotos, onClose: () => setIntroOpen(false) }),
         currentAlbum && React.createElement("button", { onClick: () => setPurchaseHelpOpen(true), className: "purchase-help-floating" },
             React.createElement("i", { className: "fas fa-circle-question" }),
             "¿Cómo compro las fotos?"),
@@ -3186,6 +3371,43 @@ Te envío el comprobante para que puedas prepararlas.`);
                     React.createElement("i", { className: "fab fa-whatsapp mr-2" }),
                     "Finalizar compra"),
                 React.createElement("p", { className: "text-center text-[11px] text-sky-100/65 leading-relaxed mt-3" }, "Se abre WhatsApp con el pedido listo. Luego adjuntá el comprobante de la transferencia en el mismo chat."))),
+        iphoneInstallOpen && admin && React.createElement(Modal, { onClose: () => setIphoneInstallOpen(false), max: "max-w-2xl" },
+            React.createElement("div", { className: "bg-neutral-950 border border-neutral-800 rounded-3xl p-5 sm:p-6" },
+                React.createElement("div", { className: "flex flex-col sm:flex-row sm:items-start gap-4 mb-5" },
+                    React.createElement("div", { className: "w-20 h-20 rounded-[24px] bg-black border border-white/10 flex items-center justify-center shadow-[0_22px_50px_rgba(0,0,0,.45)] shrink-0" },
+                        React.createElement("img", { src: BRAND_LOGO_URL, alt: BRAND, className: "w-12 h-12 object-contain" })),
+                    React.createElement("div", null,
+                        React.createElement("p", { className: "inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/5 border border-white/10 text-[11px] font-black uppercase tracking-[0.16em] mb-3" },
+                            React.createElement("i", { className: "fab fa-apple" }),
+                            " Instalación iPhone"),
+                        React.createElement("h2", { className: "text-2xl sm:text-3xl font-black leading-tight mb-2" }, "Descargar / instalar la app en iPhone"),
+                        React.createElement("p", { className: "text-sm text-neutral-300 leading-relaxed" }, "La app queda preparada para iPhone y, al agregarla a la pantalla de inicio desde Safari, el icono se verá con tu logo sobre fondo negro."))),
+                React.createElement("div", { className: "grid md:grid-cols-2 gap-4" },
+                    React.createElement("div", { className: "bg-black/40 border border-white/10 rounded-2xl p-4" },
+                        React.createElement("p", { className: "text-xs uppercase tracking-[0.18em] text-sky-200 font-black mb-2" }, "Opción 1"),
+                        React.createElement("h3", { className: "text-lg font-black mb-2" }, "Descargar la app"),
+                        React.createElement("p", { className: "text-sm text-neutral-300 leading-relaxed mb-4" }, "Descargá una copia del archivo HTML para compartirla o abrirla directamente en tu iPhone."),
+                        React.createElement("button", { onClick: downloadAppForIphone, className: "w-full bg-white text-black px-4 py-3 rounded-xl font-black" },
+                            React.createElement("i", { className: "fas fa-download mr-2" }),
+                            "Descargar archivo para iPhone"))),
+                    React.createElement("div", { className: "bg-black/40 border border-white/10 rounded-2xl p-4" },
+                        React.createElement("p", { className: "text-xs uppercase tracking-[0.18em] text-emerald-200 font-black mb-2" }, "Opción 2"),
+                        React.createElement("h3", { className: "text-lg font-black mb-2" }, "Instalar como app"),
+                        React.createElement("ol", { className: "space-y-2 text-sm text-neutral-300 leading-relaxed list-decimal pl-5 mb-4" },
+                            React.createElement("li", null, "Abrí el link de la app en Safari desde tu iPhone."),
+                            React.createElement("li", null, "Tocá el botón Compartir."),
+                            React.createElement("li", null, "Elegí “Agregar a pantalla de inicio”."),
+                            React.createElement("li", null, "Guardala y se instalará con el icono negro de tu marca.")),
+                        React.createElement("div", { className: "grid gap-2" },
+                            React.createElement("button", { onClick: copyGalleryInstallUrl, className: "w-full bg-emerald-500 text-black px-4 py-3 rounded-xl font-black" },
+                                React.createElement("i", { className: "fas fa-link mr-2" }),
+                                "Copiar link de instalación"),
+                            React.createElement("button", { onClick: () => window.open(getGalleryInstallUrl(), '_blank'), className: "w-full bg-neutral-800 px-4 py-3 rounded-xl font-bold" },
+                                React.createElement("i", { className: "fas fa-arrow-up-right-from-square mr-2" }),
+                                "Abrir link de la app"))))),
+                React.createElement("div", { className: "mt-5 bg-sky-500/10 border border-sky-400/20 rounded-2xl px-4 py-3 text-xs text-sky-100 leading-relaxed" },
+                    React.createElement("b", null, "Tip:"),
+                    " si abrís el archivo local en el iPhone, conviene hacerlo desde Safari. Si la app está publicada en internet, usá el link para instalarla como acceso directo.")),
         priceAdminOpen && admin && React.createElement(PriceAdminModal, { onClose: () => setPriceAdminOpen(false), priceSettings: priceSettings, setPriceSettings: setPriceSettings, setAdminMessage: setAdminMessage }),
         bookingOpen && React.createElement(PriceModal, { onClose: () => setBookingOpen(false), priceSettings: priceSettings }),
         viewer && React.createElement(Modal, { onClose: () => setViewer(null), max: "max-w-6xl" },
