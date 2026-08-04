@@ -1,13 +1,3 @@
-
-
-
-
-
-
-
-
-
-
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -278,6 +268,30 @@
       .duel-scene.compact .duel-team-names{bottom:12px!important;padding:0 10px!important;gap:6px!important}
       .duel-scene.compact .duel-team-name{max-width:100%!important;font-size:clamp(12px,4.2vw,17px)!important;line-height:1.04!important}
     }
+
+  
+    /* v50: prioridad PRIMERA + mobile safe real + alineación final */
+    .duel-scene.compact .duel-cover-mark{top:36%!important}
+    .duel-scene.compact .duel-team-names{bottom:12px!important;align-items:start!important}
+    .duel-scene.compact .duel-team-name{padding-top:0!important}
+    .duel-scene.hero .duel-scene-body{grid-template-columns:78px minmax(0,1fr) minmax(0,1fr) 78px!important;gap:10px!important;padding:12px 16px!important}
+    .duel-scene.hero .duel-team-names{grid-template-columns:78px minmax(0,1fr) minmax(0,1fr) 78px!important;gap:10px!important}
+    .duel-scene.hero .team-sight-box{width:64px!important;height:64px!important}
+    .duel-scene.hero .duel-team-name{font-size:clamp(20px,3.1vw,40px)!important;line-height:.92!important}
+
+    .duel-mobile-safe{position:relative;overflow:hidden;border-radius:24px;background:#0a0a0c;border:1px solid rgba(255,255,255,.10)}
+    .duel-mobile-safe.compact{border-radius:24px}
+    .duel-mobile-safe::before{content:"";position:absolute;inset:0;background:linear-gradient(180deg,rgba(255,255,255,.05),transparent 30%);pointer-events:none}
+    .duel-mobile-grid{position:relative;z-index:1;display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:16px 10px 16px;align-items:start}
+    .duel-mobile-side{display:flex;flex-direction:column;align-items:center;justify-content:flex-start;gap:10px;min-width:0}
+    .duel-mobile-mark{position:relative;width:74px;height:74px;display:flex;align-items:center;justify-content:center;flex:0 0 auto}
+    .duel-mobile-mark .sight-corner{width:16px;height:16px;border-color:rgba(255,255,255,.94)}
+    .duel-mobile-logo{width:72%;height:72%;object-fit:contain;display:block}
+    .duel-mobile-fallback{font-size:16px;line-height:.9;font-weight:1000;letter-spacing:-.03em;text-transform:uppercase;color:#fff!important;text-align:center}
+    .duel-mobile-name{width:100%;font-size:clamp(12px,4.2vw,17px);line-height:1.04;font-weight:1000;letter-spacing:-.02em;text-transform:uppercase;color:#fff!important;text-align:center;white-space:normal;overflow:visible;text-overflow:clip;overflow-wrap:anywhere;word-break:normal}
+    .duel-mobile-safe.hero .duel-mobile-grid{padding:12px 12px 14px}
+    .duel-mobile-safe.hero .duel-mobile-mark{width:56px;height:56px}
+    .duel-mobile-safe.hero .duel-mobile-name{font-size:clamp(12px,4vw,16px)}
 
   </style>
   <link rel="icon" type="image/png" href="https://i.postimg.cc/PrD4jg9V/Logo-LA.png" />
@@ -1962,6 +1976,41 @@ function renderTeamSight(team, side, compact = false) {
                 : null,
             React.createElement("div", { className: "team-sight-text", style: { display: teamLogo ? 'none' : 'block' } }, teamName || (side === 'left' ? 'Equipo local' : 'Equipo visitante'))));
 }
+function isMobileLike() {
+    try {
+        return typeof window !== 'undefined' && !!(window.matchMedia && window.matchMedia('(max-width: 768px), (hover: none), (pointer: coarse)').matches);
+    }
+    catch (_a) {
+        return false;
+    }
+}
+function renderMobileSafeMark(team, fallbackName) {
+    const teamName = String((team && team.name) || fallbackName || '').trim();
+    const teamLogo = String((team && team.logo) || '').trim();
+    return React.createElement("div", { className: "duel-mobile-mark" },
+        React.createElement("span", { className: "sight-corner tl" }),
+        React.createElement("span", { className: "sight-corner tr" }),
+        React.createElement("span", { className: "sight-corner bl" }),
+        React.createElement("span", { className: "sight-corner br" }),
+        teamLogo
+            ? React.createElement("img", { src: teamLogo, alt: teamName || fallbackName || 'Equipo', className: "duel-mobile-logo", loading: "lazy", referrerPolicy: "no-referrer", onError: e => { e.currentTarget.style.display = 'none'; const next = e.currentTarget.nextElementSibling; if (next)
+                    next.style.display = 'block'; } })
+            : null,
+        React.createElement("div", { className: "duel-mobile-fallback", style: { display: teamLogo ? 'none' : 'block' } }, teamName || fallbackName || 'Equipo'));
+}
+function renderMobileSafeVersus(teamA, teamB, options = {}) {
+    const compact = Boolean(options.compact);
+    const leftName = String((teamA && teamA.name) || (options.leftName || 'Equipo local')).trim();
+    const rightName = String((teamB && teamB.name) || (options.rightName || 'Equipo visitante')).trim();
+    return React.createElement("div", { className: `duel-mobile-safe ${compact ? 'compact' : 'hero'}`.trim(), style: { background: duelSceneGradient(teamA, teamB) } },
+        React.createElement("div", { className: "duel-mobile-grid" },
+            React.createElement("div", { className: "duel-mobile-side" },
+                renderMobileSafeMark({ ...(teamA || {}), name: leftName }, leftName),
+                React.createElement("div", { className: "duel-mobile-name" }, leftName)),
+            React.createElement("div", { className: "duel-mobile-side" },
+                renderMobileSafeMark({ ...(teamB || {}), name: rightName }, rightName),
+                React.createElement("div", { className: "duel-mobile-name" }, rightName))));
+}
 function renderCompactCoverMark(team, side, fallbackName) {
     const teamName = String((team && team.name) || fallbackName || '').trim();
     const teamLogo = String((team && team.logo) || '').trim();
@@ -1983,6 +2032,9 @@ function renderVersusScene(teamA, teamB, options = {}) {
     const compact = Boolean(options.compact);
     const leftName = String((teamA && teamA.name) || (options.leftName || 'Equipo local')).trim();
     const rightName = String((teamB && teamB.name) || (options.rightName || 'Equipo visitante')).trim();
+    if (isMobileLike()) {
+        return renderMobileSafeVersus({ ...(teamA || {}), name: leftName }, { ...(teamB || {}), name: rightName }, { compact, leftName, rightName });
+    }
     return React.createElement("div", { className: `duel-scene ${compact ? 'compact' : 'hero'}`.trim(), style: { background: duelSceneGradient(teamA, teamB) } },
         compact
             ? React.createElement(React.Fragment, null,
@@ -2054,21 +2106,26 @@ function normalizeAlbums(data) {
             .filter(p => p.active);
         const fullPrice = priceNum(pick(metaRow, ["album completo", "album_completo", "precio_album", "precio album", "precio completo", "fullprice", "precio"])) || DEFAULT_FULL_ALBUM_PRICE;
         const coverPhoto = photos.find(p => p.isCover) || photos[0] || null;
-        return { id: albumId, name: albumName, sourceName: sheetName, subAlbumName: subAlbumName || 'Galería', subAlbumId, photos, cover: coverPhoto ? coverPhoto.url : "", fullPrice, dateTs, dateLabel: formatAlbumDate(dateTs), archived, teamColors, teamLogo, teamNames, teamEntries };
+        const metaPriority = norm(subAlbumName).includes('primera') || norm(sheetName).includes('primera') ? 2 : ((teamEntries || []).some(t => String((t && t.name) || '').trim() || String((t && t.logo) || '').trim() || String((t && t.color) || '').trim()) ? 1 : 0);
+        return { id: albumId, name: albumName, sourceName: sheetName, subAlbumName: subAlbumName || 'Galería', subAlbumId, photos, cover: coverPhoto ? coverPhoto.url : "", fullPrice, dateTs, dateLabel: formatAlbumDate(dateTs), archived, teamColors, teamLogo, teamNames, teamEntries, metaPriority };
     }).filter(a => a.photos.length > 0);
     const map = new Map();
     parsed.forEach(item => {
-        const current = map.get(item.id) || { id: item.id, name: item.name, photos: [], cover: "", fullPrice: item.fullPrice, dateTs: item.dateTs || 0, dateLabel: item.dateLabel || "", archived: false, subalbums: [], teamColors: item.teamColors, teamLogo: item.teamLogo, teamNames: item.teamNames, teamEntries: item.teamEntries };
+        const current = map.get(item.id) || { id: item.id, name: item.name, photos: [], cover: "", fullPrice: item.fullPrice, dateTs: item.dateTs || 0, dateLabel: item.dateLabel || "", archived: false, subalbums: [], teamColors: item.teamColors, teamLogo: item.teamLogo, teamNames: item.teamNames, teamEntries: item.teamEntries, metaPriority: item.metaPriority || 0 };
         current.photos = [...current.photos, ...item.photos];
         current.cover = current.cover || item.cover;
         current.fullPrice = item.fullPrice || current.fullPrice;
         current.dateTs = item.dateTs || current.dateTs || 0;
         current.dateLabel = formatAlbumDate(current.dateTs);
         current.archived = current.archived || item.archived;
-        current.teamColors = (item.teamColors && item.teamColors.length) ? item.teamColors : current.teamColors;
-        current.teamLogo = item.teamLogo || current.teamLogo;
-        current.teamNames = (item.teamNames && item.teamNames.length) ? item.teamNames : current.teamNames;
-        current.teamEntries = (item.teamEntries && item.teamEntries.length) ? item.teamEntries : current.teamEntries;
+        const shouldUseItemMeta = (item.metaPriority || 0) >= (current.metaPriority || 0) || !(current.teamEntries && current.teamEntries.length);
+        if (shouldUseItemMeta) {
+            current.teamColors = (item.teamColors && item.teamColors.length) ? item.teamColors : current.teamColors;
+            current.teamLogo = item.teamLogo || current.teamLogo;
+            current.teamNames = (item.teamNames && item.teamNames.length) ? item.teamNames : current.teamNames;
+            current.teamEntries = (item.teamEntries && item.teamEntries.length) ? item.teamEntries : current.teamEntries;
+            current.metaPriority = item.metaPriority || current.metaPriority || 0;
+        }
         current.subalbums.push({ id: item.subAlbumId, name: item.subAlbumName, sourceName: item.sourceName, photos: item.photos, cover: item.cover, dateTs: item.dateTs, dateLabel: item.dateLabel });
         map.set(item.id, current);
     });
