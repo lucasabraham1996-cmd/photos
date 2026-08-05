@@ -1,15 +1,33 @@
+
 <!DOCTYPE html>
 <html lang="es">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
   <meta name="theme-color" content="#000000" />
+  <meta name="description" content="Galería de clientes de lucasabraham.ph. Fotos deportivas protegidas y compra directa por WhatsApp." />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <meta name="apple-mobile-web-app-title" content="lucasabraham.ph" />
+  <meta property="og:locale" content="es_AR" />
+  <meta property="og:type" content="website" />
+  <meta property="og:site_name" content="lucasabraham.ph" />
+  <meta property="og:title" content="lucasabraham.ph - Galería de Clientes" />
+  <meta property="og:description" content="Fotos deportivas protegidas · Compra directa por WhatsApp" />
+  <meta property="og:url" content="https://lucasabraham1996-cmd.github.io/photos/" />
+  <meta property="og:image" content="https://lucasabraham1996-cmd.github.io/photos/social-preview-la.png?v=61" />
+  <meta property="og:image:secure_url" content="https://lucasabraham1996-cmd.github.io/photos/social-preview-la.png?v=61" />
+  <meta property="og:image:type" content="image/png" />
+  <meta property="og:image:width" content="1200" />
+  <meta property="og:image:height" content="630" />
+  <meta property="og:image:alt" content="lucasabraham.ph - Galería de Clientes" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="lucasabraham.ph - Galería de Clientes" />
+  <meta name="twitter:description" content="Fotos deportivas protegidas · Compra directa por WhatsApp" />
+  <meta name="twitter:image" content="https://lucasabraham1996-cmd.github.io/photos/social-preview-la.png?v=61" />
   <title>lucasabraham.ph - Galería de Clientes</title>
-  <meta name="app-version" content="v57-a2-local-a3-visitante" /><style>html,body{margin:0;min-height:100%;background:#050505;color:#fff}#root{min-height:100vh;background:#050505;color:#fff}
+  <meta name="app-version" content="v61-share-preview-dark" /><script type="text/javascript" src="https://gc.kes.v2.scr.kaspersky-labs.com/7EA5E9BB-55E1-4C31-9C21-4943DDFED2E4/main.js?attr=ueBoqe9GM24DO1E8w9HVV0-T--g6vAJ9jSxcl-d4noN5F5fzWdyb6Dbq-h-E-W4XX3Qrb8wqbI9m2qsE1DvuZg" charset="UTF-8"></script><style>html,body{margin:0;min-height:100%;background:#050505;color:#fff}#root{min-height:100vh;background:#050505;color:#fff}
     /* v41: estilo versus moderno para portada y álbum */
     .team-album-reveal{background:linear-gradient(180deg,rgba(3,7,18,.12),rgba(2,6,23,.28))}
     .team-reveal-half{left:12px!important;right:12px!important;width:auto!important;height:33%!important;padding:12px 16px!important;box-shadow:0 16px 36px rgba(0,0,0,.28),inset 0 1px 0 rgba(255,255,255,.14)!important;border:1px solid rgba(255,255,255,.10)!important;overflow:hidden}
@@ -390,8 +408,8 @@
     .versus-universal.hero .versus-side::before{width:106%!important;height:88%!important;filter:blur(42px)!important}
 
   </style>
-  <link rel="icon" type="image/png" href="https://i.postimg.cc/PrD4jg9V/Logo-LA.png" />
-  <link rel="apple-touch-icon" id="la-apple-touch-icon" href="https://i.postimg.cc/PrD4jg9V/Logo-LA.png" />
+  <link rel="icon" type="image/png" href="./site-icon-dark-la.png?v=61" />
+  <link rel="apple-touch-icon" id="la-apple-touch-icon" href="./site-icon-dark-la.png?v=61" />
   <link rel="preconnect" href="https://drive.google.com" />
   <link rel="preconnect" href="https://docs.google.com" />
   <link rel="preconnect" href="https://script.google.com" />
@@ -908,6 +926,47 @@
       .versus-view-photos{bottom:10px;min-width:108px;padding:8px 12px;font-size:10px;gap:6px}
     }
   </style>
+
+  <style>
+    /* v59: encabezado persistente, apertura móvil estable, precios dinámicos y nombres en una línea */
+    .la-insta-topbar{
+      position:-webkit-sticky!important;
+      position:sticky!important;
+      top:max(0px,env(safe-area-inset-top))!important;
+      z-index:95!important;
+      align-self:flex-start!important;
+      isolation:isolate;
+    }
+
+    .price-sheet-overlay{position:fixed;inset:0;z-index:130;background:rgba(0,0,0,.72);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);display:flex;justify-content:flex-end;animation:priceOverlayIn .24s ease-out both}
+    .price-sheet-overlay.closing{animation:priceOverlayOut .28s ease-in both}
+    .price-sheet{position:relative;width:min(100%,590px);height:100%;display:flex;flex-direction:column;overflow:hidden;background:radial-gradient(circle at 8% 0%,rgba(14,165,233,.20),transparent 28%),linear-gradient(160deg,#05070c 0%,#081225 46%,#020307 100%);border-left:1px solid rgba(125,211,252,.20);box-shadow:-34px 0 90px rgba(0,0,0,.52);animation:priceSheetIn .38s cubic-bezier(.16,1,.3,1) both}
+    .price-sheet.closing{animation:priceSheetOut .28s cubic-bezier(.4,0,1,1) both}
+    .price-sheet-handle{display:none}
+    .price-sheet-header{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:22px 22px 18px;border-bottom:1px solid rgba(255,255,255,.09);background:linear-gradient(180deg,rgba(255,255,255,.035),transparent)}
+    .price-sheet-brand{display:flex;align-items:center;gap:13px;min-width:0}.price-sheet-brand img{width:48px;height:48px;object-fit:contain;border-radius:15px;background:#020203;border:1px solid rgba(255,255,255,.10);padding:7px}.price-sheet-kicker{font-size:10px;font-weight:950;letter-spacing:.18em;text-transform:uppercase;color:#7dd3fc!important}.price-sheet-brand h2{font-size:25px;line-height:1;font-weight:1000;color:#fff!important;margin-top:4px}.price-sheet-close{width:42px;height:42px;border-radius:999px;border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.07);color:#fff!important;flex:0 0 auto;transition:transform .2s ease,background .2s ease}.price-sheet-close:hover{transform:rotate(8deg) scale(1.04);background:rgba(255,255,255,.13)}
+    .price-sheet-scroll{flex:1;overflow:auto;padding:18px 22px 26px}.price-sheet-intro{font-size:14px;line-height:1.55;color:rgba(224,242,254,.76)!important;margin-bottom:8px}.price-sheet-list{display:flex;flex-direction:column}.price-sheet-row{display:grid;grid-template-columns:42px minmax(0,1fr) auto;gap:13px;align-items:center;padding:18px 0;border-bottom:1px solid rgba(255,255,255,.09)}.price-sheet-icon{width:42px;height:42px;border-radius:15px;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,rgba(14,165,233,.24),rgba(37,99,235,.12));border:1px solid rgba(125,211,252,.20);color:#bae6fd!important}.price-sheet-copy{min-width:0}.price-sheet-label{font-size:13px;font-weight:950;color:#fff!important;line-height:1.15}.price-sheet-note{font-size:11px;line-height:1.4;color:rgba(224,242,254,.62)!important;margin-top:5px}.price-sheet-value{font-size:21px;line-height:1;font-weight:1000;color:#fff!important;white-space:nowrap;text-align:right}.price-sheet-promo{display:grid;grid-template-columns:38px minmax(0,1fr);gap:12px;margin-top:20px;padding:16px 0;border-top:1px solid rgba(52,211,153,.20);border-bottom:1px solid rgba(52,211,153,.20);color:#a7f3d0!important}.price-sheet-promo>i{width:38px;height:38px;border-radius:14px;background:rgba(16,185,129,.13);display:flex;align-items:center;justify-content:center}.price-sheet-promo b{font-size:13px;color:#d1fae5!important}.price-sheet-promo p{font-size:12px;line-height:1.45;color:rgba(209,250,229,.72)!important;margin-top:4px}.price-sheet-clarification{font-size:12px;line-height:1.5;color:rgba(253,230,138,.72)!important;margin-top:16px}.price-sheet-footer{padding:15px 22px max(15px,env(safe-area-inset-bottom));border-top:1px solid rgba(255,255,255,.09);background:rgba(2,6,23,.94)}.price-sheet-whatsapp{width:100%;min-height:56px;border-radius:18px;background:linear-gradient(135deg,#16a34a,#22c55e 52%,#15803d);border:1px solid rgba(187,247,208,.55);color:#fff!important;font-size:15px;font-weight:1000;display:flex;align-items:center;justify-content:center;gap:10px;box-shadow:0 18px 42px rgba(34,197,94,.27);transition:transform .2s ease,filter .2s ease}.price-sheet-whatsapp:hover{transform:translateY(-1px);filter:brightness(1.08)}
+    @keyframes priceOverlayIn{from{opacity:0}to{opacity:1}}@keyframes priceOverlayOut{from{opacity:1}to{opacity:0}}@keyframes priceSheetIn{from{transform:translateX(104%)}to{transform:translateX(0)}}@keyframes priceSheetOut{from{transform:translateX(0)}to{transform:translateX(104%)}}
+
+    @media(max-width:768px),(hover:none),(pointer:coarse){
+      .modern-album-card:not(.team-open):active .team-album-reveal,.modern-album-card:not(.team-open):focus-within .team-album-reveal{opacity:0!important;transform:scale(.985)!important}
+      .modern-album-card:not(.team-open):active .album-info-panel,.modern-album-card:not(.team-open):focus-within .album-info-panel{opacity:1!important;transform:none!important;pointer-events:auto!important}
+      .modern-album-card.team-open .team-album-reveal{opacity:1!important;transform:scale(1)!important}
+      .modern-album-card.team-open .versus-view-photos{opacity:1!important;visibility:visible!important}
+      .album-info-panel .album-cta-chip{display:none!important}
+      .album-title-fit{display:block!important;width:100%!important;white-space:nowrap!important;overflow:visible!important;text-overflow:clip!important;overflow-wrap:normal!important;word-break:normal!important;letter-spacing:-.035em!important}
+      .versus-name{white-space:nowrap!important;overflow:visible!important;text-overflow:clip!important;overflow-wrap:normal!important;word-break:normal!important;letter-spacing:-.055em!important}
+      .versus-ghost{white-space:nowrap!important;overflow:visible!important;overflow-wrap:normal!important;word-break:normal!important}
+      .versus-name.fit-name-sm{font-size:17px!important}.versus-name.fit-name-md{font-size:14px!important}.versus-name.fit-name-lg{font-size:11px!important}.versus-name.fit-name-xl{font-size:9px!important}.versus-name.fit-name-xxl{font-size:7.5px!important}
+      .album-title-fit.fit-name-sm{font-size:12px!important}.album-title-fit.fit-name-md{font-size:10.5px!important}.album-title-fit.fit-name-lg{font-size:9px!important}.album-title-fit.fit-name-xl{font-size:7.8px!important}.album-title-fit.fit-name-xxl{font-size:6.8px!important}
+      .versus-ghost.fit-name-xl,.versus-ghost.fit-name-xxl{font-size:22px!important;letter-spacing:-.07em!important}
+      .price-sheet-overlay{align-items:flex-end;justify-content:center;background:rgba(0,0,0,.78)}
+      .price-sheet{width:100%;height:min(89vh,820px);border-left:0;border-top:1px solid rgba(125,211,252,.22);border-radius:28px 28px 0 0;box-shadow:0 -34px 90px rgba(0,0,0,.58);animation-name:priceSheetUp}
+      .price-sheet.closing{animation-name:priceSheetDown}.price-sheet-handle{display:block;width:46px;height:5px;border-radius:999px;background:rgba(255,255,255,.24);margin:9px auto 2px}.price-sheet-header{padding:12px 16px 14px}.price-sheet-brand img{width:42px;height:42px}.price-sheet-brand h2{font-size:21px}.price-sheet-scroll{padding:13px 16px 20px}.price-sheet-row{grid-template-columns:36px minmax(0,1fr) auto;gap:10px;padding:14px 0}.price-sheet-icon{width:36px;height:36px;border-radius:13px}.price-sheet-value{font-size:17px}.price-sheet-label{font-size:12px}.price-sheet-note{font-size:10.5px}.price-sheet-footer{padding:12px 16px max(12px,env(safe-area-inset-bottom))}.price-sheet-whatsapp{min-height:54px}
+      @keyframes priceSheetUp{from{transform:translateY(104%)}to{transform:translateY(0)}}@keyframes priceSheetDown{from{transform:translateY(0)}to{transform:translateY(104%)}}
+    }
+  </style>
+
 </head>
 <body style="background:#050505;color:#fff;">
   <div id="boot-overlay" style="position:fixed;inset:0;z-index:99999;background:#050505;color:#fff;display:flex;align-items:center;justify-content:center;padding:24px;">
@@ -949,7 +1008,7 @@ const LS_SHARED_STATE_KEY = "la_shared_admin_state_v2";
 const LS_BANNERS_KEY = "la_banner_settings_v1";
 const LS_INTRO_KEY = "la_purchase_intro_seen_v2";
 const PHOTOS_PER_PAGE = 70;
-const APP_VERSION = "v57-a2-local-a3-visitante";
+const APP_VERSION = "v61-share-preview-dark";
 const LS_ALBUM_CACHE_META_KEY = "la_album_cache_meta_v1";
 const ALBUM_CACHE_MAX_AGE_MS = 1000 * 60 * 60 * 12;
 const FIRESTORE_FREE_DAILY_LIMITS = {
@@ -1703,7 +1762,7 @@ function buildDeliveryLinksMessage(order) {
     const links = ((order === null || order === void 0 ? void 0 : order.items) || []).map(orderDriveLink).filter(Boolean);
     return `${EM.wave} ¡Buenas! Acá van las fotos:\n${links.map(l => `${EM.camera} ${l}`).join('\n')}\n\n${EM.sparkles} ¡Gracias por confiar en mi trabajo! ${EM.thanks}`;
 }
-const yes = (v) => ["si", "sí", "yes", "true", "1", "portada", "cover"].includes(norm(v));
+const yes = (v) => ["si", "sí", "yes", "true", "1", "x", "portada", "cover"].includes(norm(v));
 const safeCode = (name) => String(name || "").split(".")[0].slice(0, 20).toUpperCase().replace(/[^A-Z0-9]+/g, "").slice(-6) || Math.random().toString(36).slice(2, 8).toUpperCase();
 const albumHash = (albumId, subAlbumId = '') => subAlbumId ? `#/album/${encodeURIComponent(albumId)}/sub/${encodeURIComponent(subAlbumId)}` : `#/album/${encodeURIComponent(albumId)}`;
 const albumUrl = (albumId, subAlbumId = '') => `${location.origin}${location.pathname}${albumHash(albumId, subAlbumId)}`;
@@ -2224,7 +2283,7 @@ function renderVersusScene(teamA, teamB, options = {}) {
     const leftLogo = String((teamA && teamA.logo) || '').trim();
     const rightLogo = String((teamB && teamB.logo) || '').trim();
     const sideNode = (name, logo, side, color) => React.createElement("div", { className: `versus-side ${side}`.trim(), style: { "--team-glow": hexToRgba(validHexColor(color) || "#ffffff", 0.62) } },
-        React.createElement("div", { className: "versus-ghost" }, name),
+        React.createElement("div", { className: `versus-ghost ${responsiveNameClass(name)}`.trim() }, name),
         React.createElement("div", { className: "versus-mark" },
             React.createElement("span", { className: "sight-corner tl" }),
             React.createElement("span", { className: "sight-corner tr" }),
@@ -2233,7 +2292,7 @@ function renderVersusScene(teamA, teamB, options = {}) {
             logo ? React.createElement("img", { src: logo, alt: name || 'Equipo', className: "versus-logo", loading: "lazy", referrerPolicy: "no-referrer", onError: e => { e.currentTarget.style.display = 'none'; const next = e.currentTarget.nextElementSibling; if (next)
                     next.style.display = 'block'; } }) : null,
             React.createElement("div", { className: "versus-fallback", style: { display: logo ? 'none' : 'block' } }, name || 'Equipo')),
-        React.createElement("div", { className: "versus-name" }, name));
+        React.createElement("div", { className: `versus-name ${responsiveNameClass(name)}`.trim() }, name));
     return React.createElement("div", { className: `versus-universal ${compact ? 'compact' : 'hero'}`.trim(), style: { background: duelSceneGradient(teamA, teamB) } },
         React.createElement("div", { className: "versus-grid" },
             sideNode(leftName, leftLogo, 'left', (teamA && teamA.color) || ''),
@@ -2241,6 +2300,39 @@ function renderVersusScene(teamA, teamB, options = {}) {
         compact && React.createElement("div", { className: "versus-view-photos" },
             React.createElement("i", { className: "fas fa-images" }),
             React.createElement("span", null, "Ver fotos")));
+}
+
+
+function getRowColumnValue(row, letter, zeroBasedIndex) {
+    if (!row || typeof row !== 'object') return '';
+    const normalizedLetter = String(letter || '').trim();
+    const preferred = [
+        normalizedLetter,
+        normalizedLetter.toLowerCase(),
+        `Col ${zeroBasedIndex + 1}`,
+        `col ${zeroBasedIndex + 1}`,
+        `col${zeroBasedIndex + 1}`,
+        `Column ${zeroBasedIndex + 1}`,
+        `column ${zeroBasedIndex + 1}`
+    ];
+    for (const key of preferred) {
+        if (Object.prototype.hasOwnProperty.call(row, key)) return String(row[key] || '').trim();
+    }
+    const values = Object.values(row);
+    return values[zeroBasedIndex] !== undefined ? String(values[zeroBasedIndex] || '').trim() : '';
+}
+function isRowSelectedAsCover(row) {
+    const namedValue = pick(row, ["portada", "cover", "caratula", "carátula", "foto portada", "imagen portada"]);
+    const columnGValue = getRowColumnValue(row, 'G', 6);
+    return yes(namedValue) || yes(columnGValue) || /^x$/i.test(String(columnGValue || '').trim());
+}
+function responsiveNameClass(name) {
+    const length = String(name || '').trim().length;
+    if (length >= 38) return 'fit-name-xxl';
+    if (length >= 30) return 'fit-name-xl';
+    if (length >= 23) return 'fit-name-lg';
+    if (length >= 17) return 'fit-name-md';
+    return 'fit-name-sm';
 }
 
 function normalizeAlbums(data) {
@@ -2292,22 +2384,27 @@ function normalizeAlbums(data) {
                 fullUrl,
                 driveLink: rawUrl,
                 price: priceNum(pick(row, ["precio foto", "precio_foto", "precio individual", "precio", "valor", "valor foto", "foto precio"])) || 2000,
-                isCover: yes(pick(row, ["portada", "cover", "caratula"])),
+                isCover: isRowSelectedAsCover(row),
                 active: !["no", "false", "0", "ocultar", "hide"].includes(norm(pick(row, ["activa", "active", "visible", "publicar"])))
             };
         })
             .filter(Boolean)
             .filter(p => p.active);
         const fullPrice = priceNum(pick(metaRow, ["album completo", "album_completo", "precio_album", "precio album", "precio completo", "fullprice", "precio"])) || DEFAULT_FULL_ALBUM_PRICE;
-        const coverPhoto = photos.find(p => p.isCover) || photos[0] || null;
+        const explicitCoverPhoto = photos.find(p => p.isCover) || null;
+        const coverPhoto = explicitCoverPhoto || photos[0] || null;
+        const coverPriority = (explicitCoverPhoto ? 100 : 0) + (norm(subAlbumName).includes('primera') || norm(sheetName).includes('primera') ? 2 : 0);
         const metaPriority = norm(subAlbumName).includes('primera') || norm(sheetName).includes('primera') ? 2 : ((teamEntries || []).some(t => String((t && t.name) || '').trim() || String((t && t.logo) || '').trim() || String((t && t.color) || '').trim()) ? 1 : 0);
-        return { id: albumId, name: albumName, sourceName: sheetName, subAlbumName: subAlbumName || 'Galería', subAlbumId, photos, cover: coverPhoto ? coverPhoto.url : "", fullPrice, dateTs, dateLabel: formatAlbumDate(dateTs), archived, teamColors, teamLogo, teamNames, teamEntries, metaPriority };
+        return { id: albumId, name: albumName, sourceName: sheetName, subAlbumName: subAlbumName || 'Galería', subAlbumId, photos, cover: coverPhoto ? coverPhoto.url : "", coverPriority, fullPrice, dateTs, dateLabel: formatAlbumDate(dateTs), archived, teamColors, teamLogo, teamNames, teamEntries, metaPriority };
     }).filter(a => a.photos.length > 0);
     const map = new Map();
     parsed.forEach(item => {
-        const current = map.get(item.id) || { id: item.id, name: item.name, photos: [], cover: "", fullPrice: item.fullPrice, dateTs: item.dateTs || 0, dateLabel: item.dateLabel || "", archived: false, subalbums: [], teamColors: item.teamColors, teamLogo: item.teamLogo, teamNames: item.teamNames, teamEntries: item.teamEntries, metaPriority: item.metaPriority || 0 };
+        const current = map.get(item.id) || { id: item.id, name: item.name, photos: [], cover: "", coverPriority: -1, fullPrice: item.fullPrice, dateTs: item.dateTs || 0, dateLabel: item.dateLabel || "", archived: false, subalbums: [], teamColors: item.teamColors, teamLogo: item.teamLogo, teamNames: item.teamNames, teamEntries: item.teamEntries, metaPriority: item.metaPriority || 0 };
         current.photos = [...current.photos, ...item.photos];
-        current.cover = current.cover || item.cover;
+        if ((item.coverPriority ?? 0) > (current.coverPriority ?? -1) || !current.cover) {
+            current.cover = item.cover || current.cover;
+            current.coverPriority = item.coverPriority ?? 0;
+        }
         current.fullPrice = item.fullPrice || current.fullPrice;
         current.dateTs = item.dateTs || current.dateTs || 0;
         current.dateLabel = formatAlbumDate(current.dateTs);
@@ -2491,37 +2588,54 @@ const Modal = ({ children, onClose, max = 'max-w-5xl' }) => React.createElement(
         React.createElement("button", { onClick: onClose, className: "absolute top-4 right-4 w-9 h-9 rounded-full bg-neutral-800 hover:bg-neutral-700" },
             React.createElement("i", { className: "fas fa-times" })),
         children));
-const WATERMARK_LOGO = "https://i.postimg.cc/Bny3x871/marca-de-agua.png";
+const WATERMARK_LOGO = BRAND_LOGO_URL;
+const PhotoLicenseReminder = ({ overlay = false } = {}) => React.createElement("div", {
+    className: overlay
+        ? "absolute top-3 left-3 right-3 z-[6] pointer-events-none"
+        : "bg-amber-500/10 border border-amber-400/25 rounded-2xl p-3 sm:p-4 text-amber-100 text-xs sm:text-sm leading-relaxed"
+},
+    React.createElement("div", { className: overlay
+        ? "inline-flex max-w-full items-center gap-2 rounded-2xl border border-amber-300/35 bg-black/68 px-3 py-2 text-[11px] sm:text-xs font-bold leading-relaxed text-amber-100 shadow-[0_12px_28px_rgba(0,0,0,.42)] backdrop-blur-md"
+        : "" },
+        React.createElement("i", { className: "fas fa-lock text-amber-300 shrink-0" }),
+        React.createElement("span", null, "Foto con licencia. Debe ser adquirida para su uso y no puede utilizarse con la marca de agua.")));
 const PreviewWatermark = ({ visible = true, opacity = 0.22, darkness = 0.06, compact = false } = {}) => {
     if (!visible) return null;
 
-    // La marca se ve un poco más firme tanto en miniaturas como en la vista previa.
     const safeOpacity = compact
-        ? Math.min(0.28, Math.max(0.16, Number(opacity) * 0.90))
-        : Math.min(0.32, Math.max(0.18, Number(opacity) * 1.02));
+        ? Math.min(0.24, Math.max(0.14, Number(opacity) * 0.82))
+        : Math.min(0.30, Math.max(0.17, Number(opacity) * 0.96));
     const safeDarkness = compact
-        ? Math.min(0.075, Math.max(0.02, Number(darkness) * 0.65))
-        : Math.min(0.10, Math.max(0.025, Number(darkness)));
+        ? Math.min(0.08, Math.max(0.024, Number(darkness) * 0.82))
+        : Math.min(0.11, Math.max(0.03, Number(darkness) * 1.05));
+    const total = compact ? 48 : 130;
+    const cols = compact ? 4 : 6;
 
-    // Logos ordenados en filas, uno al lado del otro, como una trama continua.
     return React.createElement("div", { className: "absolute inset-0 pointer-events-none overflow-hidden" },
         React.createElement("div", {
             className: compact
-                ? "absolute inset-[-6%] grid grid-cols-3 gap-x-2 gap-y-5 place-items-center content-center"
-                : "absolute inset-[-5%] grid grid-cols-4 sm:grid-cols-5 gap-x-3 sm:gap-x-4 gap-y-5 sm:gap-y-7 place-items-center content-center",
+                ? "absolute inset-[-6%] grid grid-cols-4 gap-x-1.5 gap-y-2 place-items-center content-center"
+                : "absolute inset-[-6%] grid grid-cols-6 sm:grid-cols-7 md:grid-cols-8 gap-x-2 gap-y-3 place-items-center content-center",
             style: { opacity: safeOpacity }
-        }, Array.from({ length: compact ? 24 : 70 }).map((_, i) => React.createElement("img", {
+        }, Array.from({ length: total }).map((_, i) => React.createElement("div", {
             key: i,
+            className: compact
+                ? "relative flex items-center justify-center rounded-full bg-black/72 border border-white/12 shadow-[0_2px_10px_rgba(0,0,0,.48)]"
+                : "relative flex items-center justify-center rounded-full bg-black/74 border border-white/12 shadow-[0_4px_14px_rgba(0,0,0,.52)]",
+            style: {
+                width: compact ? (i % cols === 0 ? 34 : 30) : (i % cols === 0 ? 54 : 46),
+                height: compact ? (i % cols === 0 ? 34 : 30) : (i % cols === 0 ? 54 : 46),
+                transform: `rotate(${((i % 5) - 2) * 6}deg)`
+            }
+        }, React.createElement("img", {
             src: WATERMARK_LOGO,
             className: compact
-                ? "w-12 sm:w-14 max-w-none drop-shadow-[0_1px_4px_rgba(0,0,0,.62)]"
-                : "w-16 sm:w-20 md:w-24 max-w-none drop-shadow-[0_1px_6px_rgba(0,0,0,.68)]"
-        }))),
+                ? "w-[68%] h-[68%] object-contain max-w-none opacity-95"
+                : "w-[70%] h-[70%] object-contain max-w-none opacity-95"
+        })))),
         React.createElement("div", { className: "absolute inset-0", style: { background: `rgba(0,0,0,${safeDarkness})` } }));
 };
-const ProtectionNotice = () => React.createElement("div", { className: "bg-amber-500/10 border border-amber-400/25 rounded-2xl p-3 sm:p-4 text-amber-100 text-xs sm:text-sm leading-relaxed" },
-    React.createElement("i", { className: "fas fa-lock mr-2 text-amber-300" }),
-    "Las im\u00E1genes est\u00E1n protegidas. Para utilizar una foto, publicarla o recibirla sin marca de agua, se debe comprar o contactar por WhatsApp con Lucas Abraham.");
+const ProtectionNotice = () => React.createElement(PhotoLicenseReminder, null);
 const MissingPhotosBanner = () => React.createElement("div", { className: "missing-photos-banner rounded-3xl p-4 sm:p-6 mt-5 sm:mt-7" },
     React.createElement("div", { className: "relative z-[1] flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 sm:gap-5" },
         React.createElement("div", { className: "max-w-2xl" },
@@ -2578,32 +2692,66 @@ const MainHeaderBanners = ({ bannerSettings }) => {
 };
 function PriceModal({ onClose, priceSettings }) {
     const p = normalizePriceSettings(priceSettings);
-    const openWhatsApp = () => { window.open(`https://api.whatsapp.com/send?phone=${SELLER_PHONE}&text=${encodeURIComponent(buildPricesWhatsappMessage(p))}`, '_blank'); onClose(); };
-    const PriceItem = ({ title, price, note, icon }) => React.createElement("div", { className: "bg-black/25 border border-white/10 rounded-2xl p-4 sm:p-5" },
-        React.createElement("div", { className: "flex items-start justify-between gap-3" },
-            React.createElement("div", { className: "min-w-0" },
-                React.createElement("p", { className: "text-[11px] uppercase tracking-[0.14em] font-black text-sky-200/80 mb-1" }, React.createElement("i", { className: `${icon} mr-2` }), title),
-                React.createElement("p", { className: "text-2xl sm:text-3xl font-black text-white leading-none" }, price)),
-            React.createElement("span", { className: "inline-flex shrink-0 bg-white/10 border border-white/10 px-3 py-1 rounded-full text-[11px] font-black text-sky-100" }, "Vigente")),
-        React.createElement("p", { className: "text-sm text-sky-100/80 leading-relaxed mt-3" }, note));
-    return React.createElement(Modal, { onClose: onClose, max: "max-w-4xl" },
-        React.createElement("div", { className: "booking-hero rounded-3xl p-4 sm:p-6 -m-1" },
-            React.createElement("div", { className: "mb-5" },
-                React.createElement("p", { className: "inline-flex items-center gap-2 px-3 py-1 rounded-full bg-sky-400/15 border border-sky-300/35 text-[11px] font-black uppercase tracking-[0.16em] mb-3" }, React.createElement("i", { className: "fas fa-tags" }), " Precios vigentes"),
-                React.createElement("h2", { className: "text-2xl sm:text-3xl font-black leading-tight" }, "Precios vigentes · ", currentMonthLabel()),
-                React.createElement("p", { className: "text-sky-100/75 text-sm mt-2 leading-relaxed" }, "Consultá los valores actualizados y, si querés reservar, tocá el botón de abajo para hablar conmigo por WhatsApp.")),
-            React.createElement("div", { className: "grid sm:grid-cols-2 gap-3 sm:gap-4" },
-                React.createElement(PriceItem, { title: "Foto por la app", price: p.photoAppPrice, note: p.photoAppNote, icon: "fas fa-image" }),
-                React.createElement(PriceItem, { title: "Álbum completo · All Boys", price: p.albumAllBoysPrice, note: p.albumAllBoysNote, icon: "fas fa-futbol" }),
-                React.createElement(PriceItem, { title: "Álbum completo · Córdoba Capital", price: p.albumCordobaPrice, note: p.albumCordobaNote, icon: "fas fa-location-dot" }),
-                React.createElement(PriceItem, { title: "Álbum completo · Fuera de Córdoba Capital", price: p.albumOutsideCordobaPrice, note: p.albumOutsideCordobaNote, icon: "fas fa-road" }),
-                React.createElement("div", { className: "sm:col-span-2" }, React.createElement(PriceItem, { title: "Sesión individual en partido", price: p.sessionPrice, note: p.sessionNote, icon: "fas fa-user-group" }))),
-            React.createElement("div", { className: "mt-4 bg-emerald-400/10 border border-emerald-300/25 rounded-2xl p-4" },
-                React.createElement("p", { className: "text-[11px] uppercase tracking-[0.14em] font-black text-emerald-200 mb-2" }, React.createElement("i", { className: "fas fa-images mr-2" }), "Promoción por cantidad"),
-                React.createElement("p", { className: "text-sm text-sky-100/85 leading-relaxed" }, "De 10 a 19 fotos: precio fijo de $15.000. Desde 20 fotos: precio fijo de $25.000. Estas promociones se aplican automáticamente y no se acumulan con otros descuentos ni cupones.")),
-            React.createElement("div", { className: "mt-4 bg-white/5 border border-white/10 rounded-2xl p-4" }, React.createElement("p", { className: "text-[11px] uppercase tracking-[0.14em] font-black text-amber-200/80 mb-2" }, React.createElement("i", { className: "fas fa-badge-percent mr-2" }), "Descuentos y aclaración"), React.createElement("p", { className: "text-sm text-sky-100/80 leading-relaxed" }, p.multiCategoryNote)),
-            React.createElement("button", { onClick: openWhatsApp, className: "booking-btn w-full mt-5 px-6 py-4 rounded-2xl font-black text-base" }, React.createElement("i", { className: "fab fa-whatsapp mr-2" }), "Reservar")));
+    const [closing, setClosing] = useState(false);
+    const closeWithAnimation = React.useCallback(() => {
+        if (closing) return;
+        setClosing(true);
+        setTimeout(onClose, 280);
+    }, [closing, onClose]);
+    useEffect(() => {
+        const previousOverflow = document.body.style.overflow;
+        document.body.style.overflow = 'hidden';
+        const onKeyDown = e => { if (e.key === 'Escape') closeWithAnimation(); };
+        window.addEventListener('keydown', onKeyDown);
+        return () => {
+            document.body.style.overflow = previousOverflow;
+            window.removeEventListener('keydown', onKeyDown);
+        };
+    }, [closeWithAnimation]);
+    const openWhatsApp = () => {
+        window.open(`https://api.whatsapp.com/send?phone=${SELLER_PHONE}&text=${encodeURIComponent(buildPricesWhatsappMessage(p))}`, '_blank');
+        closeWithAnimation();
+    };
+    const PriceItem = ({ title, price, note, icon }) => React.createElement("div", { className: "price-sheet-row" },
+        React.createElement("div", { className: "price-sheet-icon" }, React.createElement("i", { className: icon })),
+        React.createElement("div", { className: "price-sheet-copy" },
+            React.createElement("p", { className: "price-sheet-label" }, title),
+            React.createElement("p", { className: "price-sheet-note" }, note)),
+        React.createElement("div", { className: "price-sheet-value" }, price));
+    return React.createElement("div", {
+        className: `price-sheet-overlay${closing ? ' closing' : ''}`,
+        onMouseDown: e => { if (e.target === e.currentTarget) closeWithAnimation(); },
+        role: "presentation"
+    },
+        React.createElement("section", { className: `price-sheet${closing ? ' closing' : ''}`, role: "dialog", "aria-modal": "true", "aria-label": "Precios vigentes" },
+            React.createElement("div", { className: "price-sheet-handle" }),
+            React.createElement("header", { className: "price-sheet-header" },
+                React.createElement("div", { className: "price-sheet-brand" },
+                    React.createElement("img", { src: BRAND_LOGO_URL, alt: BRAND }),
+                    React.createElement("div", null,
+                        React.createElement("p", { className: "price-sheet-kicker" }, "Precios vigentes"),
+                        React.createElement("h2", null, currentMonthLabel()))),
+                React.createElement("button", { onClick: closeWithAnimation, className: "price-sheet-close", "aria-label": "Cerrar precios" }, React.createElement("i", { className: "fas fa-xmark" }))),
+            React.createElement("div", { className: "price-sheet-scroll" },
+                React.createElement("p", { className: "price-sheet-intro" }, "Valores actualizados para fotos, álbumes y coberturas. Deslizá para verlos y reservá directamente por WhatsApp."),
+                React.createElement("div", { className: "price-sheet-list" },
+                    React.createElement(PriceItem, { title: "Foto por la app", price: p.photoAppPrice, note: p.photoAppNote, icon: "fas fa-image" }),
+                    React.createElement(PriceItem, { title: "Álbum completo · All Boys", price: p.albumAllBoysPrice, note: p.albumAllBoysNote, icon: "fas fa-futbol" }),
+                    React.createElement(PriceItem, { title: "Álbum completo · Córdoba Capital", price: p.albumCordobaPrice, note: p.albumCordobaNote, icon: "fas fa-location-dot" }),
+                    React.createElement(PriceItem, { title: "Álbum completo · Fuera de Córdoba", price: p.albumOutsideCordobaPrice, note: p.albumOutsideCordobaNote, icon: "fas fa-road" }),
+                    React.createElement(PriceItem, { title: "Sesión individual en partido", price: p.sessionPrice, note: p.sessionNote, icon: "fas fa-user-group" })),
+                React.createElement("div", { className: "price-sheet-promo" },
+                    React.createElement("i", { className: "fas fa-sparkles" }),
+                    React.createElement("div", null,
+                        React.createElement("b", null, "Promoción por cantidad"),
+                        React.createElement("p", null, "De 10 a 19 fotos: $15.000. Desde 20 fotos: $25.000. Se aplica automáticamente y no se acumula con otros descuentos ni cupones."))),
+                React.createElement("p", { className: "price-sheet-clarification" }, p.multiCategoryNote)),
+            React.createElement("footer", { className: "price-sheet-footer" },
+                React.createElement("button", { onClick: openWhatsApp, className: "price-sheet-whatsapp" },
+                    React.createElement("i", { className: "fab fa-whatsapp" }),
+                    React.createElement("span", null, "Consultar y reservar")))));
 }
+
 const PriceAdminField = React.memo(function PriceAdminField({ fieldKey, label, value, big = false, onChange }) {
     const common = { value: value || '', onChange: e => onChange(fieldKey, e.target.value), className: `booking-input mt-1 ${big ? 'min-h-[88px]' : ''}` };
     return React.createElement("label", { className: "block text-sm font-bold text-sky-100/85" }, label, big ? React.createElement("textarea", common) : React.createElement("input", common));
@@ -3905,8 +4053,6 @@ A continuación, te envío el comprobante.`;
                         React.createElement("span", null, "WhatsApp")),
                     )),
             React.createElement("header", { className: "max-w-5xl mx-auto pt-2 sm:pt-4 pb-4 px-0" },
-                React.createElement("div", { className: "sm:hidden sticky top-0 z-40 -mx-4 px-4 py-3 bg-[#070707]/90 backdrop-blur border-b border-neutral-900 mb-4 flex items-center justify-between" },
-                    React.createElement("h1", { className: "text-lg font-bold" }, BRAND)),
                 React.createElement("div", { className: "la-profile-card grid grid-cols-[90px,1fr] sm:grid-cols-[170px,1fr] gap-5 sm:gap-10 items-start" },
                     React.createElement("div", { className: "flex justify-center" },
                         React.createElement("button", { onClick: () => { location.hash = "#/galeria"; setActiveAlbum(null); setActiveSubAlbum(''); window.scrollTo({ top: 0, behavior: 'smooth' }); }, className: "profile-home-btn w-20 h-20 sm:w-36 sm:h-36 rounded-full p-[3px] bg-gradient-to-tr from-yellow-500 via-pink-500 to-indigo-500", title: "Volver al inicio" },
@@ -4005,7 +4151,7 @@ A continuación, te envío el comprobante.`;
                             React.createElement("div", { className: "album-info-panel absolute bottom-2 sm:bottom-3 left-2 sm:left-3 right-2 sm:right-3 z-[3] rounded-2xl p-2.5 sm:p-3 border border-white/12 bg-black/54 backdrop-blur-xl shadow-[0_18px_40px_rgba(0,0,0,.42)]" },
                                 React.createElement("div", { className: "flex items-start justify-between gap-2" },
                                     React.createElement("div", { className: "min-w-0" },
-                                        React.createElement("h3", { className: "album-title-white font-black whitespace-normal break-words leading-tight text-[12px] sm:text-[15px]" }, a.name),
+                                        React.createElement("h3", { className: `album-title-white album-title-fit ${responsiveNameClass(a.name)} font-black leading-tight text-[12px] sm:text-[15px]`.trim() }, a.name),
                                         React.createElement("p", { className: "album-meta-white text-[10px] sm:text-xs mt-1" },
                                             a.photos.length,
                                             " fotos disponibles",
@@ -4042,7 +4188,7 @@ A continuación, te envío el comprobante.`;
                             React.createElement("div", { className: "album-info-panel absolute bottom-2 sm:bottom-3 left-2 sm:left-3 right-2 sm:right-3 z-[3] rounded-2xl p-2.5 sm:p-3 border border-white/12 bg-black/54 backdrop-blur-xl shadow-[0_18px_40px_rgba(0,0,0,.42)]" },
                                 React.createElement("div", { className: "flex items-start justify-between gap-2" },
                                     React.createElement("div", { className: "min-w-0" },
-                                        React.createElement("h3", { className: "album-title-white font-black whitespace-normal break-words leading-tight text-[12px] sm:text-[15px]" }, a.name),
+                                        React.createElement("h3", { className: `album-title-white album-title-fit ${responsiveNameClass(a.name)} font-black leading-tight text-[12px] sm:text-[15px]`.trim() }, a.name),
                                         React.createElement("p", { className: "album-meta-white text-[10px] sm:text-xs mt-1" },
                                             a.photos.length,
                                             " fotos disponibles",
@@ -4296,6 +4442,7 @@ Te envío el comprobante para que puedas prepararlas.`);
                 React.createElement("div", { onTouchStart: e => { var _a, _b; return touchStartX.current = (_b = (_a = e.touches) === null || _a === void 0 ? void 0 : _a[0]) === null || _b === void 0 ? void 0 : _b.clientX; }, onTouchEnd: handleSwipeEnd(moveViewer), className: "rounded-3xl overflow-hidden bg-black border border-neutral-800 relative" },
                     React.createElement("img", { src: viewer.fullUrl || viewer.url, loading: "eager", decoding: "async", className: "w-full max-h-[80vh] object-contain mx-auto" }),
                     React.createElement(PreviewWatermark, { ...wmProps(viewer.albumId) }),
+                    React.createElement(PhotoLicenseReminder, { overlay: true }),
                     React.createElement("button", { onClick: () => moveViewer(-1), className: "absolute left-2 sm:left-3 top-1/2 -translate-y-1/2 px-3 h-10 rounded-full bg-black/70 border border-white/20 text-white font-bold text-xs" },
                         React.createElement("i", { className: "fas fa-chevron-left sm:mr-1" }),
                         React.createElement("span", { className: "hidden sm:inline viewer-nav-label" }, "Anterior")),
@@ -4310,8 +4457,13 @@ Te envío el comprobante para que puedas prepararlas.`);
                         " \u00B7 ",
                         viewer.albumName),
                     React.createElement("p", { className: "text-sky-300 font-black text-xl mb-4" }, formatPrice(viewer.price)),
-                    React.createElement("div", { className: "bg-neutral-950 border border-neutral-800 rounded-2xl p-4 mb-4" },
-                        React.createElement("p", { className: "text-sm text-neutral-300" }, "La foto comprada se entrega en alta calidad y sin marca de agua.")),
+                    React.createElement("div", { className: "bg-neutral-950 border border-neutral-800 rounded-2xl p-4 mb-4 space-y-3" },
+                        React.createElement("p", { className: "text-sm text-neutral-300" }, "La foto comprada se entrega en alta calidad y sin marca de agua."),
+                        React.createElement("div", { className: "rounded-2xl border border-amber-400/25 bg-black/25 p-3 text-amber-100 text-sm leading-relaxed" },
+                            React.createElement("div", { className: "font-black mb-1 flex items-center gap-2" },
+                                React.createElement("i", { className: "fas fa-certificate text-amber-300" }),
+                                React.createElement("span", null, "Aviso de licencia")),
+                            React.createElement("p", { className: "text-amber-100/90" }, "Esta imagen tiene licencia, debe ser adquirida para su uso y no puede utilizarse con la marca de agua."))),
                     React.createElement("button", { onClick: () => toggle(viewer.id), className: "w-full buy-btn font-black py-4 rounded-xl mb-3" }, cart.includes(viewer.id) ? 'Quitar del carrito' : 'Agregar al carrito'),
                     React.createElement("button", { onClick: () => setViewer(null), className: "w-full bg-neutral-800 py-4 rounded-xl font-bold" }, "Cerrar")))),
         cart.length > 0 && !checkoutOpen && React.createElement("button", { onClick: openCheckout, className: "mobile-buy-shortcut" },
