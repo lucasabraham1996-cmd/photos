@@ -385,6 +385,13 @@
     .versus-side.right::before{background:radial-gradient(circle,rgba(255,255,255,.18) 0%,rgba(255,255,255,.08) 34%,rgba(255,255,255,0) 72%)}
     .versus-universal.hero .versus-side::before{top:50%;width:74%;height:56%;filter:blur(24px)}
 
+  
+    @keyframes bootBar{from{transform:translateX(-10%);width:38%}to{transform:translateX(72%);width:24%}}
+    /* v54: overlay persistente y sombras más fuertes por color */
+    .versus-side::before{content:"";position:absolute;left:50%;top:46%;transform:translate(-50%,-50%);width:96%;height:72%;border-radius:999px;pointer-events:none;opacity:1;filter:blur(38px);background:radial-gradient(circle,var(--team-glow,rgba(255,255,255,.22)) 0%,rgba(255,255,255,.10) 28%,rgba(255,255,255,0) 72%)}
+    .versus-universal.compact .versus-side::before{top:44%;width:98%;height:78%;filter:blur(42px)}
+    .versus-universal.hero .versus-side::before{top:50%;width:84%;height:72%;filter:blur(32px)}
+
   </style>
   <link rel="icon" type="image/png" href="https://i.postimg.cc/PrD4jg9V/Logo-LA.png" />
   <link rel="apple-touch-icon" id="la-apple-touch-icon" href="https://i.postimg.cc/PrD4jg9V/Logo-LA.png" />
@@ -878,7 +885,19 @@
 </script>
 
 </head>
-<body>
+<body style="background:#050505;color:#fff;">
+  <div id="boot-overlay" style="position:fixed;inset:0;z-index:99999;background:#050505;color:#fff;display:flex;align-items:center;justify-content:center;padding:24px;">
+    <div style="width:min(92vw,420px);background:#0b0b0f;border:1px solid rgba(255,255,255,.08);border-radius:24px;padding:24px;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,.45);">
+      <img src="https://i.postimg.cc/PrD4jg9V/Logo-LA.png" alt="lucasabraham.ph" style="width:76px;height:76px;object-fit:contain;border-radius:18px;background:rgba(255,255,255,.03);padding:10px;margin:0 auto 16px;display:block;">
+      <h1 style="font-size:22px;line-height:1.05;font-weight:950;margin:0 0 8px;color:#fff;">Cargando galería</h1>
+      <p id="boot-overlay-text" style="margin:0;color:#d4d4d8;font-size:13px;line-height:1.5;">Preparando álbumes y fotos para tu dispositivo...</p>
+      <div style="height:10px;background:rgba(255,255,255,.06);border-radius:999px;overflow:hidden;margin:18px 0 0;">
+        <span style="display:block;height:100%;width:42%;background:linear-gradient(90deg,#0ea5e9,#2563eb,#1d4ed8);border-radius:999px;animation:bootBar 1.2s ease-in-out infinite alternate;"></span>
+      </div>
+      <button onclick="location.reload()" style="margin-top:16px;background:linear-gradient(135deg,#0ea5e9,#2563eb 56%,#1d4ed8);color:#fff;border:0;border-radius:14px;padding:12px 18px;font-weight:900;box-shadow:0 18px 40px rgba(37,99,235,.30);">Reintentar y recargar</button>
+    </div>
+  </div>
+
   <div id="root" style="min-height:100vh;background:#050505;color:#fff;"><div class="app-boot-fallback" style="min-height:100vh;background:#050505;color:#fff;"><div class="app-boot-card"><img src="https://i.postimg.cc/PrD4jg9V/Logo-LA.png" alt="lucasabraham.ph"><h1 style="font-size:22px;font-weight:950;margin:0 0 6px;">Cargando galería</h1><p style="color:#d4d4d8;font-size:13px;line-height:1.45;margin:0;">Preparando álbumes y fotos...</p><div class="app-boot-bar"><span></span></div></div></div></div>
   <script>
 if (!window.React || !window.ReactDOM) {
@@ -2151,7 +2170,7 @@ function renderVersusScene(teamA, teamB, options = {}) {
     const rightName = String((teamB && teamB.name) || (options.rightName || 'Equipo visitante')).trim();
     const leftLogo = String((teamA && teamA.logo) || '').trim();
     const rightLogo = String((teamB && teamB.logo) || '').trim();
-    const sideNode = (name, logo, side) => React.createElement("div", { className: `versus-side ${side}`.trim() },
+    const sideNode = (name, logo, side, color) => React.createElement("div", { className: `versus-side ${side}`.trim(), style: { "--team-glow": hexToRgba(validHexColor(color) || "#ffffff", 0.42) } },
         React.createElement("div", { className: "versus-ghost" }, name),
         React.createElement("div", { className: "versus-mark" },
             React.createElement("span", { className: "sight-corner tl" }),
@@ -2164,8 +2183,8 @@ function renderVersusScene(teamA, teamB, options = {}) {
         React.createElement("div", { className: "versus-name" }, name));
     return React.createElement("div", { className: `versus-universal ${compact ? 'compact' : 'hero'}`.trim(), style: { background: duelSceneGradient(teamA, teamB) } },
         React.createElement("div", { className: "versus-grid" },
-            sideNode(leftName, leftLogo, 'left'),
-            sideNode(rightName, rightLogo, 'right')));
+            sideNode(leftName, leftLogo, 'left', (teamA && teamA.color) || ''),
+            sideNode(rightName, rightLogo, 'right', (teamB && teamB.color) || '')));
 }
 
 function normalizeAlbums(data) {
@@ -2741,7 +2760,7 @@ function IphoneInstallModal({ onClose, onDownload, onCopy, onOpen }) {
 
 function App() {
     var _a, _b, _c, _d, _e;
-    try { window.LA_APP_RENDERED = true; window.LA_APP_MOBILE_OK = true; } catch(e) {}
+    try { window.LA_APP_RENDERED = true; try { hideBootOverlay(); } catch(e){} window.LA_APP_MOBILE_OK = true; } catch(e) {}
     const [route, setRoute] = useState(location.hash || "#/galeria");
     const [albums, setAlbums] = useState(() => readAlbumCache());
     const [loading, setLoading] = useState(true);
@@ -2931,12 +2950,14 @@ ${clone.outerHTML}`;
             setAlbums(normalized);
             saveAlbumCache(normalized);
             setError("");
+            try { hideBootOverlay(); } catch(e){}
         }
         catch (e) {
             console.warn("No respondió la hoja de cálculo.", e);
             if (cachedAlbums.length) {
                 setAlbums(cachedAlbums);
                 setError('No pude actualizar la hoja ahora mismo. Te muestro la última versión guardada para evitar la pantalla en blanco.');
+                try { hideBootOverlay(); } catch(e){}
             }
             else {
                 setAlbums([]);
@@ -4235,6 +4256,15 @@ Te envío el comprobante para que puedas prepararlas.`);
                     React.createElement("button", { onClick: () => setCart([]), className: "px-4 py-3 text-sky-100/75 font-medium hover:text-white hover:bg-white/10 rounded-2xl transition text-sm flex-1 sm:flex-none" }, "Vaciar"),
                     React.createElement("button", { onClick: openCheckout, className: "buy-btn px-6 py-3 rounded-2xl font-black flex items-center justify-center gap-2 transition flex-1 sm:flex-none" }, "Proceder a comprar")))));
 }
+function setBootOverlayMessage(msg) { try { const el = document.getElementById("boot-overlay-text"); if (el && msg) el.textContent = msg; } catch (e) { } }
+function showBootOverlay(msg) { try { const el = document.getElementById("boot-overlay"); if (el) el.style.display = "flex"; } catch (e) { } setBootOverlayMessage(msg || "Preparando álbumes y fotos para tu dispositivo..."); try { document.documentElement.style.background = "#050505"; if (document.body) { document.body.style.background = "#050505"; document.body.style.color = "#fff"; } } catch (e) { } }
+function hideBootOverlay() { try { const el = document.getElementById("boot-overlay"); if (el) el.style.display = "none"; } catch (e) { } }
+window.LA_SHOW_BOOT = showBootOverlay;
+window.LA_HIDE_BOOT = hideBootOverlay;
+window.addEventListener("error", function(){ showBootOverlay("La app encontró un inconveniente al cargar. Probá tocar Reintentar y recargar."); });
+window.addEventListener("unhandledrejection", function(){ showBootOverlay("La conexión tardó más de lo esperado. Probá recargando para volver a intentar."); });
+setTimeout(function(){ if(!window.LA_APP_RENDERED){ showBootOverlay("La carga está tardando más de lo normal en iPhone. Podés esperar unos segundos o tocar Reintentar y recargar."); } }, 8000);
+
 const rootEl = document.getElementById('root');
 if (rootEl && window.React && window.ReactDOM && ReactDOM.createRoot) {
     try {
@@ -4258,6 +4288,17 @@ if (rootEl && window.React && window.ReactDOM && ReactDOM.createRoot) {
     if(root && !window.LA_APP_RENDERED && !root.textContent.trim()){
       root.innerHTML='<div class="app-boot-fallback mobile-safe-dark"><div class="app-boot-card"><img src="https://i.postimg.cc/PrD4jg9V/Logo-LA.png" alt="lucasabraham.ph"><h1 style="font-size:22px;font-weight:950;margin:0 0 6px;color:#fff!important;">Cargando galería</h1><p style="color:#d4d4d8!important;font-size:13px;line-height:1.45;margin:0;">Perdón, la galería tardó más de lo esperado. Probá recargando la página.</p><button onclick="location.reload()" style="margin-top:16px;background:linear-gradient(135deg,#0ea5e9,#2563eb 56%,#1d4ed8);color:#fff;border:0;border-radius:14px;padding:12px 18px;font-weight:900;box-shadow:0 18px 40px rgba(37,99,235,.30);animation:errorIconPulse 2.2s ease-in-out infinite;">Reintentar y recargar</button></div></div>';
     }
+  }, 2500);
+</script>
+
+<script>
+  setTimeout(function(){
+    try {
+      var root=document.getElementById('root');
+      if(!window.LA_APP_RENDERED && (!root || !root.textContent.trim())) {
+        showBootOverlay('La app aún no terminó de cargar en iPhone. Tocá Reintentar y recargar si no avanza.');
+      }
+    } catch(e){}
   }, 2500);
 </script>
 </body>
