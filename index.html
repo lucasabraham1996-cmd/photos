@@ -881,6 +881,33 @@
   });
 </script>
 
+
+  <style>
+    /* v58: doble toque móvil + CTA de fotos + miras más finas */
+    .sight-corner.tl{border-width:1px 0 0 1px!important}
+    .sight-corner.tr{border-width:1px 1px 0 0!important}
+    .sight-corner.bl{border-width:0 0 1px 1px!important}
+    .sight-corner.br{border-width:0 1px 1px 0!important}
+    .versus-universal.compact .versus-grid{padding-bottom:64px!important}
+    .versus-view-photos{
+      position:absolute;left:50%;bottom:12px;transform:translateX(-50%);z-index:5;
+      display:inline-flex;align-items:center;justify-content:center;gap:7px;
+      min-width:116px;padding:9px 14px;border-radius:999px;
+      background:rgba(255,255,255,.94);color:#050505!important;
+      border:1px solid rgba(255,255,255,.96);box-shadow:0 10px 28px rgba(0,0,0,.34);
+      font-size:11px;line-height:1;font-weight:1000;letter-spacing:.02em;text-transform:uppercase;
+      pointer-events:none;white-space:nowrap;
+    }
+    .versus-view-photos i,.versus-view-photos span{color:#050505!important}
+    @media(max-width:768px),(hover:none),(pointer:coarse){
+      .modern-album-card .team-album-reveal{opacity:0!important;transform:scale(.985)!important}
+      .modern-album-card.team-open .team-album-reveal{opacity:1!important;transform:scale(1)!important}
+      .modern-album-card.team-open .album-info-panel{opacity:0!important;transform:translateY(10px)!important;pointer-events:none!important}
+      .modern-album-card.team-open{border-color:rgba(255,255,255,.22)!important}
+      .versus-universal.compact .versus-grid{padding-bottom:58px!important}
+      .versus-view-photos{bottom:10px;min-width:108px;padding:8px 12px;font-size:10px;gap:6px}
+    }
+  </style>
 </head>
 <body style="background:#050505;color:#fff;">
   <div id="boot-overlay" style="position:fixed;inset:0;z-index:99999;background:#050505;color:#fff;display:flex;align-items:center;justify-content:center;padding:24px;">
@@ -2210,7 +2237,10 @@ function renderVersusScene(teamA, teamB, options = {}) {
     return React.createElement("div", { className: `versus-universal ${compact ? 'compact' : 'hero'}`.trim(), style: { background: duelSceneGradient(teamA, teamB) } },
         React.createElement("div", { className: "versus-grid" },
             sideNode(leftName, leftLogo, 'left', (teamA && teamA.color) || ''),
-            sideNode(rightName, rightLogo, 'right', (teamB && teamB.color) || '')));
+            sideNode(rightName, rightLogo, 'right', (teamB && teamB.color) || '')),
+        compact && React.createElement("div", { className: "versus-view-photos" },
+            React.createElement("i", { className: "fas fa-images" }),
+            React.createElement("span", null, "Ver fotos")));
 }
 
 function normalizeAlbums(data) {
@@ -2810,6 +2840,7 @@ function App() {
     const [directOrder, setDirectOrder] = useState(null);
     const [orderSearchTouched, setOrderSearchTouched] = useState(false);
     const [albumSearch, setAlbumSearch] = useState("");
+    const [mobileRevealedAlbumId, setMobileRevealedAlbumId] = useState("");
     const [viewMode, setViewMode] = useState("mosaic");
     const [focusPhoto, setFocusPhoto] = useState(null);
     const [albumRenderLimit, setAlbumRenderLimit] = useState(() => window.innerWidth < 640 ? 8 : 15);
@@ -2838,6 +2869,20 @@ function App() {
     const ownInputRef = useRef(null);
     const homeLogoRef = useRef(null);
     const awayLogoRef = useRef(null);
+    const handleAlbumCardTap = (event, album) => {
+        if (!album)
+            return;
+        if (isMobileLike() && mobileRevealedAlbumId !== album.id) {
+            event && event.preventDefault && event.preventDefault();
+            event && event.stopPropagation && event.stopPropagation();
+            setMobileRevealedAlbumId(album.id);
+            return;
+        }
+        const firstSubAlbumId = (((album.subalbums || [])[0] || {}).id) || '';
+        setMobileRevealedAlbumId('');
+        location.hash = albumHash(album.id, firstSubAlbumId);
+        window.scrollTo(0, 0);
+    };
     async function ensureFirebaseReady() {
         setFirebaseBootError("");
         setFirebaseReady(false);
@@ -3940,8 +3985,8 @@ A continuación, te envío el comprobante.`;
                         React.createElement("div", null,
                             React.createElement("b", null, "Actualizando galer\u00EDa"),
                             React.createElement("p", { className: "text-[11px] opacity-80 leading-tight" }, "Mostrando lo guardado mientras se cargan los \u00FAltimos cambios."))),
-                    React.createElement("div", { className: "grid grid-cols-2 sm:grid-cols-3 gap-3 sm:gap-4" }, visibleFilteredAlbums.map(a => { var _a; return React.createElement("button", { key: a.id, onClick: () => { var _a, _b; location.hash = albumHash(a.id, ((_b = (_a = a.subalbums) === null || _a === void 0 ? void 0 : _a[0]) === null || _b === void 0 ? void 0 : _b.id) || ''); window.scrollTo({ top: 0, behavior: 'smooth' }); }, className: "group text-left active:scale-[0.98] focus:outline-none" },
-                        React.createElement("div", { className: "modern-album-card aspect-[4/5]" },
+                    React.createElement("div", { className: "grid grid-cols-2 sm:grid-cols-3 gap-3 sm:gap-4" }, visibleFilteredAlbums.map(a => { var _a; return React.createElement("button", { key: a.id, onClick: e => handleAlbumCardTap(e, a), className: "group text-left active:scale-[0.98] focus:outline-none", "aria-pressed": mobileRevealedAlbumId === a.id },
+                        React.createElement("div", { className: `modern-album-card aspect-[4/5] ${mobileRevealedAlbumId === a.id ? 'team-open' : ''}`.trim() },
                             React.createElement("div", { className: "absolute inset-0 bg-neutral-900" }, a.cover ? React.createElement("img", { src: a.cover, loading: "lazy", decoding: "async", className: "modern-album-img w-full h-full object-cover" }) : React.createElement("div", { className: "w-full h-full flex items-center justify-center text-neutral-600" },
                                 React.createElement("i", { className: "fas fa-image text-3xl" }))),
                             React.createElement("div", { className: "absolute inset-0 bg-gradient-to-t from-black via-black/38 to-transparent z-[2]" }),
@@ -3980,8 +4025,8 @@ A continuación, te envío el comprobante.`;
                             React.createElement("span", { className: "text-[11px] font-semibold text-white uppercase tracking-widest" }, "Galer\u00EDas antiguas"))),
                     React.createElement("div", { className: "mb-4" },
                         React.createElement(ProtectionNotice, null)),
-                    React.createElement("div", { className: "grid grid-cols-2 sm:grid-cols-3 gap-3 sm:gap-4" }, filteredArchivedAlbums.map(a => { var _a; return React.createElement("button", { key: a.id, onClick: () => { var _a, _b; location.hash = albumHash(a.id, ((_b = (_a = a.subalbums) === null || _a === void 0 ? void 0 : _a[0]) === null || _b === void 0 ? void 0 : _b.id) || ''); window.scrollTo({ top: 0, behavior: 'smooth' }); }, className: "group text-left active:scale-[0.98] focus:outline-none" },
-                        React.createElement("div", { className: "modern-album-card aspect-[4/5] border-amber-400/25" },
+                    React.createElement("div", { className: "grid grid-cols-2 sm:grid-cols-3 gap-3 sm:gap-4" }, filteredArchivedAlbums.map(a => { var _a; return React.createElement("button", { key: a.id, onClick: e => handleAlbumCardTap(e, a), className: "group text-left active:scale-[0.98] focus:outline-none", "aria-pressed": mobileRevealedAlbumId === a.id },
+                        React.createElement("div", { className: `modern-album-card aspect-[4/5] border-amber-400/25 ${mobileRevealedAlbumId === a.id ? 'team-open' : ''}`.trim() },
                             React.createElement("div", { className: "absolute inset-0 bg-neutral-900" }, a.cover ? React.createElement("img", { src: a.cover, loading: "lazy", decoding: "async", className: "modern-album-img w-full h-full object-cover" }) : React.createElement("div", { className: "w-full h-full flex items-center justify-center text-neutral-600" },
                                 React.createElement("i", { className: "fas fa-image text-3xl" }))),
                             React.createElement("div", { className: "absolute inset-0 bg-gradient-to-t from-black via-black/38 to-transparent z-[2]" }),
