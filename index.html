@@ -1,12 +1,3 @@
-
-
-
-
-
-
-
-
-
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -18,7 +9,7 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <meta name="apple-mobile-web-app-title" content="lucasabraham.ph" />
   <title>lucasabraham.ph - Galería de Clientes</title>
-  <meta name="app-version" content="v55-iphone-kaspersky-clean" /><style>html,body{margin:0;min-height:100%;background:#050505;color:#fff}#root{min-height:100vh;background:#050505;color:#fff}
+  <meta name="app-version" content="v57-a2-local-a3-visitante" /><style>html,body{margin:0;min-height:100%;background:#050505;color:#fff}#root{min-height:100vh;background:#050505;color:#fff}
     /* v41: estilo versus moderno para portada y álbum */
     .team-album-reveal{background:linear-gradient(180deg,rgba(3,7,18,.12),rgba(2,6,23,.28))}
     .team-reveal-half{left:12px!important;right:12px!important;width:auto!important;height:33%!important;padding:12px 16px!important;box-shadow:0 16px 36px rgba(0,0,0,.28),inset 0 1px 0 rgba(255,255,255,.14)!important;border:1px solid rgba(255,255,255,.10)!important;overflow:hidden}
@@ -931,7 +922,7 @@ const LS_SHARED_STATE_KEY = "la_shared_admin_state_v2";
 const LS_BANNERS_KEY = "la_banner_settings_v1";
 const LS_INTRO_KEY = "la_purchase_intro_seen_v2";
 const PHOTOS_PER_PAGE = 70;
-const APP_VERSION = "v37-mobile-boot-locked-banners-hidden";
+const APP_VERSION = "v57-a2-local-a3-visitante";
 const LS_ALBUM_CACHE_META_KEY = "la_album_cache_meta_v1";
 const ALBUM_CACHE_MAX_AGE_MS = 1000 * 60 * 60 * 12;
 const FIRESTORE_FREE_DAILY_LIMITS = {
@@ -1898,16 +1889,16 @@ function validHexColor(v) {
 }
 function parseTeamColors(sheet, rawRows) {
     const direct = sheet.teamColors || sheet.colors || sheet.colores || '';
-    const rowCandidate = firstCellValue((rawRows || [])[1]);
-    const raw = String(direct || rowCandidate || '');
+    const rowCandidate = firstCellValue((rawRows || [])[0]);
+    const raw = String(rowCandidate || direct || '');
     const matches = raw.match(/#?[0-9a-f]{3,8}/ig) || [];
     const colors = matches.map(validHexColor).filter(Boolean).slice(0,3);
     return colors.length ? colors : ['#0f172a','#1d4ed8'];
 }
 function parseTeamLogo(sheet, rawRows) {
     const direct = sheet.teamLogo || sheet.logo || sheet.escudo || '';
-    const rowCandidate = firstCellValue((rawRows || [])[2]);
-    const candidate = String(direct || rowCandidate || '').trim();
+    const rowCandidate = firstCellValue((rawRows || [])[1]);
+    const candidate = String(rowCandidate || direct || '').trim();
     return looksLikeImageUrl(candidate) ? candidate : '';
 }
 function parseTeamsFromAlbumName(name) {
@@ -1959,71 +1950,100 @@ function shiftHexColor(hex, amount = 0) {
         b: rgb.b + (toward - rgb.b) * factor
     });
 }
-function parseTeamCell(rawValue, fallbackName = '') {
+function parseTeamCell(rawValue, fallbackName = '', sourceCell = '') {
     const raw = String(rawValue || '').trim();
-    if (!raw) return { raw: '', name: fallbackName || '', logo: '', color: '', hasData: false, structured: false };
-    const urlMatch = raw.match(/https?:\/\/\S+/i);
-    const colorMatch = raw.match(/#?[0-9a-f]{3,8}(?!.*#?[0-9a-f]{3,8})/i);
-    const logo = urlMatch ? String(urlMatch[0] || '').trim() : '';
-    const color = colorMatch ? validHexColor(colorMatch[0]) : '';
+    if (!raw) {
+        return {
+            raw: '',
+            sourceCell,
+            role: sourceCell === 'A2' ? 'local' : (sourceCell === 'A3' ? 'visitante' : ''),
+            name: fallbackName || '',
+            logo: '',
+            color: '',
+            colors: [],
+            hasData: false,
+            structured: false
+        };
+    }
+
+    // Cada celda puede contener: NOMBRE + uno o más #HEX + URL DEL ESCUDO.
+    // A2 y A3 se procesan por separado para que nunca se mezclen sus datos.
+    const urlMatches = raw.match(/https?:\/\/[^\s|;,]+/ig) || [];
+    const logo = String(urlMatches.find(isLikelyImageReference) || urlMatches[0] || '')
+        .trim()
+        .replace(/[),.;]+$/g, '');
+    const colorTokens = raw.match(/#(?:[0-9a-f]{8}|[0-9a-f]{6}|[0-9a-f]{3})\b/ig) || [];
+    const colors = colorTokens.map(validHexColor).filter(Boolean).slice(0, 3);
+    const color = colors[0] || '';
+
     let cleanName = raw;
-    if (logo) cleanName = cleanName.replace(logo, ' ');
-    if (colorMatch) cleanName = cleanName.replace(colorMatch[0], ' ');
-    cleanName = cleanName.replace(/\s+-\s+/g, ' ').replace(/\s{2,}/g, ' ').trim().replace(/^[-–—\s]+|[-–—\s]+$/g, '');
-    const structured = Boolean(color || logo || cleanName);
+    urlMatches.forEach(url => { cleanName = cleanName.replace(url, ' '); });
+    colorTokens.forEach(token => { cleanName = cleanName.replace(token, ' '); });
+    cleanName = cleanName
+        .replace(/\b(?:nombre|equipo|club|color(?:es)?|escudo|logo|local|visitante)\s*[:=]\s*/ig, ' ')
+        .replace(/[|;,]+/g, ' ')
+        .replace(/\s+-\s+/g, ' ')
+        .replace(/\s{2,}/g, ' ')
+        .trim()
+        .replace(/^[-–—:\s]+|[-–—:\s]+$/g, '');
+
     return {
         raw,
+        sourceCell,
+        role: sourceCell === 'A2' ? 'local' : (sourceCell === 'A3' ? 'visitante' : ''),
         name: cleanName || fallbackName || '',
         logo,
         color,
-        hasData: Boolean(raw),
-        structured
+        colors,
+        hasData: true,
+        structured: Boolean(cleanName || color || logo)
     };
 }
-function looksLikeTeamMetaCell(v) {
-    const raw = String(v || '').trim();
-    if (!raw)
-        return false;
-    return /#?[0-9a-f]{3,8}/i.test(raw) || /https?:\/\//i.test(raw) || /\s+-\s+/.test(raw);
-}
-function getTeamMetaCandidates(sheet, rawRows) {
-    const directHome = String(sheet.localTeamMeta || sheet.teamHome || sheet.homeTeam || sheet.a2 || sheet.A2 || '').trim();
-    const directAway = String(sheet.awayTeamMeta || sheet.teamAway || sheet.away || sheet.a3 || sheet.A3 || '').trim();
-    const candidates = [];
-    if (directHome)
-        candidates.push(directHome);
-    if (directAway)
-        candidates.push(directAway);
-    for (const row of (rawRows || []).slice(0, 6)) {
-        const value = firstCellValue(row);
-        if (looksLikeTeamMetaCell(value))
-            candidates.push(String(value).trim());
-    }
-    return candidates.filter((value, idx, arr) => value && arr.indexOf(value) === idx);
+function getExactTeamCells(sheet, rawRows) {
+    const rows = Array.isArray(rawRows) ? rawRows : [];
+
+    // La matriz "rows" ya comienza en la fila 2 de la hoja porque la fila 1
+    // se usa como encabezado. Por eso:
+    //   rows[0] === A2 === LOCAL
+    //   rows[1] === A3 === VISITANTE
+    const rowA2 = String(firstCellValue(rows[0]) || '').trim();
+    const rowA3 = String(firstCellValue(rows[1]) || '').trim();
+
+    // Las propiedades A2/A3 son un respaldo para otras respuestas del Apps Script.
+    // Los alias antiguos solo se consultan cuando la celda correspondiente no llegó.
+    const explicitA2 = String(sheet.A2 || sheet.a2 || '').trim();
+    const explicitA3 = String(sheet.A3 || sheet.a3 || '').trim();
+    const legacyLocal = String(sheet.localTeamMeta || sheet.teamHome || sheet.homeTeam || '').trim();
+    const legacyVisitor = String(sheet.awayTeamMeta || sheet.teamAway || sheet.awayTeam || sheet.away || '').trim();
+
+    return {
+        localRaw: rowA2 || explicitA2 || legacyLocal,
+        visitorRaw: rowA3 || explicitA3 || legacyVisitor
+    };
 }
 function resolveAlbumTeams(sheet, rawRows, albumBaseName) {
     const fallbackNames = parseTeamsFromAlbumName(albumBaseName);
-    const candidates = getTeamMetaCandidates(sheet, rawRows);
-    const homeRaw = String(candidates[0] || '').trim();
-    const awayRaw = String(candidates[1] || '').trim();
-    const home = parseTeamCell(homeRaw, fallbackNames[0] || albumBaseName);
-    const away = parseTeamCell(awayRaw, fallbackNames[1] || '');
-    if (!home.structured && !away.structured) {
-        const legacyColors = parseTeamColors(sheet, rawRows);
-        const legacyLogo = parseTeamLogo(sheet, rawRows);
-        home.name = fallbackNames[0] || albumBaseName;
-        away.name = fallbackNames[1] || '';
-        home.color = home.color || legacyColors[0] || '';
-        away.color = away.color || legacyColors[1] || legacyColors[0] || '';
-        home.logo = home.logo || legacyLogo || '';
-    }
-    if (!home.name)
-        home.name = fallbackNames[0] || albumBaseName;
-    if (!away.name)
-        away.name = fallbackNames[1] || '';
-    home.color = home.color || '';
-    away.color = away.color || '';
-    return [home, away];
+    const exactCells = getExactTeamCells(sheet, rawRows);
+
+    // ORDEN FIJO E INALTERABLE:
+    // índice 0 = A2 = LOCAL
+    // índice 1 = A3 = VISITANTE
+    const local = parseTeamCell(exactCells.localRaw, fallbackNames[0] || albumBaseName, 'A2');
+    const visitante = parseTeamCell(exactCells.visitorRaw, fallbackNames[1] || '', 'A3');
+
+    // Los nombres escritos en A2/A3 son autoritativos. El nombre de la hoja se usa
+    // únicamente si una de esas celdas llegara vacía.
+    if (!local.name)
+        local.name = fallbackNames[0] || albumBaseName;
+    if (!visitante.name)
+        visitante.name = fallbackNames[1] || '';
+
+    local.color = local.color || '';
+    visitante.color = visitante.color || '';
+    local.logo = local.logo || '';
+    visitante.logo = visitante.logo || '';
+
+    return [local, visitante];
 }
 function teamGradient(colors, reverse = false) {
     const c = (colors && colors.length ? colors : ['#0f172a','#1d4ed8']).slice(0,3);
@@ -2573,7 +2593,7 @@ function PriceAdminModal({ onClose, priceSettings, setPriceSettings, setAdminMes
                 React.createElement(PriceAdminField, { fieldKey: "albumCordobaPrice", label: "Álbum completo · Córdoba Capital", value: p["albumCordobaPrice"], onChange: update }), React.createElement(PriceAdminField, { fieldKey: "albumCordobaNote", label: "Aclaración Córdoba Capital", value: p["albumCordobaNote"], onChange: update, big: true }),
                 React.createElement(PriceAdminField, { fieldKey: "albumOutsideCordobaPrice", label: "Álbum completo · fuera de Córdoba", value: p["albumOutsideCordobaPrice"], onChange: update }), React.createElement(PriceAdminField, { fieldKey: "albumOutsideCordobaNote", label: "Aclaración fuera de Córdoba", value: p["albumOutsideCordobaNote"], onChange: update, big: true }),
                 React.createElement(PriceAdminField, { fieldKey: "sessionPrice", label: "Sesión individual en partido", value: p["sessionPrice"], onChange: update }), React.createElement(PriceAdminField, { fieldKey: "sessionNote", label: "Requisito sesión individual", value: p["sessionNote"], onChange: update, big: true }),
-                React.createElement("div", { className: "sm:col-span-2" }, React.createElement(Field, { k: "multiCategoryNote", label: "Descuentos por más de una categoría", big: true })))));
+                React.createElement("div", { className: "sm:col-span-2" }, React.createElement(PriceAdminField, { fieldKey: "multiCategoryNote", label: "Descuentos por más de una categoría", value: p["multiCategoryNote"], onChange: update, big: true })))));
 }
 function Steps() {
     const steps = [
@@ -2938,8 +2958,14 @@ ${clone.outerHTML}`;
         saveSharedAdminState({ bannerSettings }); }, [bannerSettings, sharedReady]);
     useEffect(() => { saveDiscountSettings(discountSettings); if (sharedReady)
         saveSharedAdminState({ discountSettings }); }, [discountSettings, sharedReady]);
-    useEffect(() => { if (sharedReady)
-        saveSharedAdminState({ priceSettings: normalizePriceSettings(priceSettings) }); }, [priceSettings, sharedReady]);
+    useEffect(() => {
+        if (!sharedReady)
+            return;
+        const timer = setTimeout(() => {
+            saveSharedAdminState({ priceSettings: normalizePriceSettings(priceSettings) });
+        }, 700);
+        return () => clearTimeout(timer);
+    }, [priceSettings, sharedReady]);
     async function load({ silent = false, force = false } = {}) {
         const cachedAlbums = readAlbumCache();
         if (!silent) {
