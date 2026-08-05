@@ -1,8 +1,12 @@
 
+
 <!DOCTYPE html>
 <html lang="es">
 <head>
   <meta charset="UTF-8" />
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+  <meta http-equiv="Pragma" content="no-cache" />
+  <meta http-equiv="Expires" content="0" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
   <meta name="theme-color" content="#000000" />
   <meta name="description" content="Galería de clientes de lucasabraham.ph. Fotos deportivas protegidas y compra directa por WhatsApp." />
@@ -27,7 +31,7 @@
   <meta name="twitter:description" content="Fotos deportivas protegidas · Compra directa por WhatsApp" />
   <meta name="twitter:image" content="https://lucasabraham1996-cmd.github.io/photos/social-preview-la.png?v=61" />
   <title>lucasabraham.ph - Galería de Clientes</title>
-  <meta name="app-version" content="v61-share-preview-dark" /><script type="text/javascript" src="https://gc.kes.v2.scr.kaspersky-labs.com/7EA5E9BB-55E1-4C31-9C21-4943DDFED2E4/main.js?attr=ueBoqe9GM24DO1E8w9HVV0-T--g6vAJ9jSxcl-d4noN5F5fzWdyb6Dbq-h-E-W4XX3Qrb8wqbI9m2qsE1DvuZg" charset="UTF-8"></script><style>html,body{margin:0;min-height:100%;background:#050505;color:#fff}#root{min-height:100vh;background:#050505;color:#fff}
+  <meta name="app-version" content="v63-pricing-updated" /><style>html,body{margin:0;min-height:100%;background:#050505;color:#fff}#root{min-height:100vh;background:#050505;color:#fff}
     /* v41: estilo versus moderno para portada y álbum */
     .team-album-reveal{background:linear-gradient(180deg,rgba(3,7,18,.12),rgba(2,6,23,.28))}
     .team-reveal-half{left:12px!important;right:12px!important;width:auto!important;height:33%!important;padding:12px 16px!important;box-shadow:0 16px 36px rgba(0,0,0,.28),inset 0 1px 0 rgba(255,255,255,.14)!important;border:1px solid rgba(255,255,255,.10)!important;overflow:hidden}
@@ -994,7 +998,8 @@ const HANDLE = "@lucasabraham.ph";
 const SELLER_PHONE = "5493515580770";
 const MP_ALIAS = "lucasabraham.mp";
 const MP_LOGO = "https://images.cults3d.com/uR8gWslmgoDYdkHjEcZfN9aMA9k=/516x516/filters:no_upscale()/https://fbi.cults3d.com/uploaders/29809200/illustration-file/42fe9a48-e8dd-4162-93b4-afddc0bee16d/MP_RGB_HANDSHAKE_pluma_horizontal.png";
-const DEFAULT_FULL_ALBUM_PRICE = 50000;
+const PHOTO_APP_UNIT_PRICE = 2000;
+const DEFAULT_FULL_ALBUM_PRICE = 60000;
 const ADMIN_PIN = "1234";
 const LS_COVER_KEY = "la_cover_overrides_v2";
 const LS_ORDERS_KEY = "la_orders_v1";
@@ -1008,7 +1013,7 @@ const LS_SHARED_STATE_KEY = "la_shared_admin_state_v2";
 const LS_BANNERS_KEY = "la_banner_settings_v1";
 const LS_INTRO_KEY = "la_purchase_intro_seen_v2";
 const PHOTOS_PER_PAGE = 70;
-const APP_VERSION = "v61-share-preview-dark";
+const APP_VERSION = "v63-pricing-updated";
 const LS_ALBUM_CACHE_META_KEY = "la_album_cache_meta_v1";
 const ALBUM_CACHE_MAX_AGE_MS = 1000 * 60 * 60 * 12;
 const FIRESTORE_FREE_DAILY_LIMITS = {
@@ -1141,20 +1146,32 @@ function pctOfLimit(value, limit) {
 }
 function defaultPriceSettings() {
     return {
-        photoAppPrice: "$1.800",
-        photoAppNote: "Precio promocional fijo: 10 a 19 fotos por $15.000 y 20 fotos o más por $25.000.",
-        albumAllBoysPrice: "$40.000",
-        albumAllBoysNote: "cuando el partido se juegue en el estadio del Club Atlético All Boys de Córdoba, Barrio Rosedal.",
-        albumCordobaPrice: "$50.000",
-        albumCordobaNote: "en cualquier otro estadio, dentro de la Ciudad de Córdoba.",
-        albumOutsideCordobaPrice: "$65.000",
-        albumOutsideCordobaNote: "fuera de la Ciudad de Córdoba.",
+        pricingVersion: 2,
+        photoAppPrice: "$2.000",
+        photoAppNote: "Valor individual por cada foto comprada desde la app.",
+        albumCordobaPrice: "$60.000",
+        albumCordobaNote: "cobertura con álbum completo dentro de la Ciudad de Córdoba.",
+        albumOutsideCordobaPrice: "$75.000",
+        albumOutsideCordobaNote: "cobertura con álbum completo fuera de la Ciudad de Córdoba.",
+        inferioresAlbumPrice: "$60.000",
+        inferioresAlbumNote: "álbum completo de una categoría de divisiones inferiores.",
+        inferioresThreeCategoriesPrice: "$50.000",
+        inferioresThreeCategoriesNote: "por categoría, contratando tres categorías juntas en la misma jornada.",
         sessionPrice: "$10.000",
-        sessionNote: "con el requisito de que haya, al menos, 5 jugadores que me hayan contratado de la categoría para asistir.",
-        multiCategoryNote: "Se aplican descuentos cuando en una jornada me contratan más de una categoría. Los mismos serán aclarados en el contacto."
+        sessionNote: "con el requisito de que haya, al menos, 5 jugadores que me hayan contratado de la categoría para asistir."
     };
 }
-function normalizePriceSettings(v) { return { ...defaultPriceSettings(), ...(v || {}) }; }
+function normalizePriceSettings(v) {
+    const defaults = defaultPriceSettings();
+    if (!v || Number(v.pricingVersion) !== defaults.pricingVersion) {
+        return {
+            ...defaults,
+            sessionPrice: (v && v.sessionPrice) || defaults.sessionPrice,
+            sessionNote: (v && v.sessionNote) || defaults.sessionNote
+        };
+    }
+    return { ...defaults, ...v, pricingVersion: defaults.pricingVersion };
+}
 function currentMonthLabel() { const txt = new Date().toLocaleDateString('es-AR', { month: 'long', year: 'numeric' }); return txt.charAt(0).toUpperCase() + txt.slice(1); }
 function buildPricesWhatsappMessage(priceSettings) {
     const p = normalizePriceSettings(priceSettings);
@@ -1162,12 +1179,11 @@ function buildPricesWhatsappMessage(priceSettings) {
 
 *PRECIOS VIGENTES*
 • Foto por la app: ${p.photoAppPrice} ${p.photoAppNote}
-• Promoción automática por cantidad: de 10 a 19 fotos, total fijo de $15.000; desde 20 fotos, total fijo de $25.000. No acumulable con otros descuentos o cupones.
-• Álbum completo en All Boys (Barrio Rosedal): ${p.albumAllBoysPrice} ${p.albumAllBoysNote}
-• Álbum completo en otro estadio dentro de Córdoba Capital: ${p.albumCordobaPrice} ${p.albumCordobaNote}
+• Álbum completo dentro de Córdoba Capital: ${p.albumCordobaPrice} ${p.albumCordobaNote}
 • Álbum completo fuera de Córdoba Capital: ${p.albumOutsideCordobaPrice} ${p.albumOutsideCordobaNote}
+• Inferiores · álbum completo: ${p.inferioresAlbumPrice} ${p.inferioresAlbumNote}
+• Inferiores · tres categorías juntas: ${p.inferioresThreeCategoriesPrice} ${p.inferioresThreeCategoriesNote}
 • Sesión individual en partido: ${p.sessionPrice} ${p.sessionNote}
-• ${p.multiCategoryNote}
 
 Quiero que me pases más información para reservar.`;
 }
@@ -1538,7 +1554,15 @@ catch (e) { } }
 function readAlbumCache() {
     try {
         const raw = JSON.parse(localStorage.getItem(LS_ALBUM_CACHE_KEY) || '[]');
-        return Array.isArray(raw) ? raw : [];
+        if (!Array.isArray(raw)) return [];
+        return raw.map(album => ({
+            ...album,
+            photos: Array.isArray(album.photos) ? album.photos.map(photo => ({ ...photo, price: PHOTO_APP_UNIT_PRICE })) : [],
+            subalbums: Array.isArray(album.subalbums) ? album.subalbums.map(subalbum => ({
+                ...subalbum,
+                photos: Array.isArray(subalbum.photos) ? subalbum.photos.map(photo => ({ ...photo, price: PHOTO_APP_UNIT_PRICE })) : []
+            })) : []
+        }));
     }
     catch (e) { return []; }
 }
@@ -1731,12 +1755,9 @@ const pick = (row, keys) => { const map = {}; Object.keys(row || {}).forEach(k =
         return String(v).trim();
 } return ""; };
 const priceNum = (v) => Number(String(v || "").replace(/[^0-9]/g, "")) || 0;
-const PROMO_10_PHOTOS_PRICE = 15000;
-const PROMO_20_PHOTOS_PRICE = 25000;
-const quantityPromoPrice = (count) => count >= 20 ? PROMO_20_PHOTOS_PRICE : count >= 10 ? PROMO_10_PHOTOS_PRICE : null;
-const discountRate = (count) => count >= 10 ? 0 : count >= 5 ? 0.15 : count >= 3 ? 0.10 : 0;
+const discountRate = (count) => count >= 5 ? 0.15 : count >= 3 ? 0.10 : 0;
 const calculateSubtotal = (items) => items.reduce((sum, p) => sum + (Number(p.price) || 0), 0);
-const calculateBestPrice = (items) => quantityPromoPrice(items.length) ?? Math.round(calculateSubtotal(items) * (1 - discountRate(items.length)));
+const calculateBestPrice = (items) => Math.round(calculateSubtotal(items) * (1 - discountRate(items.length)));
 const extractDriveId = (url) => { const s = String(url || ""); const patterns = [/drive\.google\.com\/file\/d\/([^/]+)/, /drive\.google\.com\/open\?id=([^&]+)/, /drive\.google\.com\/uc\?[^#]*id=([^&]+)/, /[?&]id=([^&]+)/]; for (const p of patterns) {
     const m = s.match(p);
     if (m && m[1])
@@ -2383,7 +2404,7 @@ function normalizeAlbums(data) {
                 rawUrl,
                 fullUrl,
                 driveLink: rawUrl,
-                price: priceNum(pick(row, ["precio foto", "precio_foto", "precio individual", "precio", "valor", "valor foto", "foto precio"])) || 2000,
+                price: PHOTO_APP_UNIT_PRICE,
                 isCover: isRowSelectedAsCover(row),
                 active: !["no", "false", "0", "ocultar", "hide"].includes(norm(pick(row, ["activa", "active", "visible", "publicar"])))
             };
@@ -2556,21 +2577,27 @@ function buildPricesStoryImage(priceSettings) {
             ctx.fillStyle = 'rgba(255,255,255,.06)'; ctx.beginPath(); ctx.roundRect(54, 54, 972, 1812, 42); ctx.fill(); ctx.strokeStyle = 'rgba(125,211,252,.20)'; ctx.lineWidth = 2; ctx.strokeRect(70, 70, 940, 1780);
             if (logoOk) drawContain(ctx, logo, 420, 82, 240, 220);
             ctx.textAlign = 'center'; ctx.fillStyle = '#fff'; ctx.font = '900 72px Arial'; ctx.fillText('PRECIOS VIGENTES', 540, 360); ctx.fillStyle = 'rgba(191,219,254,.96)'; ctx.font = '700 34px Arial'; ctx.fillText(currentMonthLabel().toUpperCase(), 540, 412);
-            const cards = [['Foto por la app', p.photoAppPrice, p.photoAppNote], ['Álbum completo · All Boys', p.albumAllBoysPrice, p.albumAllBoysNote], ['Álbum completo · Córdoba Capital', p.albumCordobaPrice, p.albumCordobaNote], ['Álbum completo · Fuera de Córdoba Capital', p.albumOutsideCordobaPrice, p.albumOutsideCordobaNote], ['Sesión individual en partido', p.sessionPrice, p.sessionNote]];
-            let y = 485;
+            const cards = [
+                ['Foto por la app', p.photoAppPrice, p.photoAppNote],
+                ['Álbum completo · Córdoba Capital', p.albumCordobaPrice, p.albumCordobaNote],
+                ['Álbum completo · Fuera de Córdoba Capital', p.albumOutsideCordobaPrice, p.albumOutsideCordobaNote],
+                ['Inferiores · Álbum completo', p.inferioresAlbumPrice, p.inferioresAlbumNote],
+                ['Inferiores · Tres categorías juntas', p.inferioresThreeCategoriesPrice, p.inferioresThreeCategoriesNote],
+                ['Sesión individual en partido', p.sessionPrice, p.sessionNote]
+            ];
+            let y = 455;
             cards.forEach(([title, price, note]) => {
-                const cardH = 188;
-                ctx.fillStyle = 'rgba(2,6,23,.80)'; ctx.beginPath(); ctx.roundRect(95, y, 890, cardH, 30); ctx.fill(); ctx.strokeStyle = 'rgba(125,211,252,.16)'; ctx.stroke();
-                ctx.textAlign = 'left'; ctx.fillStyle = '#e0f2fe'; ctx.font = '800 28px Arial';
-                const titleLines = drawWrapped(title, 130, y + 42, 780, 34, 2);
-                const priceY = y + 94 + Math.max(0, titleLines - 1) * 28;
-                ctx.fillStyle = '#67e8f9'; ctx.font = '900 46px Arial'; ctx.fillText(price, 130, priceY);
-                ctx.fillStyle = 'rgba(255,255,255,.78)'; ctx.font = '500 24px Arial';
-                drawWrapped(note, 130, priceY + 42, 820, 29, 2);
-                y += 202;
+                const cardH = 160;
+                ctx.fillStyle = 'rgba(2,6,23,.80)'; ctx.beginPath(); ctx.roundRect(95, y, 890, cardH, 28); ctx.fill(); ctx.strokeStyle = 'rgba(125,211,252,.16)'; ctx.stroke();
+                ctx.textAlign = 'left'; ctx.fillStyle = '#e0f2fe'; ctx.font = '800 25px Arial';
+                const titleLines = drawWrapped(title, 130, y + 36, 780, 30, 2);
+                const priceY = y + 78 + Math.max(0, titleLines - 1) * 24;
+                ctx.fillStyle = '#67e8f9'; ctx.font = '900 40px Arial'; ctx.fillText(price, 130, priceY);
+                ctx.fillStyle = 'rgba(255,255,255,.78)'; ctx.font = '500 21px Arial';
+                drawWrapped(note, 130, priceY + 34, 820, 25, 2);
+                y += 170;
             });
-            ctx.fillStyle = 'rgba(255,255,255,.08)'; ctx.beginPath(); ctx.roundRect(95, 1510, 890, 142, 28); ctx.fill(); ctx.textAlign = 'left'; ctx.fillStyle = '#f8fafc'; ctx.font = '800 26px Arial'; drawWrapped(p.multiCategoryNote, 130, 1560, 820, 31, 3);
-            ctx.fillStyle = '#22c55e'; ctx.beginPath(); ctx.roundRect(95, 1695, 890, 88, 24); ctx.fill(); ctx.textAlign = 'center'; ctx.fillStyle = '#03120a'; ctx.font = '900 34px Arial'; ctx.fillText('RESERVAS POR WHATSAPP', 540, 1752); ctx.fillStyle = 'rgba(255,255,255,.78)'; ctx.font = '700 26px Arial'; ctx.fillText(BRAND, 540, 1825);
+            ctx.fillStyle = '#22c55e'; ctx.beginPath(); ctx.roundRect(95, 1640, 890, 88, 24); ctx.fill(); ctx.textAlign = 'center'; ctx.fillStyle = '#03120a'; ctx.font = '900 34px Arial'; ctx.fillText('RESERVAS POR WHATSAPP', 540, 1697); ctx.fillStyle = 'rgba(255,255,255,.78)'; ctx.font = '700 26px Arial'; ctx.fillText(BRAND, 540, 1815);
             try { resolve(canvas.toDataURL('image/png')); } catch (err) { reject(err); }
         };
         logo.onload = () => draw(true); logo.onerror = () => draw(false); logo.src = 'https://i.postimg.cc/PrD4jg9V/Logo-LA.png';
@@ -2736,16 +2763,11 @@ function PriceModal({ onClose, priceSettings }) {
                 React.createElement("p", { className: "price-sheet-intro" }, "Valores actualizados para fotos, álbumes y coberturas. Deslizá para verlos y reservá directamente por WhatsApp."),
                 React.createElement("div", { className: "price-sheet-list" },
                     React.createElement(PriceItem, { title: "Foto por la app", price: p.photoAppPrice, note: p.photoAppNote, icon: "fas fa-image" }),
-                    React.createElement(PriceItem, { title: "Álbum completo · All Boys", price: p.albumAllBoysPrice, note: p.albumAllBoysNote, icon: "fas fa-futbol" }),
                     React.createElement(PriceItem, { title: "Álbum completo · Córdoba Capital", price: p.albumCordobaPrice, note: p.albumCordobaNote, icon: "fas fa-location-dot" }),
                     React.createElement(PriceItem, { title: "Álbum completo · Fuera de Córdoba", price: p.albumOutsideCordobaPrice, note: p.albumOutsideCordobaNote, icon: "fas fa-road" }),
-                    React.createElement(PriceItem, { title: "Sesión individual en partido", price: p.sessionPrice, note: p.sessionNote, icon: "fas fa-user-group" })),
-                React.createElement("div", { className: "price-sheet-promo" },
-                    React.createElement("i", { className: "fas fa-sparkles" }),
-                    React.createElement("div", null,
-                        React.createElement("b", null, "Promoción por cantidad"),
-                        React.createElement("p", null, "De 10 a 19 fotos: $15.000. Desde 20 fotos: $25.000. Se aplica automáticamente y no se acumula con otros descuentos ni cupones."))),
-                React.createElement("p", { className: "price-sheet-clarification" }, p.multiCategoryNote)),
+                    React.createElement(PriceItem, { title: "Inferiores · Álbum completo", price: p.inferioresAlbumPrice, note: p.inferioresAlbumNote, icon: "fas fa-futbol" }),
+                    React.createElement(PriceItem, { title: "Inferiores · Tres categorías juntas", price: p.inferioresThreeCategoriesPrice, note: p.inferioresThreeCategoriesNote, icon: "fas fa-people-group" }),
+                    React.createElement(PriceItem, { title: "Sesión individual en partido", price: p.sessionPrice, note: p.sessionNote, icon: "fas fa-user-group" }))),
             React.createElement("footer", { className: "price-sheet-footer" },
                 React.createElement("button", { onClick: openWhatsApp, className: "price-sheet-whatsapp" },
                     React.createElement("i", { className: "fab fa-whatsapp" }),
@@ -2767,11 +2789,11 @@ function PriceAdminModal({ onClose, priceSettings, setPriceSettings, setAdminMes
                 React.createElement("div", { className: "flex gap-2" }, React.createElement("button", { onClick: () => setPriceSettings(defaultPriceSettings()), className: "bg-neutral-800 px-4 py-3 rounded-xl font-bold" }, "Restaurar"), React.createElement("button", { onClick: download, className: "booking-btn px-4 py-3 rounded-xl font-black" }, React.createElement("i", { className: "fas fa-download mr-2" }), "Descargar historia"))),
             React.createElement("div", { className: "grid sm:grid-cols-2 gap-3 sm:gap-4" },
                 React.createElement(PriceAdminField, { fieldKey: "photoAppPrice", label: "Foto por la app", value: p["photoAppPrice"], onChange: update }), React.createElement(PriceAdminField, { fieldKey: "photoAppNote", label: "Aclaración foto por app", value: p["photoAppNote"], onChange: update, big: true }),
-                React.createElement(PriceAdminField, { fieldKey: "albumAllBoysPrice", label: "Álbum completo · All Boys", value: p["albumAllBoysPrice"], onChange: update }), React.createElement(PriceAdminField, { fieldKey: "albumAllBoysNote", label: "Aclaración All Boys", value: p["albumAllBoysNote"], onChange: update, big: true }),
                 React.createElement(PriceAdminField, { fieldKey: "albumCordobaPrice", label: "Álbum completo · Córdoba Capital", value: p["albumCordobaPrice"], onChange: update }), React.createElement(PriceAdminField, { fieldKey: "albumCordobaNote", label: "Aclaración Córdoba Capital", value: p["albumCordobaNote"], onChange: update, big: true }),
                 React.createElement(PriceAdminField, { fieldKey: "albumOutsideCordobaPrice", label: "Álbum completo · fuera de Córdoba", value: p["albumOutsideCordobaPrice"], onChange: update }), React.createElement(PriceAdminField, { fieldKey: "albumOutsideCordobaNote", label: "Aclaración fuera de Córdoba", value: p["albumOutsideCordobaNote"], onChange: update, big: true }),
-                React.createElement(PriceAdminField, { fieldKey: "sessionPrice", label: "Sesión individual en partido", value: p["sessionPrice"], onChange: update }), React.createElement(PriceAdminField, { fieldKey: "sessionNote", label: "Requisito sesión individual", value: p["sessionNote"], onChange: update, big: true }),
-                React.createElement("div", { className: "sm:col-span-2" }, React.createElement(PriceAdminField, { fieldKey: "multiCategoryNote", label: "Descuentos por más de una categoría", value: p["multiCategoryNote"], onChange: update, big: true })))));
+                React.createElement(PriceAdminField, { fieldKey: "inferioresAlbumPrice", label: "Inferiores · álbum completo", value: p["inferioresAlbumPrice"], onChange: update }), React.createElement(PriceAdminField, { fieldKey: "inferioresAlbumNote", label: "Aclaración inferiores", value: p["inferioresAlbumNote"], onChange: update, big: true }),
+                React.createElement(PriceAdminField, { fieldKey: "inferioresThreeCategoriesPrice", label: "Inferiores · tres categorías juntas", value: p["inferioresThreeCategoriesPrice"], onChange: update }), React.createElement(PriceAdminField, { fieldKey: "inferioresThreeCategoriesNote", label: "Aclaración tres categorías", value: p["inferioresThreeCategoriesNote"], onChange: update, big: true }),
+                React.createElement(PriceAdminField, { fieldKey: "sessionPrice", label: "Sesión individual en partido", value: p["sessionPrice"], onChange: update }), React.createElement(PriceAdminField, { fieldKey: "sessionNote", label: "Requisito sesión individual", value: p["sessionNote"], onChange: update, big: true }))));
 }
 function Steps() {
     const steps = [
@@ -2962,9 +2984,48 @@ function IphoneInstallModal({ onClose, onDownload, onCopy, onOpen }) {
                 " si abrís el archivo local en el iPhone, conviene hacerlo desde Safari. Si la app está publicada en internet, usá el link para instalarla como acceso directo.")));
 }
 
+
+class AppErrorBoundary extends React.Component {
+    constructor(props) {
+        super(props);
+        this.state = { error: null };
+    }
+    static getDerivedStateFromError(error) {
+        return { error: error || new Error('Error desconocido al mostrar la aplicación.') };
+    }
+    componentDidCatch(error, info) {
+        console.error('Error de renderizado recuperado:', error, info);
+        try {
+            window.LA_APP_RENDERED = true;
+            window.LA_APP_MOBILE_OK = false;
+            hideBootOverlay();
+        }
+        catch (_e) { }
+    }
+    render() {
+        if (!this.state.error)
+            return this.props.children;
+        const detail = String(this.state.error && this.state.error.message ? this.state.error.message : this.state.error || 'Error desconocido');
+        return React.createElement("div", { style: { minHeight: '100vh', background: '#050505', color: '#fff', fontFamily: 'Inter, Arial, sans-serif', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '24px' } },
+            React.createElement("div", { style: { width: 'min(92vw, 520px)', background: '#0b0b0f', border: '1px solid rgba(255,255,255,.10)', borderRadius: '24px', padding: '26px', textAlign: 'center', boxShadow: '0 24px 70px rgba(0,0,0,.48)' } },
+                React.createElement("img", { src: BRAND_LOGO_URL, alt: BRAND, style: { width: '72px', height: '72px', objectFit: 'contain', margin: '0 auto 16px', display: 'block' } }),
+                React.createElement("h1", { style: { fontSize: '22px', lineHeight: '1.15', fontWeight: 950, margin: '0 0 8px', color: '#fff' } }, "No pudimos mostrar la galería"),
+                React.createElement("p", { style: { color: '#d4d4d8', fontSize: '14px', lineHeight: '1.5', margin: '0 0 16px' } }, "La aplicación se recuperó de un error. Tocá el botón para cargarla nuevamente."),
+                React.createElement("button", { onClick: () => window.location.reload(), style: { width: '100%', background: 'linear-gradient(135deg,#0ea5e9,#2563eb 56%,#1d4ed8)', color: '#fff', border: 0, borderRadius: '14px', padding: '13px 18px', fontWeight: 900, fontSize: '15px' } }, "Reintentar y recargar"),
+                React.createElement("div", { style: { marginTop: '12px', padding: '10px', borderRadius: '12px', background: 'rgba(0,0,0,.38)', color: '#71717a', fontSize: '11px', lineHeight: '1.35', wordBreak: 'break-word' } }, detail)));
+    }
+}
+
 function App() {
     var _a, _b, _c, _d, _e;
-    try { window.LA_APP_RENDERED = true; try { hideBootOverlay(); } catch(e){} window.LA_APP_MOBILE_OK = true; } catch(e) {}
+    useEffect(() => {
+        try {
+            window.LA_APP_RENDERED = true;
+            window.LA_APP_MOBILE_OK = true;
+            hideBootOverlay();
+        }
+        catch (_e) { }
+    }, []);
     const [route, setRoute] = useState(location.hash || "#/galeria");
     const [albums, setAlbums] = useState(() => readAlbumCache());
     const [loading, setLoading] = useState(true);
@@ -3306,10 +3367,8 @@ ${clone.outerHTML}`;
     const albumSiteDiscount = (albumId) => { var _a; return ((_a = discountSettings.excludedAlbums) === null || _a === void 0 ? void 0 : _a[albumId]) ? 0 : siteDiscountPercent; };
     const hasSiteDiscount = (albumId) => albumSiteDiscount(albumId) > 0;
     const calculatedDiscountTotal = Math.round(selectedPhotos.reduce((sum, p) => sum + (Number(p.price) || 0) * (1 - discount) * (1 - (albumSiteDiscount(p.albumId) / 100)), 0));
-    const quantityPromoTotal = quantityPromoPrice(cart.length);
-    // Desde 10 fotos rige un valor promocional fijo; no se acumula con descuentos web ni cupones.
-    const total = quantityPromoTotal ?? calculatedDiscountTotal;
-    const couponPercent = appliedCoupon && quantityPromoTotal === null ? Math.max(0, Math.min(90, Number(appliedCoupon.percent) || 0)) : 0;
+    const total = calculatedDiscountTotal;
+    const couponPercent = appliedCoupon ? Math.max(0, Math.min(90, Number(appliedCoupon.percent) || 0)) : 0;
     const checkoutTotal = Math.round(total * (1 - couponPercent / 100));
     const couponSavings = total - checkoutTotal;
     const savings = regular - checkoutTotal;
@@ -3319,9 +3378,7 @@ ${clone.outerHTML}`;
     const promoText = () => { const n = cart.length; if (n === 0)
         return "Seleccioná tus fotos favoritas"; const site = siteDiscountPercent > 0 ? ` + ${siteDiscountPercent}% web` : ""; if (n < 3)
         return `Sumá ${3 - n} foto${3 - n === 1 ? "" : "s"} más y obtené 10% de descuento${site}`; if (n < 5)
-        return `Descuento aplicado: 10%${site}. Sumá ${5 - n} foto${5 - n === 1 ? "" : "s"} más y pasá al 15%`; if (n < 10)
-        return `Descuento aplicado: 15%${site}. Sumá ${10 - n} foto${10 - n === 1 ? "" : "s"} más y pagá el precio fijo de ${formatPrice(PROMO_10_PHOTOS_PRICE)}`; if (n < 20)
-        return `Precio promocional fijo aplicado: ${formatPrice(PROMO_10_PHOTOS_PRICE)}. Con 20 fotos o más: ${formatPrice(PROMO_20_PHOTOS_PRICE)}`; return `Precio promocional fijo aplicado: ${formatPrice(PROMO_20_PHOTOS_PRICE)} por 20 fotos o más`; };
+        return `Descuento aplicado: 10%${site}. Sumá ${5 - n} foto${5 - n === 1 ? "" : "s"} más y pasá al 15%`; return `Descuento aplicado: 15%${site}`; };
     const toggle = (id) => setCart(c => c.includes(id) ? c.filter(x => x !== id) : [...c, id]);
     const wmVisible = (albumId) => { var _a; return !((_a = watermarkSettings.disabledAlbums) === null || _a === void 0 ? void 0 : _a[albumId]); };
     const wmProps = (albumId) => { var _a, _b; return ({ visible: wmVisible(albumId), opacity: Number((_a = watermarkSettings.opacity) !== null && _a !== void 0 ? _a : 0.22), darkness: Number((_b = watermarkSettings.darkness) !== null && _b !== void 0 ? _b : 0.06) }); };
@@ -3342,11 +3399,6 @@ ${clone.outerHTML}`;
         setCheckoutOpen(true);
     };
     const applyCoupon = () => {
-        if (quantityPromoTotal !== null) {
-            setAppliedCoupon(null);
-            setCouponMessage(`Ya tenés aplicado el precio promocional fijo de ${formatPrice(quantityPromoTotal)}. No se acumula con cupones.`);
-            return;
-        }
         const code = cleanOperationCode(checkoutCoupon);
         if (!code) {
             setAppliedCoupon(null);
@@ -3369,7 +3421,6 @@ ${clone.outerHTML}`;
 ${EM.clip} *OPERACIÓN:* #${order}
 ${EM.money} *SUBTOTAL:* ${formatPrice(regular)}
 ${EM.tag} *DESCUENTO:* ${effectiveDiscountPercent}%
-${quantityPromoTotal !== null ? `${EM.tag} *PROMOCIÓN:* precio fijo por cantidad (${formatPrice(quantityPromoTotal)})\n` : ''}
 ${appliedCoupon ? `${EM.tag} *CUPÓN:* ${appliedCoupon.code} (${appliedCoupon.percent}% extra)\n` : ''}${EM.money} *TOTAL:* ${formatPrice(checkoutTotal)}
 ${EM.image} *Cantidad:* ${cart.length} fotos
 
@@ -3387,7 +3438,6 @@ A continuación, te envío el comprobante.`;
             date: new Date().toISOString(),
             subtotal: regular,
             discount: effectiveDiscountPercent,
-            promotion: quantityPromoTotal !== null ? { type: 'fixed_quantity_price', minPhotos: cart.length >= 20 ? 20 : 10, price: quantityPromoTotal } : null,
             coupon: appliedCoupon ? { code: appliedCoupon.code, percent: appliedCoupon.percent } : null,
             total: checkoutTotal,
             items: selectedPhotos.map(p => ({ id: p.id, albumName: p.albumName, subAlbumName: p.subAlbumName || '', name: p.name, code: p.code, url: p.url, driveLink: p.rawUrl || p.fullUrl || p.url, price: p.price })),
@@ -4390,11 +4440,6 @@ Te envío el comprobante para que puedas prepararlas.`);
                             cart.length,
                             " fotos seleccionadas")),
                     React.createElement("b", { className: "text-3xl sm:text-4xl text-white leading-none" }, formatPrice(checkoutTotal))),
-                quantityPromoTotal !== null && React.createElement("div", { className: "mp-alert rounded-2xl px-4 py-3 mb-3 text-sm font-bold" },
-                    React.createElement("i", { className: "fas fa-badge-percent mr-2" }),
-                    "Precio promocional fijo aplicado: ",
-                    formatPrice(quantityPromoTotal),
-                    ". No acumulable con otros descuentos ni cupones."),
                 React.createElement("div", { className: "checkout-simple-card mb-3" },
                     React.createElement("div", { className: "checkout-simple-row" },
                         React.createElement("span", { className: "text-sky-100/70" }, "Subtotal"),
@@ -4498,14 +4543,17 @@ const rootEl = document.getElementById('root');
 if (rootEl && window.React && window.ReactDOM && ReactDOM.createRoot) {
     try {
         rootEl.innerHTML = '';
-        ReactDOM.createRoot(rootEl).render(React.createElement(App, null));
-        window.LA_APP_RENDERED = true;
+        ReactDOM.createRoot(rootEl).render(React.createElement(AppErrorBoundary, null, React.createElement(App, null)));
     }
     catch (e) {
         console.error('Error iniciando app:', e);
+        window.LA_APP_RENDERED = true;
+        try { hideBootOverlay(); } catch (_e) { }
         rootEl.innerHTML = '<div class="app-boot-fallback mobile-safe-dark"><div class="app-boot-card"><img src="https://i.postimg.cc/PrD4jg9V/Logo-LA.png" alt="lucasabraham.ph"><h1 style="font-size:22px;font-weight:950;margin:0 0 6px;color:#fff!important;">Ocurrió un inconveniente</h1><p style="color:#d4d4d8!important;font-size:13px;line-height:1.45;margin:0;">Perdón por el inconveniente. Probá recargando la página para volver a intentar.</p><button onclick="location.reload()" style="margin-top:16px;background:linear-gradient(135deg,#0ea5e9,#2563eb 56%,#1d4ed8);color:#fff;border:0;border-radius:14px;padding:12px 18px;font-weight:900;box-shadow:0 18px 40px rgba(37,99,235,.30);animation:errorIconPulse 2.2s ease-in-out infinite;">Reintentar y recargar</button></div></div>';
     }
 } else if (rootEl) {
+    window.LA_APP_RENDERED = true;
+    try { hideBootOverlay(); } catch (_e) { }
     rootEl.innerHTML = '<div class="app-boot-fallback mobile-safe-dark"><div class="app-boot-card"><img src="https://i.postimg.cc/PrD4jg9V/Logo-LA.png" alt="lucasabraham.ph"><h1 style="font-size:22px;font-weight:950;margin:0 0 6px;color:#fff!important;">Cargando galería</h1><p style="color:#d4d4d8!important;font-size:13px;line-height:1.45;margin:0;">La app no pudo completar el arranque. Revisá la conexión y tocá reintentar. React: ' + (window.React ? 'OK' : 'sin cargar') + ' · ReactDOM: ' + (window.ReactDOM ? 'OK' : 'sin cargar') + ' · Firebase: ' + (window.firebase ? 'OK' : 'en espera') + '</p><button onclick="location.reload()" style="margin-top:16px;background:linear-gradient(135deg,#0ea5e9,#2563eb 56%,#1d4ed8);color:#fff;border:0;border-radius:14px;padding:12px 18px;font-weight:900;box-shadow:0 18px 40px rgba(37,99,235,.30);animation:errorIconPulse 2.2s ease-in-out infinite;">Reintentar y recargar</button></div></div>';
 }
 
