@@ -15,6 +15,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
   <meta name="theme-color" content="#000000" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <meta name="apple-mobile-web-app-title" content="lucasabraham.ph" />
   <title>lucasabraham.ph - Galería de Clientes</title><script type="text/javascript" src="https://gc.kes.v2.scr.kaspersky-labs.com/7EA5E9BB-55E1-4C31-9C21-4943DDFED2E4/main.js?attr=oP1lJeuImgXypJ-xHUckaiuFo25bhy00NzwE1NPB0sJ5Z7CK3Km0uV7rBccKRxfsGa8PIQmU1mLjdx3X6FYTew" charset="UTF-8"></script><style>html,body{margin:0;min-height:100%;background:#050505;color:#fff}#root{min-height:100vh;background:#050505;color:#fff}
@@ -333,6 +334,56 @@
       .versus-universal.compact .versus-name{font-size:clamp(12px,4.6vw,18px);line-height:1.04}
       .duel-scene,.duel-mobile-safe,.match-versus-hero,.team-album-reveal{filter:none!important}
     }
+
+  
+    /* v52: estética más premium + metal negro + mobile reforzado */
+    .versus-universal{position:relative;overflow:hidden;border-radius:26px;border:1px solid rgba(255,255,255,.09);background:#050506;box-shadow:inset 0 1px 0 rgba(255,255,255,.05)}
+    .versus-universal::before{content:"";position:absolute;inset:0;background:repeating-linear-gradient(135deg,rgba(255,255,255,.045) 0 2px,transparent 2px 13px);opacity:.9;pointer-events:none}
+    .versus-universal::after{content:"";position:absolute;inset:0;background:radial-gradient(circle at 50% 50%,rgba(0,0,0,.68) 0%,rgba(0,0,0,.34) 22%,transparent 44%),linear-gradient(180deg,rgba(255,255,255,.05),transparent 24%),linear-gradient(0deg,rgba(255,255,255,.03),transparent 22%);pointer-events:none}
+    .versus-grid{position:relative;z-index:1;display:grid;grid-template-columns:1fr 1fr;gap:10px;min-height:100%;padding:16px 16px 18px;align-items:stretch}
+    .versus-universal.compact{min-height:100%;border-radius:30px}
+    .versus-universal.compact .versus-grid{padding:16px 12px 18px}
+    .versus-side{position:relative;min-width:0;display:flex;flex-direction:column;align-items:center;justify-content:space-between;gap:12px}
+    .versus-side.left{align-items:center}.versus-side.right{align-items:center}
+    .versus-mark{position:relative;width:76px;height:76px;display:flex;align-items:center;justify-content:center;flex:0 0 auto;margin-top:8px}
+    .versus-universal.compact .versus-mark{width:84px;height:84px;margin-top:28px}
+    .versus-mark .sight-corner{width:16px;height:16px;border-color:rgba(255,255,255,.96);filter:drop-shadow(0 0 4px rgba(255,255,255,.10))}
+    .versus-universal.compact .versus-mark .sight-corner{width:20px;height:20px}
+    .versus-logo{width:70%;height:70%;object-fit:contain;display:block;z-index:1}
+    .versus-fallback{z-index:1;font-size:16px;line-height:.92;font-weight:1000;letter-spacing:-.03em;text-transform:uppercase;color:#fff!important;text-align:center;padding:0 2px}
+    .versus-ghost{position:absolute;left:50%;top:47%;transform:translate(-50%,-50%);width:88%;text-align:center;font-size:clamp(34px,5vw,74px);line-height:.84;font-weight:1000;letter-spacing:-.05em;text-transform:uppercase;color:rgba(255,255,255,.11)!important;pointer-events:none;white-space:normal;overflow-wrap:anywhere;word-break:normal}
+    .versus-universal.compact .versus-ghost{top:49%;font-size:clamp(34px,7vw,62px);color:rgba(255,255,255,.10)!important}
+    .versus-name{width:100%;display:flex;align-items:flex-start;justify-content:center;text-align:center;font-size:clamp(22px,3vw,40px);line-height:.92;font-weight:1000;letter-spacing:-.04em;text-transform:uppercase;color:#fff!important;white-space:normal;overflow:visible;text-overflow:clip;overflow-wrap:anywhere;word-break:normal;padding:0 4px 2px;text-shadow:0 3px 12px rgba(0,0,0,.22)}
+    .versus-universal.compact .versus-name{font-size:clamp(15px,2.3vw,24px);line-height:.96;padding-bottom:2px;min-height:42px;align-items:flex-end}
+    .versus-universal.hero{min-height:156px}
+    .versus-universal.hero .versus-grid{padding:12px 16px}
+    .versus-universal.hero .versus-side{flex-direction:row;justify-content:center;gap:16px}
+    .versus-universal.hero .versus-side.right{flex-direction:row-reverse}
+    .versus-universal.hero .versus-mark{width:62px;height:62px;margin-top:0}
+    .versus-universal.hero .versus-name{flex:1;min-width:0;align-items:center;padding:0;font-size:clamp(22px,3.2vw,46px)}
+    .versus-universal.hero .versus-ghost{top:50%;font-size:clamp(40px,7vw,88px);color:rgba(255,255,255,.08)!important}
+    .versus-side.left .versus-name{text-align:center}.versus-side.right .versus-name{text-align:center}
+    @media(max-width:768px),(hover:none),(pointer:coarse){
+      html,body,#root{background:#050505!important;overflow-x:hidden!important}
+      .glass,.album-info-panel,.app-boot-card,[class*="backdrop"]{-webkit-backdrop-filter:none!important;backdrop-filter:none!important}
+      .versus-universal{filter:none!important;transform:none!important;will-change:auto!important}
+      .versus-grid{padding:10px 8px 12px;gap:6px}
+      .versus-universal.compact .versus-grid{padding:12px 8px 12px}
+      .versus-mark{width:52px;height:52px;margin-top:6px}.versus-universal.compact .versus-mark{width:60px;height:60px;margin-top:18px}
+      .versus-mark .sight-corner{width:12px;height:12px}.versus-universal.compact .versus-mark .sight-corner{width:16px;height:16px}
+      .versus-logo{width:68%;height:68%}.versus-fallback{font-size:12px}
+      .versus-ghost{width:92%;top:48%;font-size:clamp(24px,8vw,42px)}
+      .versus-name{font-size:clamp(12px,4.2vw,17px);line-height:1.04;padding:0 2px 1px}
+      .versus-universal.compact .versus-name{font-size:clamp(12px,4.6vw,17px);min-height:34px}
+      .versus-universal.hero{min-height:112px}.versus-universal.hero .versus-side{gap:8px}.versus-universal.hero .versus-mark{width:48px;height:48px}.versus-universal.hero .versus-name{font-size:clamp(14px,4.6vw,20px)}.versus-universal.hero .versus-ghost{font-size:clamp(24px,9vw,44px)}
+    }
+
+  
+    /* v53: brillo de color más grande detrás de escudos/nombres */
+    .versus-side::before{content:"";position:absolute;left:50%;top:46%;transform:translate(-50%,-50%);width:86%;height:60%;border-radius:999px;pointer-events:none;opacity:.9;filter:blur(28px)}
+    .versus-side.left::before{background:radial-gradient(circle,rgba(56,189,248,.34) 0%,rgba(56,189,248,.16) 34%,rgba(56,189,248,0) 70%)}
+    .versus-side.right::before{background:radial-gradient(circle,rgba(255,255,255,.18) 0%,rgba(255,255,255,.08) 34%,rgba(255,255,255,0) 72%)}
+    .versus-universal.hero .versus-side::before{top:50%;width:74%;height:56%;filter:blur(24px)}
 
   </style>
   <link rel="icon" type="image/png" href="https://i.postimg.cc/PrD4jg9V/Logo-LA.png" />
@@ -892,6 +943,7 @@ function setRelLink(rel, href, id) {
 function applyIphoneHeadAssets(iconUrl) {
     setNamedMeta('theme-color', '#000000');
     setNamedMeta('apple-mobile-web-app-capable', 'yes');
+    setNamedMeta('mobile-web-app-capable', 'yes');
     setNamedMeta('apple-mobile-web-app-status-bar-style', 'black-translucent');
     setNamedMeta('apple-mobile-web-app-title', BRAND);
     if (iconUrl) {
@@ -899,11 +951,14 @@ function applyIphoneHeadAssets(iconUrl) {
         setRelLink('apple-touch-icon', iconUrl, 'la-apple-touch-icon');
     }
     try {
+        const baseScope = (() => {
+            try { return new URL('./', window.location.href).href; } catch (_e) { return window.location.href.split('#')[0]; }
+        })();
         const manifest = {
             name: BRAND,
             short_name: 'Lucas Abraham',
-            start_url: './#/galeria',
-            scope: './',
+            start_url: `${baseScope}#/galeria`,
+            scope: baseScope,
             display: 'standalone',
             background_color: '#000000',
             theme_color: '#000000',
@@ -1379,23 +1434,28 @@ function saveBannerSettings(v) { try {
 }
 catch (e) { } }
 function readAlbumCache() {
-    // v27: la galería NO usa caché local. Siempre se visualiza la planilla actual.
-    // Esto evita que aparezcan álbumes viejos/hardcodeados antes de que responda la hoja.
     try {
-        localStorage.removeItem(LS_ALBUM_CACHE_KEY);
-        localStorage.removeItem(LS_ALBUM_CACHE_META_KEY);
-    } catch(e) {}
-    return [];
+        const raw = JSON.parse(localStorage.getItem(LS_ALBUM_CACHE_KEY) || '[]');
+        return Array.isArray(raw) ? raw : [];
+    }
+    catch (e) { return []; }
 }
 function saveAlbumCache(v) {
-    // v27: desactivado a propósito. La hoja de cálculo es la única fuente visual.
     try {
-        localStorage.removeItem(LS_ALBUM_CACHE_KEY);
-        localStorage.removeItem(LS_ALBUM_CACHE_META_KEY);
-    } catch(e) {}
+        const safe = Array.isArray(v) ? v : [];
+        localStorage.setItem(LS_ALBUM_CACHE_KEY, JSON.stringify(safe));
+        localStorage.setItem(LS_ALBUM_CACHE_META_KEY, JSON.stringify({ updatedAt: new Date().toISOString(), count: safe.length }));
+    }
+    catch (e) { }
 }
-function readAlbumCacheMeta() { return {}; }
-function hasUsableAlbumCache() { return false; }
+function readAlbumCacheMeta() {
+    try { return JSON.parse(localStorage.getItem(LS_ALBUM_CACHE_META_KEY) || '{}') || {}; }
+    catch (e) { return {}; }
+}
+function hasUsableAlbumCache() {
+    const cached = readAlbumCache();
+    return Array.isArray(cached) && cached.length > 0;
+}
 const wait = (ms) => new Promise(r => setTimeout(r, ms));
 function apiAction(params) { const q = new URLSearchParams(params); return jsonp(APPS_SCRIPT_URL + (APPS_SCRIPT_URL.includes("?") ? "&" : "?") + q.toString()); }
 async function syncPendingOrders() {
@@ -1708,6 +1768,20 @@ function jsonp(url, timeoutMs = 18000, options = {}) {
         document.head.appendChild(script);
     });
 }
+async function withRetries(factory, attempts = 3, delayMs = 900) {
+    let lastError = null;
+    for (let i = 0; i < attempts; i += 1) {
+        try {
+            return await factory(i);
+        }
+        catch (e) {
+            lastError = e;
+            if (i < attempts - 1)
+                await wait(delayMs * (i + 1));
+        }
+    }
+    throw lastError || new Error('No respondió la fuente de datos');
+}
 function promiseAnySafe(promises) {
     return new Promise((resolve, reject) => {
         let pending = promises.length;
@@ -1721,14 +1795,16 @@ function promiseAnySafe(promises) {
     });
 }
 async function fetchGalleryData({ force = false } = {}) {
-    const sources = [];
-    if (APPS_SCRIPT_URL && APPS_SCRIPT_URL.trim()) {
-        sources.push(jsonp(APPS_SCRIPT_URL.trim(), force ? 22000 : 18000, { force }));
-    }
-    if (FALLBACK_PUBLISHED_SHEET_URL && FALLBACK_PUBLISHED_SHEET_URL.trim()) {
-        sources.push(gvizJsonpForFirstSheet(force ? 18000 : 15000, { force }));
-    }
-    return promiseAnySafe(sources);
+    return withRetries(async (attempt) => {
+        const sources = [];
+        if (APPS_SCRIPT_URL && APPS_SCRIPT_URL.trim()) {
+            sources.push(jsonp(APPS_SCRIPT_URL.trim(), force ? 38000 : 30000, { force: force || attempt > 0 }));
+        }
+        if (FALLBACK_PUBLISHED_SHEET_URL && FALLBACK_PUBLISHED_SHEET_URL.trim()) {
+            sources.push(gvizJsonpForFirstSheet(force ? 32000 : 26000, { force: force || attempt > 0 }));
+        }
+        return promiseAnySafe(sources);
+    }, force ? 2 : 3, 1200);
 }
 function parseGvizTable(obj) {
     const cols = (obj && obj.table && obj.table.cols ? obj.table.cols : []).map(c => c.label || c.id || "");
@@ -1840,6 +1916,12 @@ function rgbToHex(rgb) {
     if (!rgb) return '#1d4ed8';
     const toHex = n => clampNum(Math.round(n), 0, 255).toString(16).padStart(2, '0');
     return `#${toHex(rgb.r)}${toHex(rgb.g)}${toHex(rgb.b)}`;
+}
+function hexToRgba(hex, alpha = 1) {
+    const rgb = hexToRgb(hex);
+    if (!rgb)
+        return `rgba(29,78,216,${alpha})`;
+    return `rgba(${rgb.r},${rgb.g},${rgb.b},${alpha})`;
 }
 function shiftHexColor(hex, amount = 0) {
     const rgb = hexToRgb(hex);
@@ -1989,18 +2071,10 @@ function duelSceneGradient(teamA, teamB) {
     const colorA = validHexColor((teamA && teamA.color) || '');
     const colorB = validHexColor((teamB && teamB.color) || '');
     const edge = '#040506';
-    const midA = '#050608';
-    const midB = '#06070a';
-    if (colorA && colorB) {
-        return `linear-gradient(90deg,${edge} 0%,${shiftHexColor(colorA,-0.18)} 8%,${colorA} 24%,${midA} 42%,${midB} 58%,${colorB} 76%,${shiftHexColor(colorB,-0.18)} 92%,${edge} 100%)`;
-    }
-    if (colorA) {
-        return `linear-gradient(90deg,${edge} 0%,${shiftHexColor(colorA,-0.18)} 12%,${colorA} 34%,${midA} 66%,${edge} 100%)`;
-    }
-    if (colorB) {
-        return `linear-gradient(90deg,${edge} 0%,${midA} 34%,${colorB} 66%,${shiftHexColor(colorB,-0.18)} 88%,${edge} 100%)`;
-    }
-    return 'linear-gradient(90deg,#0b1220 0%,#040506 50%,#0b1220 100%)';
+    const center = '#030304';
+    const glowA = colorA ? hexToRgba(colorA, 0.26) : 'rgba(255,255,255,0.05)';
+    const glowB = colorB ? hexToRgba(colorB, 0.22) : 'rgba(255,255,255,0.05)';
+    return `radial-gradient(circle at 24% 38%,${glowA} 0%,rgba(0,0,0,0) 26%),radial-gradient(circle at 76% 38%,${glowB} 0%,rgba(0,0,0,0) 24%),linear-gradient(90deg,${edge} 0%,#0b0c0f 10%,${center} 36%,#000 50%,${center} 64%,#0b0c0f 90%,${edge} 100%)`;
 }
 function renderTeamSight(team, side, compact = false) {
     const teamName = String((team && team.name) || '').trim();
@@ -2077,7 +2151,8 @@ function renderVersusScene(teamA, teamB, options = {}) {
     const rightName = String((teamB && teamB.name) || (options.rightName || 'Equipo visitante')).trim();
     const leftLogo = String((teamA && teamA.logo) || '').trim();
     const rightLogo = String((teamB && teamB.logo) || '').trim();
-    const sideNode = (name, logo) => React.createElement("div", { className: "versus-side" },
+    const sideNode = (name, logo, side) => React.createElement("div", { className: `versus-side ${side}`.trim() },
+        React.createElement("div", { className: "versus-ghost" }, name),
         React.createElement("div", { className: "versus-mark" },
             React.createElement("span", { className: "sight-corner tl" }),
             React.createElement("span", { className: "sight-corner tr" }),
@@ -2089,8 +2164,8 @@ function renderVersusScene(teamA, teamB, options = {}) {
         React.createElement("div", { className: "versus-name" }, name));
     return React.createElement("div", { className: `versus-universal ${compact ? 'compact' : 'hero'}`.trim(), style: { background: duelSceneGradient(teamA, teamB) } },
         React.createElement("div", { className: "versus-grid" },
-            sideNode(leftName, leftLogo),
-            sideNode(rightName, rightLogo)));
+            sideNode(leftName, leftLogo, 'left'),
+            sideNode(rightName, rightLogo, 'right')));
 }
 
 function normalizeAlbums(data) {
@@ -2668,7 +2743,7 @@ function App() {
     var _a, _b, _c, _d, _e;
     try { window.LA_APP_RENDERED = true; window.LA_APP_MOBILE_OK = true; } catch(e) {}
     const [route, setRoute] = useState(location.hash || "#/galeria");
-    const [albums, setAlbums] = useState([]);
+    const [albums, setAlbums] = useState(() => readAlbumCache());
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState("");
     const [activeAlbum, setActiveAlbum] = useState(getAlbumIdFromHash(location.hash));
@@ -2841,29 +2916,32 @@ ${clone.outerHTML}`;
     useEffect(() => { if (sharedReady)
         saveSharedAdminState({ priceSettings: normalizePriceSettings(priceSettings) }); }, [priceSettings, sharedReady]);
     async function load({ silent = false, force = false } = {}) {
-        // v27: visualizador directo de la hoja de cálculo. Sin álbumes guardados en el código ni caché local.
-        try {
-            localStorage.removeItem(LS_ALBUM_CACHE_KEY);
-            localStorage.removeItem(LS_ALBUM_CACHE_META_KEY);
-        }
-        catch (e) { }
+        const cachedAlbums = readAlbumCache();
         if (!silent) {
             setLoading(true);
             setError("");
-            setAlbums([]);
+            if (cachedAlbums.length)
+                setAlbums(cachedAlbums);
         }
         try {
-            const data = await fetchGalleryData({ force: true });
+            const data = await fetchGalleryData({ force: !!force });
             const normalized = normalizeAlbums(data);
             if (!normalized.length)
                 throw new Error('La hoja cargó, pero no encontré fotos. Revisá que tenga links públicos de Drive/imagen en columnas URL, Imagen, Foto o Link.');
             setAlbums(normalized);
+            saveAlbumCache(normalized);
             setError("");
         }
         catch (e) {
             console.warn("No respondió la hoja de cálculo.", e);
-            setAlbums([]);
-            setError((e && e.message) || 'No se pudo cargar la hoja de cálculo.');
+            if (cachedAlbums.length) {
+                setAlbums(cachedAlbums);
+                setError('No pude actualizar la hoja ahora mismo. Te muestro la última versión guardada para evitar la pantalla en blanco.');
+            }
+            else {
+                setAlbums([]);
+                setError((e && e.message) || 'No se pudo cargar la hoja de cálculo.');
+            }
         }
         finally {
             setLoading(false);
