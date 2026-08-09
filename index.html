@@ -1,3 +1,5 @@
+
+
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -29,7 +31,7 @@
   <meta name="twitter:description" content="Fotos deportivas protegidas · Compra directa por WhatsApp" />
   <meta name="twitter:image" content="https://lucasabraham1996-cmd.github.io/photos/social-preview-la.png?v=61" />
   <title>lucasabraham.ph - Galería de Clientes</title>
-  <meta name="app-version" content="v63-pricing-updated" /><style>html,body{margin:0;min-height:100%;background:#050505;color:#fff}#root{min-height:100vh;background:#050505;color:#fff}
+  <meta name="app-version" content="v64-photo-protection-modern-categories" /><style>html,body{margin:0;min-height:100%;background:#050505;color:#fff}#root{min-height:100vh;background:#050505;color:#fff}
     /* v41: estilo versus moderno para portada y álbum */
     .team-album-reveal{background:linear-gradient(180deg,rgba(3,7,18,.12),rgba(2,6,23,.28))}
     .team-reveal-half{left:12px!important;right:12px!important;width:auto!important;height:33%!important;padding:12px 16px!important;box-shadow:0 16px 36px rgba(0,0,0,.28),inset 0 1px 0 rgba(255,255,255,.14)!important;border:1px solid rgba(255,255,255,.10)!important;overflow:hidden}
@@ -968,6 +970,150 @@
       @keyframes priceSheetUp{from{transform:translateY(104%)}to{transform:translateY(0)}}@keyframes priceSheetDown{from{transform:translateY(0)}to{transform:translateY(104%)}}
     }
   </style>
+
+
+<style id="la-v64-photo-protection-modern-categories">
+/* v64 — Protección de imágenes + categorías modernas */
+.protected-photo,
+.photo-card img,
+.viewer-photo img {
+  -webkit-touch-callout: none !important;
+  -webkit-user-select: none !important;
+  user-select: none !important;
+  -webkit-user-drag: none !important;
+  user-drag: none !important;
+}
+img { -webkit-user-drag: none; }
+
+/* Categorías del álbum: selector moderno y compacto */
+.subalbum-panel{
+  position:relative!important;
+  overflow:hidden!important;
+  padding:12px!important;
+  border-radius:22px!important;
+  border:1px solid rgba(255,255,255,.09)!important;
+  background:radial-gradient(circle at 8% 0%,rgba(56,189,248,.10),transparent 30%),linear-gradient(145deg,rgba(10,10,12,.96),rgba(3,7,18,.96))!important;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.05),0 14px 38px rgba(0,0,0,.24)!important;
+}
+.subalbum-panel>p{
+  margin:0 2px 10px!important;
+  color:rgba(224,242,254,.60)!important;
+  font-size:9px!important;
+  font-weight:900!important;
+  letter-spacing:.20em!important;
+}
+.subalbum-showcase{
+  display:flex!important;
+  align-items:center!important;
+  gap:8px!important;
+  overflow-x:auto!important;
+  overflow-y:hidden!important;
+  padding:2px 2px 5px!important;
+  scroll-snap-type:x proximity!important;
+  scrollbar-width:none!important;
+  -webkit-overflow-scrolling:touch!important;
+}
+.subalbum-showcase::-webkit-scrollbar{display:none!important}
+.subalbum-visual-card{
+  position:relative!important;
+  isolation:isolate!important;
+  display:inline-flex!important;
+  align-items:center!important;
+  justify-content:center!important;
+  flex:0 0 auto!important;
+  width:auto!important;
+  min-width:max-content!important;
+  max-width:none!important;
+  min-height:46px!important;
+  height:46px!important;
+  margin:0!important;
+  padding:0 17px!important;
+  border-radius:15px!important;
+  clip-path:none!important;
+  border:1px solid rgba(255,255,255,.09)!important;
+  background:linear-gradient(180deg,rgba(255,255,255,.055),rgba(255,255,255,.018))!important;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.045),0 7px 18px rgba(0,0,0,.18)!important;
+  color:#e5e7eb!important;
+  scroll-snap-align:start!important;
+  overflow:hidden!important;
+  transform:none!important;
+  transition:background .20s ease,border-color .20s ease,box-shadow .20s ease,transform .20s ease!important;
+}
+.subalbum-visual-card::before{
+  content:""!important;
+  position:absolute!important;
+  inset:0!important;
+  z-index:-1!important;
+  opacity:0!important;
+  background:radial-gradient(circle at 20% 0%,rgba(125,211,252,.36),transparent 43%),linear-gradient(135deg,rgba(14,165,233,.30),rgba(37,99,235,.18))!important;
+  transition:opacity .20s ease!important;
+}
+.subalbum-visual-card:hover{
+  transform:translateY(-1px)!important;
+  border-color:rgba(125,211,252,.30)!important;
+  background:rgba(255,255,255,.07)!important;
+}
+.subalbum-visual-card.active{
+  transform:none!important;
+  border-color:rgba(125,211,252,.60)!important;
+  background:linear-gradient(135deg,rgba(14,165,233,.30),rgba(37,99,235,.18))!important;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.13),0 10px 26px rgba(14,165,233,.14),0 0 0 1px rgba(56,189,248,.08)!important;
+}
+.subalbum-visual-card.active::before{opacity:1!important}
+.subalbum-visual-card.active::after{
+  content:""!important;
+  position:absolute!important;
+  left:50%!important;
+  bottom:4px!important;
+  width:16px!important;
+  height:2px!important;
+  transform:translateX(-50%)!important;
+  border-radius:99px!important;
+  background:#7dd3fc!important;
+  box-shadow:0 0 10px rgba(125,211,252,.75)!important;
+  font-size:0!important;
+}
+.subalbum-thumb-wrap,
+.subalbum-floating-badge,
+.subalbum-thumb-overlay,
+.subalbum-copy-meta{display:none!important}
+.subalbum-copy-wrap{
+  display:flex!important;
+  align-items:center!important;
+  justify-content:center!important;
+  width:auto!important;
+  min-width:0!important;
+  padding:0!important;
+}
+.subalbum-copy-title{
+  display:block!important;
+  padding:0!important;
+  margin:0!important;
+  color:rgba(229,231,235,.88)!important;
+  text-shadow:none!important;
+  font-size:11px!important;
+  line-height:1!important;
+  font-weight:900!important;
+  letter-spacing:.055em!important;
+  text-transform:uppercase!important;
+  white-space:nowrap!important;
+  overflow:visible!important;
+  text-overflow:clip!important;
+}
+.subalbum-visual-card.active .subalbum-copy-title{color:#fff!important}
+body.light-mode .subalbum-panel{
+  background:linear-gradient(145deg,rgba(255,255,255,.98),rgba(241,245,249,.97))!important;
+  border-color:rgba(15,23,42,.10)!important;
+}
+body.light-mode .subalbum-copy-title{color:#334155!important}
+body.light-mode .subalbum-visual-card.active .subalbum-copy-title{color:#fff!important}
+@media(max-width:640px),(hover:none),(pointer:coarse){
+  .subalbum-panel{margin-left:0!important;margin-right:0!important;padding:10px!important;border-radius:18px!important}
+  .subalbum-showcase{gap:7px!important;padding:2px 2px 3px!important}
+  .subalbum-visual-card{min-height:43px!important;height:43px!important;padding:0 14px!important;border-radius:14px!important;touch-action:manipulation!important}
+  .subalbum-copy-title{font-size:10px!important;letter-spacing:.045em!important}
+}
+</style>
 
 </head>
 <body style="background:#050505;color:#fff;">
@@ -2797,7 +2943,7 @@ function Steps() {
     const steps = [
         ['1', 'Elegí las fotos', 'Recorré la galería y marcá las que más te gusten.'],
         ['2', 'Realizá la transferencia', 'Enviala al WhatsApp correspondiente.'],
-        ['3', 'Recibí tus fotos', 'Alta calidad y sin marca de agua.']
+        ['3', 'Recibí tus fotos', 'Alta calidad, sin marca repetitiva y con un único logo inferior. Podés recortarlas como quieras.']
     ];
     const [step, setStep] = useState(0);
     useEffect(() => { const t = setInterval(() => setStep(s => (s + 1) % steps.length), 2800); return () => clearInterval(t); }, []);
@@ -3414,7 +3560,7 @@ ${clone.outerHTML}`;
     };
     const buildOrderPackage = (forcedOrder) => {
         const order = forcedOrder || checkoutOrderCode || ('LA-' + Math.floor(10000 + Math.random() * 90000));
-        let msg = `${EM.hello} Hola Lucas, me gustaría comprar estas fotos en buena calidad y sin marca de agua.
+        let msg = `${EM.hello} Hola Lucas, me gustaría comprar estas fotos en alta calidad, sin la marca de agua repetitiva y con el logo único inferior.
 
 ${EM.clip} *OPERACIÓN:* #${order}
 ${EM.money} *SUBTOTAL:* ${formatPrice(regular)}
@@ -3483,7 +3629,47 @@ A continuación, te envío el comprobante.`;
         try {
             popup = window.open('', '_blank');
             if (popup) {
-                popup.document.write('<!doctype html><html><head><title>Abriendo WhatsApp...</title><meta name="viewport" content="width=device-width,initial-scale=1"><style>body{font-family:Arial,sans-serif;background:#050505;color:white;display:flex;align-items:center;justify-content:center;min-height:100vh;margin:0;text-align:center;padding:24px}a{color:#22c55e;font-weight:800}</style></head><body><div><h2>Preparando WhatsApp...</h2><p>Si no abre automáticamente, tocá abajo.</p><p><a href="' + whatsappUrl.replace(/"/g, '&quot;') + '">Abrir WhatsApp</a></p></div></body></html>');
+                popup.document.write('<!doctype html><html><head><title>Abriendo WhatsApp...</title><meta name="viewport" content="width=device-width,initial-scale=1"><style>body{font-family:Arial,sans-serif;background:#050505;color:white;display:flex;align-items:center;justify-content:center;min-height:100vh;margin:0;text-align:center;padding:24px}a{color:#22c55e;font-weight:800}</style></head><body><div><h2>Preparando WhatsApp...</h2><p>Si no abre automáticamente, tocá abajo.</p><p><a href="' + whatsappUrl.replace(/"/g, '&quot;') + '">Abrir WhatsApp</a></p></div>
+<script id="la-v64-photo-protection">
+(function(){
+  'use strict';
+  function isImageTarget(target){
+    return !!(target && target.closest && target.closest('img'));
+  }
+  document.addEventListener('contextmenu',function(event){
+    if(isImageTarget(event.target)) event.preventDefault();
+  },true);
+  document.addEventListener('dragstart',function(event){
+    if(isImageTarget(event.target)) event.preventDefault();
+  },true);
+  function protectImages(root){
+    var scope=root&&root.querySelectorAll?root:document;
+    scope.querySelectorAll('img').forEach(function(img){
+      img.setAttribute('draggable','false');
+      img.style.webkitUserDrag='none';
+      img.style.webkitTouchCallout='none';
+    });
+  }
+  protectImages(document);
+  var observer=new MutationObserver(function(mutations){
+    mutations.forEach(function(mutation){
+      mutation.addedNodes.forEach(function(node){
+        if(node.nodeType!==1)return;
+        if(node.tagName==='IMG'){
+          node.setAttribute('draggable','false');
+          node.style.webkitUserDrag='none';
+          node.style.webkitTouchCallout='none';
+        }else if(node.querySelectorAll){
+          protectImages(node);
+        }
+      });
+    });
+  });
+  observer.observe(document.documentElement,{childList:true,subtree:true});
+})();
+</script>
+
+</body></html>');
                 popup.document.close();
             }
         }
@@ -4261,7 +4447,7 @@ A continuación, te envío el comprobante.`;
                     React.createElement("div", { className: "flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3" },
                         React.createElement("div", { className: "min-w-0" },
                             React.createElement("h3", { className: "text-lg sm:text-xl font-black text-white leading-tight" }, "Colecci\u00F3n completa"),
-                            React.createElement("p", { className: "text-sky-100/70 text-xs sm:text-sm leading-relaxed" }, "Todas las fotos del \u00E1lbum en alta calidad y sin marca de agua."),
+                            React.createElement("p", { className: "text-sky-100/70 text-xs sm:text-sm leading-relaxed" }, "Todas las fotos del \u00E1lbum en alta calidad, sin la marca repetitiva y con un \u00FAnico logo inferior. Una vez adquiridas, pod\u00E9s recortarlas como quieras."),
                             hasSiteDiscount(currentAlbum.id) && React.createElement("div", { className: "promo-pill mt-2" },
                                 React.createElement("i", { className: "fas fa-percent" }),
                                 "Descuento web aplicado: ",
@@ -4329,7 +4515,7 @@ Te envío el comprobante para que puedas prepararlas.`);
                             linkCopied ? "URL copiada" : "Copiar link actual"))),
                 viewMode === 'gallery' && focusPhoto && React.createElement("div", { className: "bg-neutral-950 border border-neutral-800 rounded-3xl p-3 sm:p-4 mb-4" },
                     React.createElement("div", { onTouchStart: e => { var _a, _b; return touchStartX.current = (_b = (_a = e.touches) === null || _a === void 0 ? void 0 : _a[0]) === null || _b === void 0 ? void 0 : _b.clientX; }, onTouchEnd: handleSwipeEnd(moveFocus), className: "relative rounded-2xl overflow-hidden bg-black min-h-[260px] sm:min-h-[320px] flex items-center justify-center" },
-                        React.createElement("img", { src: focusPhoto.fullUrl || focusPhoto.url, loading: "eager", decoding: "async", className: "max-h-[72vh] w-full object-contain" }),
+                        React.createElement("img", { src: focusPhoto.url, loading: "eager", decoding: "async", draggable: false, onContextMenu: e => e.preventDefault(), className: "protected-photo max-h-[72vh] w-full object-contain" }),
                         React.createElement(PreviewWatermark, { ...wmProps(focusPhoto.albumId) }),
                         React.createElement("button", { onClick: () => moveFocus(-1), className: "absolute left-2 sm:left-3 top-1/2 -translate-y-1/2 px-3 h-10 rounded-full bg-black/70 border border-white/20 text-white font-bold text-xs" },
                             React.createElement("i", { className: "fas fa-chevron-left sm:mr-1" }),
@@ -4374,7 +4560,7 @@ Te envío el comprobante para que puedas prepararlas.`);
                     const isFocus = (focusPhoto === null || focusPhoto === void 0 ? void 0 : focusPhoto.id) === photo.id;
                     return React.createElement("div", { key: photo.id, className: `contain-strict mosaic-tile relative overflow-hidden ${viewMode === 'mosaic' ? getMosaicSpanClass(photo, photoIndex, pagedPhotos.length) : 'rounded-xl aspect-[4/5]'} cursor-pointer transition-all duration-300 ${isSelected ? 'ring-2 ring-indigo-500 scale-[0.97] shadow-[0_0_30px_rgba(99,102,241,0.2)]' : isFocus && viewMode === 'gallery' ? 'ring-2 ring-emerald-400 bg-neutral-900' : 'hover:opacity-90 bg-neutral-900 border border-neutral-800'}` },
                         React.createElement("button", { onClick: () => viewMode === 'gallery' ? setFocusPhoto(photo) : setViewer(photo), className: "absolute inset-0 z-10", "aria-label": "Ver foto" }),
-                        React.createElement("img", { src: photo.url, loading: "lazy", decoding: "async", className: "w-full h-full object-cover pointer-events-none" }),
+                        React.createElement("img", { src: photo.url, loading: "lazy", decoding: "async", draggable: false, onContextMenu: e => e.preventDefault(), className: "protected-photo w-full h-full object-cover pointer-events-none" }),
                         React.createElement(PreviewWatermark, { ...wmProps(photo.albumId), compact: viewMode === 'mosaic' }),
                         React.createElement("div", { className: `absolute inset-0 ${isSelected ? 'bg-indigo-900/40' : 'bg-transparent'} pointer-events-none` }),
                         React.createElement("div", { className: "absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent p-2 pt-6 pointer-events-none" },
@@ -4483,7 +4669,7 @@ Te envío el comprobante para que puedas prepararlas.`);
         viewer && React.createElement(Modal, { onClose: () => setViewer(null), max: "max-w-6xl" },
             React.createElement("div", { className: "grid lg:grid-cols-[1.2fr,.8fr] gap-5 items-start" },
                 React.createElement("div", { onTouchStart: e => { var _a, _b; return touchStartX.current = (_b = (_a = e.touches) === null || _a === void 0 ? void 0 : _a[0]) === null || _b === void 0 ? void 0 : _b.clientX; }, onTouchEnd: handleSwipeEnd(moveViewer), className: "rounded-3xl overflow-hidden bg-black border border-neutral-800 relative" },
-                    React.createElement("img", { src: viewer.fullUrl || viewer.url, loading: "eager", decoding: "async", className: "w-full max-h-[80vh] object-contain mx-auto" }),
+                    React.createElement("img", { src: viewer.url, loading: "eager", decoding: "async", draggable: false, onContextMenu: e => e.preventDefault(), className: "protected-photo w-full max-h-[80vh] object-contain mx-auto" }),
                     React.createElement(PreviewWatermark, { ...wmProps(viewer.albumId) }),
                     React.createElement(PhotoLicenseReminder, { overlay: true }),
                     React.createElement("button", { onClick: () => moveViewer(-1), className: "absolute left-2 sm:left-3 top-1/2 -translate-y-1/2 px-3 h-10 rounded-full bg-black/70 border border-white/20 text-white font-bold text-xs" },
@@ -4501,7 +4687,7 @@ Te envío el comprobante para que puedas prepararlas.`);
                         viewer.albumName),
                     React.createElement("p", { className: "text-sky-300 font-black text-xl mb-4" }, formatPrice(viewer.price)),
                     React.createElement("div", { className: "bg-neutral-950 border border-neutral-800 rounded-2xl p-4 mb-4 space-y-3" },
-                        React.createElement("p", { className: "text-sm text-neutral-300" }, "La foto comprada se entrega en alta calidad y sin marca de agua."),
+                        React.createElement("p", { className: "text-sm text-neutral-300" }, "La foto comprada se entrega en alta calidad, sin la marca de agua repetitiva y con un único logo de lucasabraham.ph en la parte inferior. Una vez adquirida, podés recortarla como quieras."),
                         React.createElement("div", { className: "rounded-2xl border border-amber-400/25 bg-black/25 p-3 text-amber-100 text-sm leading-relaxed" },
                             React.createElement("div", { className: "font-black mb-1 flex items-center gap-2" },
                                 React.createElement("i", { className: "fas fa-certificate text-amber-300" }),
