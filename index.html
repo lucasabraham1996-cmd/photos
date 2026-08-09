@@ -994,6 +994,288 @@ img{-webkit-user-drag:none;}
 .subalbum-visual-card.active .subalbum-copy-title{color:#fff!important}
 @media(max-width:640px),(hover:none),(pointer:coarse){.subalbum-panel{margin-left:0!important;margin-right:0!important;padding:10px!important;border-radius:18px!important}.subalbum-showcase{gap:7px!important;padding-bottom:3px!important}.subalbum-visual-card{min-height:43px!important;height:43px!important;padding:0 14px!important;border-radius:14px!important;touch-action:manipulation!important}.subalbum-copy-title{font-size:10px!important;letter-spacing:.045em!important}}
 </style>
+
+<style id="la-v66-mobile-lock-modern-tabs">
+/* =========================================================
+   v66 · Bloqueo móvil reforzado + categorías modernas
+   ========================================================= */
+
+/* El visor abierto no permite la interfaz nativa de guardar/copiar imagen. */
+.photo-viewer-lock,
+.photo-viewer-lock *,
+.public-viewer-photo,
+.protected-photo {
+  -webkit-touch-callout: none !important;
+  -webkit-user-select: none !important;
+  user-select: none !important;
+  -webkit-user-drag: none !important;
+  user-drag: none !important;
+}
+
+.photo-viewer-lock {
+  touch-action: pan-y pinch-zoom;
+  -webkit-tap-highlight-color: transparent !important;
+}
+
+.public-viewer-photo {
+  pointer-events: none !important;
+  touch-action: none !important;
+}
+
+/* ---------------------------------------------------------
+   Categorías v66
+   --------------------------------------------------------- */
+.subalbum-panel {
+  overflow: hidden !important;
+  padding: 12px !important;
+  border-radius: 22px !important;
+  border: 1px solid rgba(255,255,255,.09) !important;
+  background:
+    radial-gradient(circle at 0 0, rgba(14,165,233,.13), transparent 32%),
+    linear-gradient(145deg, rgba(9,9,11,.98), rgba(3,7,18,.97)) !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.05),
+    0 18px 44px rgba(0,0,0,.24) !important;
+}
+
+.subalbum-panel > p {
+  margin: 1px 3px 11px !important;
+  font-size: 9px !important;
+  font-weight: 950 !important;
+  letter-spacing: .19em !important;
+  color: rgba(186,230,253,.62) !important;
+}
+
+.subalbum-v66-tabs {
+  display: flex !important;
+  grid-template-columns: none !important;
+  align-items: stretch !important;
+  gap: 9px !important;
+  width: 100% !important;
+  overflow-x: auto !important;
+  overflow-y: hidden !important;
+  padding: 1px 1px 5px !important;
+  margin: 0 !important;
+  scroll-snap-type: x mandatory !important;
+  scrollbar-width: none !important;
+  -webkit-overflow-scrolling: touch !important;
+}
+
+.subalbum-v66-tabs::-webkit-scrollbar {
+  display: none !important;
+}
+
+.subalbum-v66-tab {
+  position: relative !important;
+  isolation: isolate !important;
+  display: grid !important;
+  grid-template-columns: 36px minmax(0,1fr) 18px !important;
+  align-items: center !important;
+  gap: 10px !important;
+  flex: 0 0 auto !important;
+
+  width: auto !important;
+  min-width: 190px !important;
+  max-width: 270px !important;
+  height: 58px !important;
+  min-height: 58px !important;
+
+  padding: 8px 10px !important;
+  margin: 0 !important;
+  border-radius: 18px !important;
+  clip-path: none !important;
+
+  border: 1px solid rgba(255,255,255,.10) !important;
+  background:
+    linear-gradient(180deg, rgba(255,255,255,.065), rgba(255,255,255,.022)) !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.055),
+    0 10px 24px rgba(0,0,0,.20) !important;
+
+  color: #fff !important;
+  text-align: left !important;
+  overflow: hidden !important;
+  scroll-snap-align: start !important;
+  transform: none !important;
+  filter: none !important;
+  transition: transform .18s ease, border-color .18s ease, background .18s ease, box-shadow .18s ease !important;
+}
+
+.subalbum-v66-tab::before {
+  content: "" !important;
+  position: absolute !important;
+  inset: 0 !important;
+  z-index: -1 !important;
+  opacity: 0 !important;
+  background:
+    radial-gradient(circle at 12% 0%, rgba(125,211,252,.36), transparent 38%),
+    linear-gradient(135deg, rgba(14,165,233,.24), rgba(37,99,235,.13)) !important;
+  transition: opacity .18s ease !important;
+}
+
+.subalbum-v66-tab::after {
+  content: "" !important;
+  position: absolute !important;
+  left: 10px !important;
+  right: auto !important;
+  top: auto !important;
+  bottom: 0 !important;
+  width: 0 !important;
+  height: 2px !important;
+  border-radius: 99px !important;
+  background: #7dd3fc !important;
+  box-shadow: 0 0 12px rgba(125,211,252,.72) !important;
+  font-size: 0 !important;
+  transition: width .18s ease !important;
+}
+
+.subalbum-v66-tab:hover {
+  transform: translateY(-1px) !important;
+  border-color: rgba(125,211,252,.28) !important;
+  background: rgba(255,255,255,.075) !important;
+}
+
+.subalbum-v66-tab.active {
+  border-color: rgba(125,211,252,.55) !important;
+  background:
+    linear-gradient(135deg, rgba(14,165,233,.23), rgba(37,99,235,.12)) !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.12),
+    0 13px 30px rgba(14,165,233,.13),
+    0 0 0 1px rgba(56,189,248,.06) !important;
+}
+
+.subalbum-v66-tab.active::before {
+  opacity: 1 !important;
+}
+
+.subalbum-v66-tab.active::after {
+  width: 42px !important;
+}
+
+.subalbum-v66-icon {
+  width: 36px !important;
+  height: 36px !important;
+  border-radius: 12px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  flex: 0 0 auto !important;
+  color: #bae6fd !important;
+  background: rgba(14,165,233,.10) !important;
+  border: 1px solid rgba(125,211,252,.15) !important;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.06) !important;
+  font-size: 13px !important;
+}
+
+.subalbum-v66-tab.active .subalbum-v66-icon {
+  color: #fff !important;
+  background: rgba(56,189,248,.18) !important;
+  border-color: rgba(186,230,253,.26) !important;
+}
+
+.subalbum-v66-copy {
+  min-width: 0 !important;
+  display: flex !important;
+  flex-direction: column !important;
+  justify-content: center !important;
+  gap: 4px !important;
+}
+
+.subalbum-v66-name {
+  display: block !important;
+  min-width: 0 !important;
+  color: rgba(255,255,255,.94) !important;
+  font-size: 11px !important;
+  line-height: 1.05 !important;
+  font-weight: 950 !important;
+  letter-spacing: .025em !important;
+  text-transform: uppercase !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+}
+
+.subalbum-v66-count {
+  display: block !important;
+  color: rgba(186,230,253,.54) !important;
+  font-size: 9px !important;
+  line-height: 1 !important;
+  font-weight: 800 !important;
+  letter-spacing: .055em !important;
+  text-transform: uppercase !important;
+}
+
+.subalbum-v66-tab.active .subalbum-v66-count {
+  color: rgba(224,242,254,.78) !important;
+}
+
+.subalbum-v66-arrow {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  color: rgba(186,230,253,.38) !important;
+  font-size: 9px !important;
+  transform: translateX(0) !important;
+  transition: transform .18s ease, color .18s ease !important;
+}
+
+.subalbum-v66-tab.active .subalbum-v66-arrow {
+  color: rgba(224,242,254,.92) !important;
+  transform: translateX(2px) !important;
+}
+
+/* Oculta definitivamente la estructura visual antigua, si quedó en alguna caché/variante. */
+.subalbum-v66-tab .subalbum-thumb-wrap,
+.subalbum-v66-tab .subalbum-floating-badge,
+.subalbum-v66-tab .subalbum-thumb-overlay,
+.subalbum-v66-tab .subalbum-copy-wrap,
+.subalbum-v66-tab .subalbum-copy-title,
+.subalbum-v66-tab .subalbum-copy-meta {
+  display: none !important;
+}
+
+@media (max-width: 640px), (hover:none), (pointer:coarse) {
+  .subalbum-panel {
+    padding: 9px !important;
+    border-radius: 18px !important;
+  }
+
+  .subalbum-v66-tabs {
+    gap: 7px !important;
+    padding-bottom: 4px !important;
+  }
+
+  .subalbum-v66-tab {
+    grid-template-columns: 32px minmax(0,1fr) 14px !important;
+    gap: 8px !important;
+    min-width: 168px !important;
+    max-width: 220px !important;
+    height: 52px !important;
+    min-height: 52px !important;
+    padding: 7px 9px !important;
+    border-radius: 15px !important;
+    touch-action: manipulation !important;
+  }
+
+  .subalbum-v66-icon {
+    width: 32px !important;
+    height: 32px !important;
+    border-radius: 10px !important;
+    font-size: 11px !important;
+  }
+
+  .subalbum-v66-name {
+    font-size: 9.8px !important;
+    letter-spacing: .018em !important;
+  }
+
+  .subalbum-v66-count {
+    font-size: 8px !important;
+  }
+}
+</style>
+
 </head>
 <body style="background:#050505;color:#fff;">
   <div id="boot-overlay" style="position:fixed;inset:0;z-index:99999;background:#050505;color:#fff;display:flex;align-items:center;justify-content:center;padding:24px;">
@@ -3589,7 +3871,74 @@ A continuación, te envío el comprobante.`;
         try {
             popup = window.open('', '_blank');
             if (popup) {
-                popup.document.write('<!doctype html><html><head><title>Abriendo WhatsApp...</title><meta name="viewport" content="width=device-width,initial-scale=1"><style>body{font-family:Arial,sans-serif;background:#050505;color:white;display:flex;align-items:center;justify-content:center;min-height:100vh;margin:0;text-align:center;padding:24px}a{color:#22c55e;font-weight:800}</style></head><body><div><h2>Preparando WhatsApp...</h2><p>Si no abre automáticamente, tocá abajo.</p><p><a href="' + whatsappUrl.replace(/"/g, '&quot;') + '">Abrir WhatsApp</a></p></div></body></html>');
+                popup.document.write('<!doctype html><html><head><title>Abriendo WhatsApp...</title><meta name="viewport" content="width=device-width,initial-scale=1"><style>body{font-family:Arial,sans-serif;background:#050505;color:white;display:flex;align-items:center;justify-content:center;min-height:100vh;margin:0;text-align:center;padding:24px}a{color:#22c55e;font-weight:800}</style></head><body><div><h2>Preparando WhatsApp...</h2><p>Si no abre automáticamente, tocá abajo.</p><p><a href="' + whatsappUrl.replace(/"/g, '&quot;') + '">Abrir WhatsApp</a></p></div>
+<script id="la-v66-photo-lock">
+(function(){
+  'use strict';
+
+  function isProtectedTarget(target){
+    if(!target || !target.closest) return false;
+    return !!target.closest('.photo-viewer-lock, .public-viewer-photo, .protected-photo');
+  }
+
+  document.addEventListener('contextmenu', function(e){
+    if(isProtectedTarget(e.target) || (e.target && e.target.closest && e.target.closest('img'))){
+      e.preventDefault();
+      e.stopPropagation();
+    }
+  }, true);
+
+  document.addEventListener('dragstart', function(e){
+    if(isProtectedTarget(e.target) || (e.target && e.target.closest && e.target.closest('img'))){
+      e.preventDefault();
+      e.stopPropagation();
+    }
+  }, true);
+
+  /* iOS/Safari: la pulsación larga del visor debe perder su acción nativa.
+     El handler React de swipe sigue recibiendo el evento porque preventDefault
+     no detiene la propagación. */
+  document.addEventListener('touchstart', function(e){
+    if(e.touches && e.touches.length === 1 && e.target && e.target.closest && e.target.closest('.photo-viewer-lock')){
+      e.preventDefault();
+    }
+  }, {capture:true, passive:false});
+
+  function harden(root){
+    var scope = root && root.querySelectorAll ? root : document;
+    scope.querySelectorAll('img').forEach(function(img){
+      img.draggable = false;
+      img.setAttribute('draggable','false');
+      img.style.webkitUserDrag='none';
+      img.style.webkitTouchCallout='none';
+      img.style.userSelect='none';
+      img.style.webkitUserSelect='none';
+    });
+  }
+
+  harden(document);
+
+  new MutationObserver(function(records){
+    records.forEach(function(record){
+      record.addedNodes.forEach(function(node){
+        if(node.nodeType !== 1) return;
+        if(node.tagName === 'IMG'){
+          node.draggable=false;
+          node.setAttribute('draggable','false');
+          node.style.webkitUserDrag='none';
+          node.style.webkitTouchCallout='none';
+          node.style.userSelect='none';
+          node.style.webkitUserSelect='none';
+        } else if(node.querySelectorAll){
+          harden(node);
+        }
+      });
+    });
+  }).observe(document.documentElement,{childList:true,subtree:true});
+})();
+</script>
+
+</body></html>');
                 popup.document.close();
             }
         }
@@ -4406,19 +4755,16 @@ Te envío el comprobante para que puedas prepararlas.`);
                         React.createElement("p", { className: "text-neutral-400 text-sm" }, "Elegí una cobertura dentro del álbum con una vista más visual y profesional. Cada categoría conserva su propio link."),
                         currentSubAlbums.length > 0 && React.createElement("div", { className: "subalbum-panel mt-3" },
                             React.createElement("p", { className: "text-[11px] uppercase tracking-[0.18em] text-sky-200/70 font-black mb-3" }, "Categorías del álbum"),
-                            React.createElement("div", { className: "subalbum-showcase" }, currentSubAlbums.map(sa => React.createElement("button", { key: sa.id, onClick: () => { location.hash = albumHash(currentAlbum.id, sa.id); setActiveSubAlbum(sa.id); }, className: `subalbum-visual-card ${activeSubAlbum === sa.id ? 'active' : ''}` },
-                                React.createElement("div", { className: "subalbum-thumb-wrap" },
-                                    React.createElement("img", { src: sa.cover || (((sa.photos || [])[0] || {}).url) || currentAlbum.cover, loading: "lazy", decoding: "async", alt: sa.name }),
-                                    React.createElement("div", { className: "subalbum-thumb-overlay" }),
-                                    React.createElement("span", { className: "subalbum-floating-badge" },
-                                        React.createElement("i", { className: "fas fa-images" }),
+                            React.createElement("div", { className: "subalbum-showcase subalbum-v66-tabs" }, currentSubAlbums.map(sa => React.createElement("button", { key: sa.id, onClick: () => { location.hash = albumHash(currentAlbum.id, sa.id); setActiveSubAlbum(sa.id); }, className: `subalbum-visual-card subalbum-v66-tab ${activeSubAlbum === sa.id ? 'active' : ''}` },
+                                React.createElement("span", { className: "subalbum-v66-icon" },
+                                    React.createElement("i", { className: "fas fa-layer-group" })),
+                                React.createElement("span", { className: "subalbum-v66-copy" },
+                                    React.createElement("span", { className: "subalbum-v66-name" }, sa.name),
+                                    React.createElement("span", { className: "subalbum-v66-count" },
                                         sa.photos.length,
                                         " fotos")),
-                                React.createElement("div", { className: "subalbum-copy-wrap" },
-                                    React.createElement("p", { className: "subalbum-copy-title" }, sa.name),
-                                    React.createElement("p", { className: "subalbum-copy-meta" },
-                                        sa.dateLabel || currentAlbum.dateLabel || 'sin fecha',
-                                        " · abrir cobertura"))))))),
+                                React.createElement("span", { className: "subalbum-v66-arrow" },
+                                    React.createElement("i", { className: "fas fa-chevron-right" }))))))),
                     React.createElement("div", { className: "flex flex-col gap-2 w-full lg:w-auto" },
                         React.createElement("div", { className: "bg-neutral-900 border border-neutral-800 rounded-xl p-1 grid grid-cols-3 gap-1 w-full sm:w-auto" },
                             React.createElement("button", { onClick: () => setViewMode('mosaic'), className: `px-3 py-2.5 rounded-lg text-[11px] sm:text-xs font-bold ${viewMode === 'mosaic' ? 'bg-white text-black' : 'text-neutral-300'}` },
@@ -4588,8 +4934,8 @@ Te envío el comprobante para que puedas prepararlas.`);
         bookingOpen && React.createElement(PriceModal, { onClose: () => setBookingOpen(false), priceSettings: priceSettings }),
         viewer && React.createElement(Modal, { onClose: () => setViewer(null), max: "max-w-6xl" },
             React.createElement("div", { className: "grid lg:grid-cols-[1.2fr,.8fr] gap-5 items-start" },
-                React.createElement("div", { onTouchStart: e => { var _a, _b; return touchStartX.current = (_b = (_a = e.touches) === null || _a === void 0 ? void 0 : _a[0]) === null || _b === void 0 ? void 0 : _b.clientX; }, onTouchEnd: handleSwipeEnd(moveViewer), className: "rounded-3xl overflow-hidden bg-black border border-neutral-800 relative" },
-                    React.createElement("img", { src: viewer.url, loading: "eager", decoding: "async", draggable: false, onContextMenu: e => e.preventDefault(), className: "protected-photo w-full max-h-[80vh] object-contain mx-auto" }),
+                React.createElement("div", { onContextMenu: e => e.preventDefault(), onDragStart: e => e.preventDefault(), onTouchStart: e => { e.preventDefault(); var _a, _b; return touchStartX.current = (_b = (_a = e.touches) === null || _a === void 0 ? void 0 : _a[0]) === null || _b === void 0 ? void 0 : _b.clientX; }, onTouchEnd: handleSwipeEnd(moveViewer), className: "photo-viewer-lock rounded-3xl overflow-hidden bg-black border border-neutral-800 relative" },
+                    React.createElement("img", { src: viewer.url, loading: "eager", decoding: "async", draggable: false, onContextMenu: e => e.preventDefault(), className: "protected-photo public-viewer-photo w-full max-h-[80vh] object-contain mx-auto" }),
                     React.createElement(PreviewWatermark, { ...wmProps(viewer.albumId) }),
                     React.createElement(PhotoLicenseReminder, { overlay: true }),
                     React.createElement("button", { onClick: () => moveViewer(-1), className: "absolute left-2 sm:left-3 top-1/2 -translate-y-1/2 px-3 h-10 rounded-full bg-black/70 border border-white/20 text-white font-bold text-xs" },
@@ -4683,15 +5029,5 @@ if (rootEl && window.React && window.ReactDOM && ReactDOM.createRoot) {
   }, 2500);
 </script>
 
-<script id="la-v65-photo-protection">
-(function(){
-  'use strict';
-  document.addEventListener('contextmenu',function(event){var t=event.target;if(t&&t.closest&&t.closest('img'))event.preventDefault();},true);
-  document.addEventListener('dragstart',function(event){var t=event.target;if(t&&t.closest&&t.closest('img'))event.preventDefault();},true);
-  function protect(root){var scope=root&&root.querySelectorAll?root:document;scope.querySelectorAll('img').forEach(function(img){img.setAttribute('draggable','false');img.style.webkitUserDrag='none';img.style.webkitTouchCallout='none';});}
-  protect(document);
-  new MutationObserver(function(ms){ms.forEach(function(m){m.addedNodes.forEach(function(n){if(n.nodeType!==1)return;if(n.tagName==='IMG'){n.setAttribute('draggable','false');n.style.webkitUserDrag='none';n.style.webkitTouchCallout='none';}else if(n.querySelectorAll){protect(n);}});});}).observe(document.documentElement,{childList:true,subtree:true});
-})();
-</script>
 </body>
 </html>
