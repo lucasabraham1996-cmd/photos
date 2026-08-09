@@ -1,3 +1,5 @@
+
+
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -29,7 +31,7 @@
   <meta name="twitter:description" content="Fotos deportivas protegidas · Compra directa por WhatsApp" />
   <meta name="twitter:image" content="https://lucasabraham1996-cmd.github.io/photos/social-preview-la.png?v=61" />
   <title>lucasabraham.ph - Galería de Clientes</title>
-  <meta name="app-version" content="v65-persistent-admin-photo-protection" /><style>html,body{margin:0;min-height:100%;background:#050505;color:#fff}#root{min-height:100vh;background:#050505;color:#fff}
+  <meta name="app-version" content="v68-mobile-scroll-viewer-fix" /><style>html,body{margin:0;min-height:100%;background:#050505;color:#fff}#root{min-height:100vh;background:#050505;color:#fff}
     /* v41: estilo versus moderno para portada y álbum */
     .team-album-reveal{background:linear-gradient(180deg,rgba(3,7,18,.12),rgba(2,6,23,.28))}
     .team-reveal-half{left:12px!important;right:12px!important;width:auto!important;height:33%!important;padding:12px 16px!important;box-shadow:0 16px 36px rgba(0,0,0,.28),inset 0 1px 0 rgba(255,255,255,.14)!important;border:1px solid rgba(255,255,255,.10)!important;overflow:hidden}
@@ -1091,7 +1093,7 @@ img{-webkit-user-drag:none;}
 }
 /* Icono moderno, sin tocar el HTML */
 .subalbum-visual-card::before {
-  content:"\\f03e" !important;
+  content:"" !important;
   font-family:"Font Awesome 6 Free","Font Awesome 5 Free" !important;
   font-weight:900 !important;
   position:absolute !important;
@@ -1200,7 +1202,131 @@ img{-webkit-user-drag:none;}
   .subalbum-visual-card::after { left:8px !important; }
   .subalbum-copy-title { font-size:9.5px !important; letter-spacing:.025em !important; }
 }
-</style>\n</head>
+</style>
+
+  <style id="la-v68-mobile-scroll-viewer-fix">
+    /* ===== FIX FINAL MOVIL: scroll + encabezado + categorías + visor ===== */
+    html{
+      -webkit-text-size-adjust:100%;
+      overscroll-behavior-y:auto!important;
+    }
+
+    body{
+      overflow-x:hidden!important;
+      overflow-y:auto!important;
+      -webkit-overflow-scrolling:touch!important;
+      overscroll-behavior-y:auto!important;
+    }
+
+    .mosaic-tile,
+    .mosaic-tile button,
+    .album-mosaic-grid,
+    .photo-viewer-lock{
+      touch-action:pan-y pinch-zoom!important;
+    }
+
+    .protected-photo,
+    .mosaic-tile img,
+    .photo-viewer-lock img{
+      -webkit-touch-callout:none!important;
+      -webkit-user-select:none!important;
+      user-select:none!important;
+      -webkit-user-drag:none!important;
+      user-drag:none!important;
+    }
+
+    .subalbum-panel,
+    .subalbum-showcase,
+    .subalbum-visual-card{
+      touch-action:pan-x pan-y!important;
+    }
+
+    /* El pseudoicono anterior podía mostrarse como /f03e en algunos móviles. */
+    .subalbum-visual-card::before{
+      content:""!important;
+      display:none!important;
+    }
+
+    @media (max-width:768px), (hover:none), (pointer:coarse){
+      html,body,#root{
+        width:100%!important;
+        max-width:100%!important;
+        overflow-x:hidden!important;
+      }
+
+      /* Header superior siempre visible mientras se hace scroll. */
+      .la-insta-topbar{
+        position:fixed!important;
+        top:env(safe-area-inset-top,0px)!important;
+        left:8px!important;
+        right:8px!important;
+        width:auto!important;
+        max-width:none!important;
+        margin:0!important;
+        z-index:9990!important;
+        background:rgba(7,7,8,.95)!important;
+        -webkit-backdrop-filter:blur(18px)!important;
+        backdrop-filter:blur(18px)!important;
+        border:1px solid rgba(255,255,255,.12)!important;
+        border-top:0!important;
+        border-radius:0 0 18px 18px!important;
+        box-shadow:0 12px 35px rgba(0,0,0,.38), inset 0 1px 0 rgba(255,255,255,.06)!important;
+      }
+
+      /* Deja espacio para el header fijo y evita que tape el contenido. */
+      .max-w-6xl.mx-auto.px-4.py-8{
+        padding-top:82px!important;
+      }
+
+      /* Categorías: desplazamiento horizontal sin trabar el scroll vertical. */
+      .subalbum-showcase{
+        display:flex!important;
+        gap:10px!important;
+        overflow-x:auto!important;
+        overflow-y:hidden!important;
+        -webkit-overflow-scrolling:touch!important;
+        scroll-snap-type:x proximity!important;
+        overscroll-behavior-x:contain!important;
+        padding-bottom:6px!important;
+        touch-action:pan-x pan-y!important;
+      }
+
+      .subalbum-visual-card{
+        flex:0 0 auto!important;
+        min-width:210px!important;
+        max-width:260px!important;
+        touch-action:pan-x pan-y!important;
+      }
+
+      .subalbum-copy-title{
+        overflow:hidden!important;
+        text-overflow:ellipsis!important;
+        white-space:nowrap!important;
+      }
+
+      /* Galería: se puede iniciar el scroll tocando directamente una foto. */
+      .album-mosaic-grid,
+      .mosaic-tile,
+      .mosaic-tile button{
+        touch-action:pan-y pinch-zoom!important;
+      }
+
+      /* Foto grande dentro del visor. */
+      .photo-viewer-lock{
+        max-height:82vh!important;
+        touch-action:pan-y pinch-zoom!important;
+      }
+
+      .photo-viewer-lock img{
+        width:100%!important;
+        height:auto!important;
+        max-height:78vh!important;
+        object-fit:contain!important;
+      }
+    }
+  </style>
+
+</head>
 <body style="background:#050505;color:#fff;">
   <div id="boot-overlay" style="position:fixed;inset:0;z-index:99999;background:#050505;color:#fff;display:flex;align-items:center;justify-content:center;padding:24px;">
     <div style="width:min(92vw,420px);background:#0b0b0f;border:1px solid rgba(255,255,255,.08);border-radius:24px;padding:24px;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,.45);">
@@ -4889,7 +5015,7 @@ if (rootEl && window.React && window.ReactDOM && ReactDOM.createRoot) {
   }, 2500);
 </script>
 
-\n<script id="la-v67-photo-protection">
+<script id="la-v67-photo-protection">
 (function(){
   'use strict';
 
@@ -4912,14 +5038,10 @@ if (rootEl && window.React && window.ReactDOM && ReactDOM.createRoot) {
     }
   },true);
 
-  /* iOS Safari: anula la acción nativa de una pulsación sobre el visor.
-     No usamos stopPropagation, por lo que el onTouchStart/onTouchEnd de React
-     puede seguir calculando el swipe. */
-  document.addEventListener('touchstart',function(e){
-    if(e.touches && e.touches.length === 1 && protectedArea(e.target)){
-      e.preventDefault();
-    }
-  },{capture:true,passive:false});
+  /* iOS Safari:
+     No cancelamos touchstart. Esto mantiene funcionando el scroll vertical,
+     el tap para abrir fotos y el swipe del visor. La protección se conserva
+     con contextmenu, dragstart y las reglas CSS de las imágenes. */
 
   function hardenImages(root){
     var scope=(root && root.querySelectorAll)?root:document;
@@ -4943,5 +5065,6 @@ if (rootEl && window.React && window.ReactDOM && ReactDOM.createRoot) {
     }).observe(document.documentElement,{childList:true,subtree:true});
   }catch(e){}
 })();
-</script>\n</body>
+</script>
+</body>
 </html>
