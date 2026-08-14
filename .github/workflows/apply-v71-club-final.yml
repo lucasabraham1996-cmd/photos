@@ -1,0 +1,52 @@
+name: Apply v71 club final
+on:
+  push:
+    branches:
+      - main
+permissions:
+  contents: write
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p=Path('.github/scripts/apply_v71_club.py')
+          s=p.read_text(encoding='utf-8')
+          s=s.replace('pattern.subn(replacement, s, count=1)', 'pattern.subn(lambda m: replacement, s, count=1)')
+          s=s.replace('pattern.subn(admin_club, s, count=1)', 'pattern.subn(lambda m: admin_club, s, count=1)')
+          old='''                        !o.rejected && React.createElement("button", { onClick:() => { if (confirm(isRedemption ? '¿Anular este canje y devolver los puntos?' : '¿Marcar este pedido como cancelado/no pagado?')) setOrderDecisionAndClose(o,'rejected'); }, className:"bg-red-500/15 border border-red-500/30 text-red-200 px-3 py-2 rounded-xl text-xs font-black" }, isRedemption ? "Anular canje" : "Anular / no pagado"));
+                }))),
+            React.createElement("div", { id: "order-search-panel",'''
+          new='''                        !o.rejected && React.createElement("button", { onClick:() => { if (confirm(isRedemption ? '¿Anular este canje y devolver los puntos?' : '¿Marcar este pedido como cancelado/no pagado?')) setOrderDecisionAndClose(o,'rejected'); }, className:"bg-red-500/15 border border-red-500/30 text-red-200 px-3 py-2 rounded-xl text-xs font-black" }, isRedemption ? "Anular canje" : "Anular / no pagado"));
+                })))),
+            React.createElement("div", { id: "order-search-panel",'''
+          if old not in s:
+              raise SystemExit('admin club close patch anchor missing')
+          s=s.replace(old,new,1)
+          p.write_text(s,encoding='utf-8')
+          PY
+          python3 .github/scripts/apply_v71_club.py
+      - run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+          html=Path('index.html').read_text(encoding='utf-8')
+          scripts=re.findall(r'<script(?:\s[^>]*)?>(.*?)</script>', html, flags=re.S|re.I)
+          Path('/tmp/main.js').write_text(max(scripts,key=len),encoding='utf-8')
+          PY
+          node --check /tmp/main.js
+      - run: |
+          grep -q 'v71-club-beneficios-print-select' index.html
+          grep -q 'Club de beneficios' index.html
+          grep -q 'IMPRESIÓN 10x15' index.html
+          grep -q 'Ver puntos acumulados' index.html
+      - run: |
+          if git diff --quiet index.html; then exit 0; fi
+          git config user.name "lucasabraham1996-cmd"
+          git config user.email "lucasabraham1996@gmail.com"
+          git add index.html
+          git commit -m "feat: club benefits and selectable 10x15 prints [v71-applied]"
+          git push
