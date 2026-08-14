@@ -31,7 +31,7 @@
   <meta name="twitter:description" content="Fotos deportivas protegidas · Compra directa por WhatsApp" />
   <meta name="twitter:image" content="https://lucasabraham1996-cmd.github.io/photos/social-preview-la.png?v=61" />
   <title>lucasabraham.ph - Galería de Clientes</title>
-  <meta name="app-version" content="v69-customer-benefits-hotfix" /><style>html,body{margin:0;min-height:100%;background:#050505;color:#fff}#root{min-height:100vh;background:#050505;color:#fff}
+  <meta name="app-version" content="v70-mobile-checkout" /><style>html,body{margin:0;min-height:100%;background:#050505;color:#fff}#root{min-height:100vh;background:#050505;color:#fff}
     /* v41: estilo versus moderno para portada y álbum */
     .team-album-reveal{background:linear-gradient(180deg,rgba(3,7,18,.12),rgba(2,6,23,.28))}
     .team-reveal-half{left:12px!important;right:12px!important;width:auto!important;height:33%!important;padding:12px 16px!important;box-shadow:0 16px 36px rgba(0,0,0,.28),inset 0 1px 0 rgba(255,255,255,.14)!important;border:1px solid rgba(255,255,255,.10)!important;overflow:hidden}
@@ -1330,7 +1330,8 @@ img{-webkit-user-drag:none;}
 
 <style id="v69-customer-benefits">
 @media(max-width:768px),(hover:none),(pointer:coarse){
- .la-insta-topbar{position:-webkit-sticky!important;position:sticky!important;top:max(0px,env(safe-area-inset-top))!important;z-index:999!important;transform:translateZ(0)!important}
+ .la-insta-topbar{position:fixed!important;left:10px!important;right:10px!important;top:max(6px,env(safe-area-inset-top))!important;width:auto!important;z-index:9999!important;transform:translateZ(0)!important;-webkit-transform:translateZ(0)!important;margin:0!important}
+ .la-insta-topbar + header{padding-top:76px!important}
  .subalbum-panel{overflow:visible!important;padding:12px!important;border-radius:22px!important}
  .subalbum-showcase{display:grid!important;grid-template-columns:repeat(3,minmax(0,1fr))!important;gap:8px!important;overflow:visible!important;padding:1px!important;scroll-snap-type:none!important}
  .subalbum-visual-card{width:100%!important;min-width:0!important;max-width:none!important;height:50px!important;min-height:50px!important;margin:0!important;padding:0 7px!important;border-radius:16px!important;clip-path:none!important;display:flex!important;align-items:center!important;justify-content:center!important}
@@ -1349,6 +1350,27 @@ img{-webkit-user-drag:none;}
 .print-order-btn{width:100%;display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:12px;text-align:left;padding:13px 15px;border-radius:17px;border:1px solid rgba(255,255,255,.55);background:linear-gradient(135deg,#f8fafc,#cbd5e1 52%,#94a3b8);color:#0756a8;box-shadow:inset 0 1px 0 #fff,0 12px 25px rgba(15,23,42,.2)}
 .print-order-btn span{display:flex;flex-direction:column}.print-order-btn small{font-size:10px;opacity:.72;margin-top:2px}
 .print-order-btn.active{box-shadow:inset 0 1px 0 #fff,0 0 0 3px rgba(59,130,246,.25),0 12px 28px rgba(37,99,235,.2)}
+@media(max-width:640px),(hover:none),(pointer:coarse){
+ .checkout-simple-shell{width:100%!important;max-height:calc(100dvh - 18px)!important;overflow-y:auto!important;overscroll-behavior:contain!important;border-radius:20px!important;padding:10px!important;margin:0!important;scrollbar-width:none!important}
+ .checkout-simple-shell::-webkit-scrollbar{display:none!important}
+ .checkout-simple-shell>div:first-child{margin-bottom:8px!important}
+ .checkout-simple-shell>div:first-child>p:first-child{margin-bottom:6px!important;padding:4px 9px!important;font-size:9px!important}
+ .checkout-simple-shell>div:first-child h2{font-size:20px!important;line-height:1.05!important;margin-bottom:3px!important}
+ .checkout-simple-shell>div:first-child p:last-child{font-size:11px!important;line-height:1.25!important}
+ .checkout-simple-card{padding:10px!important;border-radius:15px!important;margin-bottom:8px!important}
+ .checkout-simple-total{padding:10px 12px!important;border-radius:15px!important;margin-bottom:8px!important}
+ .checkout-simple-total b{font-size:26px!important}
+ .checkout-simple-row{padding:3px 0!important;font-size:12px!important}
+ .checkout-simple-alias{padding:9px 10px!important;min-height:42px!important}
+ .checkout-pay-logo{max-height:24px!important;width:auto!important}
+ .benefits-glass-btn,.print-order-btn{padding:10px 11px!important;border-radius:14px!important;gap:9px!important;font-size:12px!important}
+ .benefits-glass-btn small,.print-order-btn small{font-size:9px!important;line-height:1.2!important}
+ .customer-compact-input{padding:9px 10px!important;font-size:13px!important;border-radius:11px!important}
+ .save-customer-btn{padding:9px 11px!important}
+ .checkout-simple-coupon summary{font-size:12px!important}
+ .checkout-simple-cta{position:sticky!important;bottom:0!important;z-index:3!important;padding:12px!important;border-radius:14px!important;box-shadow:0 -8px 24px rgba(0,0,0,.45)!important}
+ .checkout-simple-shell>p:last-child{font-size:9px!important;margin-top:6px!important}
+}
 </style>
 </head>
 <body style="background:#050505;color:#fff;">
@@ -3897,7 +3919,7 @@ ${clone.outerHTML}`;
         setCheckoutCoupon("");
         setCouponMessage("");
         setCheckoutPrint(false);
-        setCustomerDetailsOpen(true);
+        setCustomerDetailsOpen(false);
         setCustomerDetailsSaved(false);
         setCustomerSavedMessage("");
         setCheckoutOrderCode('LA-' + Math.floor(10000 + Math.random() * 90000));
@@ -3914,6 +3936,7 @@ ${clone.outerHTML}`;
         setCheckoutCustomerName(name);
         setCheckoutPhone(phone);
         setCheckoutDni(dni);
+        setCheckoutWantsPoints(Boolean(dni));
         setCustomerDetailsSaved(true);
         setCustomerSavedMessage("✓ Datos guardados correctamente");
         setTimeout(() => { setCustomerDetailsOpen(false); setCustomerSavedMessage(""); }, 900);
@@ -5001,24 +5024,22 @@ Te envío el comprobante para que puedas prepararlas.`);
                         " Revisar compra"),
                     React.createElement("h2", { className: "text-2xl sm:text-3xl font-black mb-1 text-white" }, "Confirmá tu compra"),
                     React.createElement("p", { className: "text-sky-100/75 text-sm leading-relaxed" }, "Copiá el alias, transferí por Mercado Pago y finalizá la compra por WhatsApp.")),
-                React.createElement("div", { className: "checkout-simple-card customer-data-card mb-3" },
-                    React.createElement("button", { type:"button", onClick:() => setCustomerDetailsOpen(v => !v), className:"w-full flex items-center justify-between gap-3 text-left" },
-                        React.createElement("div", null,
-                            React.createElement("p", { className:"text-[11px] uppercase tracking-[.16em] text-sky-100/70 font-black" }, "Datos del comprador"),
-                            React.createElement("p", { className:"text-sm font-black text-white mt-1" }, customerDetailsSaved ? `${checkoutCustomerName} · ${checkoutPhone}` : "Nombre, celular y beneficios")),
-                        React.createElement("i", { className:`fas ${customerDetailsOpen ? 'fa-chevron-up' : 'fa-chevron-down'} text-sky-200` })),
-                    customerDetailsOpen && React.createElement("div", { className:"mt-3 grid gap-2" },
-                        React.createElement("input", { value:checkoutCustomerName, onChange:e => { setCheckoutCustomerName(e.target.value); setCustomerDetailsSaved(false); }, placeholder:"Nombre y apellido", className:"customer-compact-input" }),
-                        React.createElement("input", { value:checkoutPhone, inputMode:"tel", onChange:e => { setCheckoutPhone(e.target.value); setCustomerDetailsSaved(false); }, placeholder:"Celular", className:"customer-compact-input" }),
-                        React.createElement("button", { type:"button", onClick:() => setCheckoutWantsPoints(v => !v), className:`benefits-glass-btn ${checkoutWantsPoints ? 'active' : ''}` },
-                            React.createElement("i", { className:"fas fa-gift" }),
-                            React.createElement("span", null, React.createElement("b", null, "Quiero sumar puntos para beneficios"), React.createElement("small", null, "Futuros descuentos, fotos impresas y beneficios"))),
-                        checkoutWantsPoints && React.createElement("div", null,
-                            React.createElement("input", { value:checkoutDni, inputMode:"numeric", onChange:e => { setCheckoutDni(e.target.value); setCustomerDetailsSaved(false); }, placeholder:"DNI", className:"customer-compact-input" }),
-                            React.createElement("p", { className:"text-[11px] text-amber-200/80 mt-1 px-1" }, "Ingresalo sin puntos. Si escribís puntos, espacios o guiones, se unifica automáticamente.")),
-                        React.createElement("button", { type:"button", onClick:saveCheckoutCustomer, className:"save-customer-btn" }, React.createElement("i", { className:"fas fa-floppy-disk mr-2" }), "Guardar datos"),
-                        customerSavedMessage && React.createElement("p", { className:"customer-saved-msg" }, customerSavedMessage)),
-                    !customerDetailsOpen && customerDetailsSaved && React.createElement("button", { type:"button", onClick:() => setCustomerDetailsOpen(true), className:"text-xs text-sky-200 mt-2" }, "Editar datos")),
+                React.createElement("div", { className: "mb-3" },
+                    React.createElement("button", { type:"button", onClick:() => setCustomerDetailsOpen(v => !v), className:`benefits-glass-btn ${customerDetailsOpen || customerDetailsSaved ? 'active' : ''}` },
+                        React.createElement("i", { className:"fas fa-gift" }),
+                        React.createElement("span", null,
+                            React.createElement("b", null, customerDetailsSaved ? "Datos guardados para beneficios" : "Quiero sumar puntos para beneficios"),
+                            React.createElement("small", null, customerDetailsSaved ? `${checkoutCustomerName} · ${checkoutPhone}${checkoutDni ? ` · DNI ${normalizeDni(checkoutDni)}` : ''}` : "Nombre y apellido · celular · DNI opcional")),
+                        React.createElement("i", { className:`fas ${customerDetailsOpen ? 'fa-chevron-up' : customerDetailsSaved ? 'fa-circle-check' : 'fa-chevron-down'}` })),
+                    customerDetailsOpen && React.createElement("div", { className:"checkout-simple-card customer-data-card mt-2 mb-0" },
+                        React.createElement("div", { className:"grid gap-2" },
+                            React.createElement("input", { value:checkoutCustomerName, onChange:e => { setCheckoutCustomerName(e.target.value); setCustomerDetailsSaved(false); }, placeholder:"Nombre y apellido", className:"customer-compact-input" }),
+                            React.createElement("input", { value:checkoutPhone, inputMode:"tel", onChange:e => { setCheckoutPhone(e.target.value); setCustomerDetailsSaved(false); }, placeholder:"Celular", className:"customer-compact-input" }),
+                            React.createElement("div", null,
+                                React.createElement("input", { value:checkoutDni, inputMode:"numeric", onChange:e => { setCheckoutDni(e.target.value); setCustomerDetailsSaved(false); }, placeholder:"DNI (opcional)", className:"customer-compact-input" }),
+                                React.createElement("p", { className:"text-[10px] text-amber-200/80 mt-1 px-1 leading-tight" }, "Ingresalo sin puntos. Si escribís puntos, espacios o guiones, se unifica automáticamente.")),
+                            React.createElement("button", { type:"button", onClick:saveCheckoutCustomer, className:"save-customer-btn" }, React.createElement("i", { className:"fas fa-floppy-disk mr-2" }), "Guardar datos"),
+                            customerSavedMessage && React.createElement("p", { className:"customer-saved-msg" }, customerSavedMessage)))),
                 React.createElement("div", { className: "checkout-simple-total mb-3" },
                     React.createElement("div", null,
                         React.createElement("p", { className: "text-[11px] uppercase tracking-[0.16em] text-sky-100/70 font-black" }, "Total a pagar"),
