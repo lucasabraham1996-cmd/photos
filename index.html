@@ -31,7 +31,7 @@
   <meta name="twitter:description" content="Fotos deportivas protegidas · Compra directa por WhatsApp" />
   <meta name="twitter:image" content="https://lucasabraham1996-cmd.github.io/photos/social-preview-la.png?v=61" />
   <title>lucasabraham.ph - Galería de Clientes</title>
-  <meta name="app-version" content="v71-club-beneficios-print-select" /><style>html,body{margin:0;min-height:100%;background:#050505;color:#fff}#root{min-height:100vh;background:#050505;color:#fff}
+  <meta name="app-version" content="v72-club-modal-notifications-points" /><style>html,body{margin:0;min-height:100%;background:#050505;color:#fff}#root{min-height:100vh;background:#050505;color:#fff}
     /* v41: estilo versus moderno para portada y álbum */
     .team-album-reveal{background:linear-gradient(180deg,rgba(3,7,18,.12),rgba(2,6,23,.28))}
     .team-reveal-half{left:12px!important;right:12px!important;width:auto!important;height:33%!important;padding:12px 16px!important;box-shadow:0 16px 36px rgba(0,0,0,.28),inset 0 1px 0 rgba(255,255,255,.14)!important;border:1px solid rgba(255,255,255,.10)!important;overflow:hidden}
@@ -1403,6 +1403,22 @@ img{-webkit-user-drag:none;}
  .print-photo-option{grid-template-columns:42px minmax(0,1fr) auto}
  .print-photo-option img{width:42px;height:42px}
 }
+</style>
+
+<style id="v72-club-modal-notifications-points">
+.club-benefits-shell{display:none!important}
+.club-floating-btn{position:fixed;right:16px;bottom:104px;z-index:64;display:flex;align-items:center;gap:9px;padding:12px 15px;border-radius:999px;background:linear-gradient(135deg,#f97316,#ef4444 64%,#fb7185);color:#fff;border:1px solid rgba(255,255,255,.24);font-weight:950;font-size:12px;box-shadow:inset 0 1px 0 rgba(255,255,255,.28),0 16px 38px rgba(239,68,68,.30);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);animation:clubFloatPulse 3.2s ease-in-out infinite}
+.club-floating-btn i{font-size:16px}.club-floating-btn .club-float-dot{width:8px;height:8px;border-radius:50%;background:#fdba74;box-shadow:0 0 0 5px rgba(251,146,60,.14)}
+@keyframes clubFloatPulse{0%,100%{transform:translateY(0);box-shadow:inset 0 1px 0 rgba(255,255,255,.28),0 16px 38px rgba(239,68,68,.25)}50%{transform:translateY(-3px);box-shadow:inset 0 1px 0 rgba(255,255,255,.32),0 22px 46px rgba(249,115,22,.34)}}
+.club-modal-shell{position:relative;border-radius:24px;padding:18px;background:radial-gradient(circle at 10% 0%,rgba(249,115,22,.18),transparent 34%),linear-gradient(145deg,#101014,#07070a);border:1px solid rgba(249,115,22,.20);box-shadow:0 30px 80px rgba(0,0,0,.48)}
+.club-modal-header{display:flex;align-items:flex-start;justify-content:space-between;gap:14px;padding-right:34px;margin-bottom:15px}.club-modal-title{font-size:25px;line-height:1;font-weight:950;color:#fff}.club-modal-copy{font-size:12px;line-height:1.45;color:#cbd5e1;margin-top:7px;max-width:520px}
+.checkout-simple-cta{display:none!important}
+.checkout-floating-cta{position:fixed;left:50%;transform:translateX(-50%);bottom:max(12px,env(safe-area-inset-bottom));z-index:120;width:min(calc(100vw - 28px),470px);padding:15px 18px;border:0;border-radius:18px;background:linear-gradient(135deg,#22c55e,#16a34a);color:#021507;font-size:15px;font-weight:950;box-shadow:0 18px 46px rgba(34,197,94,.32),inset 0 1px 0 rgba(255,255,255,.35);display:flex;align-items:center;justify-content:center;gap:9px}
+.checkout-floating-cta:disabled{opacity:.42}.checkout-simple-shell{padding-bottom:82px!important;position:relative}.checkout-close-btn{position:absolute;top:10px;right:10px;z-index:18;width:38px;height:38px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.72);border:1px solid rgba(255,255,255,.16);color:#fff;box-shadow:0 10px 26px rgba(0,0,0,.35)}
+.checkout-points-preview{border:1px solid rgba(249,115,22,.23);background:linear-gradient(135deg,rgba(249,115,22,.10),rgba(234,88,12,.05));border-radius:15px;padding:11px;margin-top:8px}.checkout-points-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}.checkout-point-box{border-radius:12px;background:rgba(0,0,0,.30);padding:9px;text-align:center}.checkout-point-box b{display:block;font-size:20px;color:#fdba74}.checkout-point-box span{display:block;font-size:9px;color:#a3a3a3;margin-top:2px}
+.admin-notif-shell{position:relative;margin-bottom:14px}.admin-notif-btn{width:100%;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:13px 15px;border-radius:18px;background:linear-gradient(135deg,rgba(249,115,22,.13),rgba(15,23,42,.86));border:1px solid rgba(249,115,22,.24);color:#fff}.admin-notif-left{display:flex;align-items:center;gap:11px;min-width:0}.admin-notif-icon{position:relative;width:38px;height:38px;border-radius:13px;display:flex;align-items:center;justify-content:center;background:rgba(249,115,22,.16);color:#fb923c}.admin-notif-count{position:absolute;right:-6px;top:-6px;min-width:19px;height:19px;padding:0 5px;border-radius:999px;background:#ef4444;color:white;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:950;border:2px solid #111}.admin-notif-panel{margin-top:8px;border:1px solid rgba(255,255,255,.09);background:#0a0a0d;border-radius:18px;padding:10px;box-shadow:0 20px 55px rgba(0,0,0,.42)}.admin-notif-item{width:100%;display:flex;align-items:center;justify-content:space-between;gap:10px;text-align:left;padding:10px;border-radius:13px;background:rgba(255,255,255,.035);border:1px solid rgba(255,255,255,.05);margin-bottom:6px}.admin-notif-item:last-child{margin-bottom:0}.admin-notif-kind{font-size:9px;font-weight:950;border-radius:999px;padding:4px 7px}.admin-notif-kind.order{background:rgba(59,130,246,.15);color:#bfdbfe}.admin-notif-kind.club{background:rgba(249,115,22,.15);color:#fed7aa}
+.price-button-only{margin:18px 0 20px;display:flex;justify-content:flex-start}.price-button-only .booking-btn{background:linear-gradient(135deg,#22c55e,#16a34a)!important;color:#03140a!important;border:1px solid rgba(255,255,255,.24)!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.30),0 12px 28px rgba(34,197,94,.22)!important}
+@media(max-width:640px){.club-floating-btn{right:12px;bottom:112px;padding:11px 13px}.club-modal-shell{padding:14px;border-radius:20px}.club-modal-title{font-size:22px}.checkout-floating-cta{bottom:max(8px,env(safe-area-inset-bottom));width:calc(100vw - 20px)}.price-button-only{justify-content:center}.price-button-only .booking-btn{width:100%}}
 </style>
 </head>
 <body style="background:#050505;color:#fff;">
@@ -3579,6 +3595,11 @@ function App() {
     const [clubLookupResult, setClubLookupResult] = useState(null);
     const [clubMessage, setClubMessage] = useState("");
     const [clubRedeeming, setClubRedeeming] = useState("");
+    const [clubModalOpen, setClubModalOpen] = useState(false);
+    const [checkoutPriorClubAccount, setCheckoutPriorClubAccount] = useState(null);
+    const [checkoutPointsLoading, setCheckoutPointsLoading] = useState(false);
+    const [adminNotificationsOpen, setAdminNotificationsOpen] = useState(false);
+    const [adminReviewedIds, setAdminReviewedIds] = useState(() => { try { return JSON.parse(localStorage.getItem('LA_ADMIN_REVIEWED_ORDERS') || '[]'); } catch(e) { return []; } });
     const [bookingOpen, setBookingOpen] = useState(false);
     const [priceAdminOpen, setPriceAdminOpen] = useState(false);
     const [iphoneInstallOpen, setIphoneInstallOpen] = useState(false);
@@ -3911,9 +3932,20 @@ ${clone.outerHTML}`;
             maxCompletedOrders: Math.floor(FIRESTORE_FREE_DAILY_LIMITS.writes / 2)
         };
     }, [orders]);
+    const pointsForPurchase = (amount) => {
+        const value = Math.max(0, Number(amount) || 0);
+        return Math.floor(value / 5000) + (value >= 10000 ? 1 : 0);
+    };
+    const projectedPointsForPurchase = (account, amount) => {
+        const a = account || { spent:0, earnedPoints:0, directBonusPoints:0 };
+        const value = Math.max(0, Number(amount) || 0);
+        const projectedBase = Math.floor((Math.max(0, Number(a.spent) || 0) + value) / 5000);
+        const projectedBonus = Math.max(0, Number(a.directBonusPoints) || 0) + (value >= 10000 ? 1 : 0);
+        return Math.max(0, projectedBase + projectedBonus - Math.max(0, Number(a.earnedPoints) || 0));
+    };
     const clubAccountFromOrders = (list, rawDni) => {
         const dni = String(rawDni || '').replace(/\D/g, '');
-        const account = { dni, name:'', phone:'', purchases:0, spent:0, pending:0, cancelled:0, prints:0, redeemedPoints:0, redemptions:0, earnedPoints:0, points:0 };
+        const account = { dni, name:'', phone:'', purchases:0, spent:0, pending:0, cancelled:0, prints:0, redeemedPoints:0, redemptions:0, earnedPoints:0, directBonusPoints:0, points:0 };
         if (!dni) return account;
         mergeOrders(list || []).forEach(o => {
             if (String(o.dni || o.customerDni || '').replace(/\D/g, '') !== dni) return;
@@ -3933,11 +3965,13 @@ ${clone.outerHTML}`;
             if (cancelled) account.cancelled += 1;
             else if (confirmed) {
                 account.purchases += 1;
-                account.spent += Math.max(0, Number(o.total) || 0);
+                const purchaseAmount = Math.max(0, Number(o.total) || 0);
+                account.spent += purchaseAmount;
+                if (purchaseAmount >= 10000) account.directBonusPoints += 1;
                 account.prints += Math.max(0, Number(o.printCount) || (o.printRequested ? 1 : 0));
             } else account.pending += 1;
         });
-        account.earnedPoints = Math.floor(account.spent / 10000) * 3;
+        account.earnedPoints = Math.floor(account.spent / 5000) + account.directBonusPoints;
         account.points = Math.max(0, account.earnedPoints - account.redeemedPoints);
         return account;
     };
@@ -3950,6 +3984,19 @@ ${clone.outerHTML}`;
         return Array.from(dnis).map(dni => clubAccountFromOrders(orders, dni)).sort((a,b) => b.points - a.points || b.spent - a.spent || b.purchases - a.purchases);
     }, [orders]);
     const adminOrderLedger = useMemo(() => mergeOrders(orders).sort((a,b) => new Date(b.date || 0) - new Date(a.date || 0)).slice(0,200), [orders]);
+    const ADMIN_NOTIFICATION_START = Date.parse('2026-08-14T23:22:00Z');
+    const unseenAdminOrders = useMemo(() => mergeOrders(orders).filter(o => {
+        const id = normalizeOrderCode(o && o.id);
+        const ts = Date.parse((o && o.date) || 0);
+        return id && Number.isFinite(ts) && ts >= ADMIN_NOTIFICATION_START && !adminReviewedIds.includes(id);
+    }).sort((a,b) => new Date(b.date || 0) - new Date(a.date || 0)), [orders, adminReviewedIds]);
+    const markAdminReviewed = (id) => {
+        const clean = normalizeOrderCode(id);
+        if (!clean) return;
+        setAdminReviewedIds(prev => prev.includes(clean) ? prev : [...prev, clean].slice(-1200));
+    };
+    const markAllAdminReviewed = () => setAdminReviewedIds(prev => Array.from(new Set([...prev, ...unseenAdminOrders.map(o => normalizeOrderCode(o.id))])).slice(-1200));
+    useEffect(() => { try { localStorage.setItem('LA_ADMIN_REVIEWED_ORDERS', JSON.stringify(adminReviewedIds)); } catch(e) {} }, [adminReviewedIds]);
     const userFriendlyError = String(error || '').includes('Google Sheets bloqueó la lectura directa')
         ? 'Google Sheets bloqueó momentáneamente la conexión. Suele solucionarse tocando “Volver a intentar” o “Recargar la página”.'
         : (error || 'Ocurrió un problema momentáneo al cargar la galería.');
@@ -4001,12 +4048,14 @@ ${clone.outerHTML}`;
         setCustomerDetailsOpen(false);
         setCustomerDetailsSaved(false);
         setCustomerSavedMessage("");
+        setCheckoutPriorClubAccount(null);
+        setCheckoutPointsLoading(false);
         setCheckoutOrderCode('LA-' + Math.floor(10000 + Math.random() * 90000));
         setCheckoutOpen(true);
     };
     const normalizeDni = value => String(value || "").replace(/\D/g, "");
     const normalizePhone = value => String(value || "").replace(/\D/g, "");
-    const saveCheckoutCustomer = () => {
+    const saveCheckoutCustomer = async () => {
         const name = String(checkoutCustomerName || "").trim().replace(/\s{2,}/g, " ");
         const phone = normalizePhone(checkoutPhone);
         const dni = normalizeDni(checkoutDni);
@@ -4018,6 +4067,16 @@ ${clone.outerHTML}`;
         setCheckoutWantsPoints(Boolean(dni));
         setCustomerDetailsSaved(true);
         setCustomerSavedMessage("✓ Datos guardados correctamente");
+        setCheckoutPriorClubAccount(null);
+        if (dni) {
+            setCheckoutPointsLoading(true);
+            try {
+                const history = await loadClubOrdersForDni(dni);
+                setCheckoutPriorClubAccount(clubAccountFromOrders(history, dni));
+            } catch(e) {
+                console.warn('No se pudieron consultar puntos previos en checkout.', e);
+            } finally { setCheckoutPointsLoading(false); }
+        }
         setTimeout(() => { setCustomerDetailsOpen(false); setCustomerSavedMessage(""); }, 900);
     };
     const applyCoupon = () => {
@@ -4427,6 +4486,8 @@ A continuación, te envío el comprobante.`;
     function openOrderFromQueue(order) {
         if (!(order === null || order === void 0 ? void 0 : order.id))
             return;
+        markAdminReviewed(order.id);
+        setAdminNotificationsOpen(false);
         setOrderSearch('#' + order.id);
         setDirectOrder(order);
         setOrderSearchTouched(true);
@@ -4515,113 +4576,16 @@ A continuación, te envío el comprobante.`;
                     React.createElement("button", { onClick: () => setPriceAdminOpen(true), className: "bg-emerald-500 text-black px-4 py-3 rounded-xl font-black" }, React.createElement("i", { className: "fas fa-tags mr-2" }), "Precios"),
                     React.createElement("button", { onClick: () => location.hash = "#/galeria", className: "bg-indigo-600 px-4 py-3 rounded-xl font-bold" }, "Ver galer\u00EDa"))),
             adminMessage && React.createElement("div", { className: "mb-4 bg-emerald-600/15 border border-emerald-500/30 text-emerald-300 rounded-2xl px-4 py-3 text-sm" }, adminMessage),
-            React.createElement("div", { className: "mb-4 bg-blue-500/10 border border-blue-500/25 text-blue-100 rounded-2xl px-4 py-3 text-xs leading-relaxed" },
-                React.createElement("b", null, "Firebase:"),
-                " proyecto lucasabraham-b84aa \u00B7 ruta principal ",
-                React.createElement("b", null, "artifacts/lucasabraham-ph-db/orders"),
-                " \u00B7 versi\u00F3n ",
-                React.createElement("b", null, APP_VERSION),
-                ". Si al comprar aparece un aviso rojo, el pedido qued\u00F3 local pero Firestore rechaz\u00F3 la escritura."),
-            React.createElement("div", { className: "mb-6 bg-neutral-900 border border-neutral-800 rounded-3xl p-5" },
-                React.createElement("div", { className: "flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4 mb-4" },
-                    React.createElement("div", null,
-                        React.createElement("h2", { className: "text-xl font-black mb-1" },
-                            React.createElement("i", { className: "fas fa-database mr-2 text-sky-300" }),
-                            "Cupo diario estimado de Firebase"),
-                        React.createElement("p", { className: "text-neutral-400 text-sm leading-relaxed" }, "Desde esta versi\u00F3n, las visitas normales a la web no leen ni escriben Firestore. Firebase se usa al generar un pedido y cuando el admin marca entregado, rechazado o reabre.")),
-                    React.createElement("button", { onClick: () => window.open('https://console.firebase.google.com/project/lucasabraham-b84aa/firestore/usage', '_blank'), className: "bg-neutral-800 hover:bg-neutral-700 px-4 py-3 rounded-xl font-bold text-sm" },
-                        React.createElement("i", { className: "fas fa-arrow-up-right-from-square mr-2" }),
-                        "Ver uso exacto")),
-                React.createElement("div", { className: "grid sm:grid-cols-3 gap-3 mb-4" },
-                    React.createElement("div", { className: "bg-black/35 border border-neutral-800 rounded-2xl p-4" },
-                        React.createElement("p", { className: "text-xs text-neutral-500 uppercase tracking-widest" }, "Lecturas gratis"),
-                        React.createElement("b", { className: "text-2xl" }, FIRESTORE_FREE_DAILY_LIMITS.reads.toLocaleString('es-AR')),
-                        React.createElement("p", { className: "text-xs text-neutral-400 mt-1" }, "Por d\u00EDa")),
-                    React.createElement("div", { className: "bg-black/35 border border-neutral-800 rounded-2xl p-4" },
-                        React.createElement("p", { className: "text-xs text-neutral-500 uppercase tracking-widest" }, "Escrituras gratis"),
-                        React.createElement("b", { className: "text-2xl" }, FIRESTORE_FREE_DAILY_LIMITS.writes.toLocaleString('es-AR')),
-                        React.createElement("p", { className: "text-xs text-neutral-400 mt-1" }, "Por d\u00EDa")),
-                    React.createElement("div", { className: "bg-black/35 border border-neutral-800 rounded-2xl p-4" },
-                        React.createElement("p", { className: "text-xs text-neutral-500 uppercase tracking-widest" }, "Borrados gratis"),
-                        React.createElement("b", { className: "text-2xl" }, FIRESTORE_FREE_DAILY_LIMITS.deletes.toLocaleString('es-AR')),
-                        React.createElement("p", { className: "text-xs text-neutral-400 mt-1" }, "Por d\u00EDa"))),
-                React.createElement("div", { className: "bg-black/35 border border-sky-500/20 rounded-2xl p-4" },
-                    React.createElement("div", { className: "flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-2" },
-                        React.createElement("div", null,
-                            React.createElement("p", { className: "text-sm font-black text-sky-100" }, "Uso estimado de hoy en esta app"),
-                            React.createElement("p", { className: "text-xs text-neutral-400" },
-                                "Pedidos creados: ",
-                                React.createElement("b", null, firebaseDailyEstimate.created),
-                                " \u00B7 Resueltos entregado/rechazado: ",
-                                React.createElement("b", null, firebaseDailyEstimate.resolved),
-                                " \u00B7 Escrituras estimadas: ",
-                                React.createElement("b", null, firebaseDailyEstimate.writes))),
-                        React.createElement("p", { className: "text-xs text-neutral-400" },
-                            "Restantes aprox.: ",
-                            React.createElement("b", { className: "text-white" }, firebaseDailyEstimate.remainingWrites.toLocaleString('es-AR')))),
-                    React.createElement("div", { className: "h-3 bg-neutral-800 rounded-full overflow-hidden" },
-                        React.createElement("div", { className: "h-full bg-sky-500 rounded-full", style: { width: `${firebaseDailyEstimate.writePct}%` } })),
-                    React.createElement("p", { className: "text-[11px] text-neutral-500 mt-2" }, "C\u00E1lculo orientativo: 1 escritura al crear el pedido y 1 escritura al marcarlo como entregado/rechazado. El uso exacto se ve en Firebase Console."))),
-            React.createElement("div", { className: "grid md:grid-cols-4 gap-4 mb-6" },
-                React.createElement("div", { className: "bg-neutral-900 p-5 rounded-2xl border border-neutral-800" },
-                    React.createElement("b", { className: "text-2xl" }, activeAlbums.length),
-                    React.createElement("p", { className: "text-xs text-neutral-400" }, "\u00E1lbumes")),
-                React.createElement("div", { className: "bg-neutral-900 p-5 rounded-2xl border border-neutral-800" },
-                    React.createElement("b", { className: "text-2xl" }, allPhotos.length),
-                    React.createElement("p", { className: "text-xs text-neutral-400" }, "fotos publicadas")),
-                React.createElement("div", { className: "bg-neutral-900 p-5 rounded-2xl border border-neutral-800" },
-                    React.createElement("b", { className: "text-2xl" }, "3"),
-                    React.createElement("p", { className: "text-xs text-neutral-400" }, "opciones de car\u00E1tula")),
-                React.createElement("div", { className: "bg-neutral-900 p-5 rounded-2xl border border-neutral-800" },
-                    React.createElement("b", { className: "text-2xl" }, highlightIds.length),
-                    React.createElement("p", { className: "text-xs text-neutral-400" }, "historias destacadas"))),
-            React.createElement("div", { className: "bg-neutral-900 border border-neutral-800 rounded-3xl p-5 mb-6" },
-                React.createElement("div", { className:"flex flex-col lg:flex-row lg:items-start lg:justify-between gap-3 mb-4" },
-                    React.createElement("div", null,
-                        React.createElement("h2", { className: "text-xl font-black" }, React.createElement("i", { className:"fas fa-gift mr-2 text-orange-300" }), "Club de beneficios"),
-                        React.createElement("p", { className: "text-neutral-400 text-sm mt-1" }, "Regla: 3 puntos por cada $10.000 acumulados en pedidos entregados. Los canjes descuentan puntos y quedan registrados como pedidos del Club.")),
-                    React.createElement("span", { className:"club-order-badge" }, `${clubProducts.filter(p => p.active !== false).length} productos activos`)),
-                React.createElement("div", { className:"bg-black/30 border border-orange-500/15 rounded-2xl p-4 mb-5" },
-                    React.createElement("h3", { className:"font-black text-sm mb-3" }, "Productos y premios del Club"),
-                    React.createElement("div", { className:"grid md:grid-cols-4 gap-2" },
-                        React.createElement("input", { value:newClubProductName, onChange:e => setNewClubProductName(e.target.value), placeholder:"Nombre del producto", className:"bg-black border border-neutral-700 rounded-xl px-3 py-3 text-sm outline-none" }),
-                        React.createElement("input", { value:newClubProductDescription, onChange:e => setNewClubProductDescription(e.target.value), placeholder:"Descripción", className:"bg-black border border-neutral-700 rounded-xl px-3 py-3 text-sm outline-none" }),
-                        React.createElement("input", { value:newClubProductImage, onChange:e => setNewClubProductImage(e.target.value), placeholder:"URL de imagen (opcional)", className:"bg-black border border-neutral-700 rounded-xl px-3 py-3 text-sm outline-none" }),
-                        React.createElement("div", { className:"flex gap-2" },
-                            React.createElement("input", { type:"number", min:"1", value:newClubProductPoints, onChange:e => setNewClubProductPoints(e.target.value), placeholder:"Puntos", className:"w-24 bg-black border border-neutral-700 rounded-xl px-3 py-3 text-sm outline-none" }),
-                            React.createElement("button", { onClick:addClubProduct, className:"flex-1 bg-orange-500 hover:bg-orange-400 text-black rounded-xl px-3 py-3 text-xs font-black" }, "Agregar"))),
-                    React.createElement("div", { className:"grid sm:grid-cols-2 lg:grid-cols-3 gap-2 mt-3" },
-                        clubProducts.length === 0 && React.createElement("p", { className:"text-xs text-neutral-500" }, "Aún no hay productos cargados. En la app igualmente se verá el Club y el mensaje ‘Aún no hay productos’."),
-                        clubProducts.map(product => React.createElement("div", { key:product.id, className:"bg-neutral-950 border border-neutral-800 rounded-xl p-3 flex items-center gap-3" },
-                            product.imageUrl ? React.createElement("img", { src:product.imageUrl, className:"w-12 h-12 rounded-lg object-cover" }) : React.createElement("div", { className:"w-12 h-12 rounded-lg bg-orange-500/10 flex items-center justify-center text-orange-300" }, React.createElement("i", { className:"fas fa-gift" })),
-                            React.createElement("div", { className:"min-w-0 flex-1" }, React.createElement("b", { className:"text-xs block truncate" }, product.name), React.createElement("span", { className:"text-[10px] text-orange-300" }, `${product.points} puntos · ${product.active === false ? 'Pausado' : 'Activo'}`)),
-                            React.createElement("button", { onClick:() => toggleClubProduct(product.id), className:"bg-neutral-800 px-2 py-2 rounded-lg text-[10px] font-black" }, product.active === false ? "Activar" : "Pausar"),
-                            React.createElement("button", { onClick:() => deleteClubProduct(product.id), className:"bg-red-500/15 text-red-200 px-2 py-2 rounded-lg text-[10px]" }, React.createElement("i", { className:"fas fa-trash" }))))),
-                React.createElement("div", { className: "overflow-x-auto" },
-                    React.createElement("table", { className: "w-full text-sm min-w-[1050px]" },
-                        React.createElement("thead", null, React.createElement("tr", { className: "text-left text-neutral-500 border-b border-neutral-800" }, ["DNI","Nombre y apellido","Celular","Compras","Gastado","Puntos","Canjeados","Pendientes","Anulados","Imp. 10x15"].map(x => React.createElement("th", { key:x, className:"py-2 pr-4 text-xs" }, x)))),
-                        React.createElement("tbody", null, customerDniStats.map(r => React.createElement("tr", { key:r.dni, className:"border-b border-neutral-800/70" },
-                            React.createElement("td", { className:"py-3 pr-4 font-black" }, r.dni),
-                            React.createElement("td", { className:"py-3 pr-4" }, r.name || '—'),
-                            React.createElement("td", { className:"py-3 pr-4" }, r.phone || '—'),
-                            React.createElement("td", { className:"py-3 pr-4" }, r.purchases),
-                            React.createElement("td", { className:"py-3 pr-4 font-black text-emerald-300" }, formatPrice(r.spent)),
-                            React.createElement("td", { className:"py-3 pr-4 font-black text-orange-300" }, r.points),
-                            React.createElement("td", { className:"py-3 pr-4" }, r.redeemedPoints),
-                            React.createElement("td", { className:"py-3 pr-4" }, r.pending),
-                            React.createElement("td", { className:"py-3 pr-4" }, r.cancelled),
-                            React.createElement("td", { className:"py-3" }, r.prints)))))),
-                React.createElement("h3", { className:"font-black text-lg mt-5 mb-3" }, "Historial acumulado de pedidos y canjes"),
-                React.createElement("div", { className:"grid gap-2 max-h-[440px] overflow-auto" }, adminOrderLedger.map(o => {
-                    const isRedemption = o.type === 'benefit_redemption' || o.benefitRedemption === true;
-                    const printCount = Number(o.printCount) || ((o.printedItems || []).length) || (o.printRequested ? 1 : 0);
-                    return React.createElement("div", { key:o.id, className:"bg-neutral-950 border border-neutral-800 rounded-2xl p-3 flex flex-col sm:flex-row sm:items-center gap-3" },
-                        React.createElement("button", { onClick:() => openOrderFromQueue(o), className:"text-left min-w-0 flex-1" },
-                            React.createElement("div", { className:"flex flex-wrap items-center gap-2" }, React.createElement("b", null, "#", o.id), isRedemption && React.createElement("span", { className:"club-order-badge" }, "CANJE CLUB"), printCount > 0 && React.createElement("span", { className:"print-order-badge" }, `IMPRESIÓN 10x15 × ${printCount}`)),
-                            React.createElement("p", { className:"text-xs text-neutral-400 mt-1" }, (o.customerName || 'Sin nombre'), " · DNI ", (o.dni || '—'), " · ", (o.phone || '—'), isRedemption ? ` · ${o.rewardName || 'Beneficio'} · -${o.redeemedPoints || 0} pts` : ` · ${formatPrice(o.total)}`)),
-                        React.createElement("button", { onClick:() => openOrderFromQueue(o), className:"bg-neutral-800 px-3 py-2 rounded-xl text-xs font-bold" }, "Abrir"),
-                        !o.rejected && React.createElement("button", { onClick:() => { if (confirm(isRedemption ? '¿Anular este canje y devolver los puntos?' : '¿Marcar este pedido como cancelado/no pagado?')) setOrderDecisionAndClose(o,'rejected'); }, className:"bg-red-500/15 border border-red-500/30 text-red-200 px-3 py-2 rounded-xl text-xs font-black" }, isRedemption ? "Anular canje" : "Anular / no pagado"));
-                })))),
+            React.createElement("div", { className:"admin-notif-shell" },
+                React.createElement("button", { type:"button", onClick:() => setAdminNotificationsOpen(v => !v), className:"admin-notif-btn" },
+                    React.createElement("div", { className:"admin-notif-left" },
+                        React.createElement("div", { className:"admin-notif-icon" }, React.createElement("i", { className:"fas fa-bell" }), unseenAdminOrders.length > 0 && React.createElement("span", { className:"admin-notif-count" }, unseenAdminOrders.length > 99 ? '99+' : unseenAdminOrders.length)),
+                        React.createElement("div", { className:"min-w-0 text-left" }, React.createElement("b", { className:"block text-sm" }, "Notificaciones"), React.createElement("span", { className:"block text-[11px] text-neutral-400 truncate" }, unseenAdminOrders.length ? `${unseenAdminOrders.length} pedido${unseenAdminOrders.length===1?'':'s'} o canje${unseenAdminOrders.length===1?'':'s'} sin revisar` : "No hay novedades sin revisar"))),
+                    React.createElement("i", { className:`fas ${adminNotificationsOpen ? 'fa-chevron-up' : 'fa-chevron-down'} text-neutral-400` })),
+                adminNotificationsOpen && React.createElement("div", { className:"admin-notif-panel" },
+                    React.createElement("div", { className:"flex items-center justify-between gap-2 mb-2 px-1" }, React.createElement("b", { className:"text-xs" }, "Nuevos pedidos y canjes"), unseenAdminOrders.length > 0 && React.createElement("button", { onClick:markAllAdminReviewed, className:"text-[10px] text-orange-300 font-black" }, "Marcar todo revisado")),
+                    unseenAdminOrders.length === 0 && React.createElement("p", { className:"text-xs text-neutral-500 p-2" }, "Cuando llegue un pedido o un canje nuevo, aparecerá acá."),
+                    unseenAdminOrders.slice(0,12).map(o => { const isClub=o.type==='benefit_redemption'||o.benefitRedemption===true; return React.createElement("button", { key:o.id, onClick:() => openOrderFromQueue(o), className:"admin-notif-item" }, React.createElement("div", { className:"min-w-0" }, React.createElement("div", { className:"flex items-center gap-2" }, React.createElement("span", { className:`admin-notif-kind ${isClub?'club':'order'}` }, isClub?'CANJE CLUB':'PEDIDO'), React.createElement("b", { className:"text-xs truncate" }, `#${o.id}`)), React.createElement("p", { className:"text-[10px] text-neutral-500 mt-1 truncate" }, `${o.customerName||'Sin nombre'} · ${isClub ? (o.rewardName||'Beneficio') : formatPrice(o.total)}`)), React.createElement("i", { className:"fas fa-chevron-right text-neutral-600 text-xs" })); })) ),
             React.createElement("div", { id: "order-search-panel", className: "bg-neutral-900 border border-neutral-800 rounded-3xl p-5 mb-6" },
                 React.createElement("div", { className: "flex flex-col lg:flex-row lg:items-end gap-4 lg:justify-between" },
                     React.createElement("div", null,
@@ -4714,6 +4678,53 @@ A continuación, te envío el comprobante.`;
                                         o.rejected ? 'Rechazado' : o.delivered ? 'Cargado y entregado' : 'Pendiente'),
                                     React.createElement("button", { onClick: () => openOrderFromQueue(o), className: "bg-neutral-800 hover:bg-neutral-700 px-3 py-2 rounded-xl text-xs font-black" }, "Abrir")));
                         })))),
+            React.createElement("div", { className: "bg-neutral-900 border border-neutral-800 rounded-3xl p-5 mb-6" },
+                React.createElement("div", { className:"flex flex-col lg:flex-row lg:items-start lg:justify-between gap-3 mb-4" },
+                    React.createElement("div", null,
+                        React.createElement("h2", { className: "text-xl font-black" }, React.createElement("i", { className:"fas fa-gift mr-2 text-orange-300" }), "Club de beneficios"),
+                        React.createElement("p", { className: "text-neutral-400 text-sm mt-1" }, "Regla: 1 punto por cada $5.000 acumulados. Cada compra individual de $10.000 o más suma además 1 punto extra (por ejemplo, $10.000 = 3 puntos). Los canjes descuentan puntos.")),
+                    React.createElement("span", { className:"club-order-badge" }, `${clubProducts.filter(p => p.active !== false).length} productos activos`)),
+                React.createElement("div", { className:"bg-black/30 border border-orange-500/15 rounded-2xl p-4 mb-5" },
+                    React.createElement("h3", { className:"font-black text-sm mb-3" }, "Productos y premios del Club"),
+                    React.createElement("div", { className:"grid md:grid-cols-4 gap-2" },
+                        React.createElement("input", { value:newClubProductName, onChange:e => setNewClubProductName(e.target.value), placeholder:"Nombre del producto", className:"bg-black border border-neutral-700 rounded-xl px-3 py-3 text-sm outline-none" }),
+                        React.createElement("input", { value:newClubProductDescription, onChange:e => setNewClubProductDescription(e.target.value), placeholder:"Descripción", className:"bg-black border border-neutral-700 rounded-xl px-3 py-3 text-sm outline-none" }),
+                        React.createElement("input", { value:newClubProductImage, onChange:e => setNewClubProductImage(e.target.value), placeholder:"URL de imagen (opcional)", className:"bg-black border border-neutral-700 rounded-xl px-3 py-3 text-sm outline-none" }),
+                        React.createElement("div", { className:"flex gap-2" },
+                            React.createElement("input", { type:"number", min:"1", value:newClubProductPoints, onChange:e => setNewClubProductPoints(e.target.value), placeholder:"Puntos", className:"w-24 bg-black border border-neutral-700 rounded-xl px-3 py-3 text-sm outline-none" }),
+                            React.createElement("button", { onClick:addClubProduct, className:"flex-1 bg-orange-500 hover:bg-orange-400 text-black rounded-xl px-3 py-3 text-xs font-black" }, "Agregar"))),
+                    React.createElement("div", { className:"grid sm:grid-cols-2 lg:grid-cols-3 gap-2 mt-3" },
+                        clubProducts.length === 0 && React.createElement("p", { className:"text-xs text-neutral-500" }, "Aún no hay productos cargados. En la app igualmente se verá el Club y el mensaje ‘Aún no hay productos’."),
+                        clubProducts.map(product => React.createElement("div", { key:product.id, className:"bg-neutral-950 border border-neutral-800 rounded-xl p-3 flex items-center gap-3" },
+                            product.imageUrl ? React.createElement("img", { src:product.imageUrl, className:"w-12 h-12 rounded-lg object-cover" }) : React.createElement("div", { className:"w-12 h-12 rounded-lg bg-orange-500/10 flex items-center justify-center text-orange-300" }, React.createElement("i", { className:"fas fa-gift" })),
+                            React.createElement("div", { className:"min-w-0 flex-1" }, React.createElement("b", { className:"text-xs block truncate" }, product.name), React.createElement("span", { className:"text-[10px] text-orange-300" }, `${product.points} puntos · ${product.active === false ? 'Pausado' : 'Activo'}`)),
+                            React.createElement("button", { onClick:() => toggleClubProduct(product.id), className:"bg-neutral-800 px-2 py-2 rounded-lg text-[10px] font-black" }, product.active === false ? "Activar" : "Pausar"),
+                            React.createElement("button", { onClick:() => deleteClubProduct(product.id), className:"bg-red-500/15 text-red-200 px-2 py-2 rounded-lg text-[10px]" }, React.createElement("i", { className:"fas fa-trash" }))))),
+                React.createElement("div", { className: "overflow-x-auto" },
+                    React.createElement("table", { className: "w-full text-sm min-w-[1050px]" },
+                        React.createElement("thead", null, React.createElement("tr", { className: "text-left text-neutral-500 border-b border-neutral-800" }, ["DNI","Nombre y apellido","Celular","Compras","Gastado","Puntos","Canjeados","Pendientes","Anulados","Imp. 10x15"].map(x => React.createElement("th", { key:x, className:"py-2 pr-4 text-xs" }, x)))),
+                        React.createElement("tbody", null, customerDniStats.map(r => React.createElement("tr", { key:r.dni, className:"border-b border-neutral-800/70" },
+                            React.createElement("td", { className:"py-3 pr-4 font-black" }, r.dni),
+                            React.createElement("td", { className:"py-3 pr-4" }, r.name || '—'),
+                            React.createElement("td", { className:"py-3 pr-4" }, r.phone || '—'),
+                            React.createElement("td", { className:"py-3 pr-4" }, r.purchases),
+                            React.createElement("td", { className:"py-3 pr-4 font-black text-emerald-300" }, formatPrice(r.spent)),
+                            React.createElement("td", { className:"py-3 pr-4 font-black text-orange-300" }, r.points),
+                            React.createElement("td", { className:"py-3 pr-4" }, r.redeemedPoints),
+                            React.createElement("td", { className:"py-3 pr-4" }, r.pending),
+                            React.createElement("td", { className:"py-3 pr-4" }, r.cancelled),
+                            React.createElement("td", { className:"py-3" }, r.prints)))))),
+                React.createElement("h3", { className:"font-black text-lg mt-5 mb-3" }, "Historial acumulado de pedidos y canjes"),
+                React.createElement("div", { className:"grid gap-2 max-h-[440px] overflow-auto" }, adminOrderLedger.map(o => {
+                    const isRedemption = o.type === 'benefit_redemption' || o.benefitRedemption === true;
+                    const printCount = Number(o.printCount) || ((o.printedItems || []).length) || (o.printRequested ? 1 : 0);
+                    return React.createElement("div", { key:o.id, className:"bg-neutral-950 border border-neutral-800 rounded-2xl p-3 flex flex-col sm:flex-row sm:items-center gap-3" },
+                        React.createElement("button", { onClick:() => openOrderFromQueue(o), className:"text-left min-w-0 flex-1" },
+                            React.createElement("div", { className:"flex flex-wrap items-center gap-2" }, React.createElement("b", null, "#", o.id), isRedemption && React.createElement("span", { className:"club-order-badge" }, "CANJE CLUB"), printCount > 0 && React.createElement("span", { className:"print-order-badge" }, `IMPRESIÓN 10x15 × ${printCount}`)),
+                            React.createElement("p", { className:"text-xs text-neutral-400 mt-1" }, (o.customerName || 'Sin nombre'), " · DNI ", (o.dni || '—'), " · ", (o.phone || '—'), isRedemption ? ` · ${o.rewardName || 'Beneficio'} · -${o.redeemedPoints || 0} pts` : ` · ${formatPrice(o.total)}`)),
+                        React.createElement("button", { onClick:() => openOrderFromQueue(o), className:"bg-neutral-800 px-3 py-2 rounded-xl text-xs font-bold" }, "Abrir"),
+                        !o.rejected && React.createElement("button", { onClick:() => { if (confirm(isRedemption ? '¿Anular este canje y devolver los puntos?' : '¿Marcar este pedido como cancelado/no pagado?')) setOrderDecisionAndClose(o,'rejected'); }, className:"bg-red-500/15 border border-red-500/30 text-red-200 px-3 py-2 rounded-xl text-xs font-black" }, isRedemption ? "Anular canje" : "Anular / no pagado"));
+                })))),
             React.createElement("div", { className: "bg-neutral-900 border border-neutral-800 rounded-3xl p-5 mb-6" },
                 React.createElement("div", { className: "flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4" },
                     React.createElement("div", null,
@@ -4848,6 +4859,55 @@ A continuación, te envío el comprobante.`;
                                 React.createElement("i", { className: "fas fa-trash-can mr-2" }),
                                 "Quitar car\u00E1tula personalizada"))));
             })),
+            React.createElement("div", { className:"mt-8 mb-6" },
+                React.createElement("p", { className:"text-[10px] uppercase tracking-[.18em] text-neutral-600 font-black mb-2" }, "Información técnica")),
+            React.createElement("div", { className: "mb-4 bg-blue-500/10 border border-blue-500/25 text-blue-100 rounded-2xl px-4 py-3 text-xs leading-relaxed" },
+                React.createElement("b", null, "Firebase:"),
+                " proyecto lucasabraham-b84aa \u00B7 ruta principal ",
+                React.createElement("b", null, "artifacts/lucasabraham-ph-db/orders"),
+                " \u00B7 versi\u00F3n ",
+                React.createElement("b", null, APP_VERSION),
+                ". Si al comprar aparece un aviso rojo, el pedido qued\u00F3 local pero Firestore rechaz\u00F3 la escritura."),
+            React.createElement("div", { className: "mb-6 bg-neutral-900 border border-neutral-800 rounded-3xl p-5" },
+                React.createElement("div", { className: "flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4 mb-4" },
+                    React.createElement("div", null,
+                        React.createElement("h2", { className: "text-xl font-black mb-1" },
+                            React.createElement("i", { className: "fas fa-database mr-2 text-sky-300" }),
+                            "Cupo diario estimado de Firebase"),
+                        React.createElement("p", { className: "text-neutral-400 text-sm leading-relaxed" }, "Desde esta versi\u00F3n, las visitas normales a la web no leen ni escriben Firestore. Firebase se usa al generar un pedido y cuando el admin marca entregado, rechazado o reabre.")),
+                    React.createElement("button", { onClick: () => window.open('https://console.firebase.google.com/project/lucasabraham-b84aa/firestore/usage', '_blank'), className: "bg-neutral-800 hover:bg-neutral-700 px-4 py-3 rounded-xl font-bold text-sm" },
+                        React.createElement("i", { className: "fas fa-arrow-up-right-from-square mr-2" }),
+                        "Ver uso exacto")),
+                React.createElement("div", { className: "grid sm:grid-cols-3 gap-3 mb-4" },
+                    React.createElement("div", { className: "bg-black/35 border border-neutral-800 rounded-2xl p-4" },
+                        React.createElement("p", { className: "text-xs text-neutral-500 uppercase tracking-widest" }, "Lecturas gratis"),
+                        React.createElement("b", { className: "text-2xl" }, FIRESTORE_FREE_DAILY_LIMITS.reads.toLocaleString('es-AR')),
+                        React.createElement("p", { className: "text-xs text-neutral-400 mt-1" }, "Por d\u00EDa")),
+                    React.createElement("div", { className: "bg-black/35 border border-neutral-800 rounded-2xl p-4" },
+                        React.createElement("p", { className: "text-xs text-neutral-500 uppercase tracking-widest" }, "Escrituras gratis"),
+                        React.createElement("b", { className: "text-2xl" }, FIRESTORE_FREE_DAILY_LIMITS.writes.toLocaleString('es-AR')),
+                        React.createElement("p", { className: "text-xs text-neutral-400 mt-1" }, "Por d\u00EDa")),
+                    React.createElement("div", { className: "bg-black/35 border border-neutral-800 rounded-2xl p-4" },
+                        React.createElement("p", { className: "text-xs text-neutral-500 uppercase tracking-widest" }, "Borrados gratis"),
+                        React.createElement("b", { className: "text-2xl" }, FIRESTORE_FREE_DAILY_LIMITS.deletes.toLocaleString('es-AR')),
+                        React.createElement("p", { className: "text-xs text-neutral-400 mt-1" }, "Por d\u00EDa"))),
+                React.createElement("div", { className: "bg-black/35 border border-sky-500/20 rounded-2xl p-4" },
+                    React.createElement("div", { className: "flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-2" },
+                        React.createElement("div", null,
+                            React.createElement("p", { className: "text-sm font-black text-sky-100" }, "Uso estimado de hoy en esta app"),
+                            React.createElement("p", { className: "text-xs text-neutral-400" },
+                                "Pedidos creados: ",
+                                React.createElement("b", null, firebaseDailyEstimate.created),
+                                " \u00B7 Resueltos entregado/rechazado: ",
+                                React.createElement("b", null, firebaseDailyEstimate.resolved),
+                                " \u00B7 Escrituras estimadas: ",
+                                React.createElement("b", null, firebaseDailyEstimate.writes))),
+                        React.createElement("p", { className: "text-xs text-neutral-400" },
+                            "Restantes aprox.: ",
+                            React.createElement("b", { className: "text-white" }, firebaseDailyEstimate.remainingWrites.toLocaleString('es-AR')))),
+                    React.createElement("div", { className: "h-3 bg-neutral-800 rounded-full overflow-hidden" },
+                        React.createElement("div", { className: "h-full bg-sky-500 rounded-full", style: { width: `${firebaseDailyEstimate.writePct}%` } })),
+                    React.createElement("p", { className: "text-[11px] text-neutral-500 mt-2" }, "C\u00E1lculo orientativo: 1 escritura al crear el pedido y 1 escritura al marcarlo como entregado/rechazado. El uso exacto se ve en Firebase Console."))),
             (editor === null || editor === void 0 ? void 0 : editor.type) === 'choosePhoto' && React.createElement(Modal, { onClose: () => setEditor(null) },
                 React.createElement("h2", { className: "text-2xl font-black mb-2" }, "Elegir una foto como car\u00E1tula"),
                 React.createElement("p", { className: "text-neutral-400 text-sm mb-5" }, "Seleccion\u00E1 una foto del \u00E1lbum y se usar\u00E1 como portada."),
@@ -4968,13 +5028,8 @@ A continuación, te envío el comprobante.`;
                             React.createElement("div", { className: "w-[66px] h-[66px] sm:w-20 sm:h-20 mx-auto rounded-full p-[2px] bg-gradient-to-tr from-yellow-400 via-pink-500 to-indigo-500 transition-all duration-300 group-hover:scale-105 group-hover:shadow-[0_10px_28px_rgba(236,72,153,.25)]" },
                                 React.createElement("div", { className: "w-full h-full rounded-full bg-neutral-950 border-2 border-neutral-950 overflow-hidden" }, a.cover ? React.createElement("img", { src: a.cover, loading: "lazy", decoding: "async", className: "w-full h-full object-cover transition duration-500 group-hover:scale-110" }) : React.createElement("div", { className: "w-full h-full bg-neutral-900" }))),
                             React.createElement("p", { className: "text-[10px] sm:text-[11px] text-neutral-300 mt-1.5 leading-tight whitespace-normal break-words line-clamp-2" }, a.name)))))),
-                !currentAlbum && React.createElement("div", { className: "mt-5 sm:mt-7 booking-hero rounded-3xl p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4" },
-                    React.createElement("div", null,
-                        React.createElement("h3", { className: "text-xl sm:text-2xl font-black leading-tight" }, "Consultá mis precios vigentes"),
-                        React.createElement("p", { className: "text-sm text-sky-100/75 mt-1" }, "Tocá el botón para ver los valores actualizados del mes y reservar directamente por WhatsApp.")),
-                    React.createElement("button", { onClick: () => setBookingOpen(true), className: "booking-btn px-5 py-4 rounded-2xl font-black shrink-0" },
-                        React.createElement("i", { className: "fas fa-tags mr-2" }),
-                        "Consultar precios")),
+                !currentAlbum && React.createElement("div", { className:"price-button-only" },
+                    React.createElement("button", { onClick:() => setBookingOpen(true), className:"booking-btn px-5 py-4 rounded-2xl font-black" }, React.createElement("i", { className:"fas fa-tags mr-2" }), "Consultar precios")),
                 !currentAlbum && activeAlbums.length > 0 && React.createElement(MainHeaderBanners, { bannerSettings: bannerSettings })),
             !currentAlbum && React.createElement("section", { className:"club-benefits-shell mb-4 sm:mb-5" },
                 React.createElement("div", { className:"relative z-[1]" },
@@ -4982,7 +5037,7 @@ A continuación, te envío el comprobante.`;
                         React.createElement("div", null,
                             React.createElement("p", { className:"text-[10px] uppercase tracking-[.18em] text-orange-300 font-black mb-1" }, "Club lucasabraham.ph"),
                             React.createElement("h2", { className:"text-xl sm:text-2xl font-black text-white" }, "Club de beneficios"),
-                            React.createElement("p", { className:"text-xs sm:text-sm text-neutral-300 mt-1 leading-relaxed" }, "Sumás 3 puntos por cada $10.000 acumulados en compras entregadas. Canjealos por los productos disponibles.")),
+                            React.createElement("p", { className:"text-xs sm:text-sm text-neutral-300 mt-1 leading-relaxed" }, "Sumás 1 punto por cada $5.000 acumulados. Las compras individuales de $10.000 o más suman además 1 punto extra.")),
                         React.createElement("button", { type:"button", onClick:() => setClubPointsOpen(v => !v), className:"club-points-btn shrink-0" }, React.createElement("i", { className:"fas fa-coins" }), "Ver puntos acumulados")),
                     clubPointsOpen && React.createElement("div", { className:"club-account-card mb-4" },
                         React.createElement("p", { className:"text-xs font-black text-orange-100 mb-2" }, "Consultá con tu DNI"),
@@ -5256,7 +5311,21 @@ Te envío el comprobante para que puedas prepararlas.`);
         currentAlbum && React.createElement("button", { onClick: () => setIntroOpen(true), className: "purchase-help-floating" },
             React.createElement("i", { className: "fas fa-circle-question" }),
             "¿Cómo compro las fotos?"),
-        purchaseHelpOpen && React.createElement(Modal, { onClose: () => setPurchaseHelpOpen(false), max: "max-w-lg" },
+        !checkoutOpen && !viewer && route !== "#/admin" && React.createElement("button", { type:"button", onClick:() => setClubModalOpen(true), className:"club-floating-btn", title:"Abrir Club de beneficios" }, React.createElement("span", { className:"club-float-dot" }), React.createElement("i", { className:"fas fa-gift" }), React.createElement("span", null, "Club de beneficios")),
+        clubModalOpen && React.createElement(Modal, { onClose:() => setClubModalOpen(false), max:"max-w-2xl" },
+            React.createElement("div", { className:"club-modal-shell" },
+                React.createElement("div", { className:"club-modal-header" },
+                    React.createElement("div", null, React.createElement("p", { className:"text-[10px] uppercase tracking-[.18em] text-orange-300 font-black mb-2" }, "Club lucasabraham.ph"), React.createElement("h2", { className:"club-modal-title" }, "Club de beneficios"), React.createElement("p", { className:"club-modal-copy" }, "Sumás 1 punto por cada $5.000 acumulados. Si una compra individual llega a $10.000 o más, suma 1 punto extra: una compra de $10.000 genera 3 puntos."))),
+                React.createElement("button", { type:"button", onClick:() => setClubPointsOpen(v => !v), className:"club-points-btn w-full mb-3" }, React.createElement("i", { className:"fas fa-coins" }), clubPointsOpen ? "Ocultar mis puntos" : "Ver puntos acumulados"),
+                clubPointsOpen && React.createElement("div", { className:"club-account-card mb-4" },
+                    React.createElement("p", { className:"text-xs font-black text-orange-100 mb-2" }, "Consultá con tu DNI"),
+                    React.createElement("div", { className:"flex flex-col sm:flex-row gap-2" }, React.createElement("input", { value:clubLookupDni, inputMode:"numeric", onChange:e => { setClubLookupDni(e.target.value); setClubLookupResult(null); }, placeholder:"DNI sin puntos", className:"customer-compact-input flex-1" }), React.createElement("button", { type:"button", onClick:lookupClubPoints, disabled:clubLookupLoading, className:"club-points-btn sm:min-w-[150px]" }, clubLookupLoading ? "Consultando..." : "Ver mis puntos")),
+                    clubLookupResult && React.createElement("div", { className:"grid grid-cols-3 gap-2 mt-3 text-center" }, React.createElement("div", { className:"bg-black/25 rounded-xl p-2" }, React.createElement("b", { className:"block text-xl text-orange-300" }, clubLookupResult.points), React.createElement("span", { className:"text-[9px] text-neutral-400" }, "disponibles")), React.createElement("div", { className:"bg-black/25 rounded-xl p-2" }, React.createElement("b", { className:"block text-xl text-white" }, clubLookupResult.earnedPoints), React.createElement("span", { className:"text-[9px] text-neutral-400" }, "ganados")), React.createElement("div", { className:"bg-black/25 rounded-xl p-2" }, React.createElement("b", { className:"block text-xl text-white" }, clubLookupResult.redeemedPoints), React.createElement("span", { className:"text-[9px] text-neutral-400" }, "canjeados"))),
+                    clubMessage && React.createElement("p", { className:"text-[11px] text-orange-100/85 mt-2 leading-relaxed" }, clubMessage)),
+                React.createElement("div", { className:"grid grid-cols-2 md:grid-cols-3 gap-3" },
+                    clubProducts.filter(p => p.active !== false).length === 0 && React.createElement("div", { className:"club-empty col-span-full" }, React.createElement("i", { className:"fas fa-gift text-2xl text-orange-300 mb-2" }), React.createElement("p", { className:"font-black text-white" }, "Aún no hay productos"), React.createElement("p", { className:"text-xs mt-1" }, "Podés consultar tus puntos igualmente. Los premios aparecerán acá cuando estén disponibles.")),
+                    clubProducts.filter(p => p.active !== false).map(product => React.createElement("article", { key:product.id, className:"club-product-card" }, product.imageUrl ? React.createElement("img", { src:product.imageUrl, className:"club-product-image", loading:"lazy", alt:product.name }) : React.createElement("div", { className:"club-product-placeholder" }, React.createElement("i", { className:"fas fa-gift" })), React.createElement("div", { className:"club-product-body" }, React.createElement("span", { className:"club-points-chip" }, React.createElement("i", { className:"fas fa-coins" }), `${product.points} puntos`), React.createElement("h3", { className:"font-black text-sm text-white leading-tight" }, product.name), product.description && React.createElement("p", { className:"text-[10px] text-neutral-400 leading-relaxed flex-1" }, product.description), React.createElement("button", { type:"button", disabled:clubRedeeming === product.id || Boolean(clubLookupResult && clubLookupResult.points < product.points), onClick:() => redeemClubProduct(product), className:`club-redeem-btn ${clubLookupResult && clubLookupResult.points >= product.points ? 'ready' : ''}` }, clubRedeeming === product.id ? "Canjeando..." : !clubLookupResult ? "Consultar puntos para canjear" : clubLookupResult.points >= product.points ? "Canjear ahora" : `Te faltan ${product.points - clubLookupResult.points} pts`))))))),
+                purchaseHelpOpen && React.createElement(Modal, { onClose: () => setPurchaseHelpOpen(false), max: "max-w-lg" },
             React.createElement("div", { className: "purchase-help-modal rounded-3xl p-5 sm:p-6 -m-1" },
                 React.createElement("div", { className: "flex items-start justify-between gap-3 mb-4" },
                     React.createElement("div", null,
@@ -5276,7 +5345,8 @@ Te envío el comprobante para que puedas prepararlas.`);
                 React.createElement("button", { onClick: () => setPurchaseHelpOpen(false), className: "mt-5 w-full final-buy-btn py-3.5 rounded-2xl font-black" }, "Entendido"))),
         checkoutOpen && React.createElement(Modal, { onClose: () => setCheckoutOpen(false), max: "max-w-lg" },
             React.createElement("div", { className: "checkout-simple-shell rounded-3xl p-4 sm:p-5 -m-1" },
-                React.createElement("div", { className: "mb-4" },
+                React.createElement("button", { type:"button", onClick:() => setCheckoutOpen(false), className:"checkout-close-btn", "aria-label":"Cerrar compra" }, React.createElement("i", { className:"fas fa-xmark" })),
+                React.createElement("div", { className: "mb-4 pr-10" },
                     React.createElement("p", { className: "inline-flex items-center gap-2 px-3 py-1 rounded-full bg-sky-400/15 border border-sky-300/30 text-sky-100 text-[11px] font-black uppercase tracking-[0.16em] mb-3" },
                         React.createElement("i", { className: "fas fa-bag-shopping" }),
                         " Revisar compra"),
@@ -5294,10 +5364,17 @@ Te envío el comprobante para que puedas prepararlas.`);
                             React.createElement("input", { value:checkoutCustomerName, onChange:e => { setCheckoutCustomerName(e.target.value); setCustomerDetailsSaved(false); }, placeholder:"Nombre y apellido", className:"customer-compact-input" }),
                             React.createElement("input", { value:checkoutPhone, inputMode:"tel", onChange:e => { setCheckoutPhone(e.target.value); setCustomerDetailsSaved(false); }, placeholder:"Celular", className:"customer-compact-input" }),
                             React.createElement("div", null,
-                                React.createElement("input", { value:checkoutDni, inputMode:"numeric", onChange:e => { setCheckoutDni(e.target.value); setCustomerDetailsSaved(false); }, placeholder:"DNI (opcional · para acumular puntos)", className:"customer-compact-input" }),
+                                React.createElement("input", { value:checkoutDni, inputMode:"numeric", onChange:e => { setCheckoutDni(e.target.value); setCustomerDetailsSaved(false); setCheckoutPriorClubAccount(null); }, placeholder:"DNI (opcional · para acumular puntos)", className:"customer-compact-input" }),
                                 React.createElement("p", { className:"text-[10px] text-amber-200/80 mt-1 px-1 leading-tight" }, "El DNI se solicita para acumular puntos del Club. Ingresalo sin puntos; si escribís puntos, espacios o guiones, se unifica automáticamente.")),
                             React.createElement("button", { type:"button", onClick:saveCheckoutCustomer, className:"save-customer-btn" }, React.createElement("i", { className:"fas fa-floppy-disk mr-2" }), "Guardar datos"),
-                            customerSavedMessage && React.createElement("p", { className:"customer-saved-msg" }, customerSavedMessage)))),
+                            customerSavedMessage && React.createElement("p", { className:"customer-saved-msg" }, customerSavedMessage))),
+                    customerDetailsSaved && normalizeDni(checkoutDni) && React.createElement("div", { className:"checkout-points-preview" },
+                        React.createElement("p", { className:"text-[10px] uppercase tracking-[.14em] text-orange-200 font-black mb-2" }, "Puntos de esta compra"),
+                        checkoutPointsLoading ? React.createElement("p", { className:"text-xs text-neutral-400" }, "Consultando tus puntos anteriores...") : checkoutPriorClubAccount ? React.createElement(React.Fragment, null,
+                            React.createElement("div", { className:"checkout-points-grid" },
+                                React.createElement("div", { className:"checkout-point-box" }, React.createElement("b", null, checkoutPriorClubAccount.points), React.createElement("span", null, "puntos disponibles de antes")),
+                                React.createElement("div", { className:"checkout-point-box" }, React.createElement("b", null, `+${projectedPointsForPurchase(checkoutPriorClubAccount, checkoutTotal)}`), React.createElement("span", null, "puntos que suma esta compra"))),
+                            React.createElement("p", { className:"text-[10px] text-neutral-400 mt-2 leading-relaxed" }, "Los puntos de esta compra se acreditan cuando el pedido queda marcado como entregado.")) : React.createElement("p", { className:"text-xs text-neutral-500" }, "No pudimos consultar el saldo anterior ahora."))),
                 React.createElement("div", { className: "checkout-simple-total mb-3" },
                     React.createElement("div", null,
                         React.createElement("p", { className: "text-[11px] uppercase tracking-[0.16em] text-sky-100/70 font-black" }, "Total a pagar"),
@@ -5363,6 +5440,7 @@ Te envío el comprobante para que puedas prepararlas.`);
                     React.createElement("i", { className: "fab fa-whatsapp mr-2" }),
                     "Finalizar compra"),
                 React.createElement("p", { className: "text-center text-[11px] text-sky-100/65 leading-relaxed mt-3" }, "Se abre WhatsApp con el pedido listo. Luego adjuntá el comprobante de la transferencia en el mismo chat."))),
+        checkoutOpen && React.createElement("button", { type:"button", onClick:sendOrder, disabled:!cart.length, className:"checkout-floating-cta" }, React.createElement("i", { className:"fab fa-whatsapp" }), "Finalizar compra"),
         iphoneInstallOpen && admin && React.createElement(IphoneInstallModal, { onClose: () => setIphoneInstallOpen(false), onDownload: downloadAppForIphone, onCopy: copyGalleryInstallUrl, onOpen: () => window.open(getGalleryInstallUrl(), '_blank') }),
         priceAdminOpen && admin && React.createElement(PriceAdminModal, { onClose: () => setPriceAdminOpen(false), priceSettings: priceSettings, setPriceSettings: setPriceSettings, setAdminMessage: setAdminMessage }),
         bookingOpen && React.createElement(PriceModal, { onClose: () => setBookingOpen(false), priceSettings: priceSettings }),
