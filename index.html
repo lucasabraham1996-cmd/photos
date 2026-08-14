@@ -31,7 +31,7 @@
   <meta name="twitter:description" content="Fotos deportivas protegidas · Compra directa por WhatsApp" />
   <meta name="twitter:image" content="https://lucasabraham1996-cmd.github.io/photos/social-preview-la.png?v=61" />
   <title>lucasabraham.ph - Galería de Clientes</title>
-  <meta name="app-version" content="v72-club-modal-notifications-points" /><style>html,body{margin:0;min-height:100%;background:#050505;color:#fff}#root{min-height:100vh;background:#050505;color:#fff}
+  <meta name="app-version" content="v73-club-header-link-delivered-points" /><style>html,body{margin:0;min-height:100%;background:#050505;color:#fff}#root{min-height:100vh;background:#050505;color:#fff}
     /* v41: estilo versus moderno para portada y álbum */
     .team-album-reveal{background:linear-gradient(180deg,rgba(3,7,18,.12),rgba(2,6,23,.28))}
     .team-reveal-half{left:12px!important;right:12px!important;width:auto!important;height:33%!important;padding:12px 16px!important;box-shadow:0 16px 36px rgba(0,0,0,.28),inset 0 1px 0 rgba(255,255,255,.14)!important;border:1px solid rgba(255,255,255,.10)!important;overflow:hidden}
@@ -1419,6 +1419,21 @@ img{-webkit-user-drag:none;}
 .admin-notif-shell{position:relative;margin-bottom:14px}.admin-notif-btn{width:100%;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:13px 15px;border-radius:18px;background:linear-gradient(135deg,rgba(249,115,22,.13),rgba(15,23,42,.86));border:1px solid rgba(249,115,22,.24);color:#fff}.admin-notif-left{display:flex;align-items:center;gap:11px;min-width:0}.admin-notif-icon{position:relative;width:38px;height:38px;border-radius:13px;display:flex;align-items:center;justify-content:center;background:rgba(249,115,22,.16);color:#fb923c}.admin-notif-count{position:absolute;right:-6px;top:-6px;min-width:19px;height:19px;padding:0 5px;border-radius:999px;background:#ef4444;color:white;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:950;border:2px solid #111}.admin-notif-panel{margin-top:8px;border:1px solid rgba(255,255,255,.09);background:#0a0a0d;border-radius:18px;padding:10px;box-shadow:0 20px 55px rgba(0,0,0,.42)}.admin-notif-item{width:100%;display:flex;align-items:center;justify-content:space-between;gap:10px;text-align:left;padding:10px;border-radius:13px;background:rgba(255,255,255,.035);border:1px solid rgba(255,255,255,.05);margin-bottom:6px}.admin-notif-item:last-child{margin-bottom:0}.admin-notif-kind{font-size:9px;font-weight:950;border-radius:999px;padding:4px 7px}.admin-notif-kind.order{background:rgba(59,130,246,.15);color:#bfdbfe}.admin-notif-kind.club{background:rgba(249,115,22,.15);color:#fed7aa}
 .price-button-only{margin:18px 0 20px;display:flex;justify-content:flex-start}.price-button-only .booking-btn{background:linear-gradient(135deg,#22c55e,#16a34a)!important;color:#03140a!important;border:1px solid rgba(255,255,255,.24)!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.30),0 12px 28px rgba(34,197,94,.22)!important}
 @media(max-width:640px){.club-floating-btn{right:12px;bottom:112px;padding:11px 13px}.club-modal-shell{padding:14px;border-radius:20px}.club-modal-title{font-size:22px}.checkout-floating-cta{bottom:max(8px,env(safe-area-inset-bottom));width:calc(100vw - 20px)}.price-button-only{justify-content:center}.price-button-only .booking-btn{width:100%}}
+</style>
+
+<style id="v73-club-header-link">
+.club-floating-btn{display:none!important}
+.la-insta-btn.la-club-header{background:linear-gradient(135deg,rgba(249,115,22,.22),rgba(239,68,68,.16))!important;border-color:rgba(251,146,60,.38)!important;color:#ffedd5!important}
+.la-insta-btn.la-club-header:hover{border-color:rgba(251,146,60,.7)!important;background:linear-gradient(135deg,rgba(249,115,22,.32),rgba(239,68,68,.23))!important}
+.club-share-btn{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;border:1px solid rgba(255,255,255,.10);background:rgba(255,255,255,.055);color:#fff;border-radius:14px;padding:10px 13px;font-size:12px;font-weight:900;margin:0 0 12px}
+.club-share-btn:active{transform:scale(.985)}
+@media(max-width:768px){
+  .la-insta-topbar{position:fixed!important;top:0!important;left:0!important;right:0!important;width:100%!important;max-width:none!important;margin:0!important;border-radius:0 0 18px 18px!important;z-index:9999!important;padding-top:max(7px,env(safe-area-inset-top))!important;transform:none!important}
+  .la-insta-topbar + header{margin-top:76px!important}
+  .la-insta-actions{gap:5px!important}
+  .la-insta-btn{min-width:0!important;padding-left:7px!important;padding-right:7px!important}
+  .la-insta-btn.la-club-header span{font-size:10px!important}
+}
 </style>
 </head>
 <body style="background:#050505;color:#fff;">
@@ -3653,6 +3668,35 @@ function App() {
         const base = `${location.origin && location.origin !== 'null' ? location.origin : ''}${location.pathname || ''}`;
         return `${base || (location.href || '').split('#')[0]}#/galeria`;
     };
+    const getClubUrl = () => {
+        const base = `${location.origin && location.origin !== 'null' ? location.origin : ''}${location.pathname || ''}`;
+        return `${base || (location.href || '').split('#')[0]}#/club`;
+    };
+    const openClub = () => {
+        setClubModalOpen(true);
+        if (location.hash !== '#/club') location.hash = '#/club';
+    };
+    const closeClub = () => {
+        setClubModalOpen(false);
+        if (location.hash === '#/club') location.hash = '#/galeria';
+    };
+    const shareClubLink = async () => {
+        const url = getClubUrl();
+        try {
+            if (navigator.share) {
+                await navigator.share({ title:'Club de beneficios · lucasabraham.ph', text:'Consultá tus puntos y beneficios.', url });
+                return;
+            }
+        } catch (e) {
+            if (e && e.name === 'AbortError') return;
+        }
+        try {
+            await navigator.clipboard.writeText(url);
+            alert('Link del Club copiado.');
+        } catch (e) {
+            window.prompt('Copiá el link del Club:', url);
+        }
+    };
     const copyGalleryInstallUrl = async () => {
         const installUrl = getGalleryInstallUrl();
         try {
@@ -3708,6 +3752,9 @@ ${clone.outerHTML}`;
         }
     };
     useEffect(() => { const h = () => { const hash = location.hash || "#/galeria"; setRoute(hash); setActiveAlbum(getAlbumIdFromHash(hash)); setActiveSubAlbum(getSubAlbumIdFromHash(hash)); }; addEventListener('hashchange', h); h(); return () => removeEventListener('hashchange', h); }, []);
+    useEffect(() => {
+        if (route === '#/club') setClubModalOpen(true);
+    }, [route]);
     useEffect(() => {
         saveCoverOverrides(coverOverrides);
         if (sharedReady) saveSharedAdminState({ coverOverrides }).catch(e => { console.warn(e); setAdminMessage('No se pudo sincronizar la portada. El cambio quedó solo en este dispositivo.'); });
@@ -3961,7 +4008,7 @@ ${clone.outerHTML}`;
                 }
                 return;
             }
-            const confirmed = isTruthyStatus(o.delivered) || ['entregado','cargado_y_entregado','pagado'].includes(status);
+            const confirmed = isTruthyStatus(o.delivered);
             if (cancelled) account.cancelled += 1;
             else if (confirmed) {
                 account.purchases += 1;
@@ -4980,6 +5027,9 @@ A continuación, te envío el comprobante.`;
                     React.createElement("button", { onClick: () => window.open(`https://wa.me/${SELLER_PHONE}`, '_blank'), className: "la-insta-btn la-insta-whatsapp", title: "WhatsApp" },
                         React.createElement("i", { className: "fab fa-whatsapp" }),
                         React.createElement("span", null, "WhatsApp")),
+                    React.createElement("button", { onClick: openClub, className: "la-insta-btn la-club-header", title: "Club de beneficios" },
+                        React.createElement("i", { className: "fas fa-gift" }),
+                        React.createElement("span", null, "Club")),
                     )),
             React.createElement("header", { className: "max-w-5xl mx-auto pt-2 sm:pt-4 pb-4 px-0" },
                 React.createElement("div", { className: "la-profile-card grid grid-cols-[90px,1fr] sm:grid-cols-[170px,1fr] gap-5 sm:gap-10 items-start" },
@@ -5031,36 +5081,6 @@ A continuación, te envío el comprobante.`;
                 !currentAlbum && React.createElement("div", { className:"price-button-only" },
                     React.createElement("button", { onClick:() => setBookingOpen(true), className:"booking-btn px-5 py-4 rounded-2xl font-black" }, React.createElement("i", { className:"fas fa-tags mr-2" }), "Consultar precios")),
                 !currentAlbum && activeAlbums.length > 0 && React.createElement(MainHeaderBanners, { bannerSettings: bannerSettings })),
-            !currentAlbum && React.createElement("section", { className:"club-benefits-shell mb-4 sm:mb-5" },
-                React.createElement("div", { className:"relative z-[1]" },
-                    React.createElement("div", { className:"flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 mb-4" },
-                        React.createElement("div", null,
-                            React.createElement("p", { className:"text-[10px] uppercase tracking-[.18em] text-orange-300 font-black mb-1" }, "Club lucasabraham.ph"),
-                            React.createElement("h2", { className:"text-xl sm:text-2xl font-black text-white" }, "Club de beneficios"),
-                            React.createElement("p", { className:"text-xs sm:text-sm text-neutral-300 mt-1 leading-relaxed" }, "Sumás 1 punto por cada $5.000 acumulados. Las compras individuales de $10.000 o más suman además 1 punto extra.")),
-                        React.createElement("button", { type:"button", onClick:() => setClubPointsOpen(v => !v), className:"club-points-btn shrink-0" }, React.createElement("i", { className:"fas fa-coins" }), "Ver puntos acumulados")),
-                    clubPointsOpen && React.createElement("div", { className:"club-account-card mb-4" },
-                        React.createElement("p", { className:"text-xs font-black text-orange-100 mb-2" }, "Consultá con tu DNI"),
-                        React.createElement("div", { className:"flex flex-col sm:flex-row gap-2" },
-                            React.createElement("input", { value:clubLookupDni, inputMode:"numeric", onChange:e => { setClubLookupDni(e.target.value); setClubLookupResult(null); }, placeholder:"DNI sin puntos", className:"customer-compact-input flex-1" }),
-                            React.createElement("button", { type:"button", onClick:lookupClubPoints, disabled:clubLookupLoading, className:"club-points-btn sm:min-w-[150px]" }, clubLookupLoading ? "Consultando..." : "Ver mis puntos")),
-                        clubLookupResult && React.createElement("div", { className:"grid grid-cols-3 gap-2 mt-3 text-center" },
-                            React.createElement("div", { className:"bg-black/25 rounded-xl p-2" }, React.createElement("b", { className:"block text-xl text-orange-300" }, clubLookupResult.points), React.createElement("span", { className:"text-[9px] text-neutral-400" }, "disponibles")),
-                            React.createElement("div", { className:"bg-black/25 rounded-xl p-2" }, React.createElement("b", { className:"block text-xl text-white" }, clubLookupResult.earnedPoints), React.createElement("span", { className:"text-[9px] text-neutral-400" }, "ganados")),
-                            React.createElement("div", { className:"bg-black/25 rounded-xl p-2" }, React.createElement("b", { className:"block text-xl text-white" }, clubLookupResult.redeemedPoints), React.createElement("span", { className:"text-[9px] text-neutral-400" }, "canjeados"))),
-                        clubMessage && React.createElement("p", { className:"text-[11px] text-orange-100/85 mt-2 leading-relaxed" }, clubMessage)),
-                    React.createElement("div", { className:"grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3" },
-                        clubProducts.filter(p => p.active !== false).length === 0 && React.createElement("div", { className:"club-empty col-span-full" },
-                            React.createElement("i", { className:"fas fa-gift text-2xl text-orange-300 mb-2" }),
-                            React.createElement("p", { className:"font-black text-white" }, "Aún no hay productos"),
-                            React.createElement("p", { className:"text-xs mt-1" }, "Podés consultar tus puntos igualmente. Los productos aparecerán acá cuando estén disponibles.")),
-                        clubProducts.filter(p => p.active !== false).map(product => React.createElement("article", { key:product.id, className:"club-product-card" },
-                            product.imageUrl ? React.createElement("img", { src:product.imageUrl, className:"club-product-image", loading:"lazy", alt:product.name }) : React.createElement("div", { className:"club-product-placeholder" }, React.createElement("i", { className:"fas fa-gift" })),
-                            React.createElement("div", { className:"club-product-body" },
-                                React.createElement("span", { className:"club-points-chip" }, React.createElement("i", { className:"fas fa-coins" }), `${product.points} puntos`),
-                                React.createElement("h3", { className:"font-black text-sm text-white leading-tight" }, product.name),
-                                product.description && React.createElement("p", { className:"text-[10px] text-neutral-400 leading-relaxed flex-1" }, product.description),
-                                React.createElement("button", { type:"button", disabled:clubRedeeming === product.id || Boolean(clubLookupResult && clubLookupResult.points < product.points), onClick:() => redeemClubProduct(product), className:`club-redeem-btn ${clubLookupResult && clubLookupResult.points >= product.points ? 'ready' : ''}` }, clubRedeeming === product.id ? "Canjeando..." : !clubLookupResult ? "Consultar puntos para canjear" : clubLookupResult.points >= product.points ? "Canjear ahora" : `Te faltan ${product.points - clubLookupResult.points} pts`))))))),
             React.createElement("div", { className: "mb-3 sm:mb-5" },
                     React.createElement("button", { onClick: () => setIntroOpen(true), className: "purchase-help-btn purchase-help-btn-single" },
                         React.createElement("i", { className: "fas fa-circle-question" }),
@@ -5311,11 +5331,11 @@ Te envío el comprobante para que puedas prepararlas.`);
         currentAlbum && React.createElement("button", { onClick: () => setIntroOpen(true), className: "purchase-help-floating" },
             React.createElement("i", { className: "fas fa-circle-question" }),
             "¿Cómo compro las fotos?"),
-        !checkoutOpen && !viewer && route !== "#/admin" && React.createElement("button", { type:"button", onClick:() => setClubModalOpen(true), className:"club-floating-btn", title:"Abrir Club de beneficios" }, React.createElement("span", { className:"club-float-dot" }), React.createElement("i", { className:"fas fa-gift" }), React.createElement("span", null, "Club de beneficios")),
-        clubModalOpen && React.createElement(Modal, { onClose:() => setClubModalOpen(false), max:"max-w-2xl" },
+        clubModalOpen && React.createElement(Modal, { onClose:closeClub, max:"max-w-2xl" },
             React.createElement("div", { className:"club-modal-shell" },
                 React.createElement("div", { className:"club-modal-header" },
                     React.createElement("div", null, React.createElement("p", { className:"text-[10px] uppercase tracking-[.18em] text-orange-300 font-black mb-2" }, "Club lucasabraham.ph"), React.createElement("h2", { className:"club-modal-title" }, "Club de beneficios"), React.createElement("p", { className:"club-modal-copy" }, "Sumás 1 punto por cada $5.000 acumulados. Si una compra individual llega a $10.000 o más, suma 1 punto extra: una compra de $10.000 genera 3 puntos."))),
+                React.createElement("button", { type:"button", onClick:shareClubLink, className:"club-share-btn" }, React.createElement("i", { className:"fas fa-share-nodes" }), "Compartir link del Club"),
                 React.createElement("button", { type:"button", onClick:() => setClubPointsOpen(v => !v), className:"club-points-btn w-full mb-3" }, React.createElement("i", { className:"fas fa-coins" }), clubPointsOpen ? "Ocultar mis puntos" : "Ver puntos acumulados"),
                 clubPointsOpen && React.createElement("div", { className:"club-account-card mb-4" },
                     React.createElement("p", { className:"text-xs font-black text-orange-100 mb-2" }, "Consultá con tu DNI"),
@@ -5356,8 +5376,8 @@ Te envío el comprobante para que puedas prepararlas.`);
                     React.createElement("button", { type:"button", onClick:() => setCustomerDetailsOpen(v => !v), className:`benefits-glass-btn ${customerDetailsOpen || customerDetailsSaved ? 'active' : ''}` },
                         React.createElement("i", { className:"fas fa-gift" }),
                         React.createElement("span", null,
-                            React.createElement("b", null, customerDetailsSaved ? "Datos guardados para beneficios" : "Quiero sumar puntos para beneficios"),
-                            React.createElement("small", null, customerDetailsSaved ? `${checkoutCustomerName} · ${checkoutPhone}${checkoutDni ? ` · DNI ${normalizeDni(checkoutDni)}` : ''}` : "Nombre y apellido · celular · DNI opcional")),
+                            React.createElement("b", null, customerDetailsSaved ? "Datos listos para sumar puntos" : "Quiero sumar puntos con esta compra"),
+                            React.createElement("small", null, customerDetailsSaved ? "Se acreditan cuando el pedido quede entregado" : "El DNI identifica tu cuenta y permite acumular los puntos")),
                         React.createElement("i", { className:`fas ${customerDetailsOpen ? 'fa-chevron-up' : customerDetailsSaved ? 'fa-circle-check' : 'fa-chevron-down'}` })),
                     customerDetailsOpen && React.createElement("div", { className:"checkout-simple-card customer-data-card mt-2 mb-0" },
                         React.createElement("div", { className:"grid gap-2" },
@@ -5365,8 +5385,8 @@ Te envío el comprobante para que puedas prepararlas.`);
                             React.createElement("input", { value:checkoutPhone, inputMode:"tel", onChange:e => { setCheckoutPhone(e.target.value); setCustomerDetailsSaved(false); }, placeholder:"Celular", className:"customer-compact-input" }),
                             React.createElement("div", null,
                                 React.createElement("input", { value:checkoutDni, inputMode:"numeric", onChange:e => { setCheckoutDni(e.target.value); setCustomerDetailsSaved(false); setCheckoutPriorClubAccount(null); }, placeholder:"DNI (opcional · para acumular puntos)", className:"customer-compact-input" }),
-                                React.createElement("p", { className:"text-[10px] text-amber-200/80 mt-1 px-1 leading-tight" }, "El DNI se solicita para acumular puntos del Club. Ingresalo sin puntos; si escribís puntos, espacios o guiones, se unifica automáticamente.")),
-                            React.createElement("button", { type:"button", onClick:saveCheckoutCustomer, className:"save-customer-btn" }, React.createElement("i", { className:"fas fa-floppy-disk mr-2" }), "Guardar datos"),
+                                React.createElement("p", { className:"text-[10px] text-amber-200/80 mt-1 px-1 leading-tight" }, "El DNI es el dato que identifica tu cuenta para acumular puntos del Club.")),
+                            React.createElement("button", { type:"button", onClick:saveCheckoutCustomer, className:"save-customer-btn" }, React.createElement("i", { className:"fas fa-coins mr-2" }), "Guardar y sumar puntos con la compra"),
                             customerSavedMessage && React.createElement("p", { className:"customer-saved-msg" }, customerSavedMessage))),
                     customerDetailsSaved && normalizeDni(checkoutDni) && React.createElement("div", { className:"checkout-points-preview" },
                         React.createElement("p", { className:"text-[10px] uppercase tracking-[.14em] text-orange-200 font-black mb-2" }, "Puntos de esta compra"),
@@ -5374,7 +5394,7 @@ Te envío el comprobante para que puedas prepararlas.`);
                             React.createElement("div", { className:"checkout-points-grid" },
                                 React.createElement("div", { className:"checkout-point-box" }, React.createElement("b", null, checkoutPriorClubAccount.points), React.createElement("span", null, "puntos disponibles de antes")),
                                 React.createElement("div", { className:"checkout-point-box" }, React.createElement("b", null, `+${projectedPointsForPurchase(checkoutPriorClubAccount, checkoutTotal)}`), React.createElement("span", null, "puntos que suma esta compra"))),
-                            React.createElement("p", { className:"text-[10px] text-neutral-400 mt-2 leading-relaxed" }, "Los puntos de esta compra se acreditan cuando el pedido queda marcado como entregado.")) : React.createElement("p", { className:"text-xs text-neutral-500" }, "No pudimos consultar el saldo anterior ahora."))),
+                            React.createElement("p", { className:"text-[10px] text-neutral-400 mt-2 leading-relaxed" }, "Los puntos se acreditan únicamente cuando Lucas confirma el pedido como entregado. Los pedidos pendientes o rechazados no suman.")) : React.createElement("p", { className:"text-xs text-neutral-500" }, "No pudimos consultar el saldo anterior ahora."))),
                 React.createElement("div", { className: "checkout-simple-total mb-3" },
                     React.createElement("div", null,
                         React.createElement("p", { className: "text-[11px] uppercase tracking-[0.16em] text-sky-100/70 font-black" }, "Total a pagar"),
