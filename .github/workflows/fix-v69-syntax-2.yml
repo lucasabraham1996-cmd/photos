@@ -1,0 +1,37 @@
+name: Fix v69 syntax targeted
+on:
+  push:
+    branches: [main]
+permissions:
+  contents: write
+jobs:
+  fix:
+    if: ${{ !contains(github.event.head_commit.message, '[v69-syntax-fixed]') }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Apply targeted fix and validate
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+          p=Path('index.html')
+          s=p.read_text(encoding='utf-8')
+          old='\n            ),\n            React.createElement("div", { id: "order-search-panel"'
+          new='\n            React.createElement("div", { id: "order-search-panel"'
+          if s.count(old) != 1:
+              raise SystemExit(f'expected 1 anchor, got {s.count(old)}')
+          s=s.replace(old,new,1)
+          s=s.replace('v69-customer-benefits','v69-customer-benefits-hotfix',1)
+          p.write_text(s,encoding='utf-8')
+          scripts=re.findall(r'<script(?:\s[^>]*)?>(.*?)</script>', s, flags=re.S|re.I)
+          Path('/tmp/main.js').write_text(max(scripts,key=len),encoding='utf-8')
+          PY
+          node --check /tmp/main.js
+      - name: Commit hotfix
+        run: |
+          git config user.name "lucasabraham1996-cmd"
+          git config user.email "lucasabraham1996@gmail.com"
+          git add index.html
+          git commit -m "fix: restore app startup after v69 [v69-syntax-fixed]"
+          git push
