@@ -1,0 +1,38 @@
+name: Apply v71 club benefits fixed
+on:
+  push:
+    branches:
+      - main
+permissions:
+  contents: write
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p=Path('.github/scripts/apply_v71_club.py')
+          s=p.read_text(encoding='utf-8')
+          s=s.replace('pattern.subn(replacement, s, count=1)', 'pattern.subn(lambda m: replacement, s, count=1)')
+          s=s.replace('pattern.subn(admin_club, s, count=1)', 'pattern.subn(lambda m: admin_club, s, count=1)')
+          p.write_text(s,encoding='utf-8')
+          PY
+          python3 .github/scripts/apply_v71_club.py
+      - run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+          html=Path('index.html').read_text(encoding='utf-8')
+          scripts=re.findall(r'<script(?:\s[^>]*)?>(.*?)</script>', html, flags=re.S|re.I)
+          Path('/tmp/main.js').write_text(max(scripts,key=len),encoding='utf-8')
+          PY
+          node --check /tmp/main.js
+      - run: |
+          if git diff --quiet index.html; then exit 0; fi
+          git config user.name "lucasabraham1996-cmd"
+          git config user.email "lucasabraham1996@gmail.com"
+          git add index.html
+          git commit -m "feat: club benefits and selectable 10x15 prints [v71-applied]"
+          git push
