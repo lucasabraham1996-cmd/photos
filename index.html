@@ -31,7 +31,7 @@
   <meta name="twitter:description" content="Fotos deportivas protegidas · Compra directa por WhatsApp" />
   <meta name="twitter:image" content="https://lucasabraham1996-cmd.github.io/photos/social-preview-la.png?v=61" />
   <title>lucasabraham.ph - Galería de Clientes</title>
-  <meta name="app-version" content="v69-customer-benefits" /><style>html,body{margin:0;min-height:100%;background:#050505;color:#fff}#root{min-height:100vh;background:#050505;color:#fff}
+  <meta name="app-version" content="v69-customer-benefits-hotfix" /><style>html,body{margin:0;min-height:100%;background:#050505;color:#fff}#root{min-height:100vh;background:#050505;color:#fff}
     /* v41: estilo versus moderno para portada y álbum */
     .team-album-reveal{background:linear-gradient(180deg,rgba(3,7,18,.12),rgba(2,6,23,.28))}
     .team-reveal-half{left:12px!important;right:12px!important;width:auto!important;height:33%!important;padding:12px 16px!important;box-shadow:0 16px 36px rgba(0,0,0,.28),inset 0 1px 0 rgba(255,255,255,.14)!important;border:1px solid rgba(255,255,255,.10)!important;overflow:hidden}
@@ -4376,7 +4376,6 @@ A continuación, te envío el comprobante.`;
                         React.createElement("p", { className:"text-xs text-neutral-400 mt-1" }, (o.customerName || 'Sin nombre'), " · DNI ", (o.dni || '—'), " · ", (o.phone || '—'), " · ", formatPrice(o.total))),
                     React.createElement("button", { onClick:() => openOrderFromQueue(o), className:"bg-neutral-800 px-3 py-2 rounded-xl text-xs font-bold" }, "Abrir"),
                     !o.rejected && React.createElement("button", { onClick:() => { if (confirm('¿Marcar este pedido como cancelado/no pagado?')) setOrderDecisionAndClose(o,'rejected'); }, className:"bg-red-500/15 border border-red-500/30 text-red-200 px-3 py-2 rounded-xl text-xs font-black" }, "Anular / no pagado"))))),
-            ),
             React.createElement("div", { id: "order-search-panel", className: "bg-neutral-900 border border-neutral-800 rounded-3xl p-5 mb-6" },
                 React.createElement("div", { className: "flex flex-col lg:flex-row lg:items-end gap-4 lg:justify-between" },
                     React.createElement("div", null,
