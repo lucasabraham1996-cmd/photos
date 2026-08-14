@@ -31,7 +31,7 @@
   <meta name="twitter:description" content="Fotos deportivas protegidas · Compra directa por WhatsApp" />
   <meta name="twitter:image" content="https://lucasabraham1996-cmd.github.io/photos/social-preview-la.png?v=61" />
   <title>lucasabraham.ph - Galería de Clientes</title>
-  <meta name="app-version" content="v73-club-header-link-delivered-points" /><style>html,body{margin:0;min-height:100%;background:#050505;color:#fff}#root{min-height:100vh;background:#050505;color:#fff}
+  <meta name="app-version" content="v74-mobile-spacing-club-close" /><style>html,body{margin:0;min-height:100%;background:#050505;color:#fff}#root{min-height:100vh;background:#050505;color:#fff}
     /* v41: estilo versus moderno para portada y álbum */
     .team-album-reveal{background:linear-gradient(180deg,rgba(3,7,18,.12),rgba(2,6,23,.28))}
     .team-reveal-half{left:12px!important;right:12px!important;width:auto!important;height:33%!important;padding:12px 16px!important;box-shadow:0 16px 36px rgba(0,0,0,.28),inset 0 1px 0 rgba(255,255,255,.14)!important;border:1px solid rgba(255,255,255,.10)!important;overflow:hidden}
@@ -1434,6 +1434,15 @@ img{-webkit-user-drag:none;}
   .la-insta-btn{min-width:0!important;padding-left:7px!important;padding-right:7px!important}
   .la-insta-btn.la-club-header span{font-size:10px!important}
 }
+</style>
+
+<style id="v74-mobile-spacing-club-close">
+@media(max-width:768px){
+  .la-insta-topbar + header{margin-top:0!important;padding-top:76px!important}
+  .la-insta-topbar{top:0!important}
+}
+.club-modal-close{position:absolute;top:12px;right:12px;z-index:50;width:40px;height:40px;border-radius:999px;border:1px solid rgba(255,255,255,.14);background:rgba(15,15,18,.88);color:#fff;display:flex;align-items:center;justify-content:center;box-shadow:0 8px 24px rgba(0,0,0,.35);backdrop-filter:blur(12px)}
+.club-modal-close:active{transform:scale(.96)}
 </style>
 </head>
 <body style="background:#050505;color:#fff;">
@@ -5010,7 +5019,7 @@ A continuación, te envío el comprobante.`;
                             React.createElement("i", { className: "fas fa-wand-magic-sparkles mr-2" }),
                             "Generar y guardar car\u00E1tula")))));
     return React.createElement("div", { className: "min-h-screen pb-36", onContextMenu: e => e.preventDefault() },
-        React.createElement("div", { className: "max-w-6xl mx-auto px-4 py-8" },
+        React.createElement("div", { className: "max-w-6xl mx-auto px-4 pt-0 pb-8" },
             React.createElement("div", { className: "la-insta-topbar" },
                 React.createElement("div", { className: "la-insta-brand" },
                     React.createElement("button", { onClick: () => { location.hash = "#/galeria"; setActiveAlbum(null); setActiveSubAlbum(''); window.scrollTo({ top: 0, behavior: 'smooth' }); }, className: "la-insta-logo la-home-logo-btn", title: "Volver al inicio" }, React.createElement("img", { src: "https://i.postimg.cc/PrD4jg9V/Logo-LA.png", alt: BRAND })),
@@ -5031,7 +5040,7 @@ A continuación, te envío el comprobante.`;
                         React.createElement("i", { className: "fas fa-gift" }),
                         React.createElement("span", null, "Club")),
                     )),
-            React.createElement("header", { className: "max-w-5xl mx-auto pt-2 sm:pt-4 pb-4 px-0" },
+            React.createElement("header", { className: "max-w-5xl mx-auto pt-0 sm:pt-4 pb-4 px-0" },
                 React.createElement("div", { className: "la-profile-card grid grid-cols-[90px,1fr] sm:grid-cols-[170px,1fr] gap-5 sm:gap-10 items-start" },
                     React.createElement("div", { className: "flex justify-center" },
                         React.createElement("button", { onClick: () => { location.hash = "#/galeria"; setActiveAlbum(null); setActiveSubAlbum(''); window.scrollTo({ top: 0, behavior: 'smooth' }); }, className: "profile-home-btn w-20 h-20 sm:w-36 sm:h-36 rounded-full p-[3px] bg-gradient-to-tr from-yellow-500 via-pink-500 to-indigo-500", title: "Volver al inicio" },
@@ -5332,7 +5341,8 @@ Te envío el comprobante para que puedas prepararlas.`);
             React.createElement("i", { className: "fas fa-circle-question" }),
             "¿Cómo compro las fotos?"),
         clubModalOpen && React.createElement(Modal, { onClose:closeClub, max:"max-w-2xl" },
-            React.createElement("div", { className:"club-modal-shell" },
+            React.createElement("div", { className:"club-modal-shell relative" },
+                React.createElement("button", { type:"button", onClick:closeClub, className:"club-modal-close", "aria-label":"Cerrar Club de beneficios", title:"Cerrar" }, React.createElement("i", { className:"fas fa-xmark" })),
                 React.createElement("div", { className:"club-modal-header" },
                     React.createElement("div", null, React.createElement("p", { className:"text-[10px] uppercase tracking-[.18em] text-orange-300 font-black mb-2" }, "Club lucasabraham.ph"), React.createElement("h2", { className:"club-modal-title" }, "Club de beneficios"), React.createElement("p", { className:"club-modal-copy" }, "Sumás 1 punto por cada $5.000 acumulados. Si una compra individual llega a $10.000 o más, suma 1 punto extra: una compra de $10.000 genera 3 puntos."))),
                 React.createElement("button", { type:"button", onClick:shareClubLink, className:"club-share-btn" }, React.createElement("i", { className:"fas fa-share-nodes" }), "Compartir link del Club"),
