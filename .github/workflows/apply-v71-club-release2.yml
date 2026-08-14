@@ -1,0 +1,64 @@
+name: Release v71 club benefits structural
+on:
+  push:
+    branches:
+      - main
+permissions:
+  contents: write
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build patch
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p=Path('.github/scripts/apply_v71_club.py')
+          s=p.read_text(encoding='utf-8')
+          s=s.replace('pattern.subn(replacement, s, count=1)', 'pattern.subn(lambda m: replacement, s, count=1)')
+          s=s.replace('pattern.subn(admin_club, s, count=1)', 'pattern.subn(lambda m: admin_club, s, count=1)')
+          p.write_text(s,encoding='utf-8')
+          PY
+          python3 .github/scripts/apply_v71_club.py
+          python3 - <<'PY'
+          from pathlib import Path
+          p=Path('index.html')
+          s=p.read_text(encoding='utf-8')
+          start=s.find('adminOrderLedger.map(o => {')
+          end=s.find('React.createElement("div", { id: "order-search-panel"', start)
+          if start < 0 or end < 0:
+              raise SystemExit(f'admin region missing: {start} {end}')
+          region=s[start:end]
+          pos=region.rfind('}))),')
+          if pos < 0:
+              raise SystemExit('admin closing token missing in region')
+          region=region[:pos] + '})))),' + region[pos+5:]
+          s=s[:start] + region + s[end:]
+          p.write_text(s,encoding='utf-8')
+          PY
+      - name: Validate JavaScript
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+          html=Path('index.html').read_text(encoding='utf-8')
+          scripts=re.findall(r'<script(?:\s[^>]*)?>(.*?)</script>', html, flags=re.S|re.I)
+          Path('/tmp/main.js').write_text(max(scripts,key=len),encoding='utf-8')
+          PY
+          node --check /tmp/main.js
+      - name: Validate feature markers
+        run: |
+          grep -q 'v71-club-beneficios-print-select' index.html
+          grep -q 'Ver puntos acumulados' index.html
+          grep -q 'Aún no hay productos' index.html
+          grep -q 'IMPRESIÓN 10x15' index.html
+          grep -q 'Math.floor(account.spent / 10000) \* 3' index.html
+      - name: Commit
+        run: |
+          if git diff --quiet index.html; then exit 0; fi
+          git config user.name "lucasabraham1996-cmd"
+          git config user.email "lucasabraham1996@gmail.com"
+          git add index.html
+          git commit -m "feat: club benefits and selectable 10x15 prints [v71-applied]"
+          git push
