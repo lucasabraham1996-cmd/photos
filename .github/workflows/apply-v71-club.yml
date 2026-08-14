@@ -1,0 +1,29 @@
+name: Apply v71 club benefits
+on:
+  push:
+    branches:
+      - main
+permissions:
+  contents: write
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: python3 .github/scripts/apply_v71_club.py
+      - run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+          html=Path('index.html').read_text(encoding='utf-8')
+          scripts=re.findall(r'<script(?:\s[^>]*)?>(.*?)</script>', html, flags=re.S|re.I)
+          Path('/tmp/main.js').write_text(max(scripts,key=len),encoding='utf-8')
+          PY
+          node --check /tmp/main.js
+      - run: |
+          if git diff --quiet; then exit 0; fi
+          git config user.name "lucasabraham1996-cmd"
+          git config user.email "lucasabraham1996@gmail.com"
+          git add index.html
+          git commit -m "feat: club benefits and selectable 10x15 prints [v71-applied]"
+          git push
