@@ -1,0 +1,55 @@
+name: Apply v73 club header
+on:
+  push:
+    paths:
+      - '.github/scripts/apply_v73_club_header.py'
+      - '.github/workflows/apply-v73-club-header.yml'
+permissions:
+  contents: write
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Patch index
+        run: python3 .github/scripts/apply_v73_club_header.py
+      - name: Validate JavaScript
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          s=Path('index.html').read_text(encoding='utf-8')
+          starts=[]
+          pos=0
+          while True:
+              i=s.find('<script',pos)
+              if i<0: break
+              j=s.find('>',i)
+              k=s.find('</script>',j)
+              if k<0: break
+              tag=s[i:j+1]
+              body=s[j+1:k]
+              if 'src=' not in tag and ('React.createElement' in body or 'function App()' in body):
+                  Path('/tmp/app-check.js').write_text(body,encoding='utf-8')
+                  break
+              pos=k+9
+          else:
+              raise SystemExit('main script not found')
+          PY
+          node --check /tmp/app-check.js
+      - name: Validate v73 markers
+        run: |
+          grep -q 'v73-club-header-link-delivered-points' index.html
+          grep -q 'Compartir link del Club' index.html
+          grep -q 'Guardar y sumar puntos con la compra' index.html
+          grep -q 'const confirmed = isTruthyStatus(o.delivered);' index.html
+          grep -q 'la-club-header' index.html
+          ! grep -q 'className:"club-floating-btn"' index.html
+          ! grep -q 'si escribís puntos, espacios o guiones' index.html
+      - name: Commit
+        run: |
+          if git diff --quiet index.html; then exit 0; fi
+          git config user.name 'lucasabraham1996-cmd'
+          git config user.email 'lucasabraham1996@gmail.com'
+          git add index.html
+          git commit -m 'feat: move Club to header and enforce delivered-only points'
+          git push
