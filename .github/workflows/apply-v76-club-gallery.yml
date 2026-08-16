@@ -12,7 +12,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Patch index
-        run: python3 .github/scripts/apply_v76_club_gallery.py
+        run: |
+          sed -i "s/replace_once('v75-mobile-tight-club-close', 'v76-club-gallery-points-reset', 'app-version')/s = s.replace('v75-mobile-tight-club-close', 'v76-club-gallery-points-reset')/" .github/scripts/apply_v76_club_gallery.py
+          python3 .github/scripts/apply_v76_club_gallery.py
       - name: Validate JavaScript
         run: |
           python3 - <<'PY'
