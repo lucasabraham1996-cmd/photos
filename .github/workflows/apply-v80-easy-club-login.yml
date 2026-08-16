@@ -1,0 +1,67 @@
+name: Apply v80 easy Club login
+on:
+  push:
+    paths:
+      - '.github/scripts/apply_v80_easy_club_login.py'
+      - '.github/workflows/apply-v80-easy-club-login.yml'
+permissions:
+  contents: write
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Patch index
+        run: python3 .github/scripts/apply_v80_easy_club_login.py
+      - name: Validate JavaScript
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          s=Path('index.html').read_text(encoding='utf-8')
+          pos=0
+          while True:
+              i=s.find('<script',pos)
+              if i<0: raise SystemExit('main script not found')
+              j=s.find('>',i); k=s.find('</script>',j)
+              tag=s[i:j+1]; body=s[j+1:k]
+              if 'src=' not in tag and 'function App()' in body:
+                  Path('/tmp/app-check.js').write_text(body,encoding='utf-8'); break
+              pos=k+9
+          PY
+          node --check /tmp/app-check.js
+      - name: Validate markers
+        run: |
+          grep -q 'v80-easy-club-login' index.html
+          grep -q 'Crear cuenta y continuar' index.html
+          grep -q 'Podés escribirlo como 351' index.html
+          grep -q 'lookupClubPoints(rawPhone' index.html
+      - name: Phone normalization smoke test
+        run: |
+          python3 - <<'PY'
+          import re
+          def norm(v):
+              d=re.sub(r'\D','',v or '')
+              if not d:return ''
+              if d.startswith('00'):d=d[2:]
+              if d.startswith('54'):d=d[2:]
+              if d.startswith('9') and len(d)==11:d=d[1:]
+              d=re.sub(r'^0+','',d)
+              if len(d)==12:
+                  for pos in [2,3,4]:
+                      if d[pos:pos+2]=='15': d=d[:pos]+d[pos+2:]; break
+              if d.startswith('15') and len(d)==9:d='351'+d[2:]
+              if len(d)==7:d='351'+d
+              return d
+          vals=['3515580770','03515580770','+54 9 351 5580770','54 351 5580770']
+          out={norm(x) for x in vals}
+          assert out=={'3515580770'},out
+          print(out)
+          PY
+      - name: Commit
+        run: |
+          git config user.name 'lucasabraham1996-cmd'
+          git config user.email 'lucasabraham1996@gmail.com'
+          git add index.html
+          git diff --cached --quiet && exit 0
+          git commit -m 'fix: simplify and repair Club phone login'
+          git push
