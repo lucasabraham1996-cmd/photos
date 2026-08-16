@@ -17,7 +17,6 @@ once('''    const [clubRegisterName, setClubRegisterName] = useState("");
 
 start=s.index('    async function lookupClubPoints() {')
 end=s.index('    async function registerClubUser() {',start)
-old=s[start:end]
 new='''    async function lookupClubPoints(rawPhone = '') {
         const phone = normalizeClubPhone(rawPhone || clubLookupDni);
         if (!phone || phone.length < 10) {
@@ -65,8 +64,7 @@ new='''    async function lookupClubPoints(rawPhone = '') {
 s=s[:start]+new+s[end:]
 
 start=s.index('    async function registerClubUser() {')
-end=s.index('    function logoutClub()',start)
-old=s[start:end]
+end=s.index('    const logoutClub=',start)
 new='''    async function registerClubUser() {
         const phone = normalizeClubPhone(clubLookupDni);
         const name = String(clubRegisterName || '').trim();
@@ -133,7 +131,6 @@ new_ui='''                    !clubSessionPhone ? React.createElement(React.Frag
 if old_ui not in s: raise SystemExit('club login UI marker not found')
 s=s.replace(old_ui,new_ui,1)
 
-# Make the Club points area open by default when the modal is opened, so users do not need to discover an extra step.
 s=s.replace('''    const openClub = () => {
         setClubModalOpen(true);''','''    const openClub = () => {
         setClubPointsOpen(true);
