@@ -31,7 +31,7 @@
   <meta name="twitter:description" content="Fotos deportivas protegidas · Compra directa por WhatsApp" />
   <meta name="twitter:image" content="https://lucasabraham1996-cmd.github.io/photos/social-preview-la.png?v=61" />
   <title>lucasabraham.ph - Galería de Clientes</title>
-  <meta name="app-version" content="v76-club-gallery-points-reset" /><style>html,body{margin:0;min-height:100%;background:#050505;color:#fff}#root{min-height:100vh;background:#050505;color:#fff}
+  <meta name="app-version" content="v77-club-rewards-3-and-5" /><style>html,body{margin:0;min-height:100%;background:#050505;color:#fff}#root{min-height:100vh;background:#050505;color:#fff}
     /* v41: estilo versus moderno para portada y álbum */
     .team-album-reveal{background:linear-gradient(180deg,rgba(3,7,18,.12),rgba(2,6,23,.28))}
     .team-reveal-half{left:12px!important;right:12px!important;width:auto!important;height:33%!important;padding:12px 16px!important;box-shadow:0 16px 36px rgba(0,0,0,.28),inset 0 1px 0 rgba(255,255,255,.14)!important;border:1px solid rgba(255,255,255,.10)!important;overflow:hidden}
@@ -1445,7 +1445,7 @@ img{-webkit-user-drag:none;}
 .club-modal-close:active{transform:scale(.96)}
 </style>
 
-<style id="v76-club-gallery-points-reset">
+<style id="v77-club-rewards-3-and-5">
 @media(max-width:768px){
   .la-insta-topbar{position:fixed!important;top:0!important;left:0!important;right:0!important;margin:0!important;z-index:9999!important}
   .la-profile-header{margin:0!important;padding-top:calc(94px + env(safe-area-inset-top,0px))!important;padding-bottom:16px!important;min-height:0!important}
@@ -3618,10 +3618,17 @@ function App() {
     const [coupons, setCoupons] = useState(readCoupons());
     const [bannerSettings, setBannerSettings] = useState(readBannerSettings());
     const [priceSettings, setPriceSettings] = useState(defaultPriceSettings());
-    const CLUB_DEFAULT_PRODUCT = { id:'club-pack-3-fotos-10x15', name:'Pack de 3 fotos impresas a elección', description:'Tres fotos impresas a elección en tamaño de 10x15 cm.', points:3, imageUrl:'https://i.postimg.cc/gkPWMjB9/Chat-GPT-Image-15-ago-2026-10-46-05-p-m.png', active:true, createdAt:'2026-08-15T23:03:00-03:00' };
+    const CLUB_DEFAULT_PRODUCTS = [
+        { id:'club-foto-impresa-10x15', name:'1 foto impresa a elección', description:'Una foto impresa a elección en tamaño de 10x15 cm.', points:3, imageUrl:'https://i.postimg.cc/gkPWMjB9/Chat-GPT-Image-15-ago-2026-10-46-05-p-m.png', active:true, createdAt:'2026-08-15T23:17:00-03:00' },
+        { id:'club-pack-3-fotos-10x15', name:'Pack de 3 fotos impresas a elección', description:'Tres fotos impresas a elección en tamaño de 10x15 cm.', points:5, imageUrl:'https://i.postimg.cc/gkPWMjB9/Chat-GPT-Image-15-ago-2026-10-46-05-p-m.png', active:true, createdAt:'2026-08-15T23:03:00-03:00' }
+    ];
     const withDefaultClubProducts = (list) => {
         const items = Array.isArray(list) ? list : [];
-        return items.some(p => p && p.id === CLUB_DEFAULT_PRODUCT.id) ? items : [CLUB_DEFAULT_PRODUCT, ...items];
+        const defaultIds = new Set(CLUB_DEFAULT_PRODUCTS.map(p => p.id));
+        const customItems = items.filter(p => p && !defaultIds.has(p.id));
+        const existingById = new Map(items.filter(Boolean).map(p => [p.id, p]));
+        const defaults = CLUB_DEFAULT_PRODUCTS.map(def => ({ ...existingById.get(def.id), ...def }));
+        return [...defaults, ...customItems];
     };
     const [clubProducts, setClubProducts] = useState(() => withDefaultClubProducts([]));
     const [newClubProductName, setNewClubProductName] = useState("");
