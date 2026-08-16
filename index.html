@@ -31,7 +31,7 @@
   <meta name="twitter:description" content="Fotos deportivas protegidas · Compra directa por WhatsApp" />
   <meta name="twitter:image" content="https://lucasabraham1996-cmd.github.io/photos/social-preview-la.png?v=61" />
   <title>lucasabraham.ph - Galería de Clientes</title>
-  <meta name="app-version" content="v82-club-entry-flow" /><style>html,body{margin:0;min-height:100%;background:#050505;color:#fff}#root{min-height:100vh;background:#050505;color:#fff}
+  <meta name="app-version" content="v83-club-welcome" /><style>html,body{margin:0;min-height:100%;background:#050505;color:#fff}#root{min-height:100vh;background:#050505;color:#fff}
     /* v41: estilo versus moderno para portada y álbum */
     .team-album-reveal{background:linear-gradient(180deg,rgba(3,7,18,.12),rgba(2,6,23,.28))}
     .team-reveal-half{left:12px!important;right:12px!important;width:auto!important;height:33%!important;padding:12px 16px!important;box-shadow:0 16px 36px rgba(0,0,0,.28),inset 0 1px 0 rgba(255,255,255,.14)!important;border:1px solid rgba(255,255,255,.10)!important;overflow:hidden}
@@ -1445,7 +1445,7 @@ img{-webkit-user-drag:none;}
 .club-modal-close:active{transform:scale(.96)}
 </style>
 
-<style id="v82-club-entry-flow">
+<style id="v83-club-welcome">
 @media(max-width:768px){
   .la-insta-topbar{position:fixed!important;top:0!important;left:0!important;right:0!important;margin:0!important;z-index:9999!important}
   .la-profile-header{margin:0!important;padding-top:calc(94px + env(safe-area-inset-top,0px))!important;padding-bottom:16px!important;min-height:0!important}
@@ -4428,7 +4428,7 @@ A continuación, te envío el comprobante.`;
         }
         setClubLookupDni(phone);
         setClubLookupLoading(true);
-        setClubMessage('Buscando tu cuenta...');
+        setClubMessage('Ingresando a tu cuenta...');
         try {
             let users = clubUsers;
             let profile = users.find(u => normalizeClubPhone(u.phone) === phone) || null;
@@ -4480,8 +4480,17 @@ A continuación, te envío el comprobante.`;
             setClubSessionPhone(phone);
             setClubRegisterOpen(false);
             try { localStorage.setItem('LA_CLUB_PHONE', phone); } catch(e) {}
-            const firstName = String((profile && profile.name) || account.name || '').trim().split(' ')[0] || '';
-            setClubMessage(account.points > 0 ? `¡Hola${firstName ? ', '+firstName : ''}! Tenés ${account.points} puntos disponibles.` : `¡Hola${firstName ? ', '+firstName : ''}! Tu cuenta está lista. Todavía no tenés puntos disponibles.`);
+            const fullName = String(profile ? `${profile.name || ''} ${profile.surname || ''}`.trim() : (account.name || '')).trim() || 'Cliente';
+            setClubMessage(account.points > 0 ? `¡Bienvenido/a, ${fullName}! Tenés ${account.points} puntos disponibles.` : `¡Bienvenido/a, ${fullName}! Tu cuenta está lista. Todavía no tenés puntos disponibles.`);
+            try { if (document.activeElement && document.activeElement.blur) document.activeElement.blur(); } catch(e) {}
+            setTimeout(() => {
+                try {
+                    const shell = document.querySelector('.club-modal-shell');
+                    if (shell && shell.scrollIntoView) shell.scrollIntoView({ behavior:'smooth', block:'start' });
+                    const scrollable = shell && shell.closest('[class*="overflow-y-auto"], [class*="overflow-auto"]');
+                    if (scrollable) scrollable.scrollTop = 0;
+                } catch(e) {}
+            }, 80);
         } catch(e) {
             console.error('No se pudo ingresar al Club.', e);
             setClubMessage('No pudimos ingresar ahora. Revisá tu conexión y tocá Continuar nuevamente.');
@@ -5503,7 +5512,7 @@ Te envío el comprobante para que puedas prepararlas.`);
                             React.createElement("p", { className:"text-xs text-neutral-400 mt-1 leading-relaxed" }, "No necesitás contraseña ni DNI. Escribí tu número y tocá Continuar.")),
                         React.createElement("input", { value:clubLookupDni, inputMode:"tel", autoComplete:"tel", onChange:e=>{setClubLookupDni(e.target.value);setClubLookupResult(null);setClubRegisterOpen(false);setClubMessage('');}, onKeyDown:e=>{if(e.key==='Enter'){e.preventDefault();lookupClubPoints(e.currentTarget.value);}}, placeholder:"Tu celular, ej. 351 5580770", className:"customer-compact-input w-full text-lg py-4 mb-2" }),
                         React.createElement("p", { className:"text-[10px] text-neutral-500 mb-3 px-1" }, "Podés escribirlo como 351…, 0351…, 15…, +54 o +54 9. La app lo unifica automáticamente."),
-                        React.createElement("button", { type:"button", onClick:()=>lookupClubPoints(clubLookupDni), disabled:clubLookupLoading, className:"club-points-btn w-full py-4 text-base" }, clubLookupLoading?React.createElement(React.Fragment,null,React.createElement("i",{className:"fas fa-circle-notch fa-spin mr-2"}),"Buscando..."):React.createElement(React.Fragment,null,"Continuar",React.createElement("i",{className:"fas fa-arrow-right ml-2"}))),
+                        React.createElement("button", { type:"button", onClick:()=>lookupClubPoints(clubLookupDni), disabled:clubLookupLoading, className:"club-points-btn w-full py-4 text-base" }, clubLookupLoading?React.createElement(React.Fragment,null,React.createElement("i",{className:"fas fa-circle-notch fa-spin mr-2"}),"Ingresando..."):React.createElement(React.Fragment,null,"Continuar",React.createElement("i",{className:"fas fa-arrow-right ml-2"}))),
                         !clubRegisterOpen && React.createElement("button", { type:"button", onClick:()=>{setClubRegisterOpen(true);setClubMessage('Completá tu nombre y apellido para crear tu cuenta.');}, className:"w-full mt-3 py-3.5 rounded-2xl border border-orange-400/30 bg-orange-500/10 text-orange-100 font-black text-sm" }, React.createElement("i",{className:"fas fa-user-plus mr-2"}), "¿Es tu primera vez? Registrarme"),
                         clubRegisterOpen && React.createElement("div", { className:"mt-4 bg-black/25 border border-orange-400/20 rounded-2xl p-4" },
                             React.createElement("p", { className:"font-black text-white text-base" }, "Creá tu cuenta"),
@@ -5516,7 +5525,7 @@ Te envío el comprobante para que puedas prepararlas.`);
                     : React.createElement(React.Fragment,null,
                         React.createElement("div", { className:"rounded-2xl bg-black/25 border border-orange-400/15 p-4" },
                             React.createElement("div", { className:"flex items-center justify-between gap-3" },
-                                React.createElement("div",null,React.createElement("p", { className:"text-[10px] uppercase tracking-widest text-orange-300 font-black" },"Tu cuenta"),React.createElement("b", { className:"block text-lg text-white mt-1" }, (clubProfileForPhone(clubSessionPhone) && `${clubProfileForPhone(clubSessionPhone).name||''} ${clubProfileForPhone(clubSessionPhone).surname||''}`.trim()) || (clubLookupResult && clubLookupResult.name) || 'Mi cuenta'),React.createElement("span", { className:"text-xs text-neutral-400" },clubSessionPhone)),
+                                React.createElement("div",null,React.createElement("p", { className:"text-[10px] uppercase tracking-widest text-orange-300 font-black" },"Bienvenido/a"),React.createElement("b", { className:"block text-xl text-white mt-1" }, (clubProfileForPhone(clubSessionPhone) && `${clubProfileForPhone(clubSessionPhone).name||''} ${clubProfileForPhone(clubSessionPhone).surname||''}`.trim()) || (clubLookupResult && clubLookupResult.name) || 'Mi cuenta'),React.createElement("span", { className:"text-xs text-neutral-400" },clubSessionPhone)),
                                 React.createElement("button", { type:"button",onClick:logoutClub,className:"bg-neutral-800 px-3 py-2 rounded-xl text-xs font-bold" },"Cambiar cuenta")),
                             React.createElement("button", { type:"button",onClick:()=>lookupClubPoints(clubSessionPhone),disabled:clubLookupLoading,className:"club-points-btn w-full mt-3 py-3" },clubLookupLoading?"Actualizando...":"Actualizar mis puntos"))),
                     clubLookupResult && React.createElement("div", { className:"grid grid-cols-3 gap-2 mt-3 text-center" }, React.createElement("div", { className:"bg-black/25 rounded-xl p-2" }, React.createElement("b", { className:"block text-xl text-orange-300" }, clubLookupResult.points), React.createElement("span", { className:"text-[9px] text-neutral-400" }, "disponibles")), React.createElement("div", { className:"bg-black/25 rounded-xl p-2" }, React.createElement("b", { className:"block text-xl text-white" }, clubLookupResult.earnedPoints), React.createElement("span", { className:"text-[9px] text-neutral-400" }, "ganados")), React.createElement("div", { className:"bg-black/25 rounded-xl p-2" }, React.createElement("b", { className:"block text-xl text-white" }, clubLookupResult.redeemedPoints), React.createElement("span", { className:"text-[9px] text-neutral-400" }, "canjeados"))),
