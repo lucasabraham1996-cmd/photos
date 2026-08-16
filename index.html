@@ -4413,7 +4413,7 @@ A continuación, te envío el comprobante.`;
         return mergeOrders(readLocalOrders()).filter(o => normalizeClubPhone(o.phone||o.celular||o.customerPhone)===phone || (o.type==='club_points_transfer' && [normalizeClubPhone(o.fromPhone),normalizeClubPhone(o.toPhone)].includes(phone)));
     }
     async function lookupClubPoints() {
-        const phone=normalizeClubPhone(clubLookupDni); if(!phone||phone.length<10){ setClubMessage('Ingresá un celular válido.'); return; }
+        const phone=normalizeClubPhone(clubSessionPhone || clubLookupDni); if(!phone||phone.length<10){ setClubMessage('Ingresá un celular válido.'); return; }
         const profile=clubProfileForPhone(phone); if(!profile){ setClubLookupResult(null); setClubMessage('Ese celular todavía no está registrado. Completá nombre y apellido para crear tu cuenta.'); return; }
         setClubLookupDni(phone); setClubLookupLoading(true); setClubMessage('');
         try { const list=await loadClubOrdersForPhone(phone); const account=clubAccountFromOrders(list,phone); setClubLookupResult(account); setClubSessionPhone(phone); try{localStorage.setItem('LA_CLUB_PHONE',phone);}catch(e){} setClubMessage(account.points>0?`Tenés ${account.points} puntos disponibles.`:'Todavía no tenés puntos disponibles.'); } catch(e){ setClubMessage('No pudimos consultar tus puntos ahora.'); } finally { setClubLookupLoading(false); }
