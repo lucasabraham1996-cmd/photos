@@ -1,0 +1,185 @@
+from pathlib import Path
+
+p = Path('index.html')
+s = p.read_text(encoding='utf-8')
+original = s
+
+
+def replace_once(old, new, label):
+    global s
+    n = s.count(old)
+    if n != 1:
+        raise SystemExit(f'{label}: expected 1 match, got {n}')
+    s = s.replace(old, new, 1)
+
+
+replace_once('v75-mobile-tight-club-close', 'v76-club-gallery-points-reset', 'app-version')
+replace_once('const pagedPhotos = albumPhotos;', 'const pagedPhotos = [...albumPhotos].reverse();', 'photo order')
+
+replace_once(
+    '    const [clubProducts, setClubProducts] = useState([]);',
+    '''    const CLUB_DEFAULT_PRODUCT = { id:'club-pack-3-fotos-10x15', name:'Pack de 3 fotos impresas a elección', description:'Tres fotos impresas a elección en tamaño de 10x15 cm.', points:3, imageUrl:'https://i.postimg.cc/gkPWMjB9/Chat-GPT-Image-15-ago-2026-10-46-05-p-m.png', active:true, createdAt:'2026-08-15T23:03:00-03:00' };
+    const withDefaultClubProducts = (list) => {
+        const items = Array.isArray(list) ? list : [];
+        return items.some(p => p && p.id === CLUB_DEFAULT_PRODUCT.id) ? items : [CLUB_DEFAULT_PRODUCT, ...items];
+    };
+    const [clubProducts, setClubProducts] = useState(() => withDefaultClubProducts([]));''',
+    'default club product'
+)
+s = s.replace('setClubProducts(state.clubProducts);', 'setClubProducts(withDefaultClubProducts(state.clubProducts));')
+if s.count('setClubProducts(withDefaultClubProducts(state.clubProducts));') < 2:
+    raise SystemExit('club persistence load hooks were not both updated')
+
+replace_once(
+    '    const [newClubProductImage, setNewClubProductImage] = useState("");',
+    '''    const [newClubProductImage, setNewClubProductImage] = useState("");
+    const [manualPointsDni, setManualPointsDni] = useState("");
+    const [manualPointsAmount, setManualPointsAmount] = useState(1);
+    const [manualPointsSaving, setManualPointsSaving] = useState(false);''',
+    'manual points state'
+)
+
+replace_once(
+    "const account = { dni, name:'', phone:'', purchases:0, spent:0, pending:0, cancelled:0, prints:0, redeemedPoints:0, redemptions:0, earnedPoints:0, directBonusPoints:0, points:0 };",
+    "const account = { dni, name:'', phone:'', purchases:0, spent:0, pending:0, cancelled:0, prints:0, redeemedPoints:0, redemptions:0, earnedPoints:0, directBonusPoints:0, manualPoints:0, points:0 };",
+    'manual points account model'
+)
+replace_once(
+    """            const isRedemption = o.type === 'benefit_redemption' || o.benefitRedemption === true;
+            account.name = String(o.customerName || o.nombreApellido || account.name || '').trim();""",
+    """            const isRedemption = o.type === 'benefit_redemption' || o.benefitRedemption === true;
+            const isManualPoints = o.type === 'club_points_adjustment' || o.manualPointsAdjustment === true;
+            account.name = String(o.customerName || o.nombreApellido || account.name || '').trim();""",
+    'manual points detection'
+)
+replace_once(
+    """            account.phone = String(o.phone || o.celular || account.phone || '').replace(/\\D/g, '');
+            if (isRedemption) {""",
+    """            account.phone = String(o.phone || o.celular || account.phone || '').replace(/\\D/g, '');
+            if (isManualPoints) {
+                if (!cancelled) account.manualPoints += Math.max(0, Math.round(Number(o.manualPoints || o.pointsAdjustment) || 0));
+                return;
+            }
+            if (isRedemption) {""",
+    'manual points apply'
+)
+replace_once(
+    '''        account.earnedPoints = Math.floor(account.spent / 5000) + account.directBonusPoints;
+        account.points = Math.max(0, account.earnedPoints - account.redeemedPoints);''',
+    '''        account.earnedPoints = Math.floor(account.spent / 5000) + account.directBonusPoints + account.manualPoints;
+        account.points = Math.max(0, account.earnedPoints - account.redeemedPoints);''',
+    'manual points balance'
+)
+
+replace_once(
+    '    const toggleClubProduct = (id) => setClubProducts(prev => prev.map(p => p.id === id ? { ...p, active:p.active === false ? true : false } : p));',
+    '''    async function addManualClubPoints() {
+        const dni = normalizeDni(manualPointsDni);
+        const amount = Math.max(1, Math.round(Number(manualPointsAmount) || 0));
+        if (!dni) { setAdminMessage('Ingresá un DNI válido para sumar puntos.'); return; }
+        if (!amount) { setAdminMessage('Ingresá una cantidad válida de puntos.'); return; }
+        setManualPointsSaving(true);
+        try {
+            const account = clubAccountFromOrders(orders, dni);
+            const now = new Date().toISOString();
+            const adjustment = {
+                id:'CP-' + Date.now().toString(36).toUpperCase() + '-' + Math.floor(100 + Math.random()*900),
+                date:now, type:'club_points_adjustment', manualPointsAdjustment:true,
+                manualPoints:amount, pointsAdjustment:amount, dni, customerDni:dni,
+                customerName:account.name || '', phone:account.phone || '', subtotal:0, total:0,
+                delivered:true, rejected:false, cancelled:false, status:'acreditado', paid:true,
+                paymentStatus:'acreditado', source:'admin_manual_points'
+            };
+            const saved = await saveOrderRemote(adjustment);
+            if (!saved.firebase && !saved.script) throw new Error(saved.error || 'No se pudo guardar el ajuste');
+            const next = mergeOrders(readLocalOrders(), orders, [adjustment]);
+            saveLocalOrders(next);
+            setOrders(next);
+            setManualPointsAmount(1);
+            setAdminMessage(`Se añadieron ${amount} punto${amount === 1 ? '' : 's'} al DNI ${dni}.`);
+        } catch (e) {
+            console.error('No se pudieron sumar puntos manuales.', e);
+            setAdminMessage('No se pudieron guardar los puntos manuales. Probá nuevamente.');
+        } finally {
+            setManualPointsSaving(false);
+        }
+    }
+    const toggleClubProduct = (id) => setClubProducts(prev => prev.map(p => p.id === id ? { ...p, active:p.active === false ? true : false } : p));''',
+    'manual points function'
+)
+
+replace_once(
+    "const adminOrderLedger = useMemo(() => mergeOrders(orders).sort((a,b) => new Date(b.date || 0) - new Date(a.date || 0)).slice(0,200), [orders]);",
+    "const ADMIN_HISTORY_RESET_AT = Date.parse('2026-08-16T02:03:00Z');\n    const adminOrderLedger = useMemo(() => mergeOrders(orders).filter(o => { const ts = Date.parse((o && o.date) || 0); return Number.isFinite(ts) && ts >= ADMIN_HISTORY_RESET_AT; }).sort((a,b) => new Date(b.date || 0) - new Date(a.date || 0)).slice(0,200), [orders]);",
+    'history reset'
+)
+s = s.replace('Historial acumulado de pedidos y canjes', 'Historial de pedidos y canjes', 1)
+
+replace_once(
+    '''        setOrdersLoading(true);
+        loadOrdersRemote().then(setOrders).finally(() => setOrdersLoading(false));
+        const unsub = subscribeOrders(setOrders);
+        return () => { unsub && unsub(); };''',
+    '''        setOrdersLoading(true);
+        const resetOldQueue = async (incoming, persist = false) => {
+            const merged = mergeOrders(incoming || []);
+            const now = new Date().toISOString();
+            const changed = [];
+            const next = merged.map(o => {
+                const ts = Date.parse((o && o.date) || 0);
+                const status = norm((o && (o.status || o.estado)) || '');
+                const resolved = isTruthyStatus(o && o.delivered) || isTruthyStatus(o && o.rejected) || isTruthyStatus(o && o.cancelled) || ['entregado','rechazado','cancelado','anulado','no pagado','no_pagado'].includes(status);
+                if (!Number.isFinite(ts) || ts >= ADMIN_HISTORY_RESET_AT || resolved) return o;
+                const updated = { ...o, delivered:false, rejected:true, cancelled:true, status:'anulado', paid:false, paymentStatus:'no_pagado', cancelledAt:now, rejectedAt:o.rejectedAt || now, resolvedAt:now, historyResetCancelled:true };
+                changed.push(updated);
+                return updated;
+            });
+            const normalized = mergeOrders(next);
+            saveLocalOrders(normalized);
+            setOrders(normalized);
+            if (persist && changed.length) {
+                await Promise.allSettled(changed.flatMap(o => [
+                    apiAction({ action:'updateOrder', orderId:o.id, delivered:'false', rejected:'true', cancelled:'true', status:'anulado', decision:'rejected', paid:'false', paymentStatus:'no_pagado' }),
+                    apiAction({ action:'createOrder', order:JSON.stringify(o) }),
+                    sessionStorage.getItem('LA_FIRESTORE_QUOTA_EXHAUSTED') !== '1' ? updateOrderFirebase(o.id, { delivered:false, rejected:true, cancelled:true, status:'anulado', paid:false, paymentStatus:'no_pagado', cancelledAt:o.cancelledAt, rejectedAt:o.rejectedAt, resolvedAt:o.resolvedAt, historyResetCancelled:true }) : Promise.resolve(false)
+                ]));
+            }
+        };
+        loadOrdersRemote().then(list => resetOldQueue(list, true)).finally(() => setOrdersLoading(false));
+        const unsub = subscribeOrders(list => { resetOldQueue(list, false); });
+        return () => { unsub && unsub(); };''',
+    'old queue reset'
+)
+
+replace_once(
+    '''                React.createElement("div", { className: "overflow-x-auto" },
+                    React.createElement("table", { className: "w-full text-sm min-w-[1050px]" },''',
+    '''                React.createElement("div", { className:"bg-black/30 border border-emerald-500/20 rounded-2xl p-4 mb-5" },
+                    React.createElement("div", { className:"flex flex-col lg:flex-row lg:items-end gap-3" },
+                        React.createElement("div", { className:"flex-1" },
+                            React.createElement("h3", { className:"font-black text-sm mb-1" }, React.createElement("i", { className:"fas fa-circle-plus mr-2 text-emerald-300" }), "Añadir puntos manualmente"),
+                            React.createElement("p", { className:"text-[11px] text-neutral-500" }, "Los puntos se suman al saldo existente y el movimiento queda guardado.")),
+                        React.createElement("input", { value:manualPointsDni, inputMode:"numeric", onChange:e => setManualPointsDni(e.target.value), placeholder:"DNI", className:"bg-black border border-neutral-700 rounded-xl px-3 py-3 text-sm outline-none lg:w-44" }),
+                        React.createElement("input", { type:"number", min:"1", value:manualPointsAmount, onChange:e => setManualPointsAmount(e.target.value), placeholder:"Puntos", className:"bg-black border border-neutral-700 rounded-xl px-3 py-3 text-sm outline-none lg:w-28" }),
+                        React.createElement("button", { onClick:addManualClubPoints, disabled:manualPointsSaving, className:"bg-emerald-500 hover:bg-emerald-400 disabled:opacity-50 text-black rounded-xl px-4 py-3 text-xs font-black" }, manualPointsSaving ? "Guardando..." : "Añadir puntos"))),
+                React.createElement("div", { className: "overflow-x-auto" },
+                    React.createElement("table", { className: "w-full text-sm min-w-[1050px]" },''',
+    'manual points UI'
+)
+
+if s == original:
+    raise SystemExit('No changes applied')
+for required in [
+    'v76-club-gallery-points-reset',
+    'const pagedPhotos = [...albumPhotos].reverse();',
+    'club-pack-3-fotos-10x15',
+    'addManualClubPoints',
+    'club_points_adjustment',
+    'ADMIN_HISTORY_RESET_AT',
+    "paymentStatus:'no_pagado'"
+]:
+    if required not in s:
+        raise SystemExit(f'Missing validation marker: {required}')
+
+p.write_text(s, encoding='utf-8')
+print('OK: v76 changes applied')
