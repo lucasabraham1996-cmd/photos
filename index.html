@@ -31,7 +31,7 @@
   <meta name="twitter:description" content="Fotos deportivas protegidas · Compra directa por WhatsApp" />
   <meta name="twitter:image" content="https://lucasabraham1996-cmd.github.io/photos/social-preview-la.png?v=61" />
   <title>lucasabraham.ph - Galería de Clientes</title>
-  <meta name="app-version" content="v81-history-backed-club-account" /><style>html,body{margin:0;min-height:100%;background:#050505;color:#fff}#root{min-height:100vh;background:#050505;color:#fff}
+  <meta name="app-version" content="v82-club-entry-flow" /><style>html,body{margin:0;min-height:100%;background:#050505;color:#fff}#root{min-height:100vh;background:#050505;color:#fff}
     /* v41: estilo versus moderno para portada y álbum */
     .team-album-reveal{background:linear-gradient(180deg,rgba(3,7,18,.12),rgba(2,6,23,.28))}
     .team-reveal-half{left:12px!important;right:12px!important;width:auto!important;height:33%!important;padding:12px 16px!important;box-shadow:0 16px 36px rgba(0,0,0,.28),inset 0 1px 0 rgba(255,255,255,.14)!important;border:1px solid rgba(255,255,255,.10)!important;overflow:hidden}
@@ -1445,7 +1445,7 @@ img{-webkit-user-drag:none;}
 .club-modal-close:active{transform:scale(.96)}
 </style>
 
-<style id="v81-history-backed-club-account">
+<style id="v82-club-entry-flow">
 @media(max-width:768px){
   .la-insta-topbar{position:fixed!important;top:0!important;left:0!important;right:0!important;margin:0!important;z-index:9999!important}
   .la-profile-header{margin:0!important;padding-top:calc(94px + env(safe-area-inset-top,0px))!important;padding-bottom:16px!important;min-height:0!important}
@@ -3718,7 +3718,8 @@ function App() {
         return `${base || (location.href || '').split('#')[0]}#/club`;
     };
     const openClub = () => {
-        setClubPointsOpen(true);
+        setClubPointsOpen(false);
+        setClubRegisterOpen(false);
         setClubModalOpen(true);
         if (location.hash !== '#/club') location.hash = '#/club';
     };
@@ -3800,7 +3801,8 @@ ${clone.outerHTML}`;
     useEffect(() => { const h = () => { let hash = location.hash || "#/galeria"; try { const standalone = (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches) || navigator.standalone === true; const saved = localStorage.getItem('LA_INSTALL_START_ROUTE'); if (standalone && saved === '#/admin' && (!location.hash || location.hash === '#/galeria')) { location.hash = '#/admin'; hash = '#/admin'; } if (hash === '#/admin') localStorage.setItem('LA_INSTALL_START_ROUTE','#/admin'); } catch(e) {} setRoute(hash); setActiveAlbum(getAlbumIdFromHash(hash)); setActiveSubAlbum(getSubAlbumIdFromHash(hash)); }; addEventListener('hashchange', h); h(); return () => removeEventListener('hashchange', h); }, []);
     useEffect(() => {
         if (route !== '#/club') return;
-        setClubPointsOpen(true);
+        setClubPointsOpen(false);
+        setClubRegisterOpen(false);
         setClubModalOpen(true);
         if (clubSessionPhone && sharedReady) lookupClubPoints(clubSessionPhone);
     }, [route, clubSessionPhone, sharedReady]);
@@ -5492,7 +5494,7 @@ Te envío el comprobante para que puedas prepararlas.`);
                 React.createElement("div", { className:"club-modal-header" },
                     React.createElement("div", null, React.createElement("p", { className:"text-[10px] uppercase tracking-[.18em] text-orange-300 font-black mb-2" }, "Club lucasabraham.ph"), React.createElement("h2", { className:"club-modal-title" }, "Club de beneficios"), React.createElement("p", { className:"club-modal-copy" }, "Tu cuenta se identifica por celular. Sumás 1 punto por cada $5.000 acumulados y una compra individual de $10.000 o más suma 1 punto extra."))),
                 React.createElement("button", { type:"button", onClick:shareClubLink, className:"club-share-btn" }, React.createElement("i", { className:"fas fa-share-nodes" }), "Compartir link del Club"),
-                React.createElement("button", { type:"button", onClick:() => setClubPointsOpen(v => !v), className:"club-points-btn w-full mb-3" }, React.createElement("i", { className:"fas fa-user" }), clubPointsOpen ? "Ocultar mi cuenta" : (clubSessionPhone ? "Mi cuenta y puntos" : "Ingresar / registrarme")),
+                React.createElement("button", { type:"button", onClick:() => { setClubPointsOpen(v => !v); setClubRegisterOpen(false); }, className:"club-points-btn w-full mb-3" }, React.createElement("i", { className:"fas fa-user" }), clubPointsOpen ? "Ocultar mi cuenta" : "Ingresar / registrarme"),
                 clubPointsOpen && React.createElement("div", { className:"club-account-card mb-4" },
                     !clubSessionPhone ? React.createElement(React.Fragment,null,
                         React.createElement("div", { className:"text-center mb-4" },
@@ -5502,13 +5504,15 @@ Te envío el comprobante para que puedas prepararlas.`);
                         React.createElement("input", { value:clubLookupDni, inputMode:"tel", autoComplete:"tel", onChange:e=>{setClubLookupDni(e.target.value);setClubLookupResult(null);setClubRegisterOpen(false);setClubMessage('');}, onKeyDown:e=>{if(e.key==='Enter'){e.preventDefault();lookupClubPoints(e.currentTarget.value);}}, placeholder:"Tu celular, ej. 351 5580770", className:"customer-compact-input w-full text-lg py-4 mb-2" }),
                         React.createElement("p", { className:"text-[10px] text-neutral-500 mb-3 px-1" }, "Podés escribirlo como 351…, 0351…, 15…, +54 o +54 9. La app lo unifica automáticamente."),
                         React.createElement("button", { type:"button", onClick:()=>lookupClubPoints(clubLookupDni), disabled:clubLookupLoading, className:"club-points-btn w-full py-4 text-base" }, clubLookupLoading?React.createElement(React.Fragment,null,React.createElement("i",{className:"fas fa-circle-notch fa-spin mr-2"}),"Buscando..."):React.createElement(React.Fragment,null,"Continuar",React.createElement("i",{className:"fas fa-arrow-right ml-2"}))),
+                        !clubRegisterOpen && React.createElement("button", { type:"button", onClick:()=>{setClubRegisterOpen(true);setClubMessage('Completá tu nombre y apellido para crear tu cuenta.');}, className:"w-full mt-3 py-3.5 rounded-2xl border border-orange-400/30 bg-orange-500/10 text-orange-100 font-black text-sm" }, React.createElement("i",{className:"fas fa-user-plus mr-2"}), "¿Es tu primera vez? Registrarme"),
                         clubRegisterOpen && React.createElement("div", { className:"mt-4 bg-black/25 border border-orange-400/20 rounded-2xl p-4" },
                             React.createElement("p", { className:"font-black text-white text-base" }, "Creá tu cuenta"),
                             React.createElement("p", { className:"text-xs text-neutral-400 mt-1 mb-3" }, "Sólo te lo pedimos esta primera vez."),
                             React.createElement("div", { className:"grid gap-2" },
                                 React.createElement("input", { value:clubRegisterName,onChange:e=>setClubRegisterName(e.target.value),placeholder:"Nombre",autoComplete:"given-name",className:"customer-compact-input py-4" }),
                                 React.createElement("input", { value:clubRegisterSurname,onChange:e=>setClubRegisterSurname(e.target.value),placeholder:"Apellido",autoComplete:"family-name",className:"customer-compact-input py-4" }),
-                                React.createElement("button", { type:"button",onClick:registerClubUser,disabled:clubLookupLoading,className:"club-points-btn w-full py-4 text-base" },clubLookupLoading?"Creando cuenta...":"Crear cuenta y continuar"))))
+                                React.createElement("button", { type:"button",onClick:registerClubUser,disabled:clubLookupLoading,className:"club-points-btn w-full py-4 text-base" },clubLookupLoading?"Creando cuenta...":"Crear cuenta y continuar"),
+                                React.createElement("button", { type:"button",onClick:()=>{setClubRegisterOpen(false);setClubMessage('');},className:"w-full py-3 rounded-xl text-xs font-bold text-neutral-400" },"Ya tengo cuenta · volver"))))
                     : React.createElement(React.Fragment,null,
                         React.createElement("div", { className:"rounded-2xl bg-black/25 border border-orange-400/15 p-4" },
                             React.createElement("div", { className:"flex items-center justify-between gap-3" },
