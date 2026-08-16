@@ -31,7 +31,7 @@
   <meta name="twitter:description" content="Fotos deportivas protegidas · Compra directa por WhatsApp" />
   <meta name="twitter:image" content="https://lucasabraham1996-cmd.github.io/photos/social-preview-la.png?v=61" />
   <title>lucasabraham.ph - Galería de Clientes</title>
-  <meta name="app-version" content="v77-club-rewards-3-and-5" /><style>html,body{margin:0;min-height:100%;background:#050505;color:#fff}#root{min-height:100vh;background:#050505;color:#fff}
+  <meta name="app-version" content="v78-redemption-contact" /><style>html,body{margin:0;min-height:100%;background:#050505;color:#fff}#root{min-height:100vh;background:#050505;color:#fff}
     /* v41: estilo versus moderno para portada y álbum */
     .team-album-reveal{background:linear-gradient(180deg,rgba(3,7,18,.12),rgba(2,6,23,.28))}
     .team-reveal-half{left:12px!important;right:12px!important;width:auto!important;height:33%!important;padding:12px 16px!important;box-shadow:0 16px 36px rgba(0,0,0,.28),inset 0 1px 0 rgba(255,255,255,.14)!important;border:1px solid rgba(255,255,255,.10)!important;overflow:hidden}
@@ -1445,7 +1445,7 @@ img{-webkit-user-drag:none;}
 .club-modal-close:active{transform:scale(.96)}
 </style>
 
-<style id="v77-club-rewards-3-and-5">
+<style id="v78-redemption-contact">
 @media(max-width:768px){
   .la-insta-topbar{position:fixed!important;top:0!important;left:0!important;right:0!important;margin:0!important;z-index:9999!important}
   .la-profile-header{margin:0!important;padding-top:calc(94px + env(safe-area-inset-top,0px))!important;padding-bottom:16px!important;min-height:0!important}
@@ -4142,6 +4142,15 @@ ${clone.outerHTML}`;
     };
     const normalizeDni = value => String(value || "").replace(/\D/g, "");
     const normalizePhone = value => String(value || "").replace(/\D/g, "");
+    const customerWhatsappUrl = rawPhone => {
+        let phone = normalizePhone(rawPhone);
+        if (!phone) return '';
+        if (phone.startsWith('0')) phone = phone.replace(/^0+/, '');
+        if (phone.startsWith('15') && phone.length <= 10) phone = phone.slice(2);
+        if (!phone.startsWith('54')) phone = '54' + phone;
+        if (phone.startsWith('54') && !phone.startsWith('549')) phone = '549' + phone.slice(2);
+        return `https://api.whatsapp.com/send?phone=${phone}&text=${encodeURIComponent('Hola! Te escribo de lucasabraham.ph por el canje que realizaste en el Club de beneficios para coordinar la entrega.')}`;
+    };
     const saveCheckoutCustomer = async () => {
         const name = String(checkoutCustomerName || "").trim().replace(/\s{2,}/g, " ");
         const phone = normalizePhone(checkoutPhone);
@@ -4758,7 +4767,15 @@ A continuación, te envío el comprobante.`;
                                 " \u00B7 ",
                                 ((_c = matchedOrder.items) === null || _c === void 0 ? void 0 : _c.length) || 0,
                                 " fotos"),
-                            (matchedOrder.type === 'benefit_redemption' || matchedOrder.benefitRedemption === true) && React.createElement("div", { className:"club-order-badge mt-2" }, React.createElement("i", { className:"fas fa-gift" }), `CANJE CLUB · ${matchedOrder.rewardName || 'Beneficio'} · -${matchedOrder.redeemedPoints || 0} puntos`),
+                            (matchedOrder.type === 'benefit_redemption' || matchedOrder.benefitRedemption === true) && React.createElement(React.Fragment, null,
+                                React.createElement("div", { className:"club-order-badge mt-2" }, React.createElement("i", { className:"fas fa-gift" }), `CANJE CLUB · ${matchedOrder.rewardName || 'Beneficio'} · -${matchedOrder.redeemedPoints || 0} puntos`),
+                                React.createElement("div", { className:"mt-4 rounded-2xl border border-emerald-500/25 bg-emerald-500/10 p-4" },
+                                    React.createElement("p", { className:"text-[10px] uppercase tracking-[.18em] text-emerald-300 font-black mb-1" }, "ENTREGAR A"),
+                                    React.createElement("div", { className:"text-2xl sm:text-3xl font-black text-white leading-tight" }, matchedOrder.customerName || 'Sin nombre'),
+                                    React.createElement("div", { className:"mt-2 flex flex-wrap gap-x-4 gap-y-1 text-sm text-neutral-200" },
+                                        React.createElement("span", null, React.createElement("i", { className:"fas fa-id-card mr-2 text-emerald-300" }), `DNI ${matchedOrder.dni || matchedOrder.customerDni || 'Sin DNI'}`),
+                                        React.createElement("span", null, React.createElement("i", { className:"fas fa-phone mr-2 text-emerald-300" }), matchedOrder.phone || matchedOrder.celular || 'Sin teléfono')),
+                                    customerWhatsappUrl(matchedOrder.phone || matchedOrder.celular) && React.createElement("button", { type:"button", onClick:() => window.open(customerWhatsappUrl(matchedOrder.phone || matchedOrder.celular), '_blank'), className:"mt-3 inline-flex items-center justify-center gap-2 bg-[#25D366] text-black px-4 py-3 rounded-xl font-black text-sm" }, React.createElement("i", { className:"fab fa-whatsapp text-lg" }), "Hablar por WhatsApp para coordinar"))),
                             matchedOrder.printRequested && React.createElement("div", { className:"print-order-badge mt-2" }, React.createElement("i", { className:"fas fa-print" }), `IMPRESIÓN 10x15 · ${Number(matchedOrder.printCount) || (matchedOrder.printedItems || []).length || 1} foto${(Number(matchedOrder.printCount) || (matchedOrder.printedItems || []).length || 1) === 1 ? '' : 's'}`)),
                         React.createElement("div", { className: "mobile-stack flex flex-col sm:flex-row gap-2" },
                             React.createElement("button", { onClick: () => setOrderDecisionAndClose(matchedOrder, 'delivered'), className: "bg-emerald-500 text-black px-4 py-3 rounded-xl font-black text-sm" },
@@ -4807,6 +4824,9 @@ A continuación, te envío el comprobante.`;
                                         React.createElement("span", { className: `order-age-chip ${orderAgeInfo(o.date).tone}` }, React.createElement("i", { className: "fas fa-stopwatch" }), orderAgeInfo(o.date).text),
                                         (o.type === 'benefit_redemption' || o.benefitRedemption === true) && React.createElement("span", { className:"club-order-badge" }, "CANJE CLUB"),
                                         o.printRequested && React.createElement("span", { className:"print-order-badge" }, `10x15 × ${Number(o.printCount) || (o.printedItems || []).length || 1}`)),
+                                    (o.type === 'benefit_redemption' || o.benefitRedemption === true) && React.createElement("div", { className:"mb-2" },
+                                        React.createElement("p", { className:"text-lg font-black text-white" }, o.customerName || 'Sin nombre'),
+                                        React.createElement("p", { className:"text-xs text-neutral-400" }, `DNI ${o.dni || o.customerDni || 'Sin DNI'} · ${o.phone || o.celular || 'Sin teléfono'} · ${o.rewardName || 'Beneficio'}`)),
                                     React.createElement(OrderPreviewStrip, { items: o.items || [], limit: 4 }),
                                     React.createElement("p", { className: "text-xs text-neutral-400 mt-2" },
                                         new Date(o.date || Date.now()).toLocaleString('es-AR'),
