@@ -1,0 +1,47 @@
+name: Apply v77 Club rewards
+on:
+  push:
+    paths:
+      - '.github/scripts/apply_v77_club_rewards.py'
+      - '.github/workflows/apply-v77-club-rewards.yml'
+permissions:
+  contents: write
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Patch index
+        run: python3 .github/scripts/apply_v77_club_rewards.py
+      - name: Validate JavaScript
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          s=Path('index.html').read_text(encoding='utf-8')
+          pos=0
+          while True:
+              i=s.find('<script',pos)
+              if i<0: raise SystemExit('main script not found')
+              j=s.find('>',i); k=s.find('</script>',j)
+              tag=s[i:j+1]; body=s[j+1:k]
+              if 'src=' not in tag and 'function App()' in body:
+                  Path('/tmp/app-check.js').write_text(body,encoding='utf-8'); break
+              pos=k+9
+          PY
+          node --check /tmp/app-check.js
+      - name: Validate rewards
+        run: |
+          grep -q 'v77-club-rewards-3-and-5' index.html
+          grep -q "id:'club-foto-impresa-10x15'" index.html
+          grep -q "name:'1 foto impresa a elección'" index.html
+          grep -q "points:3" index.html
+          grep -q "id:'club-pack-3-fotos-10x15'" index.html
+          grep -q "points:5" index.html
+      - name: Commit
+        run: |
+          if git diff --quiet index.html; then exit 0; fi
+          git config user.name 'lucasabraham1996-cmd'
+          git config user.email 'lucasabraham1996@gmail.com'
+          git add index.html
+          git commit -m 'fix: set Club printed-photo rewards to 3 and 5 points'
+          git push
