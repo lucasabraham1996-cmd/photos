@@ -1,0 +1,45 @@
+name: Apply v82 Club entry flow
+on:
+  push:
+    paths:
+      - '.github/scripts/apply_v82_club_entry_flow.py'
+      - '.github/workflows/apply-v82-club-entry-flow.yml'
+permissions:
+  contents: write
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Patch index
+        run: python3 .github/scripts/apply_v82_club_entry_flow.py
+      - name: Validate JavaScript
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          s=Path('index.html').read_text(encoding='utf-8')
+          pos=0
+          while True:
+              i=s.find('<script',pos)
+              if i<0: raise SystemExit('main script not found')
+              j=s.find('>',i); k=s.find('</script>',j)
+              tag=s[i:j+1]; body=s[j+1:k]
+              if 'src=' not in tag and 'function App()' in body:
+                  Path('/tmp/app-check.js').write_text(body,encoding='utf-8'); break
+              pos=k+9
+          PY
+          node --check /tmp/app-check.js
+      - name: Validate markers
+        run: |
+          grep -q 'v82-club-entry-flow' index.html
+          grep -q '¿Es tu primera vez? Registrarme' index.html
+          grep -q 'Ya tengo cuenta · volver' index.html
+          grep -q 'clubPointsOpen ? "Ocultar mi cuenta" : "Ingresar / registrarme"' index.html
+      - name: Commit
+        run: |
+          git config user.name 'lucasabraham1996-cmd'
+          git config user.email 'lucasabraham1996@gmail.com'
+          git add index.html
+          git diff --cached --quiet && exit 0
+          git commit -m 'fix: simplify Club entry and registration flow'
+          git push
