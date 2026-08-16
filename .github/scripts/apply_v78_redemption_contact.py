@@ -17,6 +17,13 @@ new3="""                                        (o.type === 'benefit_redemption'
 if old3 not in s: raise SystemExit('queue marker not found')
 s=s.replace(old3,new3,1)
 
-s=s.replace('v77-club-rewards-3-5','v78-redemption-contact') if 'v77-club-rewards-3-5' in s else s.replace('v76-club-gallery-points-reset','v78-redemption-contact')
+if 'v77-club-rewards-3-and-5' in s:
+    s=s.replace('v77-club-rewards-3-and-5','v78-redemption-contact')
+elif 'v77-club-rewards-3-5' in s:
+    s=s.replace('v77-club-rewards-3-5','v78-redemption-contact')
+elif 'v76-club-gallery-points-reset' in s:
+    s=s.replace('v76-club-gallery-points-reset','v78-redemption-contact')
+else:
+    raise SystemExit('version marker not found')
 p.write_text(s,encoding='utf-8')
 print('patched')
