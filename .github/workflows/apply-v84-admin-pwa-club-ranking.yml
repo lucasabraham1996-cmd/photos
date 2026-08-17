@@ -1,0 +1,47 @@
+name: Apply v84 admin PWA and Club ranking
+on:
+  push:
+    paths:
+      - '.github/scripts/apply_v84_admin_pwa_club_ranking.py'
+      - '.github/workflows/apply-v84-admin-pwa-club-ranking.yml'
+permissions:
+  contents: write
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Patch index
+        run: python3 .github/scripts/apply_v84_admin_pwa_club_ranking.py
+      - name: Validate JavaScript
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          s=Path('index.html').read_text(encoding='utf-8')
+          pos=0
+          while True:
+              i=s.find('<script',pos)
+              if i<0: raise SystemExit('main script not found')
+              j=s.find('>',i); k=s.find('</script>',j)
+              tag=s[i:j+1]; body=s[j+1:k]
+              if 'src=' not in tag and 'function App()' in body:
+                  Path('/tmp/app-check.js').write_text(body,encoding='utf-8'); break
+              pos=k+9
+          PY
+          node --check /tmp/app-check.js
+      - name: Validate markers
+        run: |
+          grep -q 'v84-admin-pwa-club-ranking' index.html
+          grep -q 'const ADMIN_PIN = "160218"' index.html
+          grep -q '?admin=1#/admin' index.html
+          grep -q 'Ranking del Club · usuarios y puntos' index.html
+          grep -q 'W3SqHj91/LA-Marca-de-agua-copia.png' index.html
+          grep -q 'admin-secret-footer' index.html
+      - name: Commit
+        run: |
+          git config user.name 'lucasabraham1996-cmd'
+          git config user.email 'lucasabraham1996@gmail.com'
+          git add index.html
+          git diff --cached --quiet && exit 0
+          git commit -m 'feat: fix admin iPhone launch and refresh Club ranking'
+          git push
