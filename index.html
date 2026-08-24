@@ -31,7 +31,7 @@
   <meta name="twitter:description" content="Fotos deportivas protegidas · Compra directa por WhatsApp" />
   <meta name="twitter:image" content="https://lucasabraham1996-cmd.github.io/photos/social-preview-la.png?v=61" />
   <title>lucasabraham.ph - Galería de Clientes</title>
-  <meta name="app-version" content="v91-ranking-cart-recovery-ui" /><style>html,body{margin:0;min-height:100%;background:#050505;color:#fff}#root{min-height:100vh;background:#050505;color:#fff}
+  <meta name="app-version" content="v92-checkout-mobile-inputs" /><style>html,body{margin:0;min-height:100%;background:#050505;color:#fff}#root{min-height:100vh;background:#050505;color:#fff}
     /* v41: estilo versus moderno para portada y álbum */
     .team-album-reveal{background:linear-gradient(180deg,rgba(3,7,18,.12),rgba(2,6,23,.28))}
     .team-reveal-half{left:12px!important;right:12px!important;width:auto!important;height:33%!important;padding:12px 16px!important;box-shadow:0 16px 36px rgba(0,0,0,.28),inset 0 1px 0 rgba(255,255,255,.14)!important;border:1px solid rgba(255,255,255,.10)!important;overflow:hidden}
@@ -1508,6 +1508,16 @@ img{-webkit-user-drag:none;}
 .cart-recovery-bar{position:fixed;left:50%;bottom:max(14px,env(safe-area-inset-bottom));transform:translateX(-50%);z-index:75;width:min(94vw,520px);display:grid;grid-template-columns:1.15fr .85fr;gap:8px;padding:8px;border-radius:20px;background:rgba(8,8,10,.96);border:1px solid rgba(255,255,255,.10);box-shadow:0 18px 50px rgba(0,0,0,.48)}.cart-recovery-bar button{min-height:46px;border-radius:14px;font-weight:900;font-size:11px}.cart-restore-btn{border:1px solid rgba(248,113,113,.34);background:linear-gradient(135deg,#7f1d1d,#dc2626 58%,#ef4444);color:#fff;box-shadow:0 9px 22px rgba(220,38,38,.22)}.cart-cancel-btn{border:1px solid rgba(255,255,255,.09);background:#171717;color:#a3a3a3}
 @media(min-width:769px){.subalbum-panel{padding:16px 18px!important}.subalbum-showcase{justify-content:center!important;gap:14px!important;overflow-x:visible!important;padding:4px 0 6px!important}.subalbum-visual-card{min-width:190px!important;height:68px!important;padding:0 24px!important;border-radius:20px!important}.subalbum-visual-card::before{display:none!important}.subalbum-copy-wrap{width:100%!important;justify-content:center!important}.subalbum-copy-title{width:100%!important;text-align:center!important;font-size:14px!important;letter-spacing:.055em!important;padding:0!important}.subalbum-visual-card::after{content:""!important;display:block!important;position:absolute!important;left:50%!important;right:auto!important;top:auto!important;bottom:11px!important;width:24px!important;height:2px!important;transform:translateX(-50%)!important;border-radius:99px!important;background:rgba(148,163,184,.38)!important;box-shadow:none!important;opacity:1!important;font-size:0!important}.subalbum-visual-card.active::after{width:44px!important;background:#7dd3fc!important;box-shadow:0 0 12px rgba(125,211,252,.55)!important}}
 @media(max-width:640px){.club-ranking-head{display:none}.club-ranking-card{grid-template-columns:40px minmax(0,1fr) 62px!important;gap:9px!important;padding:10px!important}.club-ranking-activity{grid-column:2/4;margin-top:-3px}.club-ranking-points{grid-column:3;grid-row:1}.club-ranking-titlebar{align-items:flex-start}.cart-recovery-bar{grid-template-columns:1fr 1fr;width:calc(100vw - 18px);bottom:max(8px,env(safe-area-inset-bottom))}.cart-recovery-bar button{font-size:10px;padding:0 7px}}
+</style>
+
+<style id="v92-checkout-mobile-inputs">
+/* iOS: mantener texto y placeholder perfectamente centrados dentro de los campos del checkout */
+.customer-data-card .customer-compact-input{box-sizing:border-box!important;display:block!important;width:100%!important;height:52px!important;min-height:52px!important;padding:0 14px!important;line-height:52px!important;font-size:16px!important;vertical-align:middle!important;-webkit-appearance:none!important;appearance:none!important}
+.customer-data-card .customer-compact-input::placeholder{line-height:normal!important;opacity:.72}
+.customer-data-card .customer-compact-input:focus{padding-top:0!important;padding-bottom:0!important}
+@media(max-width:640px),(hover:none),(pointer:coarse){
+ .customer-data-card .customer-compact-input{height:54px!important;min-height:54px!important;padding:0 14px!important;line-height:54px!important;font-size:16px!important;border-radius:14px!important}
+}
 </style>
 </head>
 <body style="background:#050505;color:#fff;">
@@ -5707,7 +5717,6 @@ Te envío el comprobante para que puedas prepararlas.`);
                         React.createElement("div", { className:"grid gap-2" },
                             React.createElement("input", { value:checkoutCustomerName, onChange:e => { setCheckoutCustomerName(e.target.value); setCustomerDetailsSaved(false); }, placeholder:"Nombre y apellido", className:"customer-compact-input" }),
                             React.createElement("input", { value:checkoutPhone, inputMode:"tel", required:true, onChange:e => { setCheckoutPhone(e.target.value); setCustomerDetailsSaved(false); setCheckoutPriorClubAccount(null); }, placeholder:"Celular obligatorio · ej. 351 1234567", className:"customer-compact-input" }),
-                            React.createElement("p", { className:"text-[10px] text-amber-200/80 mt-1 px-1 leading-tight" }, "Usamos tu celular para tu cuenta y tus puntos. 351, 0351, 15, +54 9 y formatos equivalentes se unifican automáticamente."),
                             React.createElement("button", { type:"button", onClick:saveCheckoutCustomer, className:"save-customer-btn" }, React.createElement("i", { className:"fas fa-coins mr-2" }), "Guardar datos y sumar puntos"),
                             customerSavedMessage && React.createElement("p", { className:"customer-saved-msg" }, customerSavedMessage))),
                     customerDetailsSaved && normalizeClubPhone(checkoutPhone) && React.createElement("div", { className:"checkout-points-preview" },
