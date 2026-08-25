@@ -1,0 +1,40 @@
+name: Apply v93 agenda edit delete
+on:
+  push:
+    paths:
+      - '.github/scripts/apply_v93_edit_delete_agenda.py'
+      - '.github/workflows/apply-v93-agenda-edit-delete.yml'
+permissions:
+  contents: write
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Patch agenda
+        run: python3 .github/scripts/apply_v93_edit_delete_agenda.py
+      - name: Validate JavaScript
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          s=Path('contrataciones.html').read_text(encoding='utf-8')
+          i=s.find('<script>'); j=s.rfind('</script>')
+          assert i>=0 and j>i
+          Path('/tmp/contrataciones.js').write_text(s[i+8:j],encoding='utf-8')
+          PY
+          node --check /tmp/contrataciones.js
+      - name: Validate markers
+        run: |
+          grep -q 'function titleWords' contrataciones.html
+          grep -q 'Editar' contrataciones.html
+          grep -q 'Eliminar' contrataciones.html
+          grep -q 'async function openEditBooking' contrataciones.html
+          grep -q 'async function deleteBooking' contrataciones.html
+      - name: Commit
+        run: |
+          git config user.name 'lucasabraham1996-cmd'
+          git config user.email 'lucasabraham1996@gmail.com'
+          git add contrataciones.html
+          git diff --cached --quiet && exit 0
+          git commit -m 'feat: edit and delete agenda bookings'
+          git push
