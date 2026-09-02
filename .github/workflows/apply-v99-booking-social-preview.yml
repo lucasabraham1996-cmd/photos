@@ -1,0 +1,38 @@
+name: Apply v99 booking social preview
+on:
+  push:
+    paths:
+      - '.github/scripts/apply_v99_booking_social_preview.py'
+      - '.github/workflows/apply-v99-booking-social-preview.yml'
+permissions:
+  contents: write
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Patch contrataciones
+        run: python3 .github/scripts/apply_v99_booking_social_preview.py
+      - name: Validate Open Graph
+        run: |
+          grep -q 'property="og:image" content="https://lucasabraham1996-cmd.github.io/photos/social-preview-la.png?v=99"' contrataciones.html
+          grep -q 'property="og:title" content="Reservá tu cobertura · lucasabraham.ph"' contrataciones.html
+          grep -q 'name="twitter:card" content="summary_large_image"' contrataciones.html
+      - name: Validate JavaScript
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          s=Path('contrataciones.html').read_text(encoding='utf-8')
+          i=s.find('<script>'); j=s.rfind('</script>')
+          assert i>=0 and j>i
+          Path('/tmp/contrataciones.js').write_text(s[i+8:j],encoding='utf-8')
+          PY
+          node --check /tmp/contrataciones.js
+      - name: Commit
+        run: |
+          git config user.name 'lucasabraham1996-cmd'
+          git config user.email 'lucasabraham1996@gmail.com'
+          git add contrataciones.html
+          git diff --cached --quiet && exit 0
+          git commit -m 'fix: restore WhatsApp preview for booking links'
+          git push
