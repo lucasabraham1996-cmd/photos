@@ -27,7 +27,7 @@
     .team-picker-trigger:hover,.team-picker-trigger.open{border-color:rgba(56,189,248,.62);box-shadow:0 0 0 3px rgba(56,189,248,.09)}
     .team-picker-crest,.team-option-crest{position:relative;display:grid;place-items:center;flex:0 0 auto;background:transparent;border:0;overflow:visible}
     .team-picker-crest{width:42px;height:42px;border-radius:12px}.team-option-crest{width:38px;height:38px;border-radius:10px}
-    .team-picker-crest img,.team-option-crest img{position:absolute;inset:4px;width:calc(100% - 8px);height:calc(100% - 8px);object-fit:contain;z-index:2}
+    .team-picker-crest img,.team-option-crest img{position:absolute;inset:2px;width:calc(100% - 4px);height:calc(100% - 4px);object-fit:contain;z-index:2;background:transparent;filter:drop-shadow(0 2px 4px rgba(0,0,0,.35))}
     .team-crest-fallback{font-size:10px;font-weight:900;color:#94a3b8;letter-spacing:-.03em;text-align:center;line-height:1}
     .team-picker-copy{min-width:0;flex:1}.team-picker-copy b{display:block;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.team-picker-copy small{display:block;color:#7dd3fc;font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:.08em;margin-top:2px}
     .team-picker-chevron{color:#64748b;font-size:12px}
@@ -41,6 +41,7 @@
     .team-other-input{margin-top:7px}.team-picker-empty{padding:18px 8px;text-align:center;color:#747b88;font-size:11px}
     @media(max-width:640px){.team-picker-menu{position:fixed;left:12px!important;right:12px!important;top:78px;width:auto;max-height:calc(100vh - 100px);border-radius:20px}.team-picker-trigger{min-height:60px}.team-picker-crest{width:44px;height:44px}}
   </style>
+<!-- v97-unified-lcf-teams -->
 </head>
 <body>
 <div id="app"></div>
@@ -52,65 +53,64 @@ const FIREBASE_CONFIG={apiKey:'AIzaSyAznAxOW-leFrKw3tIjRV5vilIjvRKsgk0',authDoma
 const BOOKINGS_PATH='artifacts/lucasabraham-ph-db/bookings';
 const CATEGORIES=['Primera','Reserva','4ta','5ta','6ta','7ma','9na','10ma','11ra','12da'];
 const LCF_TEAMS=[
-  {name:'General Paz Juniors',division:'Primera A',logo:'assets/lcf/general-paz-juniors.png'},
-  {name:'Camioneros Córdoba',division:'Primera A',logo:'assets/lcf/camioneros-cordoba.png'},
-  {name:'Deportivo Lasallano',division:'Primera A',logo:'assets/lcf/deportivo-lasallano.png'},
-  {name:'Argentino Peñarol',division:'Primera A',logo:'assets/lcf/argentino-penarol.png'},
-  {name:'Villa Azalais',division:'Primera A',logo:'assets/lcf/villa-azalais.png'},
-  {name:'Escuela Presidente Roca',division:'Primera A',logo:'assets/lcf/escuela-presidente-roca.png'},
-  {name:'CIBI',division:'Primera A',logo:'assets/lcf/cibi.png'},
-  {name:'Huracán',division:'Primera A',logo:'assets/lcf/huracan.png'},
-  {name:'Libertad',division:'Primera A',logo:'assets/lcf/libertad.png'},
-  {name:'Instituto',division:'Primera A',logo:'assets/lcf/instituto.png'},
-  {name:'Unión San Vicente',division:'Primera A',logo:'assets/lcf/union-san-vicente.png'},
-  {name:'Universitario',division:'Primera A',logo:'assets/lcf/universitario.png'},
-  {name:'AMSURRBAC',division:'Primera A',logo:'assets/lcf/amsurrbac.png'},
-  {name:'Las Palmas',division:'Primera A',logo:'assets/lcf/las-palmas.png'},
-  {name:'Racing de Córdoba',division:'Primera A',logo:'assets/lcf/racing-de-cordoba.png'},
-  {name:'Los Andes',division:'Primera A',logo:'assets/lcf/los-andes.png'},
-  {name:'Belgrano',division:'Primera A',logo:'assets/lcf/belgrano.png'},
-  {name:'San Lorenzo',division:'Primera A',logo:'assets/lcf/san-lorenzo.png'},
-  {name:'Talleres',division:'Primera A',logo:'assets/lcf/talleres.png'},
-  {name:'Deportivo Atalaya',division:'Primera A',logo:'assets/lcf/deportivo-atalaya.png'},
-  {name:'Barrio Parque',division:'Primera A',logo:'assets/lcf/barrio-parque.png'},
-  {name:'Bella Vista',division:'Primera A',logo:'assets/lcf/bella-vista.png'},
-  {name:'Almirante Brown',division:'Primera B',logo:'assets/lcf/almirante-brown.png'},
-  {name:'Atlético Carlos Paz',division:'Primera B',logo:'assets/lcf/atletico-carlos-paz.png'},
-  {name:'Avellaneda',division:'Primera B',logo:'assets/lcf/avellaneda.png'},
-  {name:'Deportivo Banfield',division:'Primera B',logo:'assets/lcf/deportivo-banfield.png'},
-  {name:'Deportivo Norte',division:'Primera B',logo:'assets/lcf/deportivo-norte.png'},
-  {name:'Independiente de Carlos Paz',division:'Primera B',logo:'assets/lcf/independiente-de-carlos-paz.png'},
-  {name:'Juvenil Barrio Comercial',division:'Primera B',logo:'assets/lcf/juvenil-barrio-comercial.png'},
-  {name:'Las Flores',division:'Primera B',logo:'assets/lcf/las-flores.png'},
-  {name:'Quilmes',division:'Primera B',logo:'assets/lcf/quilmes.png'},
-  {name:'San Nicolás',division:'Primera B',logo:'assets/lcf/san-nicolas.png'},
-  {name:'All Boys',division:'Primera B',logo:'assets/lcf/all-boys.png'},
-  {name:'Calera Central',division:'Primera B',logo:'assets/lcf/calera-central.png'},
-  {name:'Defensores Central Córdoba',division:'Primera B',logo:'assets/lcf/defensores-central-cordoba.png'},
-  {name:'Defensores Juveniles',division:'Primera B',logo:'assets/lcf/defensores-juveniles.png'},
-  {name:'Deportivo Alberdi',division:'Primera B',logo:'assets/lcf/deportivo-alberdi.png'},
-  {name:'El Carmen',division:'Primera B',logo:'assets/lcf/el-carmen.png'},
-  {name:'La Unión',division:'Primera B',logo:'assets/lcf/la-union.png'},
-  {name:'MEDEA',division:'Primera B',logo:'assets/lcf/medea.png'},
-  {name:'Unión Florida',division:'Primera B',logo:'assets/lcf/union-florida.png'},
-  {name:'Villa Siburú',division:'Primera B',logo:'assets/lcf/villa-siburu.png'}
+  {name:'All Boys',logo:'https://www.allboyscba.com/inferiores/img/escudos/ALL%20BOYS.png'},
+  {name:'Almirante Brown',logo:'https://commons.wikimedia.org/wiki/Special:Redirect/file/Almirante%20Brown%20Malague%C3%B1o.png?width=512'},
+  {name:'AMSURRBAC',logo:'https://images.seeklogo.com/logo-png/40/1/club-atletico-amsurrbac-de-cordoba-logo-png_seeklogo-403870.png'},
+  {name:'Argentino Peñarol',logo:'https://images.seeklogo.com/logo-png/32/1/argentino-penarol-de-cordoba-logo-png_seeklogo-328791.png'},
+  {name:'Atlético Carlos Paz',logo:'https://www.futbolinterior.com.ar/images/stories/clubes/76carlospaz.gif'},
+  {name:'Avellaneda',logo:'https://interiorfutbolero.com.ar/wp-content/uploads/2021/11/pixlr-bg-result.png'},
+  {name:'Barrio Parque',logo:'https://commons.wikimedia.org/wiki/Special:Redirect/file/Barrio%20Parque.jpg?width=256'},
+  {name:'Belgrano',logo:'https://upload.wikimedia.org/wikipedia/commons/thumb/8/85/Escudo_Oficial_del_Club_Atl%C3%A9tico_Belgrano.png/512px-Escudo_Oficial_del_Club_Atl%C3%A9tico_Belgrano.png'},
+  {name:'Bella Vista',logo:'https://www.futbolinterior.com.ar/images/stories/clubes/72bellavista.gif'},
+  {name:'Calera Central',logo:'https://futbolfundaciones.wordpress.com/wp-content/uploads/2025/05/caleta-central-la-calera-cordoba.png'},
+  {name:'Camioneros Córdoba',logo:'https://www.estadiosdeargentina.com.ar/wp-content/uploads/2022/10/club-camioneros-cordoba.jpg'},
+  {name:'CIBI',logo:'https://www.futbolinterior.com.ar/images/stories/clubes/72cibi.gif'},
+  {name:'Defensores Central Córdoba',logo:'https://www.futbolinterior.com.ar/images/stories/clubes/72defcentralcordoba.gif'},
+  {name:'Defensores Juveniles',logo:'https://futbolfundaciones.wordpress.com/wp-content/uploads/2024/10/defensores-juveniles-cordoba.png'},
+  {name:'Deportivo Alberdi',logo:'https://www.futbolinterior.com.ar/images/stories/clubes/72alberdi.gif'},
+  {name:'Deportivo Atalaya',logo:'https://i.pinimg.com/736x/38/14/5f/38145fe9673e2b562cd4a59a2f46d2b9.jpg'},
+  {name:'Deportivo Banfield',logo:'https://www.futbolinterior.com.ar/images/stories/clubes/72banfield.gif'},
+  {name:'Deportivo Lasallano',logo:'https://i.pinimg.com/736x/98/aa/9d/98aa9dc82fac2d73df8df8f4a1140e00.jpg'},
+  {name:'Deportivo Norte',logo:'https://seeklogo.com/images/A/asociacion-deportiva-norte-de-alta-gracia-cordoba-logo-9A38FA221D-seeklogo.com.png'},
+  {name:'El Carmen',logo:'https://www.futbolinterior.com.ar/images/stories/clubes/72elcarmen.gif'},
+  {name:'Escuela Presidente Roca',logo:'https://www.futbolinterior.com.ar/images/stories/clubes/72pteroca.gif'},
+  {name:'General Paz Juniors',logo:'https://www.futbolinterior.com.ar/images/stories/clubes/72gralpaz.gif'},
+  {name:'Huracán',logo:'https://www.futbolinterior.com.ar/images/stories/clubes/72huracan2.gif'},
+  {name:'Independiente Carlos Paz',logo:'https://www.futbolinterior.com.ar/images/stories/clubes/72independiente.gif'},
+  {name:'Instituto',logo:'https://upload.wikimedia.org/wikipedia/commons/thumb/6/6d/Escudo_Instituto_Atletico_Central_Cordoba.png/512px-Escudo_Instituto_Atletico_Central_Cordoba.png'},
+  {name:'Juvenil Barrio Comercial',logo:'https://www.futbolinterior.com.ar/images/stories/clubes/72comercial.gif'},
+  {name:'La Unión de Malvinas',logo:'https://www.futbolinterior.com.ar/images/stories/clubes/72unionmalvinas.gif'},
+  {name:'Las Flores',logo:'https://commons.wikimedia.org/wiki/Special:Redirect/file/Escudo%20de%20las%20flores.png?width=512'},
+  {name:'Las Palmas',logo:'https://interiorfutbolero.com.ar/wp-content/uploads/2019/02/Las-Palmas.png'},
+  {name:'Libertad',logo:'https://futbolfundaciones.wordpress.com/wp-content/uploads/2024/10/libertad-cordoba.png'},
+  {name:'Los Andes',logo:'https://www.futbolinterior.com.ar/images/stories/clubes/72losandes2.gif'},
+  {name:'MEDEA Club',logo:'https://www.futbolinterior.com.ar/images/stories/clubes/72medea.gif'},
+  {name:'Quilmes',logo:'https://www.futbolinterior.com.ar/images/stories/clubes/72quilmes.gif'},
+  {name:'Racing de Córdoba',logo:'https://upload.wikimedia.org/wikipedia/commons/thumb/1/1d/Escudo_del_Club_Atl%C3%A9tico_Racing_de_C%C3%B3rdoba.svg/512px-Escudo_del_Club_Atl%C3%A9tico_Racing_de_C%C3%B3rdoba.svg.png'},
+  {name:'San Lorenzo',logo:'https://www.futbolinterior.com.ar/images/stories/clubes/72sanlorenzo.gif'},
+  {name:'San Nicolás',logo:'https://www.futbolinterior.com.ar/images/stories/clubes/72sannicolas.gif'},
+  {name:'Talleres',logo:'https://upload.wikimedia.org/wikipedia/commons/thumb/7/7f/Escudo_Club_Atl%C3%A9tico_Talleres.svg/512px-Escudo_Club_Atl%C3%A9tico_Talleres.svg.png'},
+  {name:'Unión Florida',logo:'https://www.futbolinterior.com.ar/images/stories/clubes/72unionflorida.gif'},
+  {name:'Unión San Vicente',logo:'https://www.futbolinterior.com.ar/images/stories/clubes/72unionsanvicente.gif'},
+  {name:'Universitario',logo:'https://upload.wikimedia.org/wikipedia/commons/thumb/e/e7/Universitario_cba_logo.svg/512px-Universitario_cba_logo.svg.png'},
+  {name:'Villa Azalais',logo:'https://logowik.com/content/uploads/images/club-social-deportivo-villa-azalais-de-villa-azalais-cordoba1723104177.logowik.com.webp'},
+  {name:'Villa Siburu',logo:'https://www.futbolinterior.com.ar/images/stories/clubes/72villasirburu.gif'}
 ];
 function teamInitials(name){return String(name||'?').split(/\s+/).filter(Boolean).slice(0,2).map(x=>x[0]).join('').toUpperCase()||'?'}
 function teamLogoHtml(team,cls='team-option-crest'){const src=team&&team.logo?esc(team.logo):'';const initials=teamInitials(team&&team.name);return `<span class="${cls}"><span class="team-crest-fallback">${esc(initials)}</span>${src?`<img src="${src}" alt="Escudo ${esc(team.name)}" loading="lazy" onerror="this.style.display='none'">`:''}</span>`}
 function teamPickerMarkup(field,label,selected=''){
   const current=LCF_TEAMS.find(t=>t.name.toLocaleLowerCase('es-AR')===String(selected||'').trim().toLocaleLowerCase('es-AR'))||null;
   const other=Boolean(selected&&!current);
-  const options=[...LCF_TEAMS].sort((a,b)=>a.name.localeCompare(b.name,'es-AR')).map(t=>`<button type="button" class="team-option" data-team-name="${esc(t.name)}" data-team-division="${esc(t.division)}" data-team-logo="${esc(t.logo)}">${teamLogoHtml(t)}<span><b>${esc(t.name)}</b></span></button>`).join('');
+  const options=[...LCF_TEAMS].sort((a,b)=>a.name.localeCompare(b.name,'es-AR')).map(t=>`<button type="button" class="team-option" data-team-name="${esc(t.name)}" data-team-logo="${esc(t.logo||'')}">${teamLogoHtml(t)}<span><b>${esc(t.name)}</b></span></button>`).join('');
   const display=current?current.name:(other?titleWords(selected):'Elegí un equipo');
-  const div=other?'Otro equipo':'Liga Cordobesa';
   const team=current||{name:display,logo:''};
-  return `<div class="field team-field ${field==='away'?'away-picker':''}" data-team-picker="${field}"><label>${label}</label><input type="hidden" name="${field}" value="${esc(selected||'')}"><button type="button" class="team-picker-trigger" aria-expanded="false">${teamLogoHtml(team,'team-picker-crest')}<span class="team-picker-copy"><b>${esc(display)}</b><small>${esc(div)}</small></span><span class="team-picker-chevron">⌄</span></button><div class="team-picker-menu hidden"><input type="search" class="team-picker-search" placeholder="Buscar equipo…" autocomplete="off"><div class="team-picker-options">${options}<button type="button" class="team-option other-team" data-team-name="__other__"><span class="team-option-crest"><span class="team-crest-fallback">+</span></span><span><b>Otro equipo</b><small>Escribir manualmente</small></span></button><div class="team-picker-empty hidden">No encontré equipos con ese nombre.</div></div></div><input class="input team-other-input ${other?'':'hidden'}" data-team-other="${field}" placeholder="Escribí el nombre del equipo" value="${other?esc(titleWords(selected)):''}"></div>`;
+  return `<div class="field team-field ${field==='away'?'away-picker':''}" data-team-picker="${field}"><label>${label}</label><input type="hidden" name="${field}" value="${esc(selected||'')}"><button type="button" class="team-picker-trigger" aria-expanded="false">${teamLogoHtml(team,'team-picker-crest')}<span class="team-picker-copy"><b>${esc(display)}</b><small>${current?'Liga Cordobesa':'Buscá o elegí un equipo'}</small></span><span class="team-picker-chevron">⌄</span></button><div class="team-picker-menu hidden"><input type="search" class="team-picker-search" placeholder="Buscar equipo…" autocomplete="off"><div class="team-picker-options">${options}<button type="button" class="team-option other-team" data-team-name="__other__"><span class="team-option-crest"><span class="team-crest-fallback">+</span></span><span><b>Otro equipo</b><small>Escribir manualmente</small></span></button><div class="team-picker-empty hidden">No encontré equipos con ese nombre.</div></div></div><input class="input team-other-input ${other?'':'hidden'}" data-team-other="${field}" placeholder="Escribí el nombre del equipo" value="${other?esc(titleWords(selected)):''}"></div>`;
 }
 function setTeamPicker(root,name,division='',logo=''){
   const hidden=root.querySelector('input[type="hidden"]'); const copy=root.querySelector('.team-picker-copy'); const crest=root.querySelector('.team-picker-crest'); const other=root.querySelector('.team-other-input');
   hidden.value=name||''; copy.querySelector('b').textContent=name||'Elegí un equipo'; copy.querySelector('small').textContent=name?'Liga Cordobesa':'Buscá o elegí un equipo';
   crest.innerHTML=`<span class="team-crest-fallback">${teamInitials(name||'?')}</span>${logo?`<img src="${logo}" alt="Escudo ${esc(name)}" onerror="this.style.display='none'">`:''}`;
-  if(name!=='__other__'&&division!=='Otro equipo') other.classList.add('hidden');
+  if(name!=='__other__') other.classList.add('hidden');
 }
 function initTeamPickers(){
   const roots=[...document.querySelectorAll('[data-team-picker]')];
@@ -118,7 +118,7 @@ function initTeamPickers(){
   roots.forEach(root=>{
     const trigger=root.querySelector('.team-picker-trigger'),menu=root.querySelector('.team-picker-menu'),search=root.querySelector('.team-picker-search'),hidden=root.querySelector('input[type="hidden"]'),other=root.querySelector('.team-other-input');
     trigger.onclick=e=>{e.stopPropagation();const opening=menu.classList.contains('hidden');closeAll(root);menu.classList.toggle('hidden',!opening);trigger.classList.toggle('open',opening);trigger.setAttribute('aria-expanded',String(opening));if(opening)setTimeout(()=>search.focus(),30)};
-    root.querySelectorAll('.team-option').forEach(btn=>btn.onclick=()=>{const name=btn.dataset.teamName;if(name==='__other__'){hidden.value=other.value||'';setTeamPicker(root,titleWords(other.value)||'Otro equipo','Otro equipo','');other.classList.remove('hidden');setTimeout(()=>other.focus(),30)}else{setTeamPicker(root,name,btn.dataset.teamDivision||'',btn.dataset.teamLogo||'')}menu.classList.add('hidden');trigger.classList.remove('open');trigger.setAttribute('aria-expanded','false')});
+    root.querySelectorAll('.team-option').forEach(btn=>btn.onclick=()=>{const name=btn.dataset.teamName;if(name==='__other__'){hidden.value=other.value||'';setTeamPicker(root,titleWords(other.value)||'Otro equipo','Otro equipo','');other.classList.remove('hidden');setTimeout(()=>other.focus(),30)}else{setTeamPicker(root,name,'',btn.dataset.teamLogo||'')}menu.classList.add('hidden');trigger.classList.remove('open');trigger.setAttribute('aria-expanded','false')});
     other.oninput=()=>{hidden.value=titleWords(other.value);root.querySelector('.team-picker-copy b').textContent=hidden.value||'Otro equipo'};
     other.onblur=()=>{other.value=titleWords(other.value);hidden.value=other.value};
     search.oninput=()=>{const q=search.value.trim().toLocaleLowerCase('es-AR');let visible=0;root.querySelectorAll('.team-option:not(.other-team)').forEach(btn=>{const ok=!q||btn.dataset.teamName.toLocaleLowerCase('es-AR').includes(q);btn.classList.toggle('hidden',!ok);if(ok)visible++});root.querySelectorAll('.team-picker-group').forEach(g=>{let n=g.nextElementSibling,has=false;while(n&&!n.classList.contains('team-picker-group')&&!n.classList.contains('other-team')){if(n.classList.contains('team-option')&&!n.classList.contains('hidden'))has=true;n=n.nextElementSibling}g.classList.toggle('hidden',!has)});root.querySelector('.team-picker-empty').classList.toggle('hidden',visible>0)};
