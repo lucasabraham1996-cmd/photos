@@ -19,7 +19,6 @@ EXPECTED_B={
 }
 
 # Código de cada ficha exacta dentro de la galería de clubes afiliados de Fútbol Interior.
-# Sirve de respaldo para no depender de viejos nombres de archivo que cambiaron.
 FI_CODES={
 'All Boys':'1074','Defensores Central Córdoba':'9851','El Carmen':'1203','Independiente de Carlos Paz':'3935',
 'Instituto':'1091','La Unión':'7371','Quilmes':'14384','San Nicolás':'7401','Unión San Vicente':'1102','Universitario':'1087'
@@ -39,6 +38,9 @@ EXTRA_SOURCES={
 ],
 'Independiente de Carlos Paz':[
     'https://independientevcp.com.ar/logo.png',
+],
+'Quilmes':[
+    'https://futbolfundaciones.wordpress.com/wp-content/uploads/2024/11/quilmes-1.png',
 ],
 'San Nicolás':[
     'https://i.pinimg.com/736x/05/8b/5c/058b5cb4265e271a0b239a3d2a5ca76d.jpg',
@@ -83,7 +85,7 @@ def remove_outer_white(im):
         if white(x,h-1): q.append((x,h-1)); seen.add((x,h-1))
     for y in range(h):
         if white(0,y): q.append((0,y)); seen.add((0,y))
-        if white(w-1,y): q.append((w-1,y)); seen.add((w-1,y))
+        if white(w-1,y): q.append((0,y)); seen.add((0,y))
     while q:
         x,y=q.popleft()
         r,g,b,a=px[x,y]; px[x,y]=(r,g,b,0)
@@ -135,7 +137,6 @@ def discover_futbolinterior_logo(name):
         return []
 
 def download_first_valid(name,primary):
-    # Primero probamos la fuente ya existente, después las fuentes verificadas y finalmente la ficha oficial de la galería.
     candidates=[]
     for u in [primary,*EXTRA_SOURCES.get(name,[]),*discover_futbolinterior_logo(name)]:
         if u and u not in candidates: candidates.append(u)
@@ -188,7 +189,6 @@ s=s.replace("copy.querySelector('small').textContent=division||'Primera A · Pri
 
 # Escudo sin placa/fondo claro alrededor.
 s=s.replace("background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.09);overflow:hidden","background:transparent;border:0;overflow:visible",1)
-# Si por caché quedara algún encabezado viejo de división, jamás se muestra.
 s=s.replace('.team-picker-group{padding:7px 6px 5px;font-size:9px;color:#7dd3fc;font-weight:900;text-transform:uppercase;letter-spacing:.16em}', '.team-picker-group{display:none!important}',1)
 
 if '/* v96: selector visual de clubes Liga Cordobesa */' in s:
