@@ -1,0 +1,53 @@
+name: Apply v98 agenda crests and date
+on:
+  push:
+    paths:
+      - '.github/scripts/apply_v98_agenda_crests_date.py'
+      - '.github/workflows/apply-v98-agenda-crests-date.yml'
+permissions:
+  contents: write
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Patch agenda
+        run: python3 .github/scripts/apply_v98_agenda_crests_date.py
+      - name: Validate JavaScript
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          s=Path('contrataciones.html').read_text(encoding='utf-8')
+          i=s.find('<script>'); j=s.rfind('</script>')
+          assert i>=0 and j>i
+          Path('/tmp/contrataciones.js').write_text(s[i+8:j],encoding='utf-8')
+          PY
+          node --check /tmp/contrataciones.js
+      - name: Validate agenda crests and date
+        run: |
+          grep -q 'v98: escudos en agenda' contrataciones.html
+          grep -q 'function bookingTeamLogoHtml' contrataciones.html
+          grep -q 'class="dow"' contrataciones.html
+          grep -q 'class="mon"' contrataciones.html
+          grep -q 'booking-versus' contrataciones.html
+          grep -q 'loadStoryCrest' contrataciones.html
+          grep -q 'await drawStoryPage' contrataciones.html
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+          s=Path('contrataciones.html').read_text(encoding='utf-8')
+          block=s.split('const LCF_TEAMS=[',1)[1].split('];',1)[0]
+          logos=re.findall(r"logo:'([^']+)'",block)
+          assert len(logos)==42, len(logos)
+          missing=[x for x in logos if not Path(x).exists()]
+          assert not missing, missing
+          print('42 local LCF crests present')
+          PY
+      - name: Commit
+        run: |
+          git config user.name 'lucasabraham1996-cmd'
+          git config user.email 'lucasabraham1996@gmail.com'
+          git add contrataciones.html
+          git diff --cached --quiet && exit 0
+          git commit -m 'feat: show team crests in agenda cards and stories'
+          git push
