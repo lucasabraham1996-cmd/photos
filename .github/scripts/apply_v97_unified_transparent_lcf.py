@@ -1,6 +1,7 @@
 from pathlib import Path
 from io import BytesIO
 from collections import deque
+from urllib.parse import urljoin
 import re, unicodedata
 import requests
 from PIL import Image
@@ -8,12 +9,49 @@ from PIL import Image
 p=Path('contrataciones.html')
 s=p.read_text(encoding='utf-8')
 
-# Fuente de control de la temporada 2026: 22 clubes de Primera A + 20 clubes activos de Primera B.
+# Control de la temporada 2026: 22 clubes de Primera A + 20 clubes activos de Primera B.
+# Unión Serrana inició el torneo pero dejó de participar durante la temporada, por eso no integra la nómina activa.
 EXPECTED_A={
 'Camioneros Córdoba','Argentino Peñarol','Barrio Parque','Talleres','CIBI','Deportivo Lasallano','San Lorenzo','Racing de Córdoba','Las Palmas','Libertad','Los Andes','AMSURRBAC','Huracán','Bella Vista','Belgrano','Escuela Presidente Roca','Deportivo Atalaya','General Paz Juniors','Instituto','Universitario','Villa Azalais','Unión San Vicente'
 }
 EXPECTED_B={
 'Defensores Central Córdoba','Deportivo Banfield','Independiente de Carlos Paz','All Boys','Atlético Carlos Paz','Juvenil Barrio Comercial','Unión Florida','Deportivo Norte','San Nicolás','Deportivo Alberdi','El Carmen','Quilmes','MEDEA','Las Flores','La Unión','Defensores Juveniles','Villa Siburú','Calera Central','Avellaneda','Almirante Brown'
+}
+
+# Código de cada ficha exacta dentro de la galería de clubes afiliados de Fútbol Interior.
+# Sirve de respaldo para no depender de viejos nombres de archivo que cambiaron.
+FI_CODES={
+'All Boys':'1074','Defensores Central Córdoba':'9851','El Carmen':'1203','Independiente de Carlos Paz':'3935',
+'Instituto':'1091','La Unión':'7371','Quilmes':'14384','San Nicolás':'7401','Unión San Vicente':'1102','Universitario':'1087'
+}
+
+# Fuentes puntuales verificadas para los escudos que tenían enlaces viejos/bloqueados.
+EXTRA_SOURCES={
+'Instituto':[
+    'https://commons.wikimedia.org/wiki/Special:Redirect/file/Instituto%20Atl%C3%A9tico%20Central%20C%C3%B3rdoba%20Escudo.png',
+],
+'Unión San Vicente':[
+    'https://futbolinterior.com.ar/images/stories/clubes/72unionsv.gif',
+    'https://commons.wikimedia.org/wiki/Special:Redirect/file/Escudo%20Club%20Union%20San%20Vicente%20de%20C%C3%B3rdoba.gif',
+],
+'Universitario':[
+    'https://upload.wikimedia.org/wikipedia/commons/thumb/e/e7/Universitario_cba_logo.svg/512px-Universitario_cba_logo.svg.png',
+],
+'Independiente de Carlos Paz':[
+    'https://independientevcp.com.ar/logo.png',
+],
+'San Nicolás':[
+    'https://i.pinimg.com/736x/05/8b/5c/058b5cb4265e271a0b239a3d2a5ca76d.jpg',
+],
+'All Boys':[
+    'https://commons.wikimedia.org/wiki/Special:Redirect/file/All%20Boys%20Cordoba%20logo.png',
+],
+'Defensores Central Córdoba':[
+    'https://futbolfundaciones.wordpress.com/wp-content/uploads/2022/09/club-atletico-defensores-central-cordoba-cordoba2.png?w=963',
+],
+'El Carmen':[
+    'https://futbolfundaciones.wordpress.com/wp-content/uploads/2025/04/el-carmen-montecristo-cordoba.png',
+],
 }
 
 block_start=s.index('const LCF_TEAMS=[')
@@ -35,6 +73,7 @@ def slug(text):
     return re.sub(r'[^a-z0-9]+','-',x).strip('-')
 
 def remove_outer_white(im):
+    """Quita únicamente el blanco conectado al borde; conserva el blanco que pertenece al escudo."""
     im=im.convert('RGBA')
     px=im.load(); w,h=im.size
     white=lambda x,y: px[x,y][3]>0 and px[x,y][0]>=238 and px[x,y][1]>=238 and px[x,y][2]>=238
@@ -55,15 +94,12 @@ def remove_outer_white(im):
 
 def normalize_logo(content,name):
     im=Image.open(BytesIO(content))
-    try:
-        im.seek(0)
-    except Exception:
-        pass
+    try: im.seek(0)
+    except Exception: pass
     im=remove_outer_white(im)
     alpha=im.getchannel('A')
     bbox=alpha.getbbox()
-    if not bbox:
-        raise ValueError('imagen sin contenido visible')
+    if not bbox: raise ValueError('imagen sin contenido visible')
     im=im.crop(bbox)
     max_side=224
     ratio=min(max_side/im.width,max_side/im.height)
@@ -78,19 +114,54 @@ def normalize_logo(content,name):
 
 session=requests.Session()
 session.headers.update({'User-Agent':'Mozilla/5.0 (compatible; lucasabraham.ph/1.0)','Accept':'image/avif,image/webp,image/apng,image/*,*/*;q=0.8'})
+
+def discover_futbolinterior_logo(name):
+    code=FI_CODES.get(name)
+    if not code: return []
+    page=f'https://futbolinterior.com.ar/escudos/ppal/ampesc.php?cod={code}'
+    try:
+        r=session.get(page,timeout=20,allow_redirects=True)
+        r.raise_for_status()
+        html=r.text
+        srcs=re.findall(r'''(?:src|href)=["']([^"']*images/stories/clubes/[^"']+)["']''',html,re.I)
+        urls=[]
+        for src in srcs:
+            u=urljoin(page,src.replace('&amp;','&'))
+            if u not in urls: urls.append(u)
+        if urls: print('DESCUBIERTO',name,urls[:3])
+        return urls
+    except Exception as e:
+        print('No pude leer ficha Fútbol Interior',name,repr(e))
+        return []
+
+def download_first_valid(name,primary):
+    # Primero probamos la fuente ya existente, después las fuentes verificadas y finalmente la ficha oficial de la galería.
+    candidates=[]
+    for u in [primary,*EXTRA_SOURCES.get(name,[]),*discover_futbolinterior_logo(name)]:
+        if u and u not in candidates: candidates.append(u)
+    errors=[]
+    for url in candidates:
+        try:
+            r=session.get(url,timeout=25,allow_redirects=True)
+            r.raise_for_status()
+            if not r.content: raise ValueError('respuesta vacía')
+            path=normalize_logo(r.content,name)
+            print('OK',name,'<-',url,'=>',path)
+            return path,url
+        except Exception as e:
+            errors.append(f'{url} :: {e!r}')
+            print('FALLBACK',name,url,repr(e))
+    raise RuntimeError(' | '.join(errors) or 'sin candidatos')
+
 fail=[]
 local_paths={}
+used_sources={}
 for t in teams:
     try:
-        r=session.get(t['logo'],timeout=25,allow_redirects=True)
-        r.raise_for_status()
-        if not r.content:
-            raise ValueError('respuesta vacía')
-        local_paths[t['name']]=normalize_logo(r.content,t['name'])
-        print('OK',t['name'],local_paths[t['name']])
+        local_paths[t['name']],used_sources[t['name']]=download_first_valid(t['name'],t['logo'])
     except Exception as e:
-        fail.append((t['name'],t['logo'],repr(e)))
-        print('FAIL',t['name'],e)
+        fail.append((t['name'],repr(e)))
+        print('FAIL FINAL',t['name'],e)
 if fail:
     print('\nFallaron escudos:')
     for row in fail: print(row)
@@ -101,12 +172,11 @@ new_block=block
 for t in teams:
     old=f"{{name:'{t['name']}',division:'{t['division']}',logo:'{t['logo']}'}}"
     new=f"{{name:'{t['name']}',division:'{t['division']}',logo:'{local_paths[t['name']]}'}}"
-    if old not in new_block:
-        raise SystemExit('No pude reemplazar '+t['name'])
+    if old not in new_block: raise SystemExit('No pude reemplazar '+t['name'])
     new_block=new_block.replace(old,new,1)
 s=s[:block_start]+new_block+s[block_end:]
 
-# Una sola lista alfabética: la división queda sólo como dato interno y nunca se muestra al cliente.
+# Una sola lista alfabética. La división queda sólo como dato interno y nunca se muestra al cliente.
 fstart=s.index('function teamPickerMarkup(')
 gstart=s.index('  const groups=',fstart)
 dstart=s.index('  const display=',gstart)
@@ -116,15 +186,15 @@ s=s.replace("  const div=current?current.division:(other?'Otro equipo':'Primera 
 s=s.replace('${groups}<button type="button" class="team-option other-team"','${options}<button type="button" class="team-option other-team"',1)
 s=s.replace("copy.querySelector('small').textContent=division||'Primera A · Primera B';","copy.querySelector('small').textContent=name?'Liga Cordobesa':'Buscá o elegí un equipo';",1)
 
-# Contenedores realmente transparentes, sin placa clara detrás del escudo.
+# Escudo sin placa/fondo claro alrededor.
 s=s.replace("background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.09);overflow:hidden","background:transparent;border:0;overflow:visible",1)
-
-# Ocultar cualquier rastro visual de encabezados de división si quedara markup viejo en caché/HTML.
+# Si por caché quedara algún encabezado viejo de división, jamás se muestra.
 s=s.replace('.team-picker-group{padding:7px 6px 5px;font-size:9px;color:#7dd3fc;font-weight:900;text-transform:uppercase;letter-spacing:.16em}', '.team-picker-group{display:none!important}',1)
 
-# Marcador de versión de esta sección.
 if '/* v96: selector visual de clubes Liga Cordobesa */' in s:
     s=s.replace('/* v96: selector visual de clubes Liga Cordobesa */','/* v97: lista única LCF + 42 escudos PNG transparentes locales */',1)
 
 p.write_text(s,encoding='utf-8')
 print('v97 listo: 42 clubes, lista única y escudos locales transparentes')
+print('Fuentes finalmente usadas:')
+for name in sorted(used_sources): print(name,'=>',used_sources[name])
