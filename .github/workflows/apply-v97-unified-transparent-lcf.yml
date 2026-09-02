@@ -1,0 +1,58 @@
+name: Apply v97 unified transparent LCF picker
+on:
+  push:
+    paths:
+      - '.github/scripts/apply_v97_unified_transparent_lcf.py'
+      - '.github/workflows/apply-v97-unified-transparent-lcf.yml'
+permissions:
+  contents: write
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install image tools
+        run: python3 -m pip install --quiet pillow requests
+      - name: Patch and normalize crests
+        run: python3 .github/scripts/apply_v97_unified_transparent_lcf.py
+      - name: Validate JavaScript
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          s=Path('contrataciones.html').read_text(encoding='utf-8')
+          i=s.find('<script>'); j=s.rfind('</script>')
+          assert i>=0 and j>i
+          Path('/tmp/contrataciones.js').write_text(s[i+8:j],encoding='utf-8')
+          PY
+          node --check /tmp/contrataciones.js
+      - name: Validate unified picker and crests
+        run: |
+          grep -q 'v97: lista única LCF' contrataciones.html
+          grep -q 'const options=\[...LCF_TEAMS\].sort' contrataciones.html
+          ! grep -q 'const groups=' contrataciones.html
+          test "$(find assets/lcf -maxdepth 1 -type f -name '*.png' | wc -l)" -eq 42
+          python3 - <<'PY'
+          from pathlib import Path
+          from PIL import Image
+          files=list(Path('assets/lcf').glob('*.png'))
+          assert len(files)==42
+          for f in files:
+              im=Image.open(f).convert('RGBA')
+              assert im.size==(256,256), (f,im.size)
+              alpha=im.getchannel('A')
+              assert alpha.getextrema()[0] == 0, f'{f} no tiene transparencia'
+          s=Path('contrataciones.html').read_text(encoding='utf-8')
+          block=s.split('const LCF_TEAMS=[',1)[1].split('];',1)[0]
+          assert block.count("division:'Primera A'")==22
+          assert block.count("division:'Primera B'")==20
+          assert block.count("logo:'assets/lcf/")==42
+          print('42 clubes y 42 PNG transparentes validados')
+          PY
+      - name: Commit
+        run: |
+          git config user.name 'lucasabraham1996-cmd'
+          git config user.email 'lucasabraham1996@gmail.com'
+          git add contrataciones.html assets/lcf
+          git diff --cached --quiet && exit 0
+          git commit -m 'feat: unify LCF teams and use transparent local crests'
+          git push
