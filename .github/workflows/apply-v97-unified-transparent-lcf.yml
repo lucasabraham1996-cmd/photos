@@ -13,8 +13,16 @@ jobs:
       - uses: actions/checkout@v4
       - name: Install image tools
         run: python3 -m pip install --quiet pillow requests
-      - name: Patch and normalize crests
-        run: python3 .github/scripts/apply_v97_unified_transparent_lcf.py
+      - name: Correct edge cleanup and normalize crests
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p=Path('.github/scripts/apply_v97_unified_transparent_lcf.py')
+          s=p.read_text(encoding='utf-8')
+          s=s.replace("if white(w-1,y): q.append((0,y)); seen.add((0,y))","if white(w-1,y): q.append((w-1,y)); seen.add((w-1,y))")
+          p.write_text(s,encoding='utf-8')
+          PY
+          python3 .github/scripts/apply_v97_unified_transparent_lcf.py
       - name: Validate JavaScript
         run: |
           python3 - <<'PY'
@@ -41,6 +49,8 @@ jobs:
               assert im.size==(256,256), (f,im.size)
               alpha=im.getchannel('A')
               assert alpha.getextrema()[0] == 0, f'{f} no tiene transparencia'
+              corners=[im.getpixel((0,0))[3],im.getpixel((255,0))[3],im.getpixel((0,255))[3],im.getpixel((255,255))[3]]
+              assert all(a==0 for a in corners), f'{f} conserva fondo en esquinas'
           s=Path('contrataciones.html').read_text(encoding='utf-8')
           block=s.split('const LCF_TEAMS=[',1)[1].split('];',1)[0]
           assert block.count("division:'Primera A'")==22
