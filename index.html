@@ -31,7 +31,7 @@
   <meta name="twitter:description" content="Fotos deportivas protegidas · Compra directa por WhatsApp" />
   <meta name="twitter:image" content="https://lucasabraham1996-cmd.github.io/photos/social-preview-la.png?v=61" />
   <title>lucasabraham.ph - Galería de Clientes</title>
-  <meta name="app-version" content="v95-print-orders-admin" /><style>html,body{margin:0;min-height:100%;background:#050505;color:#fff}#root{min-height:100vh;background:#050505;color:#fff}
+  <meta name="app-version" content="v102-reliable-orders" /><style>html,body{margin:0;min-height:100%;background:#050505;color:#fff}#root{min-height:100vh;background:#050505;color:#fff}
     /* v41: estilo versus moderno para portada y álbum */
     .team-album-reveal{background:linear-gradient(180deg,rgba(3,7,18,.12),rgba(2,6,23,.28))}
     .team-reveal-half{left:12px!important;right:12px!important;width:auto!important;height:33%!important;padding:12px 16px!important;box-shadow:0 16px 36px rgba(0,0,0,.28),inset 0 1px 0 rgba(255,255,255,.14)!important;border:1px solid rgba(255,255,255,.10)!important;overflow:hidden}
@@ -1420,6 +1420,9 @@ img{-webkit-user-drag:none;}
 .price-button-only{margin:18px 0 20px;display:flex;justify-content:flex-start}.price-button-only .booking-btn{background:linear-gradient(135deg,#22c55e,#16a34a)!important;color:#03140a!important;border:1px solid rgba(255,255,255,.24)!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.30),0 12px 28px rgba(34,197,94,.22)!important}
 @media(max-width:640px){.club-floating-btn{right:12px;bottom:112px;padding:11px 13px}.club-modal-shell{padding:14px;border-radius:20px}.club-modal-title{font-size:22px}.checkout-floating-cta{bottom:max(8px,env(safe-area-inset-bottom));width:calc(100vw - 20px)}.price-button-only{justify-content:center}.price-button-only .booking-btn{width:100%}}
 </style>
+<style id="v102-reliable-orders">
+.checkout-save-error{position:fixed;z-index:121;left:50%;transform:translateX(-50%);bottom:90px;width:min(94vw,470px);padding:12px;border-radius:15px;background:#3b1114;border:1px solid #b91c1c;color:#fff;font-size:12px;line-height:1.5;box-shadow:0 12px 30px rgba(0,0,0,.4)}.checkout-save-copy{display:block;margin-top:8px;padding:8px 12px;border-radius:10px;background:#7f1d1d;color:#fff;font-weight:800}.checkout-floating-cta:disabled{cursor:wait}.order-storage-warning{padding:12px;margin-bottom:12px;border-radius:14px;background:rgba(245,158,11,.12);border:1px solid rgba(245,158,11,.3);color:#fde68a;font-size:12px}
+</style>
 
 <style id="v73-club-header-link">
 .club-floating-btn{display:none!important}
@@ -1561,7 +1564,7 @@ const LS_SHARED_STATE_KEY = "la_shared_admin_state_v2";
 const LS_BANNERS_KEY = "la_banner_settings_v1";
 const LS_INTRO_KEY = "la_purchase_intro_seen_v2";
 const PHOTOS_PER_PAGE = 70;
-const APP_VERSION = "v65-persistent-admin-photo-protection";
+const APP_VERSION = "v102-reliable-orders";
 const LS_ALBUM_CACHE_META_KEY = "la_album_cache_meta_v1";
 const ALBUM_CACHE_MAX_AGE_MS = 1000 * 60 * 60 * 12;
 const FIRESTORE_FREE_DAILY_LIMITS = {
@@ -1928,51 +1931,103 @@ function orderCollections() {
 function legacyOrderCollections() {
     return [LEGACY_ORDERS_COLLECTION_PATH].filter(Boolean);
 }
-async function saveOrderFirebase(order) {
-    const db = await getFirebaseDb();
-    if (!db)
-        throw new Error('Firebase no inicializó. Revisá la consola y la configuración del proyecto.');
-    const clean = { ...order, id: order.id || order.orderId || order.codigo || order.code, updatedAt: new Date().toISOString(), appVersion: APP_VERSION };
-    const docId = firebaseDocId(clean.id);
-    // Guardado obligatorio: es la ruta que Lucas ve en Firebase Console.
-    try {
-        await db.collection(ORDERS_COLLECTION_PATH).doc(docId).set(clean, { merge: true });
+const LAOrderStorage = (() => {
+  const MAX_INLINE = 180000;
+  const PART_LENGTH = 60000;
+  const mutable = new Set(['delivered','rejected','status','paid','updatedAt','deliveredAt','rejectedAt','resolvedAt','cancelledAt']);
+  const internal = new Set(['storageVersion','payloadMode','payloadHash','payloadLength','payloadChunkCount','itemCount','storageIncomplete','_firebasePath','appVersion']);
+  const bytes = s => new TextEncoder().encode(s).length;
+  function hash(s) { let h=2166136261; for(let i=0;i<s.length;i++){h^=s.charCodeAt(i);h=Math.imul(h,16777619)} return (h>>>0).toString(16).padStart(8,'0') + '-' + s.length; }
+  function payload(order) { const p={...order}; [...mutable,...internal].forEach(k=>delete p[k]);p.items=Array.isArray(p.items)?p.items:[];p.printedItems=Array.isArray(p.printedItems)?p.printedItems:[];p.printedPhotoIds=Array.isArray(p.printedPhotoIds)?p.printedPhotoIds:[];return p; }
+  function split(s) { const parts=[]; for(let i=0;i<s.length;){let end=Math.min(i+PART_LENGTH,s.length);if(end<s.length&&s.charCodeAt(end-1)>=0xD800&&s.charCodeAt(end-1)<=0xDBFF)end++;parts.push(s.slice(i,end));i=end}return parts; }
+  function prepare(order) {
+    const raw=JSON.stringify(payload(order));
+    const info={storageVersion:2,payloadHash:hash(raw),payloadLength:raw.length,itemCount:Array.isArray(order.items)?order.items.length:0};
+    if(bytes(raw)<=MAX_INLINE)return {manifest:{...order,...info,payloadMode:'inline',payloadChunkCount:0},parts:[]};
+    const parts=split(raw);
+    const manifest={...order};
+    delete manifest.items;delete manifest.printedItems;delete manifest.printedPhotoIds;
+    Object.assign(manifest,info,{payloadMode:'chunks',payloadChunkCount:parts.length,items:[],printedItems:[],printedPhotoIds:[]});
+    return {manifest,parts};
+  }
+  async function read(db,path,id,key) {
+    const ref=db.collection(path).doc(key(id));
+    const snap=await ref.get({source:'server'});
+    if(!snap.exists)return null;
+    return hydrate(ref,snap.data());
+  }
+  async function hydrate(ref,data) {
+    if(data.storageVersion!==2||data.payloadMode!=='chunks')return data;
+    const count=Number(data.payloadChunkCount);
+    if(!Number.isInteger(count)||count<1||count>100000)throw new Error('Cantidad de partes inválida');
+    const parts=[];
+    for(let i=0;i<count;i+=8){
+      const group=await Promise.all(Array.from({length:Math.min(8,count-i)},(_,n)=>ref.parent.doc(ref.id+'__p'+String(i+n).padStart(6,'0')).get({source:'server'})));
+      for(const snap of group){if(!snap.exists||typeof snap.data().part!=='string')throw new Error('Falta una parte del pedido');parts.push(snap.data().part)}
     }
-    catch (e) {
-        console.error('No se pudo guardar el pedido en la ruta principal de Firebase:', ORDERS_COLLECTION_PATH, e);
-        throw new Error('Firebase rechazó la escritura en artifacts/lucasabraham-ph-db/orders. Revisá reglas/permisos de Firestore. Detalle: ' + (e && e.message ? e.message : String(e)));
+    const raw=parts.join('');
+    if(raw.length!==data.payloadLength||hash(raw)!==data.payloadHash)throw new Error('El detalle del pedido no coincide con el guardado');
+    const p=JSON.parse(raw);
+    if(!Array.isArray(p.items)||p.items.length!==data.itemCount)throw new Error('Faltan fotos en el pedido');
+    return {...p,...data,items:p.items,printedItems:p.printedItems||[],printedPhotoIds:p.printedPhotoIds||[]};
+  }
+  async function persist(db,path,order,key) {
+    const ref=db.collection(path).doc(key(order.id));
+    const prepared=prepare(order);
+    const before=await ref.get({source:'server'});
+    if(before.exists){
+      const old=before.data();
+      if(old.storageVersion===2&&old.payloadHash===prepared.manifest.payloadHash){
+        try { const found=await hydrate(ref,old);
+          if(JSON.stringify(payload(found))===JSON.stringify(payload(order)))return true;
+        } catch(e) { /* An interrupted upload is repaired with the same order ID. */ }
+      }
+      if(old.storageVersion===2&&old.payloadHash!==prepared.manifest.payloadHash)throw new Error('El código ya pertenece a otro pedido');
+      if(old.date&&old.date!==order.date)throw new Error('El código ya pertenece a otro pedido');
     }
-    // Para cuidar el cupo diario, desde esta versión se guarda una sola escritura por pedido en la ruta principal.
-    // No se duplica más el pedido en la colección legacy.
-    try {
-        window.LA_LAST_FIREBASE_SAVE = { ok: true, id: clean.id, paths: [ORDERS_COLLECTION_PATH], at: new Date().toISOString(), appVersion: APP_VERSION };
+    for(let i=0;i<prepared.parts.length;i+=8){
+      await Promise.all(prepared.parts.slice(i,i+8).map((part,n)=>ref.parent.doc(ref.id+'__p'+String(i+n).padStart(6,'0')).set({part,index:i+n})));
     }
-    catch (e) { }
+    const manifest={...prepared.manifest};
+    if(before.exists){for(const field of mutable)delete manifest[field];}
+    await ref.set(manifest,{merge:true});
+    const found=await read(db,path,order.id,key);
+    if(!found||found.payloadHash!==prepared.manifest.payloadHash||JSON.stringify(payload(found))!==JSON.stringify(payload(order)))throw new Error('No se pudo verificar el pedido completo');
     return true;
-}
-async function loadOrdersFirebase(limit = 3000) {
-    const db = await getFirebaseDb();
-    if (!db)
-        return [];
-    const all = [];
-    const paths = [ORDERS_COLLECTION_PATH, ...legacyOrderCollections()];
-    for (const path of paths) {
-        try {
-            const snap = await db.collection(path).orderBy('date', 'desc').limit(limit).get({ source: 'server' });
-            all.push(...snap.docs.map(d => ({ id: d.data().id || d.id, ...d.data(), _firebasePath: path })));
-        }
-        catch (e) {
-            try {
-                const snap = await db.collection(path).limit(limit).get({ source: 'server' });
-                all.push(...snap.docs.map(d => ({ id: d.data().id || d.id, ...d.data(), _firebasePath: path })));
-            }
-            catch (err) {
-                console.warn('No se pudieron leer pedidos desde Firebase:', path, err);
-            }
-        }
+  }
+  function verifiedAck(r,id,normalize) {
+    if(!r||typeof r!=='object'||r.ok===false||r.success===false||r.error)return false;
+    const returned=r.order?.id||r.order?.orderId||r.orderId||r.id||r.code;
+    if(returned&&normalize(returned)!==normalize(id))return false;
+    return r.ok===true||r.success===true||r.saved===true||r.created===true||['ok','success','saved'].includes(String(r.status||'').toLowerCase())||Boolean(r.order&&returned);
+  }
+  function createOutbox() {
+    const name='LA_ORDER_OUTBOX_V2', fallback='LA_ORDER_OUTBOX_V2';
+    let opening;
+    function database(){
+      if(!('indexedDB' in globalThis))return Promise.reject(new Error('IndexedDB no disponible'));
+      if(!opening)opening=new Promise((resolve,reject)=>{const r=indexedDB.open(name,1);r.onupgradeneeded=()=>r.result.createObjectStore('orders',{keyPath:'id'});r.onsuccess=()=>resolve(r.result);r.onerror=()=>reject(r.error)}).catch(e=>{opening=null;throw e});
+      return opening;
     }
-    return mergeOrders(all);
-}
+    async function transaction(mode,action){const db=await database();return new Promise((resolve,reject)=>{const tx=db.transaction('orders',mode);const req=action(tx.objectStore('orders'));tx.oncomplete=()=>resolve(req.result);tx.onerror=()=>reject(tx.error);tx.onabort=()=>reject(tx.error)})}
+    function localRead(){try{const v=JSON.parse(localStorage.getItem(fallback)||'[]');return Array.isArray(v)?v:[]}catch(e){return []}}
+    function localWrite(list){localStorage.setItem(fallback,JSON.stringify(list));}
+    async function put(order){try{await transaction('readwrite',s=>s.put(order));return}catch(e){const list=localRead().filter(x=>x.id!==order.id);list.push(order);localWrite(list);if(!localRead().some(x=>x.id===order.id))throw new Error('No se pudo conservar el pedido en este dispositivo')}}
+    async function all(){let rows=[];try{rows=await transaction('readonly',s=>s.getAll())}catch(e){}const map=new Map();[...localRead(),...rows].forEach(o=>{if(o&&o.id)map.set(o.id,o)});return [...map.values()]}
+    async function remove(id){try{await transaction('readwrite',s=>s.delete(id))}catch(e){}try{localWrite(localRead().filter(o=>o.id!==id))}catch(e){}}
+    return {put,all,remove};
+  }
+  return {prepare,persist,hydrate,read,verifiedAck,createOutbox,payload,hash};
+})();
+const LAOrderOutbox=LAOrderStorage.createOutbox();
+const LA_ORDER_SAVE_INFLIGHT=new Map();
+let LA_PENDING_SYNC_RUNNING=false;
+function orderDeadline(promise,ms=45000){let timer;return Promise.race([promise,new Promise((_,reject)=>{timer=setTimeout(()=>reject(new Error('La conexión demoró demasiado. El pedido sigue pendiente.')),ms)})]).finally(()=>clearTimeout(timer))}
+function newOrderCode(){const random=typeof crypto!=='undefined'&&crypto.getRandomValues?Array.from(crypto.getRandomValues(new Uint8Array(6)),n=>n.toString(16).padStart(2,'0')).join(''):Math.random().toString(36).slice(2,14);return 'LA-'+Date.now().toString(36).toUpperCase()+'-'+random.toUpperCase()}
+function safeOrderWhatsappUrl(pkg){if(pkg.whatsappUrl.length<=6000)return pkg.whatsappUrl;const text=`Hola Lucas! Te envío mi pedido ${pkg.order} de ${pkg.orderData.items.length} fotos por ${formatPrice(pkg.orderData.total)}. El detalle completo, incluidas las impresiones, está guardado en el Admin. A continuación te envío el comprobante.`;return `https://api.whatsapp.com/send?phone=${SELLER_PHONE}&text=${encodeURIComponent(text)}`}
+async function saveOrderFirebase(order){const db=await getFirebaseDb();if(!db)throw new Error('Firebase no inicializó');const clean={...order,id:order.id||order.orderId||order.codigo||order.code};if(!clean.id)throw new Error('El pedido no tiene código');await LAOrderStorage.persist(db,ORDERS_COLLECTION_PATH,clean,firebaseDocId);window.LA_LAST_FIREBASE_SAVE={ok:true,id:clean.id,paths:[ORDERS_COLLECTION_PATH],at:new Date().toISOString(),appVersion:APP_VERSION};return true}
+
+async function loadOrdersFirebase(limit=3000){const db=await getFirebaseDb();if(!db)throw new Error('Firebase no inicializó');const all=[],errors=[];let successful=0;for(const path of [...legacyOrderCollections(),ORDERS_COLLECTION_PATH]){const collection=db.collection(path),docs=new Map();for(const query of [collection.where('delivered','==',false),collection.orderBy('date','desc').limit(Math.max(300,Math.min(limit,1000)))]){try{const snap=await query.get({source:'server'});successful++;snap.docs.forEach(d=>docs.set(d.id,d))}catch(e){errors.push(String(e&&e.message||e))}}const entries=[...docs.values()];for(let i=0;i<entries.length;i+=6){const group=await Promise.all(entries.slice(i,i+6).map(async d=>{const data={id:d.data().id||d.id,...d.data()};try{return {...await LAOrderStorage.hydrate(d.ref,data),_firebasePath:path}}catch(e){console.warn('Detalle de pedido pendiente de recuperar:',data.id,e);return {...data,storageIncomplete:true,_firebasePath:path}}}));all.push(...group)}}window.LA_LAST_ORDER_FIREBASE_READ={ok:successful>0,errors,at:new Date().toISOString()};if(!successful)throw new Error(errors.join('; ')||'No se pudieron consultar pedidos en Firebase');return mergeOrders(all)}
 function orderCodeVariants(v) {
     const clean = normalizeOrderCode(v);
     const withDash = clean.replace(/^LA(\d+)/, 'LA-$1');
@@ -1984,55 +2039,7 @@ function findOrderInList(list, code) {
         return null;
     return (list || []).find(o => normalizeOrderCode((o === null || o === void 0 ? void 0 : o.id) || (o === null || o === void 0 ? void 0 : o.orderId) || (o === null || o === void 0 ? void 0 : o.codigo) || (o === null || o === void 0 ? void 0 : o.code)) === q) || null;
 }
-async function findOrderEverywhere(code) {
-    const q = normalizeOrderCode(code);
-    if (!q)
-        return null;
-    const localHit = findOrderInList(mergeOrders(readLocalOrders(), readPendingOrders()), q);
-    if (localHit)
-        return localHit;
-    // Primero Apps Script: es el respaldo central y no consume cuota Firestore.
-    try {
-        const r = await apiAction({ action: 'getOrder', orderId: q });
-        if (r && r.order)
-            return r.order;
-    }
-    catch (e) { }
-    try {
-        const r = await apiAction({ action: 'listOrders' });
-        if (r && Array.isArray(r.orders)) {
-            const hit = findOrderInList(r.orders, q);
-            if (hit)
-                return hit;
-        }
-    }
-    catch (e) { }
-    // Firestore queda como último intento. Si la cuota está agotada, no insistimos.
-    if (sessionStorage.getItem('LA_FIRESTORE_QUOTA_EXHAUSTED') === '1')
-        return null;
-    try {
-        const db = await getFirebaseDb();
-        if (db) {
-            for (const path of [ORDERS_COLLECTION_PATH]) {
-                for (const id of orderCodeVariants(q)) {
-                    const snap = await db.collection(path).doc(firebaseDocId(id)).get();
-                    if (snap.exists)
-                        return { id: snap.data().id || snap.id, ...snap.data() };
-                }
-            }
-            const all = await loadOrdersFirebase(3000);
-            const hit = findOrderInList(all, q);
-            if (hit)
-                return hit;
-        }
-    }
-    catch (e) {
-        if (String(e && e.message || e).includes('resource-exhausted'))
-            sessionStorage.setItem('LA_FIRESTORE_QUOTA_EXHAUSTED', '1');
-        console.warn('No se pudo buscar el pedido directo en Firebase.', e);
-    }
-    return null;
-}
+async function findOrderEverywhere(code){const q=normalizeOrderCode(code);if(!q)return null;try{const db=await getFirebaseDb();if(db){for(const path of [ORDERS_COLLECTION_PATH,...legacyOrderCollections()]){for(const id of orderCodeVariants(q)){const found=await LAOrderStorage.read(db,path,id,firebaseDocId);if(found)return found}}}}catch(e){console.warn('Búsqueda directa Firebase:',e)}try{const r=await apiAction({action:'getOrder',orderId:q});if(r&&r.order&&sameOrderCode(r.order.id||r.order.orderId,q))return r.order}catch(e){}try{const hit=findOrderInList(await loadOrdersRemote(),q);if(hit)return hit}catch(e){}return findOrderInList(mergeOrders(readLocalOrders(),readPendingOrders(),await LAOrderOutbox.all()),q)}
 async function updateOrderFirebase(orderId, partial) {
     const db = await getFirebaseDb();
     if (!db)
@@ -2185,38 +2192,10 @@ function hasUsableAlbumCache() {
 }
 const wait = (ms) => new Promise(r => setTimeout(r, ms));
 function apiAction(params) { const q = new URLSearchParams(params); return jsonp(APPS_SCRIPT_URL + (APPS_SCRIPT_URL.includes("?") ? "&" : "?") + q.toString()); }
-async function syncPendingOrders() {
-    const pending = readPendingOrders();
-    if (!pending.length)
-        return;
-    const stillPending = [];
-    for (const order of pending) {
-        let saved = false;
-        // Primero Apps Script para evitar agotar Firestore.
-        try {
-            await apiAction({ action: "createOrder", order: JSON.stringify(order) });
-            saved = true;
-        }
-        catch (e) {
-            console.warn('Apps Script no aceptó pedido pendiente.', e);
-        }
-        // Firestore solo si no está bloqueado por cuota.
-        if (sessionStorage.getItem('LA_FIRESTORE_QUOTA_EXHAUSTED') !== '1') {
-            try {
-                await saveOrderFirebase(order);
-                saved = true;
-            }
-            catch (e) {
-                if (String(e && e.message || e).includes('resource-exhausted'))
-                    sessionStorage.setItem('LA_FIRESTORE_QUOTA_EXHAUSTED', '1');
-                console.warn('Firebase no aceptó pedido pendiente.', e);
-            }
-        }
-        if (!saved)
-            stillPending.push(order);
-    }
-    savePendingOrders(stillPending);
-}
+async function syncPendingOrders(){if(LA_PENDING_SYNC_RUNNING)return;LA_PENDING_SYNC_RUNNING=true;try{const pending=mergeOrders(readPendingOrders(),await LAOrderOutbox.all());for(const order of pending){const result=await saveOrderRemote(order);if(!result.firebase&&!result.script)console.warn('Pedido conservado para reintento:',order.id,result.error)}}finally{LA_PENDING_SYNC_RUNNING=false}}
+window.addEventListener('online',()=>syncPendingOrders().catch(e=>console.warn('Reintento de pedidos:',e)));
+setTimeout(()=>syncPendingOrders().catch(e=>console.warn('Recuperación de pedidos:',e)),2000);
+
 function compactOrderForScript(order) {
     const items = (Array.isArray(order.items) ? order.items : []).map(item => {
         const rawLink = item.driveLink || item.rawUrl || item.originalUrl || item.url || '';
@@ -2263,85 +2242,8 @@ function orderPrintInfo(order) {
     const count = Math.max(declared, printed.length, fallback);
     return { has: count > 0, count, items: printed, format: o.printFormat || '10x15 cm' };
 }
-async function saveOrderRemote(order) {
-    const clean = { ...order, id: order.id || order.orderId || order.codigo || order.code, date: order.date || new Date().toISOString(), items: Array.isArray(order.items) ? order.items : [] };
-    saveLocalOrders(mergeOrders([clean], readLocalOrders()));
-    savePendingOrders(mergeOrders([clean], readPendingOrders()));
-    const status = { firebase: false, script: false, error: '' };
-    const attempts = [];
-    // Apps Script recibe una versión compacta: conserva datos y enlaces, pero evita URLs gigantes en pedidos grandes.
-    attempts.push(apiAction({ action: "createOrder", order: JSON.stringify(compactOrderForScript(clean)) })
-        .then(() => ({ channel: 'script', ok: true }))
-        .catch(e => ({ channel: 'script', ok: false, error: e })));
-    // Firebase guarda el pedido completo y comienza al mismo tiempo, antes de que el usuario salga hacia WhatsApp.
-    if (sessionStorage.getItem('LA_FIRESTORE_QUOTA_EXHAUSTED') !== '1') {
-        attempts.push(saveOrderFirebase(clean)
-            .then(ok => ({ channel: 'firebase', ok: !!ok }))
-            .catch(e => ({ channel: 'firebase', ok: false, error: e })));
-    }
-    return new Promise(resolve => {
-        let settled = 0;
-        let resolved = false;
-        const finish = result => {
-            settled += 1;
-            if (result.channel === 'firebase')
-                status.firebase = !!result.ok;
-            if (result.channel === 'script')
-                status.script = !!result.ok;
-            if (!result.ok && result.error) {
-                status.error = String(result.error && result.error.message ? result.error.message : result.error);
-                if (result.channel === 'firebase' && status.error.includes('resource-exhausted'))
-                    sessionStorage.setItem('LA_FIRESTORE_QUOTA_EXHAUSTED', '1');
-                console.warn(`${result.channel} no aceptó el pedido todavía.`, result.error);
-            }
-            if (result.ok)
-                savePendingOrders(readPendingOrders().filter(o => !sameOrderCode(o.id, clean.id)));
-            try {
-                window.LA_LAST_ORDER_SAVE_STATUS = { ...status, id: clean.id, ordersPath: ORDERS_COLLECTION_PATH, at: new Date().toISOString(), appVersion: APP_VERSION };
-            }
-            catch (e) { }
-            // Confirmamos apenas uno de los dos respaldos termina bien. El segundo continúa en paralelo.
-            if (!resolved && (result.ok || settled === attempts.length)) {
-                resolved = true;
-                resolve({ ...status });
-            }
-        };
-        if (!attempts.length) {
-            resolved = true;
-            resolve({ ...status, error: 'No hay un respaldo remoto disponible.' });
-            return;
-        }
-        attempts.forEach(attempt => attempt.then(finish));
-    });
-}
-async function loadOrdersRemote() {
-    let scriptOrders = [];
-    let firebaseOrders = [];
-    // No sincronizamos pendientes automáticamente al abrir el admin para no disparar escrituras repetidas.
-    // La lectura principal es Apps Script, así el admin no consume lecturas de Firestore en cada actualización.
-    try {
-        const r = await apiAction({ action: "listOrders" });
-        if (r && Array.isArray(r.orders))
-            scriptOrders = r.orders;
-    }
-    catch (e) {
-        console.warn("No se pudieron leer pedidos desde Apps Script.", e);
-    }
-    // Firestore queda como respaldo: solo se lee si Apps Script no devolvió pedidos.
-    // Esto evita que abrir el admin lea cientos o miles de documentos sin necesidad.
-    if (!scriptOrders.length && sessionStorage.getItem('LA_FIRESTORE_QUOTA_EXHAUSTED') !== '1') {
-        try {
-            firebaseOrders = await loadOrdersFirebase();
-        }
-        catch (e) {
-            if (String(e && e.message || e).includes('resource-exhausted'))
-                sessionStorage.setItem('LA_FIRESTORE_QUOTA_EXHAUSTED', '1');
-            console.warn("No se pudieron leer pedidos desde Firebase.", e);
-        }
-    }
-    // El listado principal se arma con datos remotos, para que normal/incógnito vean lo mismo.
-    return mergeOrders(scriptOrders, firebaseOrders);
-}
+async function saveOrderRemote(order){const clean={...order,id:order.id||order.orderId||order.codigo||order.code,date:order.date||new Date().toISOString(),items:Array.isArray(order.items)?order.items:[]};if(!clean.id)throw new Error('Falta el código del pedido');const key=normalizeOrderCode(clean.id);if(LA_ORDER_SAVE_INFLIGHT.has(key))return LA_ORDER_SAVE_INFLIGHT.get(key);const work=(async()=>{await LAOrderOutbox.put(clean);saveLocalOrders(mergeOrders([clean],readLocalOrders()));const status={firebase:false,script:false,error:'',id:clean.id};try{await orderDeadline(saveOrderFirebase(clean));status.firebase=true}catch(e){status.error=String(e&&e.message||e);console.warn('Firebase no confirmó el pedido:',clean.id,e)}if(!status.firebase){const compact=compactOrderForScript(clean),params={action:'createOrder',order:JSON.stringify(compact)},encoded=new URLSearchParams(params).toString();if(encoded.length<=7000){try{const response=await apiAction(params);if(!LAOrderStorage.verifiedAck(response,clean.id,normalizeOrderCode))throw new Error('El respaldo no confirmó el guardado');const verify=await apiAction({action:'getOrder',orderId:clean.id}),found=verify&&verify.order,count=found?(Array.isArray(found.items)?found.items.length:Number(found.itemCount)||0):0;if(!found||!sameOrderCode(found.id||found.orderId,clean.id)||count!==clean.items.length||Number(found.total)!==Number(clean.total))throw new Error('El respaldo no devolvió el pedido completo');status.script=true}catch(e){status.error=String(e&&e.message||e);console.warn('Apps Script no confirmó el pedido:',clean.id,e)}}else status.error='El respaldo alternativo no admite este tamaño; el pedido quedó conservado para reintentar Firebase.'}if(status.firebase||status.script){await LAOrderOutbox.remove(clean.id);savePendingOrders(readPendingOrders().filter(o=>!sameOrderCode(o.id,clean.id)))}else savePendingOrders(mergeOrders([compactOrderForScript(clean)],readPendingOrders()));window.LA_LAST_ORDER_SAVE_STATUS={...status,ordersPath:ORDERS_COLLECTION_PATH,at:new Date().toISOString(),appVersion:APP_VERSION};return status})().finally(()=>LA_ORDER_SAVE_INFLIGHT.delete(key));LA_ORDER_SAVE_INFLIGHT.set(key,work);return work}
+async function loadOrdersRemote(){const [sr,fr]=await Promise.allSettled([apiAction({action:'listOrders'}),loadOrdersFirebase()]);const scriptOk=sr.status==='fulfilled'&&sr.value&&!sr.value.error&&sr.value.ok!==false&&Array.isArray(sr.value.orders),firebaseOk=fr.status==='fulfilled';const scriptOrders=scriptOk?sr.value.orders:[],firebaseOrders=firebaseOk?fr.value:[];window.LA_ORDER_LOAD_WARNING=!scriptOk&&!firebaseOk?'No se pudieron consultar los pedidos remotos. Se muestran los respaldos disponibles.':(!scriptOk||!firebaseOk?'Una fuente de pedidos no respondió. Revisá los pendientes si falta alguno.':'');const byId=new Map(scriptOrders.map(o=>[normalizeOrderCode(o.id||o.orderId||o.codigo||o.code),o]));const completeFirebase=firebaseOrders.map(o=>{if(!o.storageIncomplete)return o;const backup=byId.get(normalizeOrderCode(o.id));return backup&&Array.isArray(backup.items)&&backup.items.length===Number(o.itemCount)?{...o,items:backup.items,printedItems:backup.printedItems||[],printedPhotoIds:backup.printedPhotoIds||[],storageIncomplete:false}:o});const local=!scriptOk&&!firebaseOk?mergeOrders(readLocalOrders(),readPendingOrders(),await LAOrderOutbox.all()):[];return mergeOrders(local,scriptOrders,completeFirebase)}
 async function markOrderDelivered(orderId, delivered) {
     try {
         await apiAction({ action: "updateOrder", orderId, delivered: String(delivered) });
@@ -3756,6 +3658,9 @@ function App() {
     const [clubModalOpen, setClubModalOpen] = useState(false);
     const [checkoutPriorClubAccount, setCheckoutPriorClubAccount] = useState(null);
     const [checkoutPointsLoading, setCheckoutPointsLoading] = useState(false);
+    const [checkoutSaving, setCheckoutSaving] = useState(false);
+    const [checkoutSaveError, setCheckoutSaveError] = useState("");
+    const orderSavingRef = useRef(false);
     const [adminNotificationsOpen, setAdminNotificationsOpen] = useState(false);
     const [adminReviewedIds, setAdminReviewedIds] = useState(() => { try { return JSON.parse(localStorage.getItem('LA_ADMIN_REVIEWED_ORDERS') || '[]'); } catch(e) { return []; } });
     const [adminResolvedIds, setAdminResolvedIds] = useState(() => { try { return JSON.parse(localStorage.getItem('LA_ADMIN_RESOLVED_ORDERS') || '[]'); } catch(e) { return []; } });
@@ -4344,7 +4249,8 @@ ${clone.outerHTML}`;
         setCustomerSavedMessage("");
         setCheckoutPriorClubAccount(null);
         setCheckoutPointsLoading(false);
-        setCheckoutOrderCode('LA-' + Math.floor(10000 + Math.random() * 90000));
+        setCheckoutSaveError('');
+        setCheckoutOrderCode(newOrderCode());
         setCheckoutOpen(true);
     };
     const normalizeDni = value => String(value || "").replace(/\D/g, "");
@@ -4448,103 +4354,10 @@ A continuación, te envío el comprobante.`;
     const currentWhatsappHref = () => {
         if (!cart.length || !selectedPhotos.length)
             return `https://api.whatsapp.com/send?phone=${SELLER_PHONE}`;
-        return buildOrderPackage(checkoutOrderCode || ('LA-' + Math.floor(10000 + Math.random() * 90000))).whatsappUrl;
+        return safeOrderWhatsappUrl(buildOrderPackage(checkoutOrderCode || newOrderCode()));
     };
-    const sendOrder = async (e) => {
-        // Evitamos que el navegador calcule un href distinto o bloquee el flujo.
-        // En este único click: armamos pedido, guardamos local, intentamos subir a Firebase y abrimos WhatsApp.
-        if (e && e.preventDefault)
-            e.preventDefault();
-        if (!cart.length || !selectedPhotos.length) {
-            alert('Seleccioná al menos una foto antes de comprar.');
-            return;
-        }
-        if (!String(checkoutCustomerName || '').trim() || !normalizePhone(checkoutPhone)) {
-            setCustomerDetailsOpen(true);
-            alert('Antes de finalizar, guardá tu nombre y apellido y un celular de contacto.');
-            return;
-        }
-        if (checkoutPrint && !printSelectedPhotos.length) {
-            alert('Elegí al menos una de las fotos seleccionadas para imprimir en 10x15, o desactivá la opción de impresión.');
-            return;
-        }
-        const fixedCode = checkoutOrderCode || ('LA-' + Math.floor(10000 + Math.random() * 90000));
-        if (!checkoutOrderCode)
-            setCheckoutOrderCode(fixedCode);
-        const { order, orderData, whatsappUrl } = buildOrderPackage(fixedCode);
-        try {
-            saveLocalOrders(mergeOrders([orderData], readLocalOrders()));
-        }
-        catch (err) {
-            console.warn('No se pudo guardar pedido local.', err);
-        }
-        try {
-            savePendingOrders(mergeOrders([orderData], readPendingOrders()));
-        }
-        catch (err) {
-            console.warn('No se pudo guardar pedido pendiente.', err);
-        }
-        try {
-            setAdminMessage(`Pedido ${order} generado. Guardando y abriendo WhatsApp...`);
-        }
-        catch (err) { }
-        let popup = null;
-        try {
-            popup = window.open('', '_blank');
-            if (popup) {
-                popup.document.write('<!doctype html><html><head><title>Abriendo WhatsApp...</title><meta name="viewport" content="width=device-width,initial-scale=1"><style>body{font-family:Arial,sans-serif;background:#050505;color:white;display:flex;align-items:center;justify-content:center;min-height:100vh;margin:0;text-align:center;padding:24px}a{color:#22c55e;font-weight:800}</style></head><body><div><h2>Preparando WhatsApp...</h2><p>Si no abre automáticamente, tocá abajo.</p><p><a href="' + whatsappUrl.replace(/"/g, '&quot;') + '">Abrir WhatsApp</a></p></div></body></html>');
-                popup.document.close();
-            }
-        }
-        catch (err) {
-            popup = null;
-        }
-        let status = { firebase: false, script: false, error: '' };
-        try {
-            // No abrimos WhatsApp hasta confirmar que el pedido quedó guardado al menos en un respaldo central.
-            status = await Promise.race([
-                saveOrderRemote(orderData),
-                wait(12000).then(() => ({ firebase: false, script: false, timeout: true, error: 'Tiempo de espera agotado' }))
-            ]);
-        }
-        catch (err) {
-            console.error('Error sincronizando pedido:', err);
-            status = { firebase: false, script: false, error: String((err === null || err === void 0 ? void 0 : err.message) || err) };
-        }
-        if (!status.firebase && !status.script) {
-            try {
-                if (popup && !popup.closed)
-                    popup.close();
-            }
-            catch (err) { }
-            setAdminMessage(`El pedido ${order} no pudo confirmarse. No se abrió WhatsApp para evitar perderlo.`);
-            alert('No pudimos registrar el pedido todavía. Tus fotos siguen seleccionadas: revisá la conexión y tocá “Finalizar compra” nuevamente.');
-            return;
-        }
-        setAdminMessage(`Pedido ${order} guardado correctamente${status.firebase ? ' en Firebase' : ''}${status.script ? ' en el sistema de pedidos' : ''}.`);
-        try {
-            setCart([]);
-            setCheckoutOpen(false);
-            setAppliedCoupon(null);
-            setCheckoutCoupon('');
-            setCouponMessage('');
-            setCheckoutOrderCode('');
-            setCheckoutPrint(false);
-            setPrintedPhotoIds([]);
-        }
-        catch (err) { }
-        try {
-            if (popup && !popup.closed) {
-                popup.location.href = whatsappUrl;
-            }
-            else {
-                window.location.href = whatsappUrl;
-            }
-        }
-        catch (err) {
-            window.location.href = whatsappUrl;
-        }
-    };
+    const sendOrder=async(e)=>{if(e&&e.preventDefault)e.preventDefault();if(orderSavingRef.current)return;if(!cart.length||!selectedPhotos.length){alert('Seleccioná al menos una foto antes de comprar.');return}if(!String(checkoutCustomerName||'').trim()||!normalizePhone(checkoutPhone)){setCustomerDetailsOpen(true);alert('Antes de finalizar, guardá tu nombre y apellido y un celular de contacto.');return}if(checkoutPrint&&!printSelectedPhotos.length){alert('Elegí al menos una foto para imprimir o desactivá la impresión.');return}const fixedCode=checkoutOrderCode||newOrderCode();if(!checkoutOrderCode)setCheckoutOrderCode(fixedCode);const pkg=buildOrderPackage(fixedCode);orderSavingRef.current=true;setCheckoutSaving(true);setCheckoutSaveError('');try{const status=await saveOrderRemote(pkg.orderData);if(!status.firebase&&!status.script){const message=`No pudimos confirmar el pedido ${fixedCode}. Tus fotos siguen seleccionadas y el pedido quedó conservado para reintentar. ${status.error||''}`;setCheckoutSaveError(message);alert(message);return}const whatsappUrl=safeOrderWhatsappUrl(pkg);try{localStorage.setItem('LA_LAST_ORDER_RECEIPT',JSON.stringify({id:fixedCode,date:pkg.orderData.date,itemCount:pkg.orderData.items.length,total:pkg.orderData.total,whatsappUrl}));localStorage.removeItem('LA_RECOVER_CART')}catch(e){}setAdminMessage(`Pedido ${fixedCode} guardado correctamente.`);setCart([]);setCheckoutOpen(false);setAppliedCoupon(null);setCheckoutCoupon('');setCouponMessage('');setCheckoutPrint(false);setPrintedPhotoIds([]);window.location.href=whatsappUrl}catch(err){const message=`No se pudo conservar o confirmar el pedido ${fixedCode}. Tus fotos siguen seleccionadas. ${String(err&&err.message||err)}`;setCheckoutSaveError(message);alert(message)}finally{orderSavingRef.current=false;setCheckoutSaving(false)}};
+
     const addClubProduct = () => {
         const name = String(newClubProductName || '').trim();
         const points = Math.max(1, Math.round(Number(newClubProductPoints) || 0));
@@ -4944,6 +4757,7 @@ A continuación, te envío el comprobante.`;
                     React.createElement("button", { onClick: async () => { const link='https://lucasabraham1996-cmd.github.io/photos/contrataciones.html#/solicitar'; try { await navigator.clipboard.writeText(link); setAdminMessage('Link público de solicitudes copiado.'); } catch(e) { window.prompt('Copiá el link público de solicitudes:', link); } }, className: "bg-sky-600 px-4 py-3 rounded-xl font-bold" }, React.createElement("i", { className: "fas fa-link mr-2" }), "Copiar link solicitudes"),
                     React.createElement("button", { onClick: goToGallery, className: "bg-indigo-600 px-4 py-3 rounded-xl font-bold" }, "Ver galer\u00EDa"))),
             adminMessage && React.createElement("div", { className: "mb-4 bg-emerald-600/15 border border-emerald-500/30 text-emerald-300 rounded-2xl px-4 py-3 text-sm" }, adminMessage),
+            window.LA_ORDER_LOAD_WARNING && React.createElement("div", { className:"order-storage-warning", role:"alert" }, window.LA_ORDER_LOAD_WARNING),
             React.createElement("div", { className:"admin-notif-shell" },
                 React.createElement("button", { type:"button", onClick:() => setAdminNotificationsOpen(v => !v), className:"admin-notif-btn" },
                     React.createElement("div", { className:"admin-notif-left" },
@@ -5852,7 +5666,8 @@ Te envío el comprobante para que puedas prepararlas.`);
                     React.createElement("i", { className: "fab fa-whatsapp mr-2" }),
                     "Finalizar compra"),
                 React.createElement("p", { className: "text-center text-[11px] text-sky-100/65 leading-relaxed mt-3" }, "Se abre WhatsApp con el pedido listo. Luego adjuntá el comprobante de la transferencia en el mismo chat."))),
-        checkoutOpen && React.createElement("button", { type:"button", onClick:sendOrder, disabled:!cart.length, className:"checkout-floating-cta" }, React.createElement("i", { className:"fab fa-whatsapp" }), "Finalizar compra"),
+        checkoutOpen && checkoutSaveError && React.createElement("div", { className:"checkout-save-error", role:"alert" }, checkoutSaveError, React.createElement("button", { type:"button", onClick:()=>navigator.clipboard.writeText(checkoutOrderCode||'').catch(()=>{}), className:"checkout-save-copy" }, "Copiar código")),
+        checkoutOpen && React.createElement("button", { type:"button", onClick:sendOrder, disabled:!cart.length||checkoutSaving, className:"checkout-floating-cta" }, React.createElement("i", { className:"fab fa-whatsapp" }), "Finalizar compra"),
         iphoneInstallOpen && admin && React.createElement(IphoneInstallModal, { onClose: () => setIphoneInstallOpen(false), onDownload: downloadAppForIphone, onCopy: copyGalleryInstallUrl, onOpen: () => window.open(getGalleryInstallUrl(), '_blank') }),
         priceAdminOpen && admin && React.createElement(PriceAdminModal, { onClose: () => setPriceAdminOpen(false), priceSettings: priceSettings, setPriceSettings: setPriceSettings, setAdminMessage: setAdminMessage }),
         bookingOpen && React.createElement(PriceModal, { onClose: () => setBookingOpen(false), priceSettings: priceSettings }),

@@ -29,7 +29,7 @@ const LAOrderStorage = (() => {
     if(!Number.isInteger(count)||count<1||count>100000)throw new Error('Cantidad de partes inválida');
     const parts=[];
     for(let i=0;i<count;i+=8){
-      const group=await Promise.all(Array.from({length:Math.min(8,count-i)},(_,n)=>ref.collection('payload').doc(String(i+n).padStart(6,'0')).get({source:'server'})));
+      const group=await Promise.all(Array.from({length:Math.min(8,count-i)},(_,n)=>ref.parent.doc(ref.id+'__p'+String(i+n).padStart(6,'0')).get({source:'server'})));
       for(const snap of group){if(!snap.exists||typeof snap.data().part!=='string')throw new Error('Falta una parte del pedido');parts.push(snap.data().part)}
     }
     const raw=parts.join('');
@@ -53,7 +53,7 @@ const LAOrderStorage = (() => {
       if(old.date&&old.date!==order.date)throw new Error('El código ya pertenece a otro pedido');
     }
     for(let i=0;i<prepared.parts.length;i+=8){
-      await Promise.all(prepared.parts.slice(i,i+8).map((part,n)=>ref.collection('payload').doc(String(i+n).padStart(6,'0')).set({part,index:i+n})));
+      await Promise.all(prepared.parts.slice(i,i+8).map((part,n)=>ref.parent.doc(ref.id+'__p'+String(i+n).padStart(6,'0')).set({part,index:i+n})));
     }
     const manifest={...prepared.manifest};
     if(before.exists){for(const field of mutable)delete manifest[field];}
@@ -77,7 +77,7 @@ const LAOrderStorage = (() => {
       return opening;
     }
     async function transaction(mode,action){const db=await database();return new Promise((resolve,reject)=>{const tx=db.transaction('orders',mode);const req=action(tx.objectStore('orders'));tx.oncomplete=()=>resolve(req.result);tx.onerror=()=>reject(tx.error);tx.onabort=()=>reject(tx.error)})}
-    function localRead(){try{return JSON.parse(localStorage.getItem(fallback)||'[]')}catch(e){return []}}
+    function localRead(){try{const v=JSON.parse(localStorage.getItem(fallback)||'[]');return Array.isArray(v)?v:[]}catch(e){return []}}
     function localWrite(list){localStorage.setItem(fallback,JSON.stringify(list));}
     async function put(order){try{await transaction('readwrite',s=>s.put(order));return}catch(e){const list=localRead().filter(x=>x.id!==order.id);list.push(order);localWrite(list);if(!localRead().some(x=>x.id===order.id))throw new Error('No se pudo conservar el pedido en este dispositivo')}}
     async function all(){let rows=[];try{rows=await transaction('readonly',s=>s.getAll())}catch(e){}const map=new Map();[...localRead(),...rows].forEach(o=>{if(o&&o.id)map.set(o.id,o)});return [...map.values()]}
