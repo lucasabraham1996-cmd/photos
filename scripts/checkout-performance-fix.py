@@ -70,7 +70,7 @@ css = '''<style id="la-v104-guest-performance">
 @media(max-width:640px){.checkout-guest-choice{padding:10px}.checkout-guest-btn{min-height:48px;font-size:13px}.checkout-simple-shell{padding-bottom:90px!important}.page-panel{min-width:0}}
 </style>\n'''
 replace('</head>', css + '</head>')
-replace('v103-order-recovery', 'v104-guest-performance')
+replace('v103-order-recovery', 'v104-guest-performance', 2)
 # Assert no mandatory identity remains at the send boundary.
 assert 'if(checkoutWantsPoints&&!customerDetailsSaved)' in s
 assert 'wantsPoints: Boolean(cleanPhone)' in s
