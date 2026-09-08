@@ -31,7 +31,7 @@
   <meta name="twitter:description" content="Fotos deportivas protegidas · Compra directa por WhatsApp" />
   <meta name="twitter:image" content="https://lucasabraham1996-cmd.github.io/photos/social-preview-la.png?v=61" />
   <title>lucasabraham.ph - Galería de Clientes</title>
-  <meta name="app-version" content="v102-reliable-orders" /><style>html,body{margin:0;min-height:100%;background:#050505;color:#fff}#root{min-height:100vh;background:#050505;color:#fff}
+  <meta name="app-version" content="v103-order-recovery" /><style>html,body{margin:0;min-height:100%;background:#050505;color:#fff}#root{min-height:100vh;background:#050505;color:#fff}
     /* v41: estilo versus moderno para portada y álbum */
     .team-album-reveal{background:linear-gradient(180deg,rgba(3,7,18,.12),rgba(2,6,23,.28))}
     .team-reveal-half{left:12px!important;right:12px!important;width:auto!important;height:33%!important;padding:12px 16px!important;box-shadow:0 16px 36px rgba(0,0,0,.28),inset 0 1px 0 rgba(255,255,255,.14)!important;border:1px solid rgba(255,255,255,.10)!important;overflow:hidden}
@@ -1564,7 +1564,7 @@ const LS_SHARED_STATE_KEY = "la_shared_admin_state_v2";
 const LS_BANNERS_KEY = "la_banner_settings_v1";
 const LS_INTRO_KEY = "la_purchase_intro_seen_v2";
 const PHOTOS_PER_PAGE = 70;
-const APP_VERSION = "v102-reliable-orders";
+const APP_VERSION = "v103-order-recovery";
 const LS_ALBUM_CACHE_META_KEY = "la_album_cache_meta_v1";
 const ALBUM_CACHE_MAX_AGE_MS = 1000 * 60 * 60 * 12;
 const FIRESTORE_FREE_DAILY_LIMITS = {
@@ -1935,7 +1935,7 @@ const LAOrderStorage = (() => {
   const MAX_INLINE = 180000;
   const PART_LENGTH = 60000;
   const mutable = new Set(['delivered','rejected','status','paid','updatedAt','deliveredAt','rejectedAt','resolvedAt','cancelledAt']);
-  const internal = new Set(['storageVersion','payloadMode','payloadHash','payloadLength','payloadChunkCount','itemCount','storageIncomplete','_firebasePath','appVersion']);
+  const internal = new Set(['storageVersion','payloadMode','payloadHash','payloadLength','payloadChunkCount','itemCount','storageIncomplete','_firebasePath','appVersion','compactTransport']);
   const bytes = s => new TextEncoder().encode(s).length;
   function hash(s) { let h=2166136261; for(let i=0;i<s.length;i++){h^=s.charCodeAt(i);h=Math.imul(h,16777619)} return (h>>>0).toString(16).padStart(8,'0') + '-' + s.length; }
   function payload(order) { const p={...order}; [...mutable,...internal].forEach(k=>delete p[k]);p.items=Array.isArray(p.items)?p.items:[];p.printedItems=Array.isArray(p.printedItems)?p.printedItems:[];p.printedPhotoIds=Array.isArray(p.printedPhotoIds)?p.printedPhotoIds:[];return p; }
@@ -2242,7 +2242,43 @@ function orderPrintInfo(order) {
     const count = Math.max(declared, printed.length, fallback);
     return { has: count > 0, count, items: printed, format: o.printFormat || '10x15 cm' };
 }
-async function saveOrderRemote(order){const clean={...order,id:order.id||order.orderId||order.codigo||order.code,date:order.date||new Date().toISOString(),items:Array.isArray(order.items)?order.items:[]};if(!clean.id)throw new Error('Falta el código del pedido');const key=normalizeOrderCode(clean.id);if(LA_ORDER_SAVE_INFLIGHT.has(key))return LA_ORDER_SAVE_INFLIGHT.get(key);const work=(async()=>{await LAOrderOutbox.put(clean);saveLocalOrders(mergeOrders([clean],readLocalOrders()));const status={firebase:false,script:false,error:'',id:clean.id};try{await orderDeadline(saveOrderFirebase(clean));status.firebase=true}catch(e){status.error=String(e&&e.message||e);console.warn('Firebase no confirmó el pedido:',clean.id,e)}if(!status.firebase){const compact=compactOrderForScript(clean),params={action:'createOrder',order:JSON.stringify(compact)},encoded=new URLSearchParams(params).toString();if(encoded.length<=7000){try{const response=await apiAction(params);if(!LAOrderStorage.verifiedAck(response,clean.id,normalizeOrderCode))throw new Error('El respaldo no confirmó el guardado');const verify=await apiAction({action:'getOrder',orderId:clean.id}),found=verify&&verify.order,count=found?(Array.isArray(found.items)?found.items.length:Number(found.itemCount)||0):0;if(!found||!sameOrderCode(found.id||found.orderId,clean.id)||count!==clean.items.length||Number(found.total)!==Number(clean.total))throw new Error('El respaldo no devolvió el pedido completo');status.script=true}catch(e){status.error=String(e&&e.message||e);console.warn('Apps Script no confirmó el pedido:',clean.id,e)}}else status.error='El respaldo alternativo no admite este tamaño; el pedido quedó conservado para reintentar Firebase.'}if(status.firebase||status.script){await LAOrderOutbox.remove(clean.id);savePendingOrders(readPendingOrders().filter(o=>!sameOrderCode(o.id,clean.id)))}else savePendingOrders(mergeOrders([compactOrderForScript(clean)],readPendingOrders()));window.LA_LAST_ORDER_SAVE_STATUS={...status,ordersPath:ORDERS_COLLECTION_PATH,at:new Date().toISOString(),appVersion:APP_VERSION};return status})().finally(()=>LA_ORDER_SAVE_INFLIGHT.delete(key));LA_ORDER_SAVE_INFLIGHT.set(key,work);return work}
+async function saveOrderRemote(order){
+    const clean={...order,id:order.id||order.orderId||order.codigo||order.code,date:order.date||new Date().toISOString(),items:Array.isArray(order.items)?order.items:[]};
+    if(!clean.id)throw new Error('Falta el código del pedido');
+    const key=normalizeOrderCode(clean.id);
+    if(LA_ORDER_SAVE_INFLIGHT.has(key))return LA_ORDER_SAVE_INFLIGHT.get(key);
+    const work=(async()=>{
+        await LAOrderOutbox.put(clean);
+        saveLocalOrders(mergeOrders(readLocalOrders(),[clean]));
+        const status={firebase:false,script:false,error:'',id:clean.id};
+        try{await orderDeadline(saveOrderFirebase(clean));status.firebase=true}
+        catch(e){status.error=String(e&&e.message||e);console.warn('Firebase no confirmó el pedido:',clean.id,e)}
+        if(!status.firebase){
+            const compact=compactOrderForScript(clean);
+            const params={action:'createOrder',order:JSON.stringify(compact)};
+            const encoded=new URLSearchParams(params).toString();
+            if(encoded.length<=7000){
+                try{
+                    const response=await apiAction(params);
+                    if(response&&(response.error||response.ok===false||response.success===false))throw new Error(String(response.error||'El respaldo rechazó el pedido'));
+                    const verify=await apiAction({action:'getOrder',orderId:clean.id});
+                    const found=verify&&verify.order;
+                    const count=found?(Array.isArray(found.items)?found.items.length:Number(found.itemCount)||0):0;
+                    if(!found||!sameOrderCode(found.id||found.orderId,clean.id)||count!==clean.items.length||Number(found.total)!==Number(clean.total))throw new Error('El respaldo no devolvió el pedido completo');
+                    status.script=true;
+                }catch(e){status.error=String(e&&e.message||e);console.warn('Apps Script no confirmó el pedido:',clean.id,e)}
+            }else status.error='El respaldo alternativo no admite este tamaño; el pedido quedó conservado para reintentar Firebase.';
+        }
+        if(status.firebase||status.script){
+            await LAOrderOutbox.remove(clean.id);
+            savePendingOrders(readPendingOrders().filter(o=>!sameOrderCode(o.id,clean.id)));
+        }else savePendingOrders(mergeOrders(readPendingOrders(),[compactOrderForScript(clean)]));
+        window.LA_LAST_ORDER_SAVE_STATUS={...status,ordersPath:ORDERS_COLLECTION_PATH,at:new Date().toISOString(),appVersion:APP_VERSION};
+        return status;
+    })().finally(()=>LA_ORDER_SAVE_INFLIGHT.delete(key));
+    LA_ORDER_SAVE_INFLIGHT.set(key,work);
+    return work;
+}
 async function loadOrdersRemote(){const [sr,fr]=await Promise.allSettled([apiAction({action:'listOrders'}),loadOrdersFirebase()]);const scriptOk=sr.status==='fulfilled'&&sr.value&&!sr.value.error&&sr.value.ok!==false&&Array.isArray(sr.value.orders),firebaseOk=fr.status==='fulfilled';const scriptOrders=scriptOk?sr.value.orders:[],firebaseOrders=firebaseOk?fr.value:[];window.LA_ORDER_LOAD_WARNING=!scriptOk&&!firebaseOk?'No se pudieron consultar los pedidos remotos. Se muestran los respaldos disponibles.':(!scriptOk||!firebaseOk?'Una fuente de pedidos no respondió. Revisá los pendientes si falta alguno.':'');const byId=new Map(scriptOrders.map(o=>[normalizeOrderCode(o.id||o.orderId||o.codigo||o.code),o]));const completeFirebase=firebaseOrders.map(o=>{if(!o.storageIncomplete)return o;const backup=byId.get(normalizeOrderCode(o.id));return backup&&Array.isArray(backup.items)&&backup.items.length===Number(o.itemCount)?{...o,items:backup.items,printedItems:backup.printedItems||[],printedPhotoIds:backup.printedPhotoIds||[],storageIncomplete:false}:o});const local=!scriptOk&&!firebaseOk?mergeOrders(readLocalOrders(),readPendingOrders(),await LAOrderOutbox.all()):[];return mergeOrders(local,scriptOrders,completeFirebase)}
 async function markOrderDelivered(orderId, delivered) {
     try {
@@ -4356,7 +4392,28 @@ A continuación, te envío el comprobante.`;
             return `https://api.whatsapp.com/send?phone=${SELLER_PHONE}`;
         return safeOrderWhatsappUrl(buildOrderPackage(checkoutOrderCode || newOrderCode()));
     };
-    const sendOrder=async(e)=>{if(e&&e.preventDefault)e.preventDefault();if(orderSavingRef.current)return;if(!cart.length||!selectedPhotos.length){alert('Seleccioná al menos una foto antes de comprar.');return}if(!String(checkoutCustomerName||'').trim()||!normalizePhone(checkoutPhone)){setCustomerDetailsOpen(true);alert('Antes de finalizar, guardá tu nombre y apellido y un celular de contacto.');return}if(checkoutPrint&&!printSelectedPhotos.length){alert('Elegí al menos una foto para imprimir o desactivá la impresión.');return}const fixedCode=checkoutOrderCode||newOrderCode();if(!checkoutOrderCode)setCheckoutOrderCode(fixedCode);const pkg=buildOrderPackage(fixedCode);orderSavingRef.current=true;setCheckoutSaving(true);setCheckoutSaveError('');try{const status=await saveOrderRemote(pkg.orderData);if(!status.firebase&&!status.script){const message=`No pudimos confirmar el pedido ${fixedCode}. Tus fotos siguen seleccionadas y el pedido quedó conservado para reintentar. ${status.error||''}`;setCheckoutSaveError(message);alert(message);return}const whatsappUrl=safeOrderWhatsappUrl(pkg);try{localStorage.setItem('LA_LAST_ORDER_RECEIPT',JSON.stringify({id:fixedCode,date:pkg.orderData.date,itemCount:pkg.orderData.items.length,total:pkg.orderData.total,whatsappUrl}));localStorage.removeItem('LA_RECOVER_CART')}catch(e){}setAdminMessage(`Pedido ${fixedCode} guardado correctamente.`);setCart([]);setCheckoutOpen(false);setAppliedCoupon(null);setCheckoutCoupon('');setCouponMessage('');setCheckoutPrint(false);setPrintedPhotoIds([]);window.location.href=whatsappUrl}catch(err){const message=`No se pudo conservar o confirmar el pedido ${fixedCode}. Tus fotos siguen seleccionadas. ${String(err&&err.message||err)}`;setCheckoutSaveError(message);alert(message)}finally{orderSavingRef.current=false;setCheckoutSaving(false)}};
+    const sendOrder=async(e)=>{
+        if(e&&e.preventDefault)e.preventDefault();
+        if(orderSavingRef.current)return;
+        if(!cart.length||!selectedPhotos.length){alert('Seleccioná al menos una foto antes de comprar.');return}
+        if(!String(checkoutCustomerName||'').trim()||!normalizePhone(checkoutPhone)){setCustomerDetailsOpen(true);alert('Antes de finalizar, guardá tu nombre y apellido y un celular de contacto.');return}
+        if(checkoutPrint&&!printSelectedPhotos.length){alert('Elegí al menos una foto para imprimir o desactivá la impresión.');return}
+        const fixedCode=checkoutOrderCode||newOrderCode();
+        if(!checkoutOrderCode)setCheckoutOrderCode(fixedCode);
+        const pkg=buildOrderPackage(fixedCode);
+        orderSavingRef.current=true;setCheckoutSaving(true);setCheckoutSaveError('');
+        try{
+            const status=await saveOrderRemote(pkg.orderData);
+            const confirmed=status.firebase||status.script;
+            const message=confirmed?'':`No se pudo confirmar el guardado automático del pedido ${fixedCode}. Podés enviarlo igualmente por WhatsApp con el detalle de las fotos. Conservá este código para evitar duplicados.`;
+            if(!confirmed)setCheckoutSaveError(message);
+            const whatsappUrl=confirmed?safeOrderWhatsappUrl(pkg):`https://api.whatsapp.com/send?phone=${SELLER_PHONE}&text=${encodeURIComponent(pkg.msg+'\n\n⚠️ El guardado automático quedó pendiente de confirmación. Conservá este código para evitar duplicados.')}`;
+            try{localStorage.setItem('LA_LAST_ORDER_RECEIPT',JSON.stringify({id:fixedCode,date:pkg.orderData.date,itemCount:pkg.orderData.items.length,total:pkg.orderData.total,whatsappUrl,confirmed}));if(confirmed)localStorage.removeItem('LA_RECOVER_CART')}catch(e){}
+            if(confirmed){setAdminMessage(`Pedido ${fixedCode} guardado correctamente.`);setCart([]);setCheckoutOpen(false);setAppliedCoupon(null);setCheckoutCoupon('');setCouponMessage('');setCheckoutPrint(false);setPrintedPhotoIds([])}
+            window.location.href=whatsappUrl;
+        }catch(err){const message=`No se pudo conservar el pedido ${fixedCode}. Tus fotos siguen seleccionadas. ${String(err&&err.message||err)}`;setCheckoutSaveError(message);alert(message)}
+        finally{orderSavingRef.current=false;setCheckoutSaving(false)}
+    };
 
     const addClubProduct = () => {
         const name = String(newClubProductName || '').trim();
