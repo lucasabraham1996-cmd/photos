@@ -12,7 +12,14 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Apply migration
-        run: python3 scripts/checkout-performance-fix.py
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p=Path('scripts/checkout-performance-fix.py')
+          s=p.read_text().replace("replace('v103-order-recovery', 'v104-guest-performance')", "replace('v103-order-recovery', 'v104-guest-performance', 2)")
+          p.write_text(s)
+          PY
+          python3 scripts/checkout-performance-fix.py
       - name: Validate JavaScript syntax
         run: |
           python3 - <<'PY'
@@ -29,6 +36,6 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add index.html
+          git add index.html scripts/checkout-performance-fix.py
           git commit -m "Make Club optional and speed up gallery rendering"
           git push origin HEAD:main
