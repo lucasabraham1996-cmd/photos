@@ -1,42 +1,50 @@
 #!/usr/bin/env python3
-"""Apply the requested brand and repair the gallery source fallback without changing orders."""
+"""Guarded gallery recovery and brand migration. Does not modify orders or payments."""
 from pathlib import Path
-import re
-import json
-import urllib.request
 import io
+import re
+import urllib.request
+from PIL import Image
 
 ROOT = Path(__file__).resolve().parents[1]
-p = ROOT / 'index.html'
-s = p.read_text(encoding='utf-8')
 OLD = 'https://i.postimg.cc/PrD4jg9V/Logo-LA.png'
 NEW = 'https://i.postimg.cc/nLw3YCFz/image.png'
+LOCAL = './brand-logo.png?v=105'
 VERSION = 'v105-gallery-recovery-brand'
 
-def replace(old, new, count=1):
-    global s
-    assert s.count(old) == count, (old[:100], s.count(old), count)
-    s = s.replace(old, new)
+req = urllib.request.Request(NEW, headers={'User-Agent': 'Mozilla/5.0'})
+with urllib.request.urlopen(req, timeout=40) as response:
+    raw = response.read()
+assert raw[:8] == bytes([137,80,78,71,13,10,26,10]), 'The supplied artwork is not a PNG'
+logo = Image.open(io.BytesIO(raw)).convert('RGBA')
+assert logo.width > 0 and logo.height > 0
+(ROOT/'brand-logo.png').write_bytes(raw)
 
-def block(start, end, replacement):
-    global s
-    a = s.index(start)
-    b = s.index(end, a)
-    s = s[:a] + replacement + s[b:]
+def contain(image, size):
+    image = image.copy()
+    image.thumbnail(size, Image.Resampling.LANCZOS)
+    return image
 
-# Keep the exact supplied artwork. Do not alter club crests or payment branding.
-assert OLD in s
-s = s.replace(OLD, NEW)
-replace('v104-guest-performance', VERSION, 2)
+icon = Image.new('RGBA', (512,512), '#000000')
+mark = contain(logo, (430,430))
+icon.alpha_composite(mark, ((512-mark.width)//2, (512-mark.height)//2))
+icon.convert('RGB').save(ROOT/'site-icon-dark-la.png', 'PNG')
+preview = Image.new('RGBA', (1200,630), '#050505')
+mark = contain(logo, (1050,510))
+preview.alpha_composite(mark, ((1200-mark.width)//2, (630-mark.height)//2))
+preview.convert('RGB').save(ROOT/'social-preview-la.png', 'PNG')
 
-# A successful HTTP response is not necessarily usable gallery data.
-# The live Apps Script deployment currently returns 404, and the old gviz fallback
-# also returns 404. Use a verified same-origin snapshot, not an invented API action.
+p = ROOT/'index.html'
+s = p.read_text(encoding='utf-8')
+assert OLD in s and 'async function fetchGalleryData({ force = false } = {}) {' in s
+assert 'v104-guest-performance' in s
+s = s.replace(OLD, LOCAL).replace('v104-guest-performance', VERSION)
+
 loader = '''async function fetchGalleryData({ force = false } = {}) {
     const sources = [];
     if (APPS_SCRIPT_URL && APPS_SCRIPT_URL.trim()) {
         sources.push(jsonp(APPS_SCRIPT_URL.trim(), force ? 38000 : 18000, { force }).then(data => {
-            if (!data || data.ok === false || data.error || !Array.isArray(data.albums))
+            if (!data || data.ok === false || data.error || !Array.isArray(data.albums) || !data.albums.length)
                 throw new Error((data && data.error) || 'La fuente principal no devolvió álbumes válidos');
             return data;
         }));
@@ -51,48 +59,28 @@ loader = '''async function fetchGalleryData({ force = false } = {}) {
     return promiseAnySafe(sources);
 }
 '''
-block('async function fetchGalleryData({ force = false } = {}) {', '\nfunction parseGvizTable(obj)', loader)
-# Do not delete a previously valid gallery on a failed refresh.
-replace('''            else {
-                setAlbums([]);
-                setError((e && e.message) || 'No se pudo cargar la hoja de cálculo.');
-            }''', '''            else {
-                setError((e && e.message) || 'No se pudo cargar la hoja de cálculo.');
-            }''')
-# Keep chronological photo order; pagination must not reverse it.
-replace('albumPhotos.slice((safeAlbumPage - 1) * 60, safeAlbumPage * 60).reverse()', 'albumPhotos.slice((safeAlbumPage - 1) * 60, safeAlbumPage * 60)')
-# Avoid a cache-busting version that still points to the old brand previews.
-s = re.sub(r'(social-preview-la\\.png\\?v=)\\d+', r'\\g<1>105', s)
-# Stable local app icons, including installations on iPhone.
-replace('ensureIphoneBrandAssets();', "applyIphoneHeadAssets('./site-icon-dark-la.png?v=105');")
-# Keep all previously deployed purchasing/club logic unchanged.
-assert 'if(checkoutWantsPoints&&!customerDetailsSaved)' in s
-assert 'wantsPoints: Boolean(cleanPhone)' in s
-assert 'const totalAlbumPages = Math.max(1, Math.ceil(albumPhotos.length / 60))' in s
+a = s.index('async function fetchGalleryData({ force = false } = {}) {')
+b = s.index('\nfunction parseGvizTable(obj)', a)
+s = s[:a] + loader + s[b:]
+old_order = 'albumPhotos.slice((safeAlbumPage - 1) * 60, safeAlbumPage * 60).reverse()'
+assert old_order in s
+s = s.replace(old_order, 'albumPhotos.slice((safeAlbumPage - 1) * 60, safeAlbumPage * 60)')
+assert 'ensureIphoneBrandAssets();' in s
+s = s.replace('ensureIphoneBrandAssets();', "applyIphoneHeadAssets('./site-icon-dark-la.png?v=105');")
+s = re.sub(r'social-preview-la[.]png[?]v=\d+', 'social-preview-la.png?v=105', s)
+# Explicit static icons also cover browsers that do not execute the PWA helper.
+s = s.replace('</head>', '<link rel="icon" type="image/png" href="./site-icon-dark-la.png?v=105" /><link rel="apple-touch-icon" href="./site-icon-dark-la.png?v=105" /></head>', 1)
 assert OLD not in s
 p.write_text(s, encoding='utf-8')
 
-# Download the actual user-supplied PNG and prepare local icon/preview assets.
-from PIL import Image
-req = urllib.request.Request(NEW, headers={'User-Agent':'Mozilla/5.0'})
-with urllib.request.urlopen(req, timeout=40) as response:
-    raw = response.read()
-assert raw.startswith(b'\\x89PNG\\r\\n\\x1a\\n'), 'The supplied artwork is not a PNG'
-(ROOT / 'brand-logo.png').write_bytes(raw)
-logo = Image.open(io.BytesIO(raw)).convert('RGBA')
-assert logo.width > 0 and logo.height > 0
-
-def contain(image, size):
-    image = image.copy()
-    image.thumbnail(size, Image.Resampling.LANCZOS)
-    return image
-
-icon = Image.new('RGBA', (512,512), '#000000')
-mark = contain(logo,(430,430))
-icon.alpha_composite(mark,((512-mark.width)//2,(512-mark.height)//2))
-icon.convert('RGB').save(ROOT/'site-icon-dark-la.png', 'PNG')
-preview = Image.new('RGBA',(1200,630),'#050505')
-mark = contain(logo,(1050,510))
-preview.alpha_composite(mark,((1200-mark.width)//2,(630-mark.height)//2))
-preview.convert('RGB').save(ROOT/'social-preview-la.png','PNG')
-print('Brand migration ready:', logo.size, 'bytes:', len(raw))
+# The auxiliary pages use the same brand and social preview. Club and team logos remain untouched.
+for name in ('como-pedir.html', 'contrataciones.html'):
+    p = ROOT/name
+    s = p.read_text(encoding='utf-8').replace(OLD, LOCAL)
+    s = re.sub(r'social-preview-la[.]png[?]v=\d+', 'social-preview-la.png?v=105', s)
+    s = s.replace('</head>', '<link rel="icon" type="image/png" href="./site-icon-dark-la.png?v=105" /><link rel="apple-touch-icon" href="./site-icon-dark-la.png?v=105" /></head>', 1)
+    if name == 'como-pedir.html':
+        s = s.replace('<a class="brand" href="./">lucasabraham.ph</a>', '<a class="brand" href="./" style="display:inline-flex;align-items:center;gap:10px"><img src="./brand-logo.png?v=105" alt="" width="42" height="42" style="object-fit:contain" />lucasabraham.ph</a>')
+    assert OLD not in s
+    p.write_text(s, encoding='utf-8')
+print('Brand migration ready:', logo.size, 'bytes:', len(raw), flush=True)
