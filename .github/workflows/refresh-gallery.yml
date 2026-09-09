@@ -1,0 +1,27 @@
+name: Refresh public gallery
+on:
+  schedule:
+    - cron: '*/15 * * * *'
+  workflow_dispatch:
+permissions:
+  contents: write
+concurrency:
+  group: refresh-public-gallery
+  cancel-in-progress: false
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Read all verified public photo tabs
+        run: python3 scripts/export-public-gallery.py
+      - name: Publish only a complete changed snapshot
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add gallery-snapshot.json
+          if ! git diff --cached --quiet; then
+            git commit -m "Refresh public photo gallery snapshot"
+            git push origin HEAD:main
+          fi
