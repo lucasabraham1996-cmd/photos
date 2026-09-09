@@ -1,0 +1,44 @@
+name: Validate gallery recovery
+on:
+  push:
+    branches: [repair/gallery-loading-brand-20260909]
+    paths:
+      - .github/workflows/repair-gallery.yml
+      - scripts/repair-gallery-brand.py
+      - scripts/export-public-gallery.py
+      - scripts/gallery-source-manifest.json
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install image tools
+        run: python3 -m pip install --user Pillow
+      - name: Build complete gallery snapshot
+        run: python3 scripts/export-public-gallery.py
+      - name: Apply recovery and brand migration
+        run: python3 scripts/repair-gallery-brand.py
+      - name: Validate application JavaScript
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+          s=Path('index.html').read_text()
+          for i, script in enumerate(re.findall(r'<script\b[^>]*>(.*?)</script\s*>',s,re.S|re.I)):
+              if script.strip(): Path(f'/tmp/la-script-{i}.js').write_text(script)
+          PY
+          for file in /tmp/la-script-*.js; do node --check "$file"; done
+      - name: Upload validated recovery
+        uses: actions/upload-artifact@v4
+        with:
+          name: gallery-recovery
+          path: |
+            index.html
+            brand-logo.png
+            site-icon-dark-la.png
+            social-preview-la.png
+            gallery-snapshot.json
