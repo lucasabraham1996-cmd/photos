@@ -2,6 +2,12 @@ name: Refresh public gallery
 on:
   schedule:
     - cron: '*/15 * * * *'
+  push:
+    branches: [main]
+    paths:
+      - scripts/export-public-gallery.py
+      - scripts/gallery-source-manifest.json
+      - .github/workflows/refresh-gallery.yml
   workflow_dispatch:
 permissions:
   contents: write
