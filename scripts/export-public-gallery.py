@@ -1,71 +1,54 @@
 #!/usr/bin/env python3
-"""Build a public gallery snapshot from published Google Sheets tabs."""
+"""Build a complete public gallery snapshot; never export administrative tabs."""
 import csv
 import io
 import json
-import re
 import urllib.parse
 import urllib.request
-from html.parser import HTMLParser
 from pathlib import Path
+from concurrent.futures import ThreadPoolExecutor
 
-HTML_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQvPPaZazUa43TBu127nq74y-UMDRRMKdQpOCWOWT6cc5YnsRwcTrzGA7NYM-QbYEnFSkMbdkgkaOn8/pubhtml'
-
-class Links(HTMLParser):
-    def __init__(self):
-        super().__init__(); self.links = []; self.current = None
-    def handle_starttag(self, tag, attrs):
-        attrs = dict(attrs)
-        if tag == 'a' and 'gid=' in attrs.get('href', ''):
-            self.current = {'href': attrs['href'], 'text': ''}
-    def handle_data(self, data):
-        if self.current is not None: self.current['text'] += data
-    def handle_endtag(self, tag):
-        if tag == 'a' and self.current is not None:
-            self.links.append(self.current); self.current = None
+ROOT = Path(__file__).resolve().parents[1]
+PUBLISHED = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQvPPaZazUa43TBu127nq74y-UMDRRMKdQpOCWOWT6cc5YnsRwcTrzGA7NYM-QbYEnFSkMbdkgkaOn8/pub?output=csv'
+NATIVE = 'https://docs.google.com/spreadsheets/d/1peZ5Mf2T_3H1n9UOts7H2u9XQ_osMOgT3mg1Ax7VBaE/export?format=csv'
 
 def get(url):
-    req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0'})
-    with urllib.request.urlopen(req, timeout=60) as r:
-        return r.read().decode('utf-8-sig')
+    req = urllib.request.Request(url, headers={'User-Agent':'Mozilla/5.0'})
+    with urllib.request.urlopen(req, timeout=45) as response:
+        return response.read().decode('utf-8-sig')
 
-def discover(html):
-    parser = Links(); parser.feed(html)
-    found = []
-    for link in parser.links:
-        gid = urllib.parse.parse_qs(urllib.parse.urlsplit(link['href']).query).get('gid', [''])[0]
-        if gid.isdigit() and gid not in [v['gid'] for v in found]:
-            found.append({'gid': gid, 'name': link['text'].strip()})
-    return found
+def sheet_rows(tab):
+    gid = str(tab['gid'])
+    errors = []
+    for url in (PUBLISHED + '&gid=' + gid, NATIVE + '&gid=' + gid):
+        try:
+            rows = list(csv.reader(io.StringIO(get(url))))
+            if len(rows) < 2 or not any('foto' in str(v).lower() for v in rows[0]):
+                raise ValueError('Unexpected photo sheet structure')
+            # Preserve the source's header row and column positions for the existing parser.
+            headers = rows[0]
+            converted = []
+            for row in rows:
+                record = {}
+                for i, value in enumerate(row):
+                    record['Col ' + str(i + 1)] = value
+                    if i < len(headers) and headers[i].strip(): record[headers[i].strip()] = value
+                converted.append(record)
+            print('Photo tab', gid, 'rows', len(converted), flush=True)
+            return {'name':tab['name'], 'hidden':bool(tab['hidden']), 'rows':converted}
+        except Exception as error:
+            errors.append(type(error).__name__ + ': ' + str(error)[:120])
+    raise RuntimeError('Photo tab ' + gid + ' could not be read: ' + '; '.join(errors))
 
 def export():
-    html = get(HTML_URL)
-    tabs = discover(html)
-    print('Published tabs:', json.dumps(tabs, ensure_ascii=False))
-    if not tabs:
-        print('Published HTML length:', len(html))
-        print('HTML prefix:', repr(html[:1800]))
-        print('GID metadata:', repr(re.findall(r'.{0,80}gid.{0,120}', html, re.I)[:12]))
-        sample = list(csv.reader(io.StringIO(get(HTML_URL.replace('/pubhtml', '/pub') + '?output=csv'))))
-        print('CSV dimensions:', len(sample), max(map(len, sample)) if sample else 0)
-        print('CSV first-column sample:', [str(r[0])[:100] if r else '' for r in sample[:8]])
-        raise RuntimeError('No published sheet tabs were found; refusing to publish a partial gallery.')
-    albums = []
-    for tab in tabs:
-        url = HTML_URL.replace('/pubhtml', '/pub') + '?output=csv&gid=' + tab['gid']
-        rows = list(csv.reader(io.StringIO(get(url))))
-        if not rows: continue
-        headers = rows[0]; converted = []
-        for row in rows:
-            record = {}
-            for i, value in enumerate(row):
-                record['Col ' + str(i+1)] = value
-                if i < len(headers) and headers[i].strip(): record[headers[i].strip()] = value
-            converted.append(record)
-        albums.append({'name': tab['name'], 'rows': converted})
-        print('Tab', tab['gid'], 'rows:', len(converted), 'columns:', max(map(len, rows)))
-    if not albums: raise RuntimeError('All published tabs were empty; refusing to replace a good snapshot.')
-    Path('gallery-snapshot.json').write_text(json.dumps({'ok': True, 'albums': albums}, ensure_ascii=False, separators=(',', ':')), encoding='utf-8')
-    print('Snapshot sheets:', len(albums))
+    manifest = json.loads((ROOT/'scripts/gallery-source-manifest.json').read_text(encoding='utf-8'))
+    assert len(manifest) == 28 and all(not tab['name'].startswith('__') for tab in manifest)
+    with ThreadPoolExecutor(max_workers=4) as pool:
+        albums = list(pool.map(sheet_rows, manifest))
+    assert len(albums) == len(manifest)
+    assert sum(len(a['rows']) for a in albums) > 100
+    output = {'ok':True,'albums':albums}
+    (ROOT/'gallery-snapshot.json').write_text(json.dumps(output, ensure_ascii=False, separators=(',',':')), encoding='utf-8')
+    print('Complete gallery snapshot:', len(albums), 'sheets', flush=True)
 
 if __name__ == '__main__': export()
