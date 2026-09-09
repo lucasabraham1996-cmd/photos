@@ -1,0 +1,48 @@
+name: Validate gallery recovery
+on:
+  push:
+    branches: [repair/gallery-loading-brand-20260909]
+    paths:
+      - .github/workflows/repair-gallery.yml
+      - scripts/repair-gallery-brand.py
+      - scripts/export-public-gallery.py
+      - scripts/gallery-source-manifest.json
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install image tools
+        run: python3 -m pip install --user Pillow
+      - name: Build complete gallery snapshot
+        run: python3 scripts/export-public-gallery.py
+      - name: Apply recovery and brand migration
+        run: python3 scripts/repair-gallery-brand.py
+      - name: Validate application JavaScript and snapshot
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import re, json
+          s=Path('index.html').read_text()
+          for i, script in enumerate(re.findall(r'<script\b[^>]*>(.*?)</script\s*>',s,re.S|re.I)):
+              if script.strip(): Path(f'/tmp/la-script-{i}.js').write_text(script)
+          data=json.loads(Path('gallery-snapshot.json').read_text())
+          assert len(data['albums']) == 28
+          assert all(not a['name'].startswith('__') for a in data['albums'])
+          assert 'gallery-snapshot.json' in s
+          assert 'https://i.postimg.cc/PrD4jg9V/Logo-LA.png' not in s
+          assert 'v105-gallery-recovery-brand' in s
+          print('Snapshot and brand checks passed:',len(data['albums']),'photo sheets')
+          PY
+          for file in /tmp/la-script-*.js; do node --check "$file"; done
+      - name: Commit validated changes to repair branch
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add index.html como-pedir.html contrataciones.html brand-logo.png site-icon-dark-la.png social-preview-la.png gallery-snapshot.json
+          git commit -m "Restore complete gallery and update application branding"
+          git push origin HEAD:repair/gallery-loading-brand-20260909
