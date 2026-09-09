@@ -1,0 +1,54 @@
+name: Fix gallery team metadata
+on:
+  push:
+    branches: [main]
+    paths:
+      - .github/workflows/fix-team-metadata.yml
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  fix:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - name: Make team cell parsing tolerant of legacy snapshots
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p=Path('index.html')
+          s=p.read_text(encoding='utf-8')
+          old='''    const rowA2 = String(firstCellValue(rows[0]) || '').trim();\n    const rowA3 = String(firstCellValue(rows[1]) || '').trim();\n    const rowA4 = String(firstCellValue(rows[2]) || '').trim();\n    const rowA5 = String(firstCellValue(rows[3]) || '').trim();'''
+          new='''    // Older emergency snapshots accidentally included spreadsheet row 1 (headers).\n    // Detect it so A2/A3/A4/A5 always keep their real meaning.\n    const firstLead = String(firstCellValue(rows[0]) || '').trim();\n    const firstLeadNorm = norm(firstLead);\n    const rowOffset = ['tit', 'titulo', 'title'].includes(firstLeadNorm) ? 1 : 0;\n    const rowA2 = String(firstCellValue(rows[rowOffset]) || '').trim();\n    const rowA3 = String(firstCellValue(rows[rowOffset + 1]) || '').trim();\n    const rowA4 = String(firstCellValue(rows[rowOffset + 2]) || '').trim();\n    const rowA5 = String(firstCellValue(rows[rowOffset + 3]) || '').trim();'''
+          if old not in s:
+              raise SystemExit('Expected team-cell block was not found')
+          s=s.replace(old,new,1)
+          old2='''    local.fullName = exactCells.localFullRaw || local.name;\n    visitante.fullName = exactCells.visitorFullRaw || visitante.name;'''
+          new2='''    // A4/A5 are display names. Clean any accidental URL/color metadata before rendering.\n    local.fullName = parseTeamCell(exactCells.localFullRaw, local.name, 'A4').name || local.name;\n    visitante.fullName = parseTeamCell(exactCells.visitorFullRaw, visitante.name, 'A5').name || visitante.name;'''
+          if old2 not in s:
+              raise SystemExit('Expected full-name block was not found')
+          s=s.replace(old2,new2,1)
+          p.write_text(s,encoding='utf-8')
+          PY
+      - name: Rebuild gallery snapshot without the header row
+        run: python3 scripts/export-public-gallery.py
+      - name: Validate inline JavaScript
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+          s=Path('index.html').read_text(encoding='utf-8')
+          for i, script in enumerate(re.findall(r'<script\b[^>]*>(.*?)</script\s*>',s,re.S|re.I)):
+              if script.strip(): Path(f'/tmp/gallery-team-{i}.js').write_text(script,encoding='utf-8')
+          PY
+          for file in /tmp/gallery-team-*.js; do node --check "$file"; done
+      - name: Commit verified fix
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add index.html gallery-snapshot.json
+          if ! git diff --cached --quiet; then
+            git commit -m "Fix local team logos and names in gallery headers"
+            git push origin HEAD:main
+          fi
