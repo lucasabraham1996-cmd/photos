@@ -2698,10 +2698,15 @@ function getExactTeamCells(sheet, rawRows) {
     // se usa como encabezado. Por eso:
     //   rows[0] === A2 === LOCAL
     //   rows[1] === A3 === VISITANTE
-    const rowA2 = String(firstCellValue(rows[0]) || '').trim();
-    const rowA3 = String(firstCellValue(rows[1]) || '').trim();
-    const rowA4 = String(firstCellValue(rows[2]) || '').trim();
-    const rowA5 = String(firstCellValue(rows[3]) || '').trim();
+    // Older emergency snapshots accidentally included spreadsheet row 1 (headers).
+    // Detect it so A2/A3/A4/A5 always keep their real meaning.
+    const firstLead = String(firstCellValue(rows[0]) || '').trim();
+    const firstLeadNorm = norm(firstLead);
+    const rowOffset = ['tit', 'titulo', 'title'].includes(firstLeadNorm) ? 1 : 0;
+    const rowA2 = String(firstCellValue(rows[rowOffset]) || '').trim();
+    const rowA3 = String(firstCellValue(rows[rowOffset + 1]) || '').trim();
+    const rowA4 = String(firstCellValue(rows[rowOffset + 2]) || '').trim();
+    const rowA5 = String(firstCellValue(rows[rowOffset + 3]) || '').trim();
 
     // Las propiedades A2/A3 son un respaldo para otras respuestas del Apps Script.
     // Los alias antiguos solo se consultan cuando la celda correspondiente no llegó.
@@ -2740,8 +2745,9 @@ function resolveAlbumTeams(sheet, rawRows, albumBaseName) {
     visitante.color = visitante.color || '';
     local.logo = local.logo || '';
     visitante.logo = visitante.logo || '';
-    local.fullName = exactCells.localFullRaw || local.name;
-    visitante.fullName = exactCells.visitorFullRaw || visitante.name;
+    // A4/A5 are display names. Clean any accidental URL/color metadata before rendering.
+    local.fullName = parseTeamCell(exactCells.localFullRaw, local.name, 'A4').name || local.name;
+    visitante.fullName = parseTeamCell(exactCells.visitorFullRaw, visitante.name, 'A5').name || visitante.name;
 
     return [local, visitante];
 }
