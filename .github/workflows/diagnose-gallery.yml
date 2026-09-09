@@ -13,5 +13,5 @@ jobs:
     timeout-minutes: 5
     steps:
       - uses: actions/checkout@v4
-      - name: Check gallery endpoints
-        run: python3 scripts/diagnose-gallery.py
+      - name: Inspect published gallery tabs
+        run: python3 scripts/export-public-gallery.py
