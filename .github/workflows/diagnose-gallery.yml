@@ -3,6 +3,7 @@ on:
   push:
     paths:
       - .github/workflows/diagnose-gallery.yml
+      - scripts/diagnose-gallery.py
   workflow_dispatch:
 permissions:
   contents: read
