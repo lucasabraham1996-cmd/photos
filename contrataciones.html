@@ -37,7 +37,7 @@
     @media(max-width:860px){.grid{grid-template-columns:1fr}.stats{grid-template-columns:1fr 1fr}.booking{grid-template-columns:72px 1fr}.booking-actions{grid-column:1/-1;justify-content:flex-start}.formgrid{grid-template-columns:1fr}.field.full{grid-column:auto}.top{align-items:flex-start}.pill{display:none}}
     @media(max-width:520px){.wrap{width:min(100% - 18px,1180px);padding-top:12px}.card{padding:17px;border-radius:22px}.stats{gap:7px}.stat{padding:11px}.stat b{font-size:20px}.booking{grid-template-columns:64px 1fr;padding:12px}.datebox{padding:9px}.datebox .d{font-size:22px}.admin-head{align-items:flex-start;flex-direction:column}.toolbar .input{max-width:none;width:100%}.actions .btn{flex:1}.sharebox{flex-direction:column}}
 
-    /* v97: lista única LCF + 42 escudos PNG transparentes locales */
+    /* v107: lista LCF actualizada con 49 escudos APP */
     .team-field{position:relative;min-width:0}
     .team-picker-trigger{width:100%;min-height:58px;border:1px solid rgba(255,255,255,.12);background:#080a0f;color:#fff;border-radius:15px;padding:8px 12px;display:flex;align-items:center;gap:11px;cursor:pointer;text-align:left;transition:.2s}
     .team-picker-trigger:hover,.team-picker-trigger.open{border-color:rgba(56,189,248,.62);box-shadow:0 0 0 3px rgba(56,189,248,.09)}
@@ -101,53 +101,60 @@ function bookingIsNight(b){return Boolean(b&&(b.service==='night'||isNightMatchE
 function bookingServiceName(b){return b&&b.service==='request'?'Solicitud de cobertura':bookingIsNight(b)?'Partido nocturno':'Cobertura de partido'}
 function bookingPriceFor(endTime,basePayment,service='custom'){const night=isNightMatchEndTime(endTime)||service==='night';return {night,service:night?'night':'custom',payment:night?NIGHT_MATCH_PRICE:Number(basePayment||0)}}
 const LCF_TEAMS=[
-  {name:'All Boys',logo:'assets/lcf/all-boys.png'},
-  {name:'Almirante Brown',logo:'assets/lcf/almirante-brown.png'},
-  {name:'AMSURRBAC',logo:'assets/lcf/amsurrbac.png'},
-  {name:'Argentino Peñarol',logo:'assets/lcf/argentino-penarol.png'},
-  {name:'Atlético Carlos Paz',logo:'assets/lcf/atletico-carlos-paz.png'},
-  {name:'Avellaneda',logo:'assets/lcf/avellaneda.png'},
-  {name:'Barrio Parque',logo:'assets/lcf/barrio-parque.png'},
-  {name:'Belgrano',logo:'assets/lcf/belgrano.png'},
-  {name:'Bella Vista',logo:'assets/lcf/bella-vista.png'},
-  {name:'Calera Central',logo:'assets/lcf/calera-central.png'},
-  {name:'Camioneros Córdoba',logo:'assets/lcf/camioneros-cordoba.png'},
-  {name:'CIBI',logo:'assets/lcf/cibi.png'},
-  {name:'Defensores Central Córdoba',logo:'assets/lcf/defensores-central-cordoba.png'},
-  {name:'Defensores Juveniles',logo:'assets/lcf/defensores-juveniles.png'},
-  {name:'Deportivo Alberdi',logo:'assets/lcf/deportivo-alberdi.png'},
-  {name:'Deportivo Atalaya',logo:'assets/lcf/deportivo-atalaya.png'},
-  {name:'Deportivo Banfield',logo:'assets/lcf/deportivo-banfield.png'},
-  {name:'Deportivo Lasallano',logo:'assets/lcf/deportivo-lasallano.png'},
-  {name:'Deportivo Norte',logo:'assets/lcf/deportivo-norte.png'},
-  {name:'El Carmen',logo:'assets/lcf/el-carmen.png'},
-  {name:'Escuela Presidente Roca',logo:'assets/lcf/escuela-presidente-roca.png'},
-  {name:'General Paz Juniors',logo:'assets/lcf/general-paz-juniors.png'},
-  {name:'Huracán',logo:'assets/lcf/huracan.png'},
-  {name:'Independiente Carlos Paz',logo:'assets/lcf/independiente-de-carlos-paz.png'},
-  {name:'Instituto',logo:'assets/lcf/instituto.png'},
-  {name:'Juvenil Barrio Comercial',logo:'assets/lcf/juvenil-barrio-comercial.png'},
-  {name:'La Unión de Malvinas',logo:'assets/lcf/la-union.png'},
-  {name:'Las Flores',logo:'assets/lcf/las-flores.png'},
-  {name:'Las Palmas',logo:'assets/lcf/las-palmas.png'},
-  {name:'Libertad',logo:'assets/lcf/libertad.png'},
-  {name:'Los Andes',logo:'assets/lcf/los-andes.png'},
-  {name:'MEDEA Club',logo:'assets/lcf/medea.png'},
-  {name:'Quilmes',logo:'assets/lcf/quilmes.png'},
-  {name:'Racing de Córdoba',logo:'assets/lcf/racing-de-cordoba.png'},
-  {name:'San Lorenzo',logo:'assets/lcf/san-lorenzo.png'},
-  {name:'San Nicolás',logo:'assets/lcf/san-nicolas.png'},
-  {name:'Talleres',logo:'assets/lcf/talleres.png'},
-  {name:'Unión Florida',logo:'assets/lcf/union-florida.png'},
-  {name:'Unión San Vicente',logo:'assets/lcf/union-san-vicente.png'},
-  {name:'Universitario',logo:'assets/lcf/universitario.png'},
-  {name:'Villa Azalais',logo:'assets/lcf/villa-azalais.png'},
-  {name:'Villa Siburu',logo:'assets/lcf/villa-siburu.png'}
+  {name:'All Boys',logo:'https://i.postimg.cc/Vkvy6VmY/All-Boys.png'},
+  {name:'Almirante Brown',logo:'https://i.postimg.cc/K8jXzHxR/Almirante-Brown.png'},
+  {name:'AMSURRBAC',logo:'https://i.postimg.cc/cLCqHb0v/Amsurbac.png'},
+  {name:'Argentino Peñarol',logo:'https://i.postimg.cc/8zc850Ns/Argentino-Penarol.png'},
+  {name:'Atalaya',logo:'https://i.postimg.cc/BnbW6V48/Atalaya.png'},
+  {name:'Atlético Carlos Paz',logo:'https://i.postimg.cc/wjMKvGgN/Atletico-Carlos-Paz.png'},
+  {name:'Avellaneda',logo:'https://i.postimg.cc/pLrNT6R8/Avellaneda.png'},
+  {name:'Banfield',logo:'https://i.postimg.cc/jS2V5FtP/Banfield.png'},
+  {name:'Barrio Parque',logo:'https://i.postimg.cc/rws6mPMC/Barrio-Parque.png'},
+  {name:'Belgrano',logo:'https://i.postimg.cc/RZhrFD4R/Belgrano.png'},
+  {name:'Bella Vista',logo:'https://i.postimg.cc/HknGxhdz/Bella-Vista.png'},
+  {name:'Calera Central',logo:'https://i.postimg.cc/dV3M1xw4/Calera-Central.png'},
+  {name:'Camioneros Córdoba',logo:'https://i.postimg.cc/K8H6gD8n/Cambioneros.png'},
+  {name:'CIBI',logo:'https://i.postimg.cc/T34zWJ3J/CIBI.png'},
+  {name:'Club Coronel Olmedo',logo:'https://i.postimg.cc/Jz2fB5zq/Club-Coronel-Olmedo.png'},
+  {name:'Defensores Central Córdoba',logo:'https://i.postimg.cc/bwB729wL/Defensores-Central-Cordoba.png'},
+  {name:'Deportivo Alberdi',logo:'https://i.postimg.cc/kgp0tvgf/Deportivo-Alberdi.png'},
+  {name:'Deportivo Defensores Juveniles',logo:'https://i.postimg.cc/Njz3rkjn/Deportivo-Defensores-Junveniles.png'},
+  {name:'Deportivo Norte',logo:'https://i.postimg.cc/7ZWFTnZc/Deportivo-Norte.png'},
+  {name:'DIEF',logo:'https://i.postimg.cc/mg5vFyrf/DIEF.png'},
+  {name:'El Carmen',logo:'https://i.postimg.cc/W1HBJw4c/El-Carmen.png'},
+  {name:'Escuela Presidente Roca',logo:'https://i.postimg.cc/SxvBzfKq/Escuela-Presidente-Roca.png'},
+  {name:'General Paz Junior',logo:'https://i.postimg.cc/jjnG6nD1/General-Paz-Junior.png'},
+  {name:'Huracán',logo:'https://i.postimg.cc/VN0390JT/Huracan.png'},
+  {name:'Independiente',logo:'https://i.postimg.cc/VN0390Jp/Independiente.png'},
+  {name:'Instituto',logo:'https://i.postimg.cc/N02W82K3/Instituto.png'},
+  {name:'Juvenil Barrio Comercial',logo:'https://i.postimg.cc/q769c6tf/Juvenil-Barrio-Comercial.png'},
+  {name:'La Unión Malvinas',logo:'https://i.postimg.cc/Zqv1Pv9z/La-Union-Malvinas.png'},
+  {name:'Las Flores',logo:'https://i.postimg.cc/Zqv1Pv9m/Las-Flores.png'},
+  {name:'Las Palmas',logo:'https://i.postimg.cc/0NKLGK6P/Las-Palmas.png'},
+  {name:'Lasallano',logo:'https://i.postimg.cc/d0ZzRZ7q/Lasallano.png'},
+  {name:'Libertad',logo:'https://i.postimg.cc/25LPdLqk/Libertad.png'},
+  {name:'Lobos del Sur',logo:'https://i.postimg.cc/CKnWCnZx/Lobos-del-Sur.png'},
+  {name:'Los Andes',logo:'https://i.postimg.cc/W4qQmqD4/Los-Andes.png'},
+  {name:'Medea',logo:'https://i.postimg.cc/5tQZ5QHy/Medea.png'},
+  {name:'Quilmes',logo:'https://i.postimg.cc/Lsgrkgqh/Quilmes.png'},
+  {name:'Racing',logo:'https://i.postimg.cc/Lsgrkgqg/Racing.png'},
+  {name:'Rancagua',logo:'https://i.postimg.cc/QMKRgKBT/Rancagua.png'},
+  {name:'Recreativo Municipalidad',logo:'https://i.postimg.cc/LsgrkgqZ/Recreativo-Municipalidad.png'},
+  {name:'San Lorenzo',logo:'https://i.postimg.cc/76vjKP7Z/San-Lorenzo.png'},
+  {name:'San Nicolás',logo:'https://i.postimg.cc/3RMztrpw/San-Nicolas.png'},
+  {name:'Talleres',logo:'https://i.postimg.cc/G206X3YH/Talleres.png'},
+  {name:'Unión Florida',logo:'https://i.postimg.cc/cHqPF1Yv/Union-Florida.png'},
+  {name:'Unión San Vicente',logo:'https://i.postimg.cc/3RMztrp0/Union-San-Vicente.png'},
+  {name:'Unión Serrana',logo:'https://i.postimg.cc/26pg0jvW/Union-Serrana.png'},
+  {name:'Universitario',logo:'https://i.postimg.cc/76vjKP77/Universitario.png'},
+  {name:'Valores',logo:'https://i.postimg.cc/sXFbTfS7/Valores.png'},
+  {name:'Villa Azalais',logo:'https://i.postimg.cc/hjFN24xV/Villa-Azalaiz.png'},
+  {name:'Villa Siburu',logo:'https://i.postimg.cc/j5VBMqNH/Villa-Siburu.png'}
 ];
 function teamInitials(name){return String(name||'?').split(/\s+/).filter(Boolean).slice(0,2).map(x=>x[0]).join('').toUpperCase()||'?'}
 function teamLogoHtml(team,cls='team-option-crest'){const src=team&&team.logo?esc(team.logo):'';const initials=teamInitials(team&&team.name);return `<span class="${cls}"><span class="team-crest-fallback">${esc(initials)}</span>${src?`<img src="${src}" alt="Escudo ${esc(team.name)}" loading="lazy" onerror="this.style.display='none'">`:''}</span>`}
 function teamPickerMarkup(field,label,selected=''){
-  const current=LCF_TEAMS.find(t=>t.name.toLocaleLowerCase('es-AR')===String(selected||'').trim().toLocaleLowerCase('es-AR'))||null;
+  const current=findLcfTeam(selected)||null;
   const other=Boolean(selected&&!current);
   const options=[...LCF_TEAMS].sort((a,b)=>a.name.localeCompare(b.name,'es-AR')).map(t=>`<button type="button" class="team-option" data-team-name="${esc(t.name)}" data-team-logo="${esc(t.logo||'')}">${teamLogoHtml(t)}<span><b>${esc(t.name)}</b></span></button>`).join('');
   const display=current?current.name:(other?titleWords(selected):'Elegí un equipo');
@@ -185,7 +192,7 @@ function baseUrl(){return location.origin+location.pathname}
 function galleryUrl(){return location.origin+location.pathname.replace(/contrataciones\.html$/,'')+'#/galeria'}
 function dateLabel(v){if(!v)return {d:'--',mon:'---',dow:'---'};const d=new Date(v+'T12:00:00');const mons=['ENE','FEB','MAR','ABR','MAY','JUN','JUL','AGO','SEP','OCT','NOV','DIC'];const days=['DOM','LUN','MAR','MIÉ','JUE','VIE','SÁB'];return {d:String(d.getDate()).padStart(2,'0'),mon:mons[d.getMonth()],dow:days[d.getDay()]}}
 function normalizeTeamKey(v){return String(v||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLocaleLowerCase('es-AR').replace(/[^a-z0-9]+/g,' ').trim()}
-function findLcfTeam(name){const key=normalizeTeamKey(name);if(!key)return null;const aliases={'all boys de cordoba':'all boys','club atletico all boys':'all boys','racing cordoba':'racing de cordoba','independiente carlos paz':'independiente de carlos paz','atletico carlos paz':'atletico carlos paz','defensores central cordoba':'defensores central cordoba','union san vicente':'union san vicente','villa siburu':'villa siburu'};const wanted=aliases[key]||key;return LCF_TEAMS.find(t=>normalizeTeamKey(t.name)===wanted)||LCF_TEAMS.find(t=>{const k=normalizeTeamKey(t.name);return wanted.length>5&&(k.includes(wanted)||wanted.includes(k))})||null}
+function findLcfTeam(name){const key=normalizeTeamKey(name);if(!key)return null;const aliases={'all boys de cordoba':'all boys','club atletico all boys':'all boys','club atletico all boys cordoba':'all boys','caab':'all boys','amsurbac':'amsurrbac','camioneros':'camioneros cordoba','cambioneros':'camioneros cordoba','club camioneros':'camioneros cordoba','coronel olmedo':'club coronel olmedo','defensores juveniles':'deportivo defensores juveniles','deportivo defensores junveniles':'deportivo defensores juveniles','presidente roca':'escuela presidente roca','general paz juniors':'general paz junior','general paz juniors cordoba':'general paz junior','barrio comercial':'juvenil barrio comercial','comercial':'juvenil barrio comercial','la union':'la union malvinas','municipalidad':'recreativo municipalidad','recreativo municipalidad de cordoba':'recreativo municipalidad','racing cordoba':'racing','racing de cordoba':'racing','independiente carlos paz':'independiente','independiente de carlos paz':'independiente','atletico carlos paz':'atletico carlos paz','defensores central cordoba':'defensores central cordoba','central cordoba':'defensores central cordoba','union san vicente':'union san vicente','villa azalaiz':'villa azalais','villa siburu':'villa siburu'};const wanted=aliases[key]||key;return LCF_TEAMS.find(t=>normalizeTeamKey(t.name)===wanted)||LCF_TEAMS.find(t=>{const k=normalizeTeamKey(t.name);return wanted.length>5&&(k.includes(wanted)||wanted.includes(k))})||null}
 function bookingTeamLogoHtml(name){const team=findLcfTeam(name);const src=team&&team.logo?esc(team.logo):'';return `<span class="booking-team-logo"><span class="booking-team-logo-fallback">${esc(teamInitials(name))}</span>${src?`<img src="${src}" alt="Escudo ${esc(team.name)}" loading="lazy" onerror="this.style.display='none'">`:''}</span>`}
 function mapsUrl(b){const q=[b.venue,b.address].filter(Boolean).join(', ');return q?'https://www.google.com/maps/search/?api=1&query='+encodeURIComponent(q):'#'}
 function categoryOptions(selected=''){return '<option value="">Seleccionar categoría</option>'+CATEGORIES.map(c=>`<option value="${c}" ${c===selected?'selected':''}>${c}</option>`).join('')}
