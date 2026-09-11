@@ -1,0 +1,55 @@
+name: Add booking categories
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/add-booking-categories.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Add requested categories
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p = Path('contrataciones.html')
+          s = p.read_text(encoding='utf-8')
+          old = "const CATEGORIES=['Primera','Reserva','4ta','5ta','6ta','7ma','9na','10ma','11ra','12da'];"
+          new = "const CATEGORIES=['Primera','Reserva','Femenino','S17','S15','S13','4ta','5ta','6ta','7ma','9na','10ma','11ra','12da'];"
+          if old in s:
+              s = s.replace(old, new, 1)
+          elif new not in s:
+              raise SystemExit('No se encontró la lista de categorías esperada')
+          p.write_text(s, encoding='utf-8')
+          PY
+      - name: Validate JavaScript
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+          s = Path('contrataciones.html').read_text(encoding='utf-8')
+          scripts = re.findall(r'<script\b[^>]*>(.*?)</script\s*>', s, re.S|re.I)
+          for i, script in enumerate(scripts):
+              if script.strip():
+                  Path(f'/tmp/booking-{i}.js').write_text(script, encoding='utf-8')
+          PY
+          for f in /tmp/booking-*.js; do node --check "$f"; done
+      - name: Commit categories
+        run: |
+          if git diff --quiet -- contrataciones.html; then
+            echo "No changes needed"
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add contrataciones.html
+          git commit -m "Add Femenino S17 S15 and S13 booking categories"
+          git push origin HEAD:main
