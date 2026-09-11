@@ -1,0 +1,55 @@
+name: Apply team logo source controls
+on:
+  push:
+    branches: [main]
+    paths:
+      - scripts/apply-team-logo-source.py
+      - .github/workflows/team-logo-source.yml
+  workflow_dispatch:
+permissions:
+  contents: write
+concurrency:
+  group: apply-team-logo-source
+  cancel-in-progress: false
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Apply team shield catalog and selectors
+        run: python3 scripts/apply-team-logo-source.py
+      - name: Validate inline JavaScript
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+          s=Path('index.html').read_text(encoding='utf-8')
+          scripts=re.findall(r'<script\b[^>]*>(.*?)</script\s*>',s,re.S|re.I)
+          count=0
+          for i,script in enumerate(scripts):
+              if script.strip():
+                  Path(f'/tmp/la-team-logo-{i}.js').write_text(script,encoding='utf-8')
+                  count += 1
+          if not count:
+              raise SystemExit('No inline scripts found')
+          if s.count('https://i.postimg.cc/') < 49:
+              raise SystemExit('Team logo catalog is incomplete')
+          if "return isTalleresSanLorenzoAlbum(album) ? 'sheet' : 'app';" not in s:
+              raise SystemExit('AFA Talleres-San Lorenzo default exception is missing')
+          if 'chooseAlbumLogoSource' not in s or 'albumLogoSources' not in s:
+              raise SystemExit('Per-album source selector is missing')
+          print('Feature checks passed')
+          PY
+          for file in /tmp/la-team-logo-*.js; do node --check "$file"; done
+      - name: Commit validated application change
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add index.html
+          if ! git diff --cached --quiet; then
+            git commit -m "Use APP team shields with per-album source selection"
+            git push origin HEAD:main
+          else
+            echo "No index change needed"
+          fi
