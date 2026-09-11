@@ -1,0 +1,38 @@
+name: Apply album swipe reveal on mobile
+on:
+  push:
+    branches: [main]
+    paths:
+      - scripts/apply_mobile_swipe_reveal.py
+      - .github/workflows/apply-mobile-album-swipe.yml
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Apply mobile swipe reveal patch
+        run: python3 scripts/apply_mobile_swipe_reveal.py
+      - name: Validate index inline JavaScript
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+          s=Path('index.html').read_text(encoding='utf-8')
+          scripts=re.findall(r'<script\b[^>]*>(.*?)</script\s*>',s,re.S|re.I)
+          for i,script in enumerate(scripts):
+              if script.strip(): Path(f'/tmp/index-{i}.js').write_text(script,encoding='utf-8')
+          PY
+          for f in /tmp/index-*.js; do node --check "$f"; done
+      - name: Commit validated mobile interaction
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add index.html
+          if ! git diff --cached --quiet; then
+            git commit -m "Reveal album covers while swiping on mobile"
+            git push origin HEAD:main
+          fi
