@@ -1,0 +1,75 @@
+name: Mirror updated team shields
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'scripts/mirror_team_shields.py'
+      - '.github/workflows/mirror-team-shields.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  mirror:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Download and localize all supplied shields
+        run: python3 scripts/mirror_team_shields.py
+
+      - name: Verify all 49 local shield files
+        run: |
+          test "$(find assets/lcf-v2 -maxdepth 1 -type f -name '*.png' | wc -l)" -eq 49
+          python3 - <<'PY'
+          from pathlib import Path
+          files=list(Path('assets/lcf-v2').glob('*.png'))
+          bad=[]
+          for p in files:
+              b=p.read_bytes()
+              if len(b)<100 or not (b.startswith(b'\x89PNG\r\n\x1a\n') or b.startswith(b'\xff\xd8\xff') or b.startswith(b'RIFF')):
+                  bad.append(str(p))
+          if bad:
+              raise SystemExit('Invalid image files: '+', '.join(bad))
+          print('Verified', len(files), 'shield images')
+          PY
+
+      - name: Validate contratación inline JavaScript
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+          text=Path('contrataciones.html').read_text(encoding='utf-8')
+          scripts=re.findall(r'<script(?:\s[^>]*)?>(.*?)</script>', text, flags=re.S|re.I)
+          inline='\n'.join(s for s in scripts if s.strip())
+          Path('/tmp/contrataciones-inline.js').write_text(inline, encoding='utf-8')
+          PY
+          node --check /tmp/contrataciones-inline.js
+
+      - name: Validate main app inline JavaScript
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+          text=Path('index.html').read_text(encoding='utf-8')
+          scripts=re.findall(r'<script(?:\s[^>]*)?>(.*?)</script>', text, flags=re.S|re.I)
+          inline='\n'.join(s for s in scripts if s.strip())
+          Path('/tmp/index-inline.js').write_text(inline, encoding='utf-8')
+          PY
+          node --check /tmp/index-inline.js
+
+      - name: Commit mirrored shields and local references
+        run: |
+          if git diff --quiet; then
+            echo 'No changes to commit.'
+            exit 0
+          fi
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add assets/lcf-v2 contrataciones.html index.html
+          git commit -m 'Serve all updated team shields locally'
+          git push
