@@ -1,0 +1,48 @@
+name: Apply blank screen fix v110
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'scripts/fix_blank_screen_v110.py'
+      - '.github/workflows/apply-blank-screen-v110.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Apply patch
+        run: python3 scripts/fix_blank_screen_v110.py
+      - name: Validate JavaScript
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+          for name in ('index.html','contrataciones.html'):
+              s=Path(name).read_text(encoding='utf-8')
+              blocks=re.findall(r'<script\b[^>]*>(.*?)</script\s*>',s,re.S|re.I)
+              for i,b in enumerate(blocks):
+                  if b.strip(): Path(f'/tmp/{name}-{i}.js').write_text(b,encoding='utf-8')
+          PY
+          for f in /tmp/index.html-*.js /tmp/contrataciones.html-*.js; do [ -f "$f" ] && node --check "$f"; done
+      - name: Verify fix
+        run: |
+          grep -q 'v110-blank-screen-fix' index.html
+          grep -q 'LA_REACT_BOOT_STARTED = true' index.html
+          grep -q 'booking-boot' contrataciones.html
+          grep -q 'Promise.race' contrataciones.html
+      - name: Commit fix
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add index.html contrataciones.html
+          if ! git diff --cached --quiet; then
+            git commit -m "Prevent black or white blank screens on startup"
+            git push origin HEAD:main
+          fi
