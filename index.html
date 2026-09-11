@@ -9,6 +9,7 @@
   <meta http-equiv="Expires" content="0" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
   <meta name="theme-color" content="#000000" />
+  <meta name="color-scheme" content="dark" />
   <meta name="description" content="Galería de clientes de lucasabraham.ph. Fotos deportivas protegidas y compra directa por WhatsApp." />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="mobile-web-app-capable" content="yes" />
@@ -31,7 +32,7 @@
   <meta name="twitter:description" content="Fotos deportivas protegidas · Compra directa por WhatsApp" />
   <meta name="twitter:image" content="https://lucasabraham1996-cmd.github.io/photos/social-preview-la.png?v=105" />
   <title>lucasabraham.ph - Galería de Clientes</title>
-  <meta name="app-version" content="v109-mobile-swipe-reveal" /><style>html,body{margin:0;min-height:100%;background:#050505;color:#fff}#root{min-height:100vh;background:#050505;color:#fff}
+  <meta name="app-version" content="v110-blank-screen-fix" /><style>html{color-scheme:dark}html,body{margin:0;min-height:100%;background:#050505;color:#fff}#root{min-height:100vh;background:#050505;color:#fff}
     /* v41: estilo versus moderno para portada y álbum */
     .team-album-reveal{background:linear-gradient(180deg,rgba(3,7,18,.12),rgba(2,6,23,.28))}
     .team-reveal-half{left:12px!important;right:12px!important;width:auto!important;height:33%!important;padding:12px 16px!important;box-shadow:0 16px 36px rgba(0,0,0,.28),inset 0 1px 0 rgba(255,255,255,.14)!important;border:1px solid rgba(255,255,255,.10)!important;overflow:hidden}
@@ -869,13 +870,14 @@
       if(window.top!==window.self){ try{ window.top.location.href=window.location.href; }catch(frameErr){} }
       setTimeout(function(){
         var root=document.getElementById('root');
-        if(root && !window.LA_APP_RENDERED){
+        if(root && !window.LA_APP_RENDERED && !window.LA_REACT_BOOT_STARTED){
           root.innerHTML='<div class="v24-safe-fallback"><div class="v24-safe-card"><img src="./brand-logo.png?v=105" alt="lucasabraham.ph" style="width:60px;height:60px;object-fit:contain;margin-bottom:16px;"><h1 style="font-size:24px;line-height:1.2;margin:0 0 10px;font-weight:900;color:#fff;">La galería está tardando en cargar</h1><p style="color:#d4d4d8;line-height:1.6;margin:0 0 10px;">Perdón por el inconveniente. Puede ser un bloqueo del navegador al abrir el archivo localmente o una demora de conexión.</p><p style="color:#a1a1aa;line-height:1.6;margin:0 0 18px;">Probá recargar la página. Para probarla de forma estable, abrila desde un servidor local o subida a hosting, no dentro de un visor/iframe.</p><button onclick="location.reload()" class="v24-safe-btn" style="background:linear-gradient(135deg,#0ea5e9,#2563eb 56%,#1d4ed8);color:#fff!important;box-shadow:0 18px 40px rgba(37,99,235,.30);animation:errorIconPulse 2.2s ease-in-out infinite;">Reintentar y recargar</button></div></div>';
         }
       },45000);
     }catch(e){}
   })();
   window.LA_APP_RENDERED=false;
+  window.LA_REACT_BOOT_STARTED=false;
   window.LA_BOOT_ERRORS=[];
   window.addEventListener('error', function(e){
     var msg=String(e&&e.message?e.message:'');
@@ -885,7 +887,7 @@
     if(msg==='Script error.' || msg==='Script error') return;
     setTimeout(function(){
       var root=document.getElementById('root');
-      if(root && !window.LA_APP_RENDERED){
+      if(root && !window.LA_APP_RENDERED && !window.LA_REACT_BOOT_STARTED){
         root.innerHTML='<div style="min-height:100vh;background:#050505;color:#fff;font-family:Arial,sans-serif;display:flex;align-items:center;justify-content:center;padding:24px;"><div style="max-width:620px;width:100%;background:#0a0a0a;border:1px solid rgba(255,255,255,.10);border-radius:26px;padding:28px;box-shadow:0 20px 60px rgba(0,0,0,.45);"><div style="width:64px;height:64px;border-radius:18px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.10);display:flex;align-items:center;justify-content:center;margin-bottom:18px;"><img src="./brand-logo.png?v=105" alt="lucasabraham.ph" style="width:44px;height:44px;object-fit:contain;"></div><h1 style="font-size:24px;line-height:1.2;margin:0 0 10px;font-weight:900;color:#fff;">Cargando galería</h1><p style="color:#d4d4d8;line-height:1.6;margin:0 0 10px;">Perdón por el inconveniente. Puede tratarse de un problema momentáneo de conexión o de carga.</p><p style="color:#a1a1aa;line-height:1.6;margin:0 0 18px;">Podés esperar unos segundos o tocar el botón para reintentar.</p><button onclick="location.reload()" style="width:100%;background:linear-gradient(135deg,#0ea5e9,#2563eb 56%,#1d4ed8);color:#fff;border:0;border-radius:16px;padding:14px 18px;font-weight:900;font-size:15px;cursor:pointer;box-shadow:0 18px 40px rgba(37,99,235,.30);animation:errorIconPulse 2.2s ease-in-out infinite;">Reintentar y recargar</button><div style="margin-top:14px;font-size:12px;color:#71717a;background:rgba(0,0,0,.5);border:1px solid rgba(255,255,255,.08);border-radius:14px;padding:12px;word-break:break-word;">'+(msg||'Error desconocido')+'</div></div></div>';
       }
     },900);
@@ -895,13 +897,13 @@
     try { localStorage.setItem('la_theme_mode_v1', 'dark'); document.body.classList.remove('light-mode'); } catch(e) {}
     setTimeout(function(){
       var root=document.getElementById('root');
-      if(root && !window.LA_APP_RENDERED){
+      if(root && !window.LA_APP_RENDERED && !window.LA_REACT_BOOT_STARTED){
         root.innerHTML='<div class="app-boot-fallback"><div class="app-boot-card"><img src="./brand-logo.png?v=105" alt="lucasabraham.ph"><h1 style="font-size:22px;font-weight:950;margin:0 0 6px;color:#fff!important;">Cargando galería</h1><p style="color:#d4d4d8!important;font-size:13px;line-height:1.45;margin:0;">Preparando álbumes y fotos...</p><div class="app-boot-bar"><span></span></div></div></div>';
       }
     }, 800);
     setTimeout(function(){
       var root=document.getElementById('root');
-      if(root && !window.LA_APP_RENDERED){
+      if(root && !window.LA_APP_RENDERED && !window.LA_REACT_BOOT_STARTED){
         root.innerHTML='<div class="app-boot-fallback mobile-safe-dark"><div class="app-boot-card"><img src="./brand-logo.png?v=105" alt="lucasabraham.ph"><h1 style="font-size:22px;font-weight:950;margin:0 0 8px;color:#fff!important;">Cargando galería</h1><p style="color:#d4d4d8!important;font-size:13px;line-height:1.5;margin:0 0 8px;">La app está tardando un poco más, pero seguimos intentando cargarla.</p><p style="color:#a1a1aa!important;font-size:12px;line-height:1.45;margin:0;">Podés esperar unos segundos o tocar el botón para reintentar.</p><button onclick="location.reload()" style="margin-top:16px;background:linear-gradient(135deg,#0ea5e9,#2563eb 56%,#1d4ed8);color:#fff;border:0;border-radius:14px;padding:12px 18px;font-weight:900;width:100%;box-shadow:0 18px 40px rgba(37,99,235,.30);animation:errorIconPulse 2.2s ease-in-out infinite;">Reintentar y recargar</button></div></div>';
       }
     }, 45000);
@@ -1578,7 +1580,7 @@ const LS_SHARED_STATE_KEY = "la_shared_admin_state_v2";
 const LS_BANNERS_KEY = "la_banner_settings_v1";
 const LS_INTRO_KEY = "la_purchase_intro_seen_v2";
 const PHOTOS_PER_PAGE = 70;
-const APP_VERSION = "v109-mobile-swipe-reveal";
+const APP_VERSION = "v110-blank-screen-fix";
 const LS_ALBUM_CACHE_META_KEY = "la_album_cache_meta_v1";
 const ALBUM_CACHE_MAX_AGE_MS = 1000 * 60 * 60 * 12;
 const FIRESTORE_FREE_DAILY_LIMITS = {
@@ -6045,6 +6047,7 @@ setTimeout(function(){ if(!window.LA_APP_RENDERED){ showBootOverlay("La carga es
 const rootEl = document.getElementById('root');
 if (rootEl && window.React && window.ReactDOM && ReactDOM.createRoot) {
     try {
+        window.LA_REACT_BOOT_STARTED = true;
         rootEl.innerHTML = '';
         ReactDOM.createRoot(rootEl).render(React.createElement(AppErrorBoundary, null, React.createElement(App, null)));
     }
@@ -6065,7 +6068,7 @@ if (rootEl && window.React && window.ReactDOM && ReactDOM.createRoot) {
 <script>
   setTimeout(function(){
     var root=document.getElementById('root');
-    if(root && !window.LA_APP_RENDERED && !root.textContent.trim()){
+    if(root && !window.LA_APP_RENDERED && !window.LA_REACT_BOOT_STARTED && !root.textContent.trim()){
       root.innerHTML='<div class="app-boot-fallback mobile-safe-dark"><div class="app-boot-card"><img src="./brand-logo.png?v=105" alt="lucasabraham.ph"><h1 style="font-size:22px;font-weight:950;margin:0 0 6px;color:#fff!important;">Cargando galería</h1><p style="color:#d4d4d8!important;font-size:13px;line-height:1.45;margin:0;">Perdón, la galería tardó más de lo esperado. Probá recargando la página.</p><button onclick="location.reload()" style="margin-top:16px;background:linear-gradient(135deg,#0ea5e9,#2563eb 56%,#1d4ed8);color:#fff;border:0;border-radius:14px;padding:12px 18px;font-weight:900;box-shadow:0 18px 40px rgba(37,99,235,.30);animation:errorIconPulse 2.2s ease-in-out infinite;">Reintentar y recargar</button></div></div>';
     }
   }, 2500);
@@ -6075,7 +6078,7 @@ if (rootEl && window.React && window.ReactDOM && ReactDOM.createRoot) {
   setTimeout(function(){
     try {
       var root=document.getElementById('root');
-      if(!window.LA_APP_RENDERED && (!root || !root.textContent.trim())) {
+      if(!window.LA_APP_RENDERED && !window.LA_REACT_BOOT_STARTED && (!root || !root.textContent.trim())) {
         showBootOverlay('La app aún no terminó de cargar en iPhone. Tocá Reintentar y recargar si no avanza.');
       }
     } catch(e){}
