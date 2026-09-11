@@ -1,0 +1,44 @@
+name: Update contratación team shields
+on:
+  push:
+    branches: [main]
+    paths:
+      - scripts/update-contrataciones-team-logos.py
+      - .github/workflows/update-contrataciones-team-logos.yml
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Apply updated team shield catalog
+        run: python3 scripts/update-contrataciones-team-logos.py
+      - name: Validate inline JavaScript
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+          s=Path('contrataciones.html').read_text(encoding='utf-8')
+          scripts=re.findall(r'<script\b[^>]*>(.*?)</script\s*>',s,re.S|re.I)
+          for i,script in enumerate(scripts):
+              if script.strip(): Path(f'/tmp/contrataciones-{i}.js').write_text(script,encoding='utf-8')
+          PY
+          for f in /tmp/contrataciones-*.js; do node --check "$f"; done
+      - name: Verify supplied Postimg shield catalog
+        run: |
+          grep -q 'https://i.postimg.cc/Vkvy6VmY/All-Boys.png' contrataciones.html
+          grep -q 'https://i.postimg.cc/rws6mPMC/Barrio-Parque.png' contrataciones.html
+          grep -q 'https://i.postimg.cc/G206X3YH/Talleres.png' contrataciones.html
+          grep -q "const current=findLcfTeam(selected)||null;" contrataciones.html
+      - name: Commit validated contratación change
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add contrataciones.html
+          if ! git diff --cached --quiet; then
+            git commit -m "Use updated APP team shields in contratación"
+            git push origin HEAD:main
+          fi
