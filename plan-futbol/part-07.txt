@@ -1,0 +1,44 @@
+function line(ctx,a,b,w=5,color='#102A43'){ctx.strokeStyle=color;ctx.lineWidth=w;ctx.lineCap='round';ctx.beginPath();ctx.moveTo(a.x,a.y);ctx.lineTo(b.x,b.y);ctx.stroke();}
+function dot(ctx,p,r=7,color='#2F855A'){ctx.fillStyle=color;ctx.beginPath();ctx.arc(p.x,p.y,r,0,Math.PI*2);ctx.fill();}
+function drawSkeleton(ctx,p,{weights=false,band=false,core=false}={}){
+  line(ctx,p.ls,p.rs,5);line(ctx,p.ls,p.lhip,5);line(ctx,p.rs,p.rhip,5);line(ctx,p.lhip,p.rhip,5);
+  line(ctx,p.ls,p.le,5);line(ctx,p.le,p.lh,5);line(ctx,p.rs,p.re,5);line(ctx,p.re,p.rh,5);
+  line(ctx,p.lhip,p.lk,6);line(ctx,p.lk,p.la,6);line(ctx,p.rhip,p.rk,6);line(ctx,p.rk,p.ra,6);
+  ctx.fillStyle='#102A43';ctx.beginPath();ctx.arc(p.head.x,p.head.y,13,0,Math.PI*2);ctx.fill();
+  if(weights){dot(ctx,p.lh,7,'#F6AD55');dot(ctx,p.rh,7,'#F6AD55');}
+  if(core){ctx.fillStyle='rgba(47,133,90,.22)';ctx.beginPath();ctx.ellipse((p.lhip.x+p.rhip.x)/2,108,24,34,0,0,Math.PI*2);ctx.fill();}
+  if(band){ctx.strokeStyle='#E55353';ctx.lineWidth=4;ctx.beginPath();ctx.moveTo(20,92);ctx.lineTo(p.lh.x,p.lh.y);ctx.moveTo(300,92);ctx.lineTo(p.rh.x,p.rh.y);ctx.stroke();}
+}
+function drawGround(ctx){ctx.strokeStyle='#D7E0E8';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(20,207);ctx.lineTo(300,207);ctx.stroke();}
+function drawStandingMotion(ctx,type,t){
+  const a=poseStanding(type,false),b=poseStanding(type,true),p=interpPose(a,b,t); drawGround(ctx);
+  drawSkeleton(ctx,p,{weights:['curl','hammercurl','shoulderpress','overheadtriceps','lateralraise'].includes(type),band:['bandrow','bandtriceps'].includes(type)});
+  if(type==='tibialis'){
+    const ang=-0.55*t;['l','r'].forEach(s=>{const ankle=p[s+'a'];ctx.save();ctx.translate(ankle.x,ankle.y);ctx.rotate(ang);line(ctx,P(0,0),P(20,0),5,'#2F855A');ctx.restore();});
+  }
+  if(type==='lateralwalk'){ctx.strokeStyle='#E55353';ctx.lineWidth=4;line(ctx,p.lk,p.rk,4,'#E55353');}
+  if(type==='calfraise'||type==='bentcalf'){ctx.fillStyle='rgba(47,133,90,.18)';ctx.fillRect(130,135,60,58);}
+}
+function drawPushup(ctx,t){drawGround(ctx);const y=112+30*t;const foot=P(55,190),hip=P(150,y+18),sh=P(222,y),head=P(255,y-12),hand=P(250,190),el=P(232,145+28*t);line(ctx,foot,hip,7);line(ctx,hip,sh,7);line(ctx,sh,head,6);line(ctx,sh,el,5);line(ctx,el,hand,5);ctx.fillStyle='#102A43';ctx.beginPath();ctx.arc(head.x+10,head.y-2,11,0,Math.PI*2);ctx.fill();ctx.fillStyle='rgba(47,133,90,.18)';ctx.fillRect(132,y-2,62,35);}
+function drawPlank(ctx,t){drawGround(ctx);const foot=P(55,185),hip=P(150,132),sh=P(225,118),head=P(258,105),el=P(225,165),hand=P(255,175);line(ctx,foot,hip,7);line(ctx,hip,sh,7);line(ctx,sh,head,6);line(ctx,sh,el,5);line(ctx,el,hand,5);ctx.fillStyle='#102A43';ctx.beginPath();ctx.arc(head.x+8,head.y-3,11,0,Math.PI*2);ctx.fill();ctx.fillStyle=`rgba(47,133,90,${0.14+0.16*t})`;ctx.beginPath();ctx.ellipse(165,130,36,21,-.12,0,Math.PI*2);ctx.fill();}
+function drawRDL(ctx,t){drawGround(ctx);const hip=P(155,120),ankle=P(165,205),knee=P(165-12*t,164),shoulder=mix(P(160,65),P(225,105),t),head=mix(P(160,34),P(250,82),t),hand=mix(P(150,125),P(190,175),t);line(ctx,hip,knee,7);line(ctx,knee,ankle,7);line(ctx,hip,shoulder,7);line(ctx,shoulder,head,6);line(ctx,shoulder,hand,5);ctx.fillStyle='#102A43';ctx.beginPath();ctx.arc(head.x,head.y,12,0,Math.PI*2);ctx.fill();dot(ctx,hand,7,'#F6AD55');ctx.fillStyle='rgba(47,133,90,.18)';ctx.fillRect(135,135,52,42);}
+function drawOneArmRow(ctx,t){drawGround(ctx);const hip=P(150,112),sh=P(205,82),head=P(235,62),knee=P(145,160),ank=P(138,205),support=P(258,122),work=mix(P(115,175),P(165,112),t),el=mix(P(155,130),P(145,100),t);line(ctx,hip,knee,7);line(ctx,knee,ank,7);line(ctx,hip,sh,7);line(ctx,sh,head,6);line(ctx,sh,support,5);line(ctx,sh,el,5);line(ctx,el,work,5);ctx.fillStyle='#102A43';ctx.beginPath();ctx.arc(head.x,head.y,12,0,Math.PI*2);ctx.fill();dot(ctx,work,8,'#F6AD55');ctx.strokeStyle='#9FB3C8';ctx.lineWidth=7;ctx.beginPath();ctx.moveTo(230,125);ctx.lineTo(295,125);ctx.stroke();}
+function drawGluteBridge(ctx,t){drawGround(ctx);const shoulder=P(78,172),head=P(48,160),hip=P(158,168-58*t),knee=P(215,122),foot=P(270,190);line(ctx,head,shoulder,6);line(ctx,shoulder,hip,7);line(ctx,hip,knee,7);line(ctx,knee,foot,7);ctx.fillStyle='#102A43';ctx.beginPath();ctx.arc(head.x-8,head.y-5,12,0,Math.PI*2);ctx.fill();ctx.fillStyle='rgba(47,133,90,.2)';ctx.beginPath();ctx.arc(hip.x,hip.y,22,0,Math.PI*2);ctx.fill();}
+function drawDeadBug(ctx,t){drawGround(ctx);const head=P(55,170),sh=P(90,170),hip=P(170,170);line(ctx,head,sh,6);line(ctx,sh,hip,7);ctx.fillStyle='#102A43';ctx.beginPath();ctx.arc(42,163,12,0,Math.PI*2);ctx.fill();const hand=mix(P(105,95),P(65,65),t),otherHand=P(120,95);line(ctx,sh,hand,5);line(ctx,sh,otherHand,5);const knee1=mix(P(205,120),P(260,178),t),ank1=mix(P(205,80),P(290,188),t),knee2=P(185,120),ank2=P(185,80);line(ctx,hip,knee1,6);line(ctx,knee1,ank1,6);line(ctx,hip,knee2,6);line(ctx,knee2,ank2,6);ctx.fillStyle='rgba(47,133,90,.2)';ctx.fillRect(125,148,60,32);}
+function drawSidePlank(ctx,t){drawGround(ctx);const elbow=P(90,185),shoulder=P(115,145),hip=P(185,158-36*t),foot=P(275,188);line(ctx,elbow,shoulder,6);line(ctx,shoulder,hip,7);line(ctx,hip,foot,7);ctx.fillStyle='#102A43';ctx.beginPath();ctx.arc(105,124,12,0,Math.PI*2);ctx.fill();ctx.fillStyle='rgba(47,133,90,.2)';ctx.beginPath();ctx.arc(hip.x,hip.y,20,0,Math.PI*2);ctx.fill();}
+function drawRun(ctx,t,fast=false,football=false){drawGround(ctx);const phase=Math.sin(t*Math.PI*2);const head=P(160,38-2*Math.abs(phase));const sh=P(160,67),hip=P(160,120);line(ctx,sh,hip,7);ctx.fillStyle='#102A43';ctx.beginPath();ctx.arc(head.x,head.y,13,0,Math.PI*2);ctx.fill();const amp=fast?42:28;const lk=P(145+amp*phase,162),la=P(135+amp*phase,205);const rk=P(175-amp*phase,162),ra=P(185-amp*phase,205);line(ctx,hip,lk,6);line(ctx,lk,la,6);line(ctx,hip,rk,6);line(ctx,rk,ra,6);const le=P(140-25*phase,92),lh=P(125-35*phase,118),re=P(180+25*phase,92),rh=P(195+35*phase,118);line(ctx,sh,le,5);line(ctx,le,lh,5);line(ctx,sh,re,5);line(ctx,re,rh,5);if(football){ctx.fillStyle='#F6AD55';ctx.beginPath();ctx.arc(230+18*phase,195,10,0,Math.PI*2);ctx.fill();}}
+function drawLateralShuffle(ctx,t){drawGround(ctx);const dx=26*Math.sin(t*Math.PI*2);const p=baseStanding();Object.keys(p).forEach(k=>p[k].x+=dx);p.lk.x-=18;p.rk.x+=18;p.la.x-=32;p.ra.x+=32;p.lhip.y=125;p.rhip.y=125;p.head.y=40;p.lh=P(p.ls.x-25,p.ls.y+20);p.rh=P(p.rs.x+25,p.rs.y+20);drawSkeleton(ctx,p);}
+function drawBike(ctx,t){ctx.strokeStyle='#9FB3C8';ctx.lineWidth=5;ctx.beginPath();ctx.arc(170,158,38,0,Math.PI*2);ctx.stroke();line(ctx,P(110,145),P(170,158),5,'#9FB3C8');line(ctx,P(110,145),P(135,95),5,'#9FB3C8');line(ctx,P(135,95),P(205,95),5,'#9FB3C8');line(ctx,P(205,95),P(230,75),5,'#9FB3C8');const hip=P(125,82),sh=P(160,52),head=P(175,28),hand=P(225,75);line(ctx,hip,sh,7);line(ctx,sh,head,6);line(ctx,sh,hand,5);ctx.fillStyle='#102A43';ctx.beginPath();ctx.arc(head.x,head.y,12,0,Math.PI*2);ctx.fill();const ang=t*Math.PI*2,foot1=P(170+30*Math.cos(ang),158+22*Math.sin(ang)),foot2=P(170-30*Math.cos(ang),158-22*Math.sin(ang)),knee1=P((hip.x+foot1.x)/2+8,(hip.y+foot1.y)/2),knee2=P((hip.x+foot2.x)/2-8,(hip.y+foot2.y)/2);line(ctx,hip,knee1,6);line(ctx,knee1,foot1,6);line(ctx,hip,knee2,6);line(ctx,knee2,foot2,6);dot(ctx,P(170,158),5,'#F6AD55');}
+function drawMotion(ctx,type,t){
+  ctx.clearRect(0,0,320,220);ctx.fillStyle='#F8FBFA';ctx.fillRect(0,0,320,220);
+  if(type==='bike'||type==='bikefast')return drawBike(ctx,t);
+  if(type==='pushup')return drawPushup(ctx,t);
+  if(type==='plank')return drawPlank(ctx,t);
+  if(type==='rdl')return drawRDL(ctx,t);
+  if(type==='onearmrow')return drawOneArmRow(ctx,t);
+  if(type==='glutebridge')return drawGluteBridge(ctx,t);
+  if(type==='deadbug')return drawDeadBug(ctx,t);
+  if(type==='sideplank')return drawSidePlank(ctx,t);
+  if(type==='run'||type==='walk')return drawRun(ctx,t,false,false);
+  if(type==='runfast')return drawRun(ctx,t,true,false);
+  if(type==='football')return drawRun(ctx,t,true,true);
