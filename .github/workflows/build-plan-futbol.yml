@@ -1,0 +1,34 @@
+name: Build Plan Futbol
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'plan-futbol/part-*.txt'
+      - '.github/workflows/build-plan-futbol.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Build hosted app
+        run: cat plan-futbol/part-*.txt > plan-futbol/index.html
+
+      - name: Commit generated index
+        run: |
+          if git diff --quiet -- plan-futbol/index.html; then
+            echo "No changes to commit"
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add plan-futbol/index.html
+          git commit -m "Build hosted Plan Futbol app"
+          git push
