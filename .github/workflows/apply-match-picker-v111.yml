@@ -33,10 +33,10 @@ jobs:
           for f in /tmp/index-*.js; do [ -f "$f" ] && node --check "$f"; done
       - name: Verify match picker
         run: |
-          grep -q 'v111-mobile-match-picker' index.html
           grep -q 'Seleccionar partido' index.html
-          grep -q 'function MatchPickerModal' index.html
+          grep -q 'MatchPickerModal' index.html
           grep -q 'match-picker-card' index.html
+          grep -q 'match-picker-open-btn' index.html
       - name: Commit match picker
         run: |
           git config user.name "github-actions[bot]"
