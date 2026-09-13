@@ -1,0 +1,22 @@
+  if(type==='lateralshuffle')return drawLateralShuffle(ctx,t);
+  return drawStandingMotion(ctx,type,t);
+}
+function startTutorialAnimation(type){
+  if(tutorialAnimFrame)cancelAnimationFrame(tutorialAnimFrame);
+  const canvas=document.getElementById('tutorialCanvas'); if(!canvas)return; const ctx=canvas.getContext('2d'); const started=performance.now();
+  function frame(now){ctx.setTransform(canvas.width/320,0,0,canvas.height/220,0,0);const sec=(now-started)/1000;const t=(1-Math.cos(sec*Math.PI*1.25))/2;drawMotion(ctx,type,t);tutorialAnimFrame=requestAnimationFrame(frame);}tutorialAnimFrame=requestAnimationFrame(frame);
+}
+
+document.addEventListener('keydown',e=>{if(e.key==='Escape')closeTutorial();});
+
+function showScreen(name,btn){document.querySelectorAll('.screen').forEach(x=>x.classList.remove('active'));document.getElementById('screen-'+name).classList.add('active');document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));if(btn)btn.classList.add('active');if(name==='guide')renderTutorialLibrary(document.getElementById('tutorialSearch')?.value||'');window.scrollTo({top:0,behavior:'smooth'});}
+function val(id){return document.getElementById(id).value}
+function setBusy(id,busy,text){const b=document.getElementById(id);b.disabled=busy;b.textContent=text}
+function toast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2600)}
+function escapeHtml(v){return String(v??'').replace(/[&<>'"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]))}
+document.getElementById('rpe').addEventListener('input',e=>document.getElementById('rpeVal').textContent=e.target.value+'/10');
+document.getElementById('calfPain').addEventListener('input',e=>{const n=+e.target.value;document.getElementById('calfVal').textContent=n+'/10';document.getElementById('painHint').innerHTML=n>=4?'<span class="danger">⚠️ No hagas piques/saltos si hay dolor importante o sensación de tirón.</span>':n>0?'Registralo y no progreses la carga si aumenta.':'';});
+boot();
+</script>
+</body>
+</html>
