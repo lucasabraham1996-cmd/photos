@@ -34,7 +34,7 @@ new_parse = r'''function parseAlbumDate(v) {
     const t = Date.parse(s);
     return Number.isNaN(t) ? null : t;
 }'''
-s = re.sub(r'function parseAlbumDate\(v\) \{.*?\n\}', new_parse, s, count=1, flags=re.S)
+s = re.sub(r'function parseAlbumDate\(v\) \{.*?\n\}', lambda _m: new_parse, s, count=1, flags=re.S)
 
 # Helpers also repair already-cached albums whose label was generated as "01 ene 46256".
 helpers = r'''
@@ -160,7 +160,6 @@ style = r'''
   }
 </style>
 '''
-# Replace any previous v112 override or append a fresh one.
 s = re.sub(r'<style id="v112-match-picker-broadcast-style">.*?</style>\s*', '', s, count=1, flags=re.S)
 s = s.replace('</head>', style + '</head>', 1)
 
