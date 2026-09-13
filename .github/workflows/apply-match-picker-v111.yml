@@ -1,0 +1,48 @@
+name: Apply mobile match picker v111
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'scripts/add_match_picker_v111.py'
+      - '.github/workflows/apply-match-picker-v111.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Apply match picker patch
+        run: python3 scripts/add_match_picker_v111.py
+      - name: Validate inline JavaScript
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+          s = Path('index.html').read_text(encoding='utf-8')
+          blocks = re.findall(r'<script\b[^>]*>(.*?)</script\s*>', s, re.S | re.I)
+          for i, block in enumerate(blocks):
+              if block.strip():
+                  Path(f'/tmp/index-{i}.js').write_text(block, encoding='utf-8')
+          PY
+          for f in /tmp/index-*.js; do [ -f "$f" ] && node --check "$f"; done
+      - name: Verify match picker
+        run: |
+          grep -q 'v111-mobile-match-picker' index.html
+          grep -q 'Seleccionar partido' index.html
+          grep -q 'function MatchPickerModal' index.html
+          grep -q 'match-picker-card' index.html
+      - name: Commit match picker
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add index.html
+          if ! git diff --cached --quiet; then
+            git commit -m "Add mobile match picker with team crests"
+            git push origin HEAD:main
+          fi
