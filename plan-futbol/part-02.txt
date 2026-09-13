@@ -1,0 +1,66 @@
+    .guide-hero h3{margin:0 0 6px;font-size:17px}.guide-hero p{margin:0;color:var(--muted);font-size:13px;line-height:1.5}
+    .concept-grid{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-top:14px}
+    .concept{background:#F7FAFC;border:1px solid #E6ECF2;border-radius:15px;padding:12px}.concept b{display:block;font-size:13px;color:var(--navy);margin-bottom:4px}.concept span{font-size:11px;line-height:1.4;color:#52606D}
+    .example-box{margin-top:12px;background:#EEF7FF;border:1px solid #C9DDF1;border-radius:15px;padding:12px;font-size:12px;line-height:1.5;color:#334E68}
+    .safety-box{margin-top:12px;background:#FFF5EB;border:1px solid #FBD38D;border-radius:15px;padding:12px;font-size:12px;line-height:1.5;color:#8A4B08}
+    .tutorial-search{position:relative;margin-bottom:10px}.tutorial-search input{width:100%;border:1px solid var(--line);border-radius:14px;padding:12px 14px 12px 40px;background:white;outline:none}.tutorial-search span{position:absolute;left:14px;top:11px}
+    .guide-grid{display:grid;gap:9px}.guide-item{background:white;border:1px solid var(--line);border-radius:16px;padding:12px;display:flex;align-items:center;justify-content:space-between;gap:10px}.guide-item-main{min-width:0}.guide-item b{display:block;font-size:13px;line-height:1.3}.guide-item small{display:block;color:var(--muted);margin-top:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.guide-open{border:0;background:var(--green2);color:#1B5E20;border-radius:11px;padding:9px 10px;font-weight:900;font-size:12px;white-space:nowrap;cursor:pointer}
+    .tutorial-modal{position:fixed;inset:0;z-index:100;display:none;align-items:flex-end;justify-content:center}.tutorial-modal.open{display:flex}.modal-backdrop{position:absolute;inset:0;background:rgba(15,31,47,.62);backdrop-filter:blur(3px)}
+    .tutorial-sheet{position:relative;width:min(720px,100%);max-height:94vh;background:var(--bg);border-radius:26px 26px 0 0;overflow:auto;padding:10px 16px max(24px,env(safe-area-inset-bottom));box-shadow:0 -18px 50px rgba(16,42,67,.25);animation:sheetUp .24s ease-out}
+    @keyframes sheetUp{from{transform:translateY(35px);opacity:.3}to{transform:translateY(0);opacity:1}}
+    .dragbar{width:42px;height:5px;border-radius:99px;background:#CBD5E0;margin:0 auto 10px}.tutorial-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}.tutorial-kicker{font-size:10px;text-transform:uppercase;letter-spacing:.11em;font-weight:900;color:var(--green)}.tutorial-head h2{font-size:21px;line-height:1.15;margin:5px 0 7px}.tutorial-meta{display:flex;flex-wrap:wrap;gap:6px}.close-btn{border:0;background:white;border:1px solid var(--line);width:38px;height:38px;border-radius:12px;font-size:20px;cursor:pointer;flex:0 0 auto}
+    .animation-card{margin:14px 0;background:linear-gradient(180deg,#FFFFFF,#F0F7F3);border:1px solid #DDEAE3;border-radius:20px;padding:10px;overflow:hidden}.animation-title{display:flex;justify-content:space-between;align-items:center;padding:2px 4px 8px;font-size:11px;color:var(--muted)}.animation-title b{color:var(--navy)}#tutorialCanvas{width:100%;height:auto;display:block;border-radius:14px;background:#F8FBFA}.animation-note{font-size:10px;color:var(--muted);text-align:center;padding:7px 4px 0;line-height:1.35}
+    .tutorial-block{background:white;border:1px solid var(--line);border-radius:17px;padding:13px;margin-top:10px}.tutorial-block h3{margin:0 0 7px;font-size:14px}.tutorial-block p{margin:0;color:#52606D;font-size:12px;line-height:1.5}.steps{margin:0;padding:0;list-style:none;display:grid;gap:8px}.steps li{display:grid;grid-template-columns:28px 1fr;gap:8px;align-items:start;color:#425466;font-size:12px;line-height:1.45}.step-num{width:26px;height:26px;border-radius:9px;background:var(--green);color:white;display:grid;place-items:center;font-weight:900;font-size:11px}
+    .tutorial-two{display:grid;grid-template-columns:1fr 1fr;gap:9px}.tip-good{background:#F0FAF4;border-color:#C6E9D4}.tip-warn{background:#FFF8E8;border-color:#FBE1A3}.tip-danger{background:#FFF1F1;border-color:#F7C4C4}.tip-danger h3{color:#A61B1B}.modal-open{overflow:hidden}
+    @media(max-width:430px){.concept-grid,.tutorial-two{grid-template-columns:1fr}.tutorial-sheet{padding-left:12px;padding-right:12px}.guide-open{padding:9px 8px}}
+
+    .standalone{background:#FFF5EB;color:#9C4221;border:1px solid #FBD38D;border-radius:14px;padding:12px;margin:16px;font-size:12px;line-height:1.45}
+    @media(min-width:620px){.content{padding:20px}.exercise-list{grid-template-columns:1fr 1fr}.hero{padding:34px 28px 28px}}
+  </style>
+</head>
+<body>
+<div class="app">
+  <div id="loading" class="loader"><div class="spinner"></div>Cargando tu plan desde Google Sheets…</div>
+  <div id="main" style="display:none">
+    <header class="hero">
+      <div class="eyebrow">Entrenamiento personal</div>
+      <h1 id="appTitle">Plan Fútbol & Definición</h1>
+      <p id="appObjective">Fuerza, resistencia, brazos, cintura y gemelos.</p>
+      <div class="hero-stats">
+        <div class="hero-stat"><b>45</b><span>MINUTOS</span></div>
+        <div class="hero-stat"><b>😴</b><span>MARTES DESC.</span></div>
+        <div class="hero-stat"><b>⚽</b><span>VIERNES</span></div>
+      </div>
+    </header>
+
+    <div id="standaloneMsg" class="standalone" style="display:none">Vista local: podés ver el diseño, pero para sincronizar y guardar datos debés desplegarla desde Google Apps Script siguiendo las instrucciones incluidas.</div>
+
+    <main class="content">
+      <section id="screen-plan" class="screen active">
+        <div class="section-title"><h2>Tu semana</h2><small id="todayLabel"></small></div>
+        <div class="days" id="days"></div>
+        <div class="summary-card">
+          <div class="summary-row"><div><div class="focus" id="dayFocus"></div><small id="dayCount"></small></div><div class="tag" id="dayTag"></div></div>
+          <div class="progress"><div id="dayProgress"></div></div><div class="progress-caption" id="dayProgressCaption">0%</div>
+          <div class="calf-alert" id="calfRule"></div>
+        </div>
+        <button class="beginner-card" type="button" onclick="goGuide()" style="width:100%;text-align:left">
+          <div class="beginner-icon">🎓</div>
+          <div><b>¿No sabés cómo hacer un ejercicio?</b><span>Entrá a la guía: cada ejercicio tiene explicación desde cero + animación esquemática.</span></div>
+        </button>
+        <div class="section-title"><h2>Ejercicios</h2><small>✓ completar · 🎥 aprender</small></div>
+        <div class="exercise-list" id="exerciseList"></div>
+        <div class="form-card" id="sessionFormCard">
+          <h3>Guardar sesión</h3>
+          <div class="grid2"><div class="field"><label>Minutos</label><input id="minutes" type="number" min="0" placeholder="45"></div><div class="field"><label>Fecha</label><input id="sessionDate" type="date"></div></div>
+          <div class="field"><label>Esfuerzo percibido (RPE)</label><div class="range-line"><input id="rpe" type="range" min="1" max="10" value="6"><div class="range-badge" id="rpeVal">6/10</div></div></div>
+          <div class="field"><label>Dolor/molestia en gemelos</label><div class="range-line"><input id="calfPain" type="range" min="0" max="10" value="0"><div class="range-badge" id="calfVal">0/10</div></div><small id="painHint"></small></div>
+          <div class="field"><label>Notas</label><textarea id="sessionNotes" placeholder="Cómo te sentiste, pesos usados, molestias, etc."></textarea></div>
+          <button class="primary" id="saveSessionBtn" onclick="saveSession()">Guardar sesión en la hoja</button>
+        </div>
+      </section>
+
+      <section id="screen-guide" class="screen">
+        <div class="section-title"><h2>Guía para empezar</h2><small>Explicado desde cero</small></div>
+        <div class="guide-hero">
+          <h3>Primero: cómo leer la rutina</h3>
