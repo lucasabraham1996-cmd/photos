@@ -20,14 +20,53 @@ jobs:
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
+      - name: Make app prefer the fresh public snapshot
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+
+          path = Path('index.html')
+          text = path.read_text(encoding='utf-8')
+          pattern = r"async function fetchGalleryData\(\{ force = false \} = \{\}\) \{.*?\n\}\n\nfunction parseGvizTable"
+          replacement = r'''async function fetchGalleryData({ force = false } = {}) {
+              let snapshotError = null;
+              try {
+                  const snapshotUrl = force ? `./gallery-snapshot.json?v=${Date.now()}` : './gallery-snapshot.json';
+                  const response = await fetch(snapshotUrl, { cache: force ? 'no-store' : 'no-cache' });
+                  if (!response.ok) throw new Error('No se pudo consultar el respaldo de la galería');
+                  const data = await response.json();
+                  if (!data || data.ok === false || !Array.isArray(data.albums) || !data.albums.length)
+                      throw new Error('El respaldo de la galería está vacío o no es válido');
+                  return data;
+              }
+              catch (e) {
+                  snapshotError = e;
+                  console.warn('No respondió el snapshot público. Se intenta Apps Script.', e);
+              }
+              if (APPS_SCRIPT_URL && APPS_SCRIPT_URL.trim()) {
+                  const data = await jsonp(APPS_SCRIPT_URL.trim(), force ? 38000 : 18000, { force });
+                  if (!data || data.ok === false || data.error || !Array.isArray(data.albums) || !data.albums.length)
+                      throw new Error((data && data.error) || 'La fuente principal no devolvió álbumes válidos');
+                  return data;
+              }
+              throw snapshotError || new Error('No respondió ninguna fuente de galería');
+          }
+
+          function parseGvizTable'''
+          updated, count = re.subn(pattern, replacement, text, count=1, flags=re.S)
+          if count != 1:
+              raise SystemExit('No se encontró fetchGalleryData para actualizar')
+          path.write_text(updated, encoding='utf-8')
+          PY
       - name: Read all verified public photo tabs
         run: python3 scripts/export-public-gallery.py
-      - name: Publish only a complete changed snapshot
+      - name: Publish only complete changed gallery files
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add gallery-snapshot.json
+          git add gallery-snapshot.json index.html
           if ! git diff --cached --quiet; then
-            git commit -m "Refresh public photo gallery snapshot"
+            git commit -m "Refresh public gallery and loader"
             git push origin HEAD:main
           fi
