@@ -1690,6 +1690,7 @@ img{-webkit-user-drag:none;}
 </style>
 
 
+
 <style id="v114-mobile-category-tabs-smart-logo">
 @media(max-width:640px),(hover:none),(pointer:coarse){
   .subalbum-panel{
@@ -3044,14 +3045,6 @@ function shiftHexColor(hex, amount = 0) {
         g: rgb.g + (toward - rgb.g) * factor,
         b: rgb.b + (toward - rgb.b) * factor
     });
-}
-function teamLogoTokens(value) {
-    const stop = new Set([
-        'club','atletico','atletica','atleticos','ca','c','fc','sc','de','del','la','las','los','el','y',
-        'cordoba','cordobes','cordobesa','futbol','football','sociedad','deportivo','deportiva',
-        'primera','reserva','cebollitas','inferiores','femenino','masculino','categoria','cat'
-    ]);
-    return norm(value).split('_').filter(t => t && t.length > 1 && !stop.has(t));
 }
 function teamLogoTokens(value) {
     const stop = new Set([
