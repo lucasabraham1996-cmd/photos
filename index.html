@@ -2907,22 +2907,27 @@ function promiseAnySafe(promises) {
     });
 }
 async function fetchGalleryData({ force = false } = {}) {
-    const sources = [];
-    if (APPS_SCRIPT_URL && APPS_SCRIPT_URL.trim()) {
-        sources.push(jsonp(APPS_SCRIPT_URL.trim(), force ? 38000 : 18000, { force }).then(data => {
-            if (!data || data.ok === false || data.error || !Array.isArray(data.albums) || !data.albums.length)
-                throw new Error((data && data.error) || 'La fuente principal no devolvió álbumes válidos');
-            return data;
-        }));
-    }
-    sources.push(fetch('./gallery-snapshot.json', { cache: force ? 'no-store' : 'default' }).then(async response => {
+    let snapshotError = null;
+    try {
+        const snapshotUrl = force ? `./gallery-snapshot.json?v=${Date.now()}` : './gallery-snapshot.json';
+        const response = await fetch(snapshotUrl, { cache: force ? 'no-store' : 'no-cache' });
         if (!response.ok) throw new Error('No se pudo consultar el respaldo de la galería');
         const data = await response.json();
         if (!data || data.ok === false || !Array.isArray(data.albums) || !data.albums.length)
             throw new Error('El respaldo de la galería está vacío o no es válido');
         return data;
-    }));
-    return promiseAnySafe(sources);
+    }
+    catch (e) {
+        snapshotError = e;
+        console.warn('No respondió el snapshot público. Se intenta Apps Script.', e);
+    }
+    if (APPS_SCRIPT_URL && APPS_SCRIPT_URL.trim()) {
+        const data = await jsonp(APPS_SCRIPT_URL.trim(), force ? 38000 : 18000, { force });
+        if (!data || data.ok === false || data.error || !Array.isArray(data.albums) || !data.albums.length)
+            throw new Error((data && data.error) || 'La fuente principal no devolvió álbumes válidos');
+        return data;
+    }
+    throw snapshotError || new Error('No respondió ninguna fuente de galería');
 }
 
 function parseGvizTable(obj) {
