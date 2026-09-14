@@ -32,7 +32,7 @@
   <meta name="twitter:description" content="Fotos deportivas protegidas · Compra directa por WhatsApp" />
   <meta name="twitter:image" content="https://lucasabraham1996-cmd.github.io/photos/social-preview-la.png?v=105" />
   <title>lucasabraham.ph - Galería de Clientes</title>
-  <meta name="app-version" content="v115-specific-opponents" /><style>html{color-scheme:dark}html,body{margin:0;min-height:100%;background:#050505;color:#fff}#root{min-height:100vh;background:#050505;color:#fff}
+  <meta name="app-version" content="v116-team-identity-cleanup" /><style>html{color-scheme:dark}html,body{margin:0;min-height:100%;background:#050505;color:#fff}#root{min-height:100vh;background:#050505;color:#fff}
     /* v41: estilo versus moderno para portada y álbum */
     .team-album-reveal{background:linear-gradient(180deg,rgba(3,7,18,.12),rgba(2,6,23,.28))}
     .team-reveal-half{left:12px!important;right:12px!important;width:auto!important;height:33%!important;padding:12px 16px!important;box-shadow:0 16px 36px rgba(0,0,0,.28),inset 0 1px 0 rgba(255,255,255,.14)!important;border:1px solid rgba(255,255,255,.10)!important;overflow:hidden}
@@ -1887,6 +1887,7 @@ const TEAM_APP_LOGOS = Object.freeze({
     "instituto": "assets/lcf-v2/instituto.png?v=108",
     "juvenil_barrio_comercial": "assets/lcf-v2/juvenil-barrio-comercial.png?v=108",
     "union_florida": "assets/lcf-v2/union-florida.png?v=115",
+    "escuela_parque_velez_sarsfield": "https://sp-ao.shortpixel.ai/client/to_webp,q_glossy,ret_img,w_500,h_500/https://acbb.ar/wp-content/uploads/2023/11/velez.png",
     "la_union_malvinas": "assets/lcf-v2/la-union-malvinas.png?v=108",
     "las_flores": "assets/lcf-v2/las-flores.png?v=108",
     "las_palmas": "assets/lcf-v2/las-palmas.png?v=108",
@@ -1961,6 +1962,11 @@ const TEAM_APP_LOGO_ALIASES = Object.freeze({
     "club_atletico_talleres": "talleres",
     "talleres_de_cordoba": "talleres",
     "club_union_florida": "union_florida",
+    "parque": "escuela_parque_velez_sarsfield",
+    "parque_velez": "escuela_parque_velez_sarsfield",
+    "escuela_parque_velez": "escuela_parque_velez_sarsfield",
+    "velez_sarsfield": "escuela_parque_velez_sarsfield",
+    "velez_sarfield": "escuela_parque_velez_sarsfield",
     "club_union_san_vicente": "union_san_vicente",
     "club_union_serrana": "union_serrana",
     "universitario_de_cordoba": "universitario",
@@ -3124,13 +3130,13 @@ function isParqueVelezTeamName(name) {
 function exactOpponentForAlbum(album) {
     const id = String((album && album.id) || '').trim();
     if (id === 'all_boys_union_florida_1784948400000') {
-        return { name:'Unión Florida', appLogo:TEAM_APP_LOGOS.union_florida || 'assets/lcf-v2/union-florida.png?v=115', color:'#1d4ed8' };
+        return { name:'Unión Florida', appLogo:TEAM_APP_LOGOS.union_florida || 'assets/lcf-v2/union-florida.png?v=115', color:'#facc15' };
     }
     if (id === 'all_boys_comercial_1784430000000') {
-        return { name:'Juvenil Barrio Comercial', appLogo:TEAM_APP_LOGOS.juvenil_barrio_comercial || 'assets/lcf-v2/juvenil-barrio-comercial.png?v=108', color:'#2563eb' };
+        return { name:'Juvenil Comercial', appLogo:TEAM_APP_LOGOS.juvenil_barrio_comercial || 'assets/lcf-v2/juvenil-barrio-comercial.png?v=108', color:'#dc2626' };
     }
     if (id === 'all_boys_parque_velez_1784948400000') {
-        return { name:'Escuela Parque Vélez Sarsfield', appLogo:'', color:'#16a34a', initials:'EPV' };
+        return { name:'Escuela Parque Vélez Sarsfield', appLogo:'https://sp-ao.shortpixel.ai/client/to_webp,q_glossy,ret_img,w_500,h_500/https://acbb.ar/wp-content/uploads/2023/11/velez.png', color:'#16a34a', initials:'EPV' };
     }
     return null;
 }
@@ -3159,16 +3165,14 @@ function applyAlbumLogoSource(album, overrides = {}) {
     const exactOpponent = exactOpponentForAlbum(album);
     const teamEntries = (Array.isArray(album.teamEntries) ? album.teamEntries : []).map((team, teamIndex) => {
         const base = { ...(team || {}) };
+        const cleanedStoredName = cleanTeamDisplayName(base.fullName || base.name || '', album, teamIndex);
+        if (cleanedStoredName) { base.name = cleanedStoredName; base.fullName = cleanedStoredName; }
         const isOpponentSlot = teamIndex === 1;
         if (exactOpponent && isOpponentSlot) {
             base.name = exactOpponent.name;
             base.fullName = exactOpponent.name;
             base.color = exactOpponent.color || base.color || '';
-            if (!exactOpponent.appLogo) {
-                base.logo = '';
-                base.sheetLogo = '';
-                base.appLogo = '';
-            }
+            if (exactOpponent.appLogo) { base.appLogo = exactOpponent.appLogo; base.logo = exactOpponent.appLogo; }
         }
         const displayName = String(base.fullName || base.name || '').trim();
         const sheetLogo = String(base.sheetLogo || base.logo || '').trim();
@@ -3324,6 +3328,82 @@ function teamBandStyle(color, reverse = false) {
     const safe = validHexColor(color);
     return safe ? { background: teamBannerGradient(safe, reverse) } : { background: 'transparent', border: '0', boxShadow: 'none' };
 }
+
+const TEAM_DISPLAY_NAME_OVERRIDES = Object.freeze({
+    all_boys: 'All Boys',
+    union_florida: 'Unión Florida',
+    juvenil_barrio_comercial: 'Juvenil Comercial',
+    escuela_parque_velez_sarsfield: 'Escuela Parque Vélez Sarsfield'
+});
+function looksLikeTeamLink(value) {
+    const raw = String(value || '').trim();
+    if (!raw) return false;
+    return /^(?:https?:\/\/|www\.)/i.test(raw)
+        || /(?:drive\.google\.com|docs\.google\.com|githubusercontent\.com|github\.io|shortpixel\.ai)/i.test(raw)
+        || /\.(?:png|jpe?g|webp|gif|svg)(?:[?#]|$)/i.test(raw);
+}
+function humanizeTeamKey(key) {
+    const canonical = canonicalAppTeamKey(key) || norm(key);
+    if (TEAM_DISPLAY_NAME_OVERRIDES[canonical]) return TEAM_DISPLAY_NAME_OVERRIDES[canonical];
+    return String(canonical || '')
+        .split('_').filter(Boolean)
+        .map(word => word.length <= 2 ? word.toUpperCase() : word.charAt(0).toUpperCase() + word.slice(1))
+        .join(' ')
+        .replace(/\bFc\b/g, 'FC');
+}
+function knownTeamsFromAlbumIdentity(album) {
+    const identity = norm([
+        album && album.id,
+        album && album.sourceName,
+        album && album.name
+    ].filter(Boolean).join(' '));
+    if (!identity) return [];
+    const candidates = [];
+    const aliases = (typeof TEAM_APP_LOGO_ALIASES === 'object' && TEAM_APP_LOGO_ALIASES) || {};
+    Object.keys(TEAM_APP_LOGOS || {}).forEach(key => {
+        const probes = [key, ...Object.keys(aliases).filter(alias => aliases[alias] === key)];
+        let pos = Infinity;
+        probes.forEach(probe => {
+            const at = identity.indexOf(norm(probe));
+            if (at >= 0 && at < pos) pos = at;
+        });
+        if (Number.isFinite(pos)) candidates.push({ key, pos });
+    });
+    candidates.sort((a, b) => a.pos - b.pos || b.key.length - a.key.length);
+    const seen = new Set();
+    return candidates.filter(item => {
+        if (seen.has(item.key)) return false;
+        seen.add(item.key);
+        return true;
+    });
+}
+function inferTeamNameFromAlbum(album, index) {
+    const exact = exactOpponentForAlbum(album);
+    if (exact) return index === 0 ? 'All Boys' : exact.name;
+    const known = knownTeamsFromAlbumIdentity(album);
+    if (known[index]) return humanizeTeamKey(known[index].key);
+    let id = norm((album && album.id) || (album && album.sourceName) || '');
+    id = id.replace(/_\d{10,16}(?:_.*)?$/, '');
+    id = id.replace(/_(?:primera|reserva|cebollitas|escuelita|galeria|femenino)$/, '');
+    if (id.startsWith('all_boys_')) {
+        if (index === 0) return 'All Boys';
+        const opponent = id.slice('all_boys_'.length);
+        if (opponent) return humanizeTeamKey(opponent);
+    }
+    const vsParts = id.split(/_(?:vs|versus)_/).filter(Boolean);
+    if (vsParts[index]) return humanizeTeamKey(vsParts[index]);
+    return '';
+}
+function cleanTeamDisplayName(value, album, index) {
+    const raw = String(value || '').trim();
+    if (raw && !looksLikeTeamLink(raw)) {
+        const canonical = canonicalAppTeamKey(raw);
+        if (TEAM_DISPLAY_NAME_OVERRIDES[canonical]) return TEAM_DISPLAY_NAME_OVERRIDES[canonical];
+        return raw;
+    }
+    return inferTeamNameFromAlbum(album, index) || (index === 0 ? 'Equipo local' : 'Equipo visitante');
+}
+
 function albumTeamSide(album, index, useFullName = false) {
     const entries = Array.isArray(album === null || album === void 0 ? void 0 : album.teamEntries) ? album.teamEntries : [];
     const names = Array.isArray(album === null || album === void 0 ? void 0 : album.teamNames) ? album.teamNames : [];
@@ -3334,7 +3414,8 @@ function albumTeamSide(album, index, useFullName = false) {
     const parsedAlbumNames = parseTeamsFromAlbumName(albumName || sourceName);
     const parsedSourceNames = parseTeamsFromAlbumName(sourceName || albumName);
     const fallbackName = parsedAlbumNames[index] || parsedSourceNames[index] || '';
-    const displayName = (useFullName && entry.fullName) || entry.name || names[index] || fallbackName || (index === 0 ? albumName : '') || '';
+    const rawDisplayName = (useFullName && entry.fullName) || entry.name || names[index] || fallbackName || (index === 0 ? albumName : '') || '';
+    const displayName = cleanTeamDisplayName(rawDisplayName, album, index);
 
     const logoCandidates = [
         entry.fullName,
