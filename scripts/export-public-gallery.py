@@ -25,9 +25,6 @@ def sheet_rows(tab):
             rows = list(csv.reader(io.StringIO(get(url))))
             if len(rows) < 2 or not any('foto' in str(v).lower() for v in rows[0]):
                 raise ValueError('Unexpected photo sheet structure')
-            # The app parser expects rawRows[0] to be spreadsheet row 2 (A2),
-            # because row 1 is only the column header. Including row 1 shifted
-            # A2/A3/A4/A5 and made team names, logos and colors cross over.
             headers = rows[0]
             converted = []
             for row in rows[1:]:
@@ -45,7 +42,7 @@ def sheet_rows(tab):
 
 def export():
     manifest = json.loads((ROOT/'scripts/gallery-source-manifest.json').read_text(encoding='utf-8'))
-    assert len(manifest) == 28 and all(not tab['name'].startswith('__') for tab in manifest)
+    assert len(manifest) == 29 and all(not tab['name'].startswith('__') for tab in manifest)
     with ThreadPoolExecutor(max_workers=4) as pool:
         albums = list(pool.map(sheet_rows, manifest))
     assert len(albums) == len(manifest)
