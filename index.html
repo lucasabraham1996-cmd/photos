@@ -32,7 +32,7 @@
   <meta name="twitter:description" content="Fotos deportivas protegidas · Compra directa por WhatsApp" />
   <meta name="twitter:image" content="https://lucasabraham1996-cmd.github.io/photos/social-preview-la.png?v=105" />
   <title>lucasabraham.ph - Galería de Clientes</title>
-  <meta name="app-version" content="v117-match-picker-filters" /><style>html{color-scheme:dark}html,body{margin:0;min-height:100%;background:#050505;color:#fff}#root{min-height:100vh;background:#050505;color:#fff}
+  <meta name="app-version" content="v118-team-dominant-colors" /><style>html{color-scheme:dark}html,body{margin:0;min-height:100%;background:#050505;color:#fff}#root{min-height:100vh;background:#050505;color:#fff}
     /* v41: estilo versus moderno para portada y álbum */
     .team-album-reveal{background:linear-gradient(180deg,rgba(3,7,18,.12),rgba(2,6,23,.28))}
     .team-reveal-half{left:12px!important;right:12px!important;width:auto!important;height:33%!important;padding:12px 16px!important;box-shadow:0 16px 36px rgba(0,0,0,.28),inset 0 1px 0 rgba(255,255,255,.14)!important;border:1px solid rgba(255,255,255,.10)!important;overflow:hidden}
@@ -2086,6 +2086,9 @@ const TEAM_APP_LOGO_ALIASES = Object.freeze({
     "club_las_flores": "las_flores",
     "club_las_palmas": "las_palmas",
     "deportivo_lasallano": "lasallano",
+    "club_lasallano": "lasallano",
+    "deportivo_cibi": "cibi",
+    "club_cibi": "cibi",
     "club_libertad": "libertad",
     "club_los_andes": "los_andes",
     "racing_de_cordoba": "racing",
@@ -3262,6 +3265,31 @@ function findAppTeamLogo(name) {
     return key ? TEAM_APP_LOGOS[key] || '' : '';
 }
 
+
+const TEAM_DOMINANT_COLORS = Object.freeze({
+    cibi: '#facc15',
+    lasallano: '#2563eb',
+    union_florida: '#facc15',
+    juvenil_barrio_comercial: '#dc2626',
+    escuela_parque_velez_sarsfield: '#16a34a'
+});
+function dominantTeamColor(name, logo = '') {
+    const directKey = canonicalAppTeamKey(name);
+    if (directKey && TEAM_DOMINANT_COLORS[directKey]) return TEAM_DOMINANT_COLORS[directKey];
+
+    const rawLogo = String(logo || '').toLowerCase();
+    if (rawLogo) {
+        for (const [key, src] of Object.entries(TEAM_APP_LOGOS || {})) {
+            if (!src) continue;
+            const normalizedSrc = String(src).toLowerCase().split('?')[0];
+            if (rawLogo.split('?')[0].endsWith(normalizedSrc) || rawLogo.includes('/' + normalizedSrc.split('/').pop())) {
+                if (TEAM_DOMINANT_COLORS[key]) return TEAM_DOMINANT_COLORS[key];
+            }
+        }
+    }
+    return '';
+}
+
 function isParqueVelezTeamName(name) {
     const n = norm(name);
     return n === 'parque' || n.includes('parque_velez') || n.includes('velez_sarsfield') || n.includes('velez_sarfield');
@@ -3318,6 +3346,8 @@ function applyAlbumLogoSource(album, overrides = {}) {
         const detectedAppLogo = String(base.appLogo || findAppTeamLogo(displayName) || '').trim();
         const forcedAppLogo = exactOpponent && isOpponentSlot ? String(exactOpponent.appLogo || '').trim() : '';
         const appLogo = forcedAppLogo || detectedAppLogo;
+        const dominantColor = dominantTeamColor(displayName, appLogo);
+        if (dominantColor) base.color = dominantColor;
         const forceApp = Boolean(forcedAppLogo) || ['union_florida','juvenil_barrio_comercial'].includes(canonicalAppTeamKey(displayName));
         const logo = (exactOpponent && isOpponentSlot && !exactOpponent.appLogo)
             ? ''
@@ -3328,6 +3358,7 @@ function applyAlbumLogoSource(album, overrides = {}) {
         ...album,
         logoSource,
         teamEntries,
+        teamColors: teamEntries.map((team, index) => validHexColor(team && team.color) || ((Array.isArray(album.teamColors) && album.teamColors[index]) || '')),
         teamLogo: (teamEntries[0] && teamEntries[0].logo) || album.teamLogo || ''
     };
 }
