@@ -1,6 +1,7 @@
 name: Apply mobile categories and smart logos v114
 
 on:
+  workflow_dispatch:
   push:
     branches: [main]
     paths:
