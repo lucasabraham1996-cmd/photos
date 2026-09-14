@@ -6,6 +6,7 @@ on:
     branches: [main]
     paths:
       - 'scripts/refine_mobile_categories_logos_v114.py'
+      - 'scripts/cleanup_v114_team_logo_helper.py'
       - '.github/workflows/apply-mobile-categories-logos-v114.yml'
 
 permissions:
@@ -20,6 +21,8 @@ jobs:
           fetch-depth: 0
       - name: Apply v114 patch
         run: python3 scripts/refine_mobile_categories_logos_v114.py
+      - name: Deduplicate smart logo helper
+        run: python3 scripts/cleanup_v114_team_logo_helper.py
       - name: Validate inline JavaScript
         run: |
           python3 - <<'PY'
@@ -38,12 +41,13 @@ jobs:
           grep -q 'teamLogoTokens' index.html
           grep -q 'v114-mobile-category-tabs-smart-logo' index.html
           grep -q 'appLogo' index.html
+          test "$(grep -c 'function teamLogoTokens(value)' index.html)" -eq 1
       - name: Commit v114
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add index.html
           if ! git diff --cached --quiet; then
-            git commit -m "Modernize mobile category selector and improve team crest fallback"
+            git commit -m "Finalize mobile category selector and smart team crest fallback"
             git push origin HEAD:main
           fi
