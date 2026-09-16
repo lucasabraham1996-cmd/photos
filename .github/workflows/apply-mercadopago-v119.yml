@@ -1,0 +1,52 @@
+name: Apply Mercado Pago v119
+
+on:
+  push:
+    branches: [feature/mercado-pago]
+    paths:
+      - 'scripts/mercadopago_v119.py'
+      - '.github/workflows/apply-mercadopago-v119.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Apply Mercado Pago patch
+        run: python3 scripts/mercadopago_v119.py
+
+      - name: Validate inline JavaScript
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+          s = Path('index.html').read_text(encoding='utf-8')
+          blocks = re.findall(r'<script\b[^>]*>(.*?)</script\s*>', s, re.S | re.I)
+          for i, block in enumerate(blocks):
+              if block.strip():
+                  Path(f'/tmp/index-{i}.js').write_text(block, encoding='utf-8')
+          PY
+          for f in /tmp/index-*.js; do [ -f "$f" ] && node --check "$f"; done
+
+      - name: Verify Mercado Pago integration
+        run: |
+          grep -q 'v119-mercadopago-checkout' index.html
+          grep -q 'createMercadoPagoPreference' index.html
+          grep -q 'Pagar con Mercado Pago' index.html
+
+      - name: Commit generated index
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add index.html
+          if ! git diff --cached --quiet; then
+            git commit -m "Integrate Mercado Pago checkout v119"
+            git push origin HEAD:feature/mercado-pago
+          fi
