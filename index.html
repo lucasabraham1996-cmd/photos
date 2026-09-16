@@ -32,7 +32,7 @@
   <meta name="twitter:description" content="Fotos deportivas protegidas · Compra directa por WhatsApp" />
   <meta name="twitter:image" content="https://lucasabraham1996-cmd.github.io/photos/social-preview-la.png?v=105" />
   <title>lucasabraham.ph - Galería de Clientes</title>
-  <meta name="app-version" content="v118-team-dominant-colors" /><style>html{color-scheme:dark}html,body{margin:0;min-height:100%;background:#050505;color:#fff}#root{min-height:100vh;background:#050505;color:#fff}
+  <meta name="app-version" content="v120-fast-checkout" /><style>html{color-scheme:dark}html,body{margin:0;min-height:100%;background:#050505;color:#fff}#root{min-height:100vh;background:#050505;color:#fff}
     /* v41: estilo versus moderno para portada y álbum */
     .team-album-reveal{background:linear-gradient(180deg,rgba(3,7,18,.12),rgba(2,6,23,.28))}
     .team-reveal-half{left:12px!important;right:12px!important;width:auto!important;height:33%!important;padding:12px 16px!important;box-shadow:0 16px 36px rgba(0,0,0,.28),inset 0 1px 0 rgba(255,255,255,.14)!important;border:1px solid rgba(255,255,255,.10)!important;overflow:hidden}
@@ -5609,18 +5609,45 @@ A continuación, te envío el comprobante.`;
         const fixedCode=checkoutOrderCode||newOrderCode();
         if(!checkoutOrderCode)setCheckoutOrderCode(fixedCode);
         const pkg=buildOrderPackage(fixedCode);
+        const whatsappUrl=safeOrderWhatsappUrl(pkg);
         orderSavingRef.current=true;setCheckoutSaving(true);setCheckoutSaveError('');
         try{
-            const status=await saveOrderRemote(pkg.orderData);
-            const confirmed=status.firebase||status.script;
-            const message=confirmed?'':`No se pudo confirmar el guardado automático del pedido ${fixedCode}. Podés enviarlo igualmente por WhatsApp con el detalle de las fotos. Conservá este código para evitar duplicados.`;
-            if(!confirmed)setCheckoutSaveError(message);
-            const whatsappUrl=confirmed?safeOrderWhatsappUrl(pkg):`https://api.whatsapp.com/send?phone=${SELLER_PHONE}&text=${encodeURIComponent(pkg.msg+'\n\n⚠️ El guardado automático quedó pendiente de confirmación. Conservá este código para evitar duplicados.')}`;
-            try{localStorage.setItem('LA_LAST_ORDER_RECEIPT',JSON.stringify({id:fixedCode,date:pkg.orderData.date,itemCount:pkg.orderData.items.length,total:pkg.orderData.total,whatsappUrl,confirmed}));if(confirmed)localStorage.removeItem('LA_RECOVER_CART')}catch(e){}
-            if(confirmed){setAdminMessage(`Pedido ${fixedCode} guardado correctamente.`);setCart([]);setCheckoutOpen(false);setAppliedCoupon(null);setCheckoutCoupon('');setCouponMessage('');setCheckoutPrint(false);setPrintedPhotoIds([])}
-            window.location.href=whatsappUrl;
-        }catch(err){const message=`No se pudo conservar el pedido ${fixedCode}. Tus fotos siguen seleccionadas. ${String(err&&err.message||err)}`;setCheckoutSaveError(message);alert(message)}
-        finally{orderSavingRef.current=false;setCheckoutSaving(false)}
+            // v120: conservar una copia síncrona antes de salir de la app.
+            // Así Finalizar compra no depende de la latencia de Firebase/Apps Script.
+            try{
+                saveLocalOrders(mergeOrders(readLocalOrders(),[pkg.orderData]));
+                savePendingOrders(mergeOrders(readPendingOrders(),[compactOrderForScript(pkg.orderData)]));
+                localStorage.setItem('LA_LAST_ORDER_RECEIPT',JSON.stringify({id:fixedCode,date:pkg.orderData.date,itemCount:pkg.orderData.items.length,total:pkg.orderData.total,whatsappUrl,confirmed:false,pendingSync:true}));
+                localStorage.setItem('LA_RECOVER_CART',JSON.stringify(cart));
+            }catch(localErr){console.warn('No se pudo preparar el respaldo local del pedido.',localErr)}
+
+            // Abrir el destino inmediatamente mientras seguimos en el gesto del usuario.
+            // Esto evita que los navegadores móviles bloqueen la apertura y elimina la espera percibida.
+            const opened=window.open(whatsappUrl,'_blank');
+            if(!opened) window.location.href=whatsappUrl;
+
+            // La sincronización remota continúa sin bloquear la apertura de WhatsApp.
+            saveOrderRemote(pkg.orderData).then(status=>{
+                const confirmed=status&&Boolean(status.firebase||status.script);
+                try{
+                    localStorage.setItem('LA_LAST_ORDER_RECEIPT',JSON.stringify({id:fixedCode,date:pkg.orderData.date,itemCount:pkg.orderData.items.length,total:pkg.orderData.total,whatsappUrl,confirmed,pendingSync:!confirmed}));
+                    if(confirmed)localStorage.removeItem('LA_RECOVER_CART');
+                }catch(_e){}
+                if(confirmed){
+                    setAdminMessage(`Pedido ${fixedCode} guardado correctamente.`);
+                    setCart([]);setCheckoutOpen(false);setAppliedCoupon(null);setCheckoutCoupon('');setCouponMessage('');setCheckoutPrint(false);setPrintedPhotoIds([]);
+                }else{
+                    setCheckoutSaveError(`El pedido ${fixedCode} quedó guardado en este dispositivo y se sincronizará automáticamente cuando haya conexión disponible.`);
+                }
+            }).catch(err=>{
+                console.warn('Sincronización diferida del pedido:',err);
+                setCheckoutSaveError(`El pedido ${fixedCode} quedó guardado en este dispositivo y pendiente de sincronización.`);
+            }).finally(()=>{orderSavingRef.current=false;setCheckoutSaving(false)});
+        }catch(err){
+            orderSavingRef.current=false;setCheckoutSaving(false);
+            const message=`No se pudo preparar el pedido ${fixedCode}. Tus fotos siguen seleccionadas. ${String(err&&err.message||err)}`;
+            setCheckoutSaveError(message);alert(message);
+        }
     };
 
     const addClubProduct = () => {
