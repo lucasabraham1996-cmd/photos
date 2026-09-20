@@ -32,7 +32,7 @@
   <meta name="twitter:description" content="Fotos deportivas protegidas · Compra directa por WhatsApp" />
   <meta name="twitter:image" content="https://lucasabraham1996-cmd.github.io/photos/social-preview-la.png?v=105" />
   <title>lucasabraham.ph - Galería de Clientes</title>
-  <meta name="app-version" content="v120-fast-checkout" /><style>html{color-scheme:dark}html,body{margin:0;min-height:100%;background:#050505;color:#fff}#root{min-height:100vh;background:#050505;color:#fff}
+  <meta name="app-version" content="v119-silent-order-sync" /><style>html{color-scheme:dark}html,body{margin:0;min-height:100%;background:#050505;color:#fff}#root{min-height:100vh;background:#050505;color:#fff}
     /* v41: estilo versus moderno para portada y álbum */
     .team-album-reveal{background:linear-gradient(180deg,rgba(3,7,18,.12),rgba(2,6,23,.28))}
     .team-reveal-half{left:12px!important;right:12px!important;width:auto!important;height:33%!important;padding:12px 16px!important;box-shadow:0 16px 36px rgba(0,0,0,.28),inset 0 1px 0 rgba(255,255,255,.14)!important;border:1px solid rgba(255,255,255,.10)!important;overflow:hidden}
@@ -5637,11 +5637,11 @@ A continuación, te envío el comprobante.`;
                     setAdminMessage(`Pedido ${fixedCode} guardado correctamente.`);
                     setCart([]);setCheckoutOpen(false);setAppliedCoupon(null);setCheckoutCoupon('');setCouponMessage('');setCheckoutPrint(false);setPrintedPhotoIds([]);
                 }else{
-                    setCheckoutSaveError(`El pedido ${fixedCode} quedó guardado en este dispositivo y se sincronizará automáticamente cuando haya conexión disponible.`);
+                    setCheckoutSaveError('');
                 }
             }).catch(err=>{
                 console.warn('Sincronización diferida del pedido:',err);
-                setCheckoutSaveError(`El pedido ${fixedCode} quedó guardado en este dispositivo y pendiente de sincronización.`);
+                setCheckoutSaveError('');
             }).finally(()=>{orderSavingRef.current=false;setCheckoutSaving(false)});
         }catch(err){
             orderSavingRef.current=false;setCheckoutSaving(false);
