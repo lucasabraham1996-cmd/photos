@@ -42,7 +42,7 @@ def sheet_rows(tab):
 
 def export():
     manifest = json.loads((ROOT/'scripts/gallery-source-manifest.json').read_text(encoding='utf-8'))
-    assert len(manifest) == 29 and all(not tab['name'].startswith('__') for tab in manifest)
+    assert len(manifest) == 31 and all(not tab['name'].startswith('__') for tab in manifest)
     with ThreadPoolExecutor(max_workers=4) as pool:
         albums = list(pool.map(sheet_rows, manifest))
     assert len(albums) == len(manifest)
