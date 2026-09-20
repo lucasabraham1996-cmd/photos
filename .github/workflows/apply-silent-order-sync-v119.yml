@@ -28,12 +28,13 @@ jobs:
           from pathlib import Path
           import re
           s = Path('index.html').read_text(encoding='utf-8')
-          blocks = re.findall(r'<script\\b[^>]*>(.*?)</script\\s*>', s, re.S | re.I)
+          blocks = re.findall(r'<script\b[^>]*>(.*?)</script\s*>', s, re.S | re.I)
           for i, block in enumerate(blocks):
               if block.strip():
                   Path(f'/tmp/index-{i}.js').write_text(block, encoding='utf-8')
           PY
-          for f in /tmp/index-*.js; do [ -f "$f" ] && node --check "$f"; done
+          shopt -s nullglob
+          for f in /tmp/index-*.js; do node --check "$f"; done
 
       - name: Verify silent deferred sync
         run: |
