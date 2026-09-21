@@ -1,0 +1,59 @@
+name: Apply dynamic WhatsApp messages v121
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'scripts/dynamic_whatsapp_messages_v121.py'
+      - '.github/workflows/apply-dynamic-whatsapp-messages-v121.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Apply v121 patch
+        run: python3 scripts/dynamic_whatsapp_messages_v121.py
+
+      - name: Validate inline JavaScript
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+          s = Path('index.html').read_text(encoding='utf-8')
+          blocks = re.findall(r'<script[^>]*>(.*?)</script[^>]*>', s, re.S | re.I)
+          for i, block in enumerate(blocks):
+              if block.strip():
+                  Path(f'/tmp/index-{i}.js').write_text(block, encoding='utf-8')
+          PY
+          shopt -s nullglob
+          for f in /tmp/index-*.js; do node --check "$f"; done
+
+      - name: Verify WhatsApp messages
+        run: |
+          grep -q 'v121-whatsapp-dynamic-messages' index.html
+          grep -q '¡Buenas Lucas! Seleccioné estas fotos' index.html
+          grep -q 'DATOS PARA TRANSFERIR' index.html
+          grep -q 'Cuando haga la transferencia te mando el comprobante por acá' index.html
+          grep -q 'Ya recibí tu selección de fotos' index.html
+          grep -q 'confirmationMessage' index.html
+          grep -q 'Copiar confirmación' index.html
+          grep -q 'Enviar confirmación' index.html
+          ! grep -q 'Hola Lucas, me gustaría comprar estas fotos en buena calidad y sin marca de agua' index.html
+
+      - name: Commit v121
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add index.html
+          if ! git diff --cached --quiet; then
+            git commit -m "Generate dynamic WhatsApp order and confirmation messages"
+            git push origin HEAD:main
+          fi
