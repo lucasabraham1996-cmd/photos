@@ -121,7 +121,7 @@ En breve te las preparo y te las envío por acá 😊
     const currentWhatsappHref = () => {'''
 
 pattern = re.compile(r'    const buildOrderPackage = \(forcedOrder\) => \{.*?\n    \};\n    const currentWhatsappHref = \(\) => \{', re.S)
-s, count = pattern.subn(new_block, s, count=1)
+s, count = pattern.subn(lambda _m: new_block, s, count=1)
 if count != 1:
     raise SystemExit(f'buildOrderPackage replacement count: {count}')
 
