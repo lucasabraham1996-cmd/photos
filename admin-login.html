@@ -96,7 +96,10 @@
       try { return localStorage.getItem(PASSKEY_KEY) || ""; } catch(e) { return ""; }
     };
     const saveLocalId = (id) => {
-      try { if(id) localStorage.setItem(PASSKEY_KEY,id); } catch(e) {}
+      try {
+        if (id) localStorage.setItem(PASSKEY_KEY,id);
+        else localStorage.removeItem(PASSKEY_KEY);
+      } catch(e) {}
     };
     const goAdmin = () => {
       try {
@@ -147,7 +150,8 @@
         status.textContent = "Esta vinculación de Face ID ya no está disponible. Entrá con el PIN para renovarla una sola vez.";
         bioBtn.disabled = false;
         bioText.textContent = "Vincular Face ID nuevamente";
-        bioBtn.onclick = goPinAndSetup;
+        bioBtn.removeEventListener("click", loginWithBiometrics);
+        bioBtn.addEventListener("click", goPinAndSetup, { once:true });
       }
     }
 
