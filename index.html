@@ -1955,6 +1955,49 @@ img{-webkit-user-drag:none;}
   }
 </style>
 
+<style id="la-v120-new-gallery-home">
+.new-gallery-hero-wrap{position:relative;margin:18px 0 28px;padding-top:10px}
+.new-gallery-hero{position:relative;display:block;width:100%;min-height:460px;overflow:hidden;border:1px solid rgba(125,211,252,.23);border-radius:34px;background:#05070d;text-align:left;box-shadow:0 30px 90px rgba(0,0,0,.48),0 0 0 1px rgba(59,130,246,.05) inset;isolation:isolate;transition:transform .35s cubic-bezier(.16,1,.3,1),border-color .35s,box-shadow .35s}
+.new-gallery-hero:hover{transform:translateY(-3px);border-color:rgba(125,211,252,.48);box-shadow:0 38px 100px rgba(0,0,0,.55),0 18px 60px rgba(37,99,235,.15)}
+.new-gallery-hero-bg{position:absolute;inset:0;z-index:0;background:#0a0a0d}
+.new-gallery-hero-bg img{width:100%;height:100%;object-fit:cover;display:block;transform:scale(1.015);transition:transform .8s cubic-bezier(.16,1,.3,1),filter .5s}
+.new-gallery-hero:hover .new-gallery-hero-bg img{transform:scale(1.05);filter:saturate(1.06) contrast(1.04)}
+.new-gallery-hero-shade{position:absolute;inset:0;z-index:1;background:radial-gradient(circle at 80% 18%,rgba(56,189,248,.20),transparent 31%),linear-gradient(90deg,rgba(0,0,0,.94) 0%,rgba(0,0,0,.72) 37%,rgba(0,0,0,.28) 70%,rgba(0,0,0,.38) 100%),linear-gradient(0deg,rgba(0,0,0,.86),transparent 55%)}
+.new-gallery-hero::after{content:"";position:absolute;inset:0;z-index:2;pointer-events:none;background:linear-gradient(135deg,rgba(255,255,255,.08),transparent 26%,transparent 72%,rgba(37,99,235,.10))}
+.new-gallery-hero-content{position:relative;z-index:4;min-height:460px;max-width:620px;padding:54px 48px 44px;display:flex;flex-direction:column;justify-content:flex-end;align-items:flex-start}
+.new-gallery-hero-kicker{display:inline-flex;align-items:center;gap:8px;margin-bottom:12px;padding:8px 12px;border-radius:999px;border:1px solid rgba(186,230,253,.24);background:rgba(2,132,199,.14);color:#bae6fd;font-size:10px;font-weight:950;letter-spacing:.17em;text-transform:uppercase;box-shadow:inset 0 1px 0 rgba(255,255,255,.06)}
+.new-gallery-hero-title{margin:0;color:#fff;font-weight:950;letter-spacing:-.035em;font-size:clamp(30px,5vw,58px);line-height:.98;text-wrap:balance;text-shadow:0 5px 26px rgba(0,0,0,.55)}
+.new-gallery-hero-meta{display:flex;flex-wrap:wrap;gap:8px;margin-top:18px}
+.new-gallery-hero-meta span{display:inline-flex;align-items:center;gap:7px;padding:8px 11px;border-radius:999px;background:rgba(0,0,0,.42);border:1px solid rgba(255,255,255,.12);color:#e5e7eb;font-size:11px;font-weight:800}
+.new-gallery-hero-cta{display:inline-flex;align-items:center;gap:9px;margin-top:22px;padding:12px 17px;border-radius:15px;background:linear-gradient(135deg,#38bdf8,#2563eb);color:#fff;font-size:12px;font-weight:950;box-shadow:0 15px 35px rgba(37,99,235,.30)}
+.new-gallery-badge{position:absolute;top:0;left:18px;z-index:30;display:inline-flex;align-items:center;gap:7px;padding:8px 12px;border-radius:999px;background:linear-gradient(135deg,#67e8f9 0%,#38bdf8 34%,#2563eb 100%);color:#020617;border:1px solid rgba(255,255,255,.70);font-size:10px;font-weight:1000;letter-spacing:.13em;text-transform:uppercase;box-shadow:0 11px 30px rgba(14,165,233,.38),0 0 0 5px rgba(14,165,233,.09)}
+.new-gallery-badge::before{content:"";width:6px;height:6px;border-radius:999px;background:#020617;box-shadow:0 0 0 4px rgba(2,6,23,.12)}
+.home-recent-heading{display:flex;align-items:end;justify-content:space-between;gap:12px;margin:4px 0 14px}
+.home-recent-heading h2{margin:0;color:#fff;font-size:16px;font-weight:950;letter-spacing:-.01em}
+.home-recent-heading p{margin:3px 0 0;color:#71717a;font-size:11px}
+.home-gallery-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+.home-album-card-wrap{position:relative;padding-top:10px;min-width:0}
+.home-album-card-wrap>.new-gallery-badge{left:12px;top:0;padding:6px 10px;font-size:9px}
+.home-search-label{display:flex;align-items:center;gap:8px;margin:0 0 13px;color:#bae6fd;font-size:11px;font-weight:900;text-transform:uppercase;letter-spacing:.12em}
+.hidden-galleries-cta{width:100%;margin-top:22px;padding:16px 18px;border-radius:20px;display:flex;align-items:center;justify-content:space-between;gap:14px;text-align:left;border:1px solid rgba(125,211,252,.16);background:linear-gradient(135deg,rgba(14,165,233,.08),rgba(37,99,235,.035),rgba(255,255,255,.018));color:#fff;box-shadow:inset 0 1px 0 rgba(255,255,255,.035)}
+.hidden-galleries-cta .hg-icon{width:40px;height:40px;border-radius:13px;display:grid;place-items:center;flex:0 0 auto;background:rgba(14,165,233,.12);border:1px solid rgba(125,211,252,.15);color:#7dd3fc}
+.hidden-galleries-cta b{display:block;font-size:13px}
+.hidden-galleries-cta small{display:block;margin-top:2px;color:#71717a;font-size:10px;line-height:1.35}
+.hidden-galleries-cta .hg-go{display:inline-flex;align-items:center;gap:6px;color:#bae6fd;font-size:10px;font-weight:950;white-space:nowrap}
+.home-gallery-tab-btn{display:flex;align-items:center;gap:7px;border-top:2px solid transparent;padding:12px 14px 8px;margin-top:-1px;color:#71717a;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.08em}
+.home-gallery-tab-btn:hover{color:#fff;border-color:#38bdf8}
+@media(min-width:640px){.home-gallery-grid{grid-template-columns:repeat(3,minmax(0,1fr));gap:16px}}
+@media(max-width:640px){
+.new-gallery-hero-wrap{margin-left:-16px;margin-right:-16px;margin-top:12px;padding-top:11px}
+.new-gallery-hero{min-height:56vh;border-radius:0;border-left:0;border-right:0}
+.new-gallery-hero-content{min-height:56vh;padding:38px 22px 30px;justify-content:flex-end}
+.new-gallery-hero-shade{background:radial-gradient(circle at 75% 16%,rgba(56,189,248,.17),transparent 30%),linear-gradient(0deg,rgba(0,0,0,.96) 0%,rgba(0,0,0,.67) 43%,rgba(0,0,0,.22) 74%,rgba(0,0,0,.30) 100%)}
+.new-gallery-hero-title{font-size:clamp(30px,9vw,44px)}
+.new-gallery-badge{left:18px}.new-gallery-hero-meta span{font-size:10px;padding:7px 10px}
+.new-gallery-hero-cta{width:100%;justify-content:center;margin-top:18px}
+.home-recent-heading{margin-top:8px}.hidden-galleries-cta{padding:14px}.hidden-galleries-cta .hg-go span{display:none}
+}
+</style>
 </head>
 <body style="background:#050505;color:#fff;">
   <div id="boot-overlay" style="position:fixed;inset:0;z-index:99999;background:#050505;color:#fff;display:flex;align-items:center;justify-content:center;padding:24px;">
@@ -2000,7 +2043,7 @@ const LS_SHARED_STATE_KEY = "la_shared_admin_state_v2";
 const LS_BANNERS_KEY = "la_banner_settings_v1";
 const LS_INTRO_KEY = "la_purchase_intro_seen_v2";
 const PHOTOS_PER_PAGE = 70;
-const APP_VERSION = "v119-admin-fast-boot";
+const APP_VERSION = "v120-new-gallery-home";
 const LS_ALBUM_CACHE_META_KEY = "la_album_cache_meta_v1";
 const ALBUM_CACHE_MAX_AGE_MS = 1000 * 60 * 60 * 12;
 const FIRESTORE_FREE_DAILY_LIMITS = {
@@ -3093,6 +3136,20 @@ function formatAlbumDate(ts) {
     if (!ts)
         return "";
     return new Intl.DateTimeFormat("es-AR", { day: "2-digit", month: "short", year: "numeric" }).format(new Date(ts)).replace(".", "");
+}
+const NEW_ALBUM_MAX_AGE_DAYS = 5;
+function albumAgeDays(album, now = Date.now()) {
+    const ts = Number(album && album.dateTs) || 0;
+    if (!ts) return Infinity;
+    const albumDay = new Date(ts);
+    const today = new Date(now);
+    albumDay.setHours(0, 0, 0, 0);
+    today.setHours(0, 0, 0, 0);
+    return Math.floor((today.getTime() - albumDay.getTime()) / 86400000);
+}
+function isAlbumNew(album) {
+    const age = albumAgeDays(album);
+    return age >= 0 && age < NEW_ALBUM_MAX_AGE_DAYS;
 }
 function getMosaicSpanClass(photo, idx, total = 0) {
     const safeTotal = Number(total) || 0;
@@ -5522,6 +5579,22 @@ ${clone.outerHTML}`;
     const displayAlbums = useMemo(() => albums.map(a => applyAlbumLogoSource({ ...a, cover: coverOverrides[a.id] || a.cover }, albumLogoSources)).sort((a, b) => (b.dateTs || 0) - (a.dateTs || 0) || a.name.localeCompare(b.name)), [albums, coverOverrides, albumLogoSources]);
     const activeAlbums = useMemo(() => displayAlbums.filter(a => !a.archived), [displayAlbums]);
     const archivedAlbums = useMemo(() => displayAlbums.filter(a => a.archived), [displayAlbums]);
+    const newestAlbum = activeAlbums[0] || null;
+    const newAlbums = useMemo(() => activeAlbums.filter(isAlbumNew), [activeAlbums]);
+    const recentHomeAlbums = useMemo(() => newAlbums.filter(a => !newestAlbum || a.id !== newestAlbum.id), [newAlbums, newestAlbum && newestAlbum.id]);
+    const homeSearchAlbums = useMemo(() => {
+        const q = norm(albumSearch);
+        if (!q) return [];
+        return displayAlbums.filter(a => norm(a.name).includes(q) || norm(a.dateLabel).includes(q));
+    }, [displayAlbums, albumSearch]);
+    const homeGridAlbums = useMemo(() => norm(albumSearch)
+        ? homeSearchAlbums.filter(a => !newestAlbum || a.id !== newestAlbum.id)
+        : recentHomeAlbums, [albumSearch, homeSearchAlbums, recentHomeAlbums, newestAlbum && newestAlbum.id]);
+    const hiddenHomeAlbumCount = useMemo(() => {
+        const visibleIds = new Set(newAlbums.map(a => a.id));
+        if (newestAlbum) visibleIds.add(newestAlbum.id);
+        return displayAlbums.filter(a => !visibleIds.has(a.id)).length;
+    }, [displayAlbums, newAlbums, newestAlbum && newestAlbum.id]);
     const filteredAlbums = useMemo(() => { const q = norm(albumSearch); if (!q)
         return activeAlbums; return activeAlbums.filter(a => norm(a.name).includes(q) || norm(a.dateLabel).includes(q)); }, [activeAlbums, albumSearch]);
     const filteredArchivedAlbums = useMemo(() => { const q = norm(albumSearch); if (!q)
@@ -5764,6 +5837,48 @@ ${clone.outerHTML}`;
     const savings = regular - checkoutDigitalTotal;
     const effectiveDiscountPercent = regular > 0 ? Math.round((1 - (checkoutDigitalTotal / regular)) * 100) : 0;
     const albumPriceWithDiscount = (album) => Math.round(Number((album === null || album === void 0 ? void 0 : album.fullPrice) || 0) * (1 - (albumSiteDiscount(album === null || album === void 0 ? void 0 : album.id) / 100)));
+    const renderNewestGalleryHero = () => {
+        const a = newestAlbum;
+        if (!a) return null;
+        const categoryCount = Array.isArray(a.subalbums) ? a.subalbums.length : 0;
+        return React.createElement("div", { className:"new-gallery-hero-wrap" },
+            isAlbumNew(a) && React.createElement("span", { className:"new-gallery-badge" }, "Nueva"),
+            React.createElement("button", { type:"button", "data-album-card-id":a.id, onClick:e=>handleAlbumCardTap(e,a), className:"new-gallery-hero", "aria-label":`Abrir ${a.name}` },
+                React.createElement("div", { className:"new-gallery-hero-bg" },
+                    a.cover ? React.createElement("img", { src:a.cover, decoding:"async", fetchPriority:"high", alt:"" }) : React.createElement("div", { className:"w-full h-full bg-gradient-to-br from-sky-950 via-neutral-950 to-black" })),
+                React.createElement("div", { className:"new-gallery-hero-shade" }),
+                React.createElement("div", { className:"new-gallery-hero-content" },
+                    React.createElement("span", { className:"new-gallery-hero-kicker" }, React.createElement("i", { className:"fas fa-bolt" }), " Última galería"),
+                    React.createElement("h2", { className:"new-gallery-hero-title" }, a.name),
+                    React.createElement("div", { className:"new-gallery-hero-meta" },
+                        React.createElement("span", null, React.createElement("i", { className:"fas fa-calendar-days text-sky-300" }), a.dateLabel || "Sin fecha"),
+                        React.createElement("span", null, React.createElement("i", { className:"far fa-images text-sky-300" }), `${(a.photos || []).length} fotos`),
+                        categoryCount > 0 && React.createElement("span", null, React.createElement("i", { className:"fas fa-layer-group text-sky-300" }), `${categoryCount} categorías`)),
+                    React.createElement("span", { className:"new-gallery-hero-cta" }, "Ver galería", React.createElement("i", { className:"fas fa-arrow-right" })))));
+    };
+    const renderHomeAlbumCard = (a) => {
+        const categoryCount = Array.isArray(a.subalbums) ? a.subalbums.length : 0;
+        return React.createElement("div", { key:a.id, className:"home-album-card-wrap" },
+            isAlbumNew(a) && React.createElement("span", { className:"new-gallery-badge" }, "Nueva"),
+            React.createElement("button", { "data-album-card-id":a.id, onClick:e=>handleAlbumCardTap(e,a), className:"group text-left active:scale-[0.98] focus:outline-none w-full", "aria-pressed":mobileRevealedAlbumId === a.id },
+                React.createElement("div", { className:`modern-album-card aspect-[4/5] ${mobileRevealedAlbumId === a.id ? 'team-open' : ''}`.trim() },
+                    React.createElement("div", { className:"absolute inset-0 bg-neutral-900" },
+                        a.cover ? React.createElement("img", { src:a.cover, loading:"lazy", decoding:"async", className:"modern-album-img w-full h-full object-cover" }) : React.createElement("div", { className:"w-full h-full flex items-center justify-center text-neutral-600" }, React.createElement("i", { className:"fas fa-image text-3xl" }))),
+                    React.createElement("div", { className:"absolute inset-0 bg-gradient-to-t from-black via-black/38 to-transparent z-[2]" }),
+                    React.createElement("div", { className:"modern-album-corner-fade" }),
+                    React.createElement("div", { className:"team-album-reveal" }, renderVersusScene(albumTeamSide(a,0),albumTeamSide(a,1),{compact:true})),
+                    React.createElement("div", { className:"absolute top-2 left-2 sm:top-3 sm:left-3 z-[3] bg-black/55 backdrop-blur-md border border-white/15 px-2.5 py-1.5 rounded-full text-[9px] sm:text-[10px] text-white album-date-chip shadow-lg" },
+                        React.createElement("i", { className:"fas fa-calendar-days mr-1 text-sky-300" }), a.dateLabel || "Sin fecha"),
+                    a.archived && React.createElement("div", { className:"absolute top-2 right-2 sm:top-3 sm:right-3 z-[4] bg-amber-400 text-black rounded-full px-2.5 py-1 text-[8px] font-black uppercase tracking-wider" }, "Archivo"),
+                    !a.archived && hasSiteDiscount(a.id) && React.createElement("div", { className:"promo-badge absolute top-2 right-2 sm:top-3 sm:right-3" },
+                        React.createElement("span", null, "-", albumSiteDiscount(a.id), "%"), React.createElement("small", null, "OFF")),
+                    React.createElement("div", { className:"album-info-panel absolute bottom-2 sm:bottom-3 left-2 sm:left-3 right-2 sm:right-3 z-[3] rounded-2xl p-2.5 sm:p-3 border border-white/12 bg-black/54 backdrop-blur-xl shadow-[0_18px_40px_rgba(0,0,0,.42)]" },
+                        React.createElement("div", { className:"flex items-start justify-between gap-2" },
+                            React.createElement("div", { className:"min-w-0" },
+                                React.createElement("h3", { className:`album-title-white album-title-fit ${responsiveNameClass(a.name)} font-black leading-tight text-[12px] sm:text-[15px]`.trim() }, a.name),
+                                React.createElement("p", { className:"album-meta-white text-[10px] sm:text-xs mt-1" }, (a.photos || []).length, " fotos disponibles", categoryCount > 0 ? ` · ${categoryCount} categorías` : "")),
+                            React.createElement("span", { className:"album-cta-chip shrink-0" }, React.createElement("i", { className:"fas fa-arrow-right" }), " Ver"))))));
+    };
     const toggleAlbumDiscountException = (albumId) => setDiscountSettings(s => { var _a; return ({ ...s, excludedAlbums: { ...(s.excludedAlbums || {}), [albumId]: !((_a = s.excludedAlbums) === null || _a === void 0 ? void 0 : _a[albumId]) } }); });
     const promoText = () => { const n = cart.length; if (n === 0)
         return "Seleccioná tus fotos favoritas"; const site = siteDiscountPercent > 0 ? ` + ${siteDiscountPercent}% web` : ""; if (n < 3)
@@ -6979,86 +7094,41 @@ React.createElement("div", { id: "order-search-panel", className: "bg-neutral-90
             !currentAlbum ? React.createElement(React.Fragment, null,
                 React.createElement("div", { className: "flex justify-center border-t border-neutral-900 mb-4" },
                     React.createElement("div", { className: "flex items-center gap-2 border-t-2 border-white pt-3 pb-2 px-4 -mt-[1px]" },
-                        React.createElement("i", { className: "fas fa-th text-xs" }),
-                        React.createElement("span", { className: "text-[11px] font-semibold text-white uppercase tracking-widest" }, "Galer\u00EDa")),
-                    filteredArchivedAlbums.length > 0 && React.createElement("a", { href: "#galerias-antiguas", className: "flex items-center gap-2 border-t-2 border-transparent hover:border-amber-300 pt-3 pb-2 px-4 -mt-[1px] text-neutral-400 hover:text-white transition" },
-                        React.createElement("i", { className: "fas fa-box-archive text-xs" }),
-                        React.createElement("span", { className: "text-[11px] font-semibold uppercase tracking-widest" }, "Galer\u00EDas antiguas"))),
+                        React.createElement("i", { className: "fas fa-bolt text-xs text-sky-300" }),
+                        React.createElement("span", { className: "text-[11px] font-semibold text-white uppercase tracking-widest" }, "Novedades")),
+                    React.createElement("button", { type:"button", onClick:() => setMatchPickerOpen(true), className:"home-gallery-tab-btn" },
+                        React.createElement("i", { className:"fas fa-futbol text-xs" }),
+                        React.createElement("span", null, "Todos los partidos"))),
                 React.createElement("div", { className: "grid md:grid-cols-[1fr,auto] gap-3 mb-4" },
                     React.createElement("div", { className: "relative" },
                         React.createElement("i", { className: "fas fa-search absolute left-4 top-1/2 -translate-y-1/2 text-neutral-500 text-sm" }),
-                        React.createElement("input", { value: albumSearch, onChange: e => setAlbumSearch(e.target.value), placeholder: "Buscar \u00E1lbum...", className: "w-full bg-neutral-900/90 border border-neutral-800 rounded-2xl pl-11 pr-4 py-3 text-sm outline-none focus:border-indigo-500" }))),
-                loading && activeAlbums.length === 0 ? React.createElement(AlbumLoadingGrid, { count: window.innerWidth < 640 ? 6 : 9 }) : React.createElement(React.Fragment, null,
+                        React.createElement("input", { value: albumSearch, onChange: e => setAlbumSearch(e.target.value), placeholder: "Buscar cualquier galería...", className: "w-full bg-neutral-900/90 border border-neutral-800 rounded-2xl pl-11 pr-4 py-3 text-sm outline-none focus:border-sky-500" }))),
+                loading && activeAlbums.length === 0 ? React.createElement(AlbumLoadingGrid, { count: window.innerWidth < 640 ? 4 : 6 }) : React.createElement(React.Fragment, null,
                     loading && activeAlbums.length > 0 && React.createElement("div", { className: "quick-loading-strip mb-4" },
                         React.createElement("span", { className: "quick-loading-dot" }),
                         React.createElement("div", null,
-                            React.createElement("b", null, "Actualizando galer\u00EDa"),
-                            React.createElement("p", { className: "text-[11px] opacity-80 leading-tight" }, "Mostrando lo guardado mientras se cargan los \u00FAltimos cambios."))),
-                    React.createElement("div", { className: "grid grid-cols-2 sm:grid-cols-3 gap-3 sm:gap-4" }, visibleFilteredAlbums.map(a => { var _a; return React.createElement("button", { key: a.id, "data-album-card-id": a.id, onClick: e => handleAlbumCardTap(e, a), className: "group text-left active:scale-[0.98] focus:outline-none", "aria-pressed": mobileRevealedAlbumId === a.id },
-                        React.createElement("div", { className: `modern-album-card aspect-[4/5] ${mobileRevealedAlbumId === a.id ? 'team-open' : ''}`.trim() },
-                            React.createElement("div", { className: "absolute inset-0 bg-neutral-900" }, a.cover ? React.createElement("img", { src: a.cover, loading: "lazy", decoding: "async", className: "modern-album-img w-full h-full object-cover" }) : React.createElement("div", { className: "w-full h-full flex items-center justify-center text-neutral-600" },
-                                React.createElement("i", { className: "fas fa-image text-3xl" }))),
-                            React.createElement("div", { className: "absolute inset-0 bg-gradient-to-t from-black via-black/38 to-transparent z-[2]" }),
-                            React.createElement("div", { className: "modern-album-corner-fade" }),
-                            React.createElement("div", { className: "team-album-reveal" },
-                                renderVersusScene(albumTeamSide(a, 0), albumTeamSide(a, 1), { compact: true })),
-                            React.createElement("div", { className: "absolute top-2 left-2 sm:top-3 sm:left-3 z-[3] bg-black/55 backdrop-blur-md border border-white/15 px-2.5 py-1.5 rounded-full text-[9px] sm:text-[10px] text-white album-date-chip shadow-lg" },
-                                React.createElement("i", { className: "fas fa-calendar-days mr-1 text-sky-300" }),
-                                a.dateLabel || "Sin fecha"),
-                            hasSiteDiscount(a.id) && React.createElement("div", { className: "promo-badge absolute top-2 right-2 sm:top-3 sm:right-3" },
-                                React.createElement("span", null,
-                                    "-",
-                                    albumSiteDiscount(a.id),
-                                    "%"),
-                                React.createElement("small", null, "OFF")),
-                            React.createElement("div", { className: "album-info-panel absolute bottom-2 sm:bottom-3 left-2 sm:left-3 right-2 sm:right-3 z-[3] rounded-2xl p-2.5 sm:p-3 border border-white/12 bg-black/54 backdrop-blur-xl shadow-[0_18px_40px_rgba(0,0,0,.42)]" },
-                                React.createElement("div", { className: "flex items-start justify-between gap-2" },
-                                    React.createElement("div", { className: "min-w-0" },
-                                        React.createElement("h3", { className: `album-title-white album-title-fit ${responsiveNameClass(a.name)} font-black leading-tight text-[12px] sm:text-[15px]`.trim() }, a.name),
-                                        React.createElement("p", { className: "album-meta-white text-[10px] sm:text-xs mt-1" },
-                                            a.photos.length,
-                                            " fotos disponibles",
-                                            ((_a = a.subalbums) === null || _a === void 0 ? void 0 : _a.length) > 0 ? ` · ${a.subalbums.length} categorías` : "")),
-                                    React.createElement("span", { className: "album-cta-chip shrink-0" },
-                                        React.createElement("i", { className: "fas fa-arrow-right" }),
-                                        " Ver"))))); })),
-                    albumRenderLimit < filteredAlbums.length && React.createElement("div", { className: "quick-loading-strip mt-4 justify-center" },
-                        React.createElement("span", { className: "quick-loading-dot" }),
-                        React.createElement("b", null, "Cargando m\u00E1s \u00E1lbumes..."))),
-                filteredAlbums.length > 0 && React.createElement(MissingPhotosBanner, null),
-                !loading && filteredAlbums.length === 0 && filteredArchivedAlbums.length === 0 && React.createElement("div", { className: "text-center text-neutral-500 py-12 text-sm" }, "No se encontraron \u00E1lbumes."),
-                filteredArchivedAlbums.length > 0 && React.createElement("div", { id: "galerias-antiguas", className: "mt-8 sm:mt-10" },
-                    React.createElement("div", { className: "flex justify-center border-t border-neutral-900 mb-4" },
-                        React.createElement("div", { className: "flex items-center gap-2 border-t-2 border-amber-300 pt-3 pb-2 px-4 -mt-[1px]" },
-                            React.createElement("i", { className: "fas fa-box-archive text-xs text-amber-300" }),
-                            React.createElement("span", { className: "text-[11px] font-semibold text-white uppercase tracking-widest" }, "Galer\u00EDas antiguas"))),
-                    React.createElement("div", { className: "mb-4" },
-                        React.createElement(ProtectionNotice, null)),
-                    React.createElement("div", { className: "grid grid-cols-2 sm:grid-cols-3 gap-3 sm:gap-4" }, filteredArchivedAlbums.map(a => { var _a; return React.createElement("button", { key: a.id, "data-album-card-id": a.id, onClick: e => handleAlbumCardTap(e, a), className: "group text-left active:scale-[0.98] focus:outline-none", "aria-pressed": mobileRevealedAlbumId === a.id },
-                        React.createElement("div", { className: `modern-album-card aspect-[4/5] border-amber-400/25 ${mobileRevealedAlbumId === a.id ? 'team-open' : ''}`.trim() },
-                            React.createElement("div", { className: "absolute inset-0 bg-neutral-900" }, a.cover ? React.createElement("img", { src: a.cover, loading: "lazy", decoding: "async", className: "modern-album-img w-full h-full object-cover" }) : React.createElement("div", { className: "w-full h-full flex items-center justify-center text-neutral-600" },
-                                React.createElement("i", { className: "fas fa-image text-3xl" }))),
-                            React.createElement("div", { className: "absolute inset-0 bg-gradient-to-t from-black via-black/38 to-transparent z-[2]" }),
-                            React.createElement("div", { className: "modern-album-corner-fade" }),
-                            React.createElement("div", { className: "team-album-reveal" },
-                                renderVersusScene(albumTeamSide(a, 0), albumTeamSide(a, 1), { compact: true })),
-                            React.createElement("div", { className: "absolute top-2 left-2 sm:top-3 sm:left-3 z-[3] bg-amber-500/90 text-black px-2.5 py-1.5 rounded-full text-[9px] sm:text-[10px] font-black shadow-lg" },
-                                React.createElement("i", { className: "fas fa-box-archive mr-1" }),
-                                "Antigua"),
-                            React.createElement("div", { className: "absolute top-2 right-2 sm:top-3 sm:right-3 z-[3] bg-black/55 backdrop-blur-md border border-white/15 px-2.5 py-1.5 rounded-full text-[9px] sm:text-[10px] text-white album-date-chip shadow-lg" },
-                                React.createElement("i", { className: "fas fa-calendar-days mr-1 text-sky-300" }),
-                                a.dateLabel || "Sin fecha"),
-                            React.createElement("div", { className: "album-info-panel absolute bottom-2 sm:bottom-3 left-2 sm:left-3 right-2 sm:right-3 z-[3] rounded-2xl p-2.5 sm:p-3 border border-white/12 bg-black/54 backdrop-blur-xl shadow-[0_18px_40px_rgba(0,0,0,.42)]" },
-                                React.createElement("div", { className: "flex items-start justify-between gap-2" },
-                                    React.createElement("div", { className: "min-w-0" },
-                                        React.createElement("h3", { className: `album-title-white album-title-fit ${responsiveNameClass(a.name)} font-black leading-tight text-[12px] sm:text-[15px]`.trim() }, a.name),
-                                        React.createElement("p", { className: "album-meta-white text-[10px] sm:text-xs mt-1" },
-                                            a.photos.length,
-                                            " fotos disponibles",
-                                            ((_a = a.subalbums) === null || _a === void 0 ? void 0 : _a.length) > 0 ? ` · ${a.subalbums.length} categorías` : "")),
-                                    React.createElement("span", { className: "album-cta-chip shrink-0" },
-                                        React.createElement("i", { className: "fas fa-arrow-right" }),
-                                        " Ver"))))); }))),
+                            React.createElement("b", null, "Actualizando galería"),
+                            React.createElement("p", { className: "text-[11px] opacity-80 leading-tight" }, "La portada ya está disponible mientras buscamos novedades."))),
+                    newestAlbum && renderNewestGalleryHero(),
+                    norm(albumSearch) && React.createElement("div", { className:"home-search-label" },
+                        React.createElement("i", { className:"fas fa-magnifying-glass" }),
+                        `${homeSearchAlbums.length} resultado${homeSearchAlbums.length === 1 ? '' : 's'} encontrados`),
+                    !norm(albumSearch) && recentHomeAlbums.length > 0 && React.createElement("div", { className:"home-recent-heading" },
+                        React.createElement("div", null,
+                            React.createElement("h2", null, "También son nuevas"),
+                            React.createElement("p", null, "Galerías publicadas durante los últimos 5 días."))),
+                    homeGridAlbums.length > 0 && React.createElement("div", { className:"home-gallery-grid" }, homeGridAlbums.map(renderHomeAlbumCard)),
+                    !norm(albumSearch) && hiddenHomeAlbumCount > 0 && React.createElement("button", { type:"button", onClick:()=>setMatchPickerOpen(true), className:"hidden-galleries-cta" },
+                        React.createElement("span", { className:"hg-icon" }, React.createElement("i", { className:"fas fa-layer-group" })),
+                        React.createElement("span", { className:"flex-1 min-w-0" },
+                            React.createElement("b", null, `${hiddenHomeAlbumCount} galería${hiddenHomeAlbumCount === 1 ? '' : 's'} anterior${hiddenHomeAlbumCount === 1 ? '' : 'es'}`),
+                            React.createElement("small", null, "Para mantener la portada limpia, las anteriores están disponibles desde el selector de partidos.")),
+                        React.createElement("span", { className:"hg-go" }, React.createElement("span", null, "Seleccionar partido"), React.createElement("i", { className:"fas fa-chevron-right" }))),
+                    norm(albumSearch) && homeSearchAlbums.length === 0 && React.createElement("div", { className:"text-center py-10 rounded-3xl border border-neutral-800 bg-neutral-950/50" },
+                        React.createElement("i", { className:"fas fa-magnifying-glass text-neutral-600 text-2xl mb-3" }),
+                        React.createElement("p", { className:"text-neutral-300 font-bold" }, "No encontré esa galería."),
+                        React.createElement("button", { type:"button", onClick:()=>setMatchPickerOpen(true), className:"mt-4 bg-sky-500 text-black px-4 py-2.5 rounded-xl font-black text-sm" }, "Abrir selector de partidos")),
+                    activeAlbums.length > 0 && React.createElement(MissingPhotosBanner, null)),
                 React.createElement("div", { className: "mt-8 sm:mt-10 mb-24 rounded-3xl border border-sky-400/25 bg-gradient-to-br from-neutral-950 via-neutral-900 to-black p-5 sm:p-6 text-center shadow-[0_18px_48px_rgba(0,0,0,.30)]" },
                     React.createElement("div", { className: "w-12 h-12 mx-auto rounded-2xl bg-sky-500/12 border border-sky-400/25 flex items-center justify-center text-sky-300 mb-3" },
                         React.createElement("i", { className: "fas fa-circle-question" })),
