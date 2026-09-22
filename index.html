@@ -4,6 +4,19 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8" />
+  <script>
+  (() => {
+    try {
+      const requestedAdmin = location.hash === '#/admin' || new URLSearchParams(location.search).get('admin') === '1';
+      const forcePin = new URLSearchParams(location.search).get('pin') === '1';
+      const unlockedAt = Number(sessionStorage.getItem('LA_ADMIN_UNLOCKED_AT') || 0);
+      const sessionValid = unlockedAt > 0 && (Date.now() - unlockedAt) < 30 * 60 * 1000;
+      if (requestedAdmin && !forcePin && !sessionValid) {
+        location.replace(new URL('admin-login.html?v=v118-light-admin-gateway', location.href).href);
+      }
+    } catch (e) {}
+  })();
+  </script>
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
@@ -1984,7 +1997,7 @@ const LS_SHARED_STATE_KEY = "la_shared_admin_state_v2";
 const LS_BANNERS_KEY = "la_banner_settings_v1";
 const LS_INTRO_KEY = "la_purchase_intro_seen_v2";
 const PHOTOS_PER_PAGE = 70;
-const APP_VERSION = "v117-instant-admin-biometric";
+const APP_VERSION = "v118-light-admin-gateway";
 const LS_ALBUM_CACHE_META_KEY = "la_album_cache_meta_v1";
 const ALBUM_CACHE_MAX_AGE_MS = 1000 * 60 * 60 * 12;
 const FIRESTORE_FREE_DAILY_LIMITS = {
@@ -2290,7 +2303,7 @@ function applyIphoneHeadAssets(iconUrl) {
         const manifest = {
             name: launchAdmin ? `${BRAND} · Admin` : BRAND,
             short_name: launchAdmin ? 'LA Admin' : 'Lucas Abraham',
-            start_url: launchAdmin ? `${baseScope}?admin=1#/admin` : `${baseScope}#/galeria`,
+            start_url: launchAdmin ? new URL('admin-login.html?v=v118-light-admin-gateway', baseScope).href : `${baseScope}#/galeria`,
             scope: baseScope,
             display: 'standalone',
             background_color: '#000000',
@@ -4927,7 +4940,14 @@ function App() {
     const [clubRankingAllOpen, setClubRankingAllOpen] = useState(false);
     const [viewer, setViewer] = useState(null);
     const [pin, setPin] = useState("");
-    const [admin, setAdmin] = useState(false);
+    const [admin, setAdmin] = useState(() => {
+        try {
+            const unlockedAt = Number(sessionStorage.getItem('LA_ADMIN_UNLOCKED_AT') || 0);
+            return unlockedAt > 0 && (Date.now() - unlockedAt) < 30 * 60 * 1000;
+        } catch (e) {
+            return false;
+        }
+    });
     const [adminAuth, setAdminAuth] = useState(() => normalizeAdminAuthConfig(readSharedCache().adminAuth));
     const [adminLoginBusy, setAdminLoginBusy] = useState(false);
     const [adminLoginError, setAdminLoginError] = useState("");
@@ -5057,6 +5077,7 @@ function App() {
                 setAdminLoginError("PIN o contraseña incorrectos.");
                 return;
             }
+            try { sessionStorage.setItem('LA_ADMIN_UNLOCKED_AT', String(Date.now())); } catch (e) {}
             setAdmin(true);
             setPin("");
             if (!adminPasskeyIds.length && supportsAdminBiometrics())
@@ -5079,6 +5100,7 @@ function App() {
             const credentialId = await authenticateAdminPasskey(adminPasskeyIds);
             if (!credentialId)
                 throw new Error("No se pudo validar la biometría.");
+            try { sessionStorage.setItem('LA_ADMIN_UNLOCKED_AT', String(Date.now())); } catch (e) {}
             setAdmin(true);
             setShowPinLogin(false);
             setAdminLoginError("");
@@ -5238,7 +5260,7 @@ function App() {
         const adminInstall = route === '#/admin';
         const target = adminInstall ? '#/admin' : '#/galeria';
         try { localStorage.setItem('LA_INSTALL_START_ROUTE', target); } catch(e) {}
-        return adminInstall ? `${base || (location.href || '').split('#')[0]}?admin=1#/admin` : `${base || (location.href || '').split('#')[0]}#/galeria`;
+        return adminInstall ? new URL('admin-login.html?v=v118-light-admin-gateway', location.href).href : `${base || (location.href || '').split('#')[0]}#/galeria`;
     };
     const getClubUrl = () => {
         const base = `${location.origin && location.origin !== 'null' ? location.origin : ''}${location.pathname || ''}`;
@@ -7192,7 +7214,7 @@ Te envío el comprobante para que puedas prepararlas.`);
                             React.createElement("i", { className: "fas fa-chevron-right ml-2" })))),
                 React.createElement(PromoBanners, { bannerSettings: bannerSettings }))),
         route !== "#/admin" && route !== "#/club" && !currentAlbum && React.createElement("div", { className:"admin-footer-access-v85" },
-            React.createElement("button", { type:"button", onClick:()=>{ try { localStorage.setItem('LA_INSTALL_START_ROUTE','#/admin'); } catch(e) {} window.location.href=`${location.pathname}?admin=1#/admin`; }, title:"Administración", "aria-label":"Administración" },
+            React.createElement("button", { type:"button", onClick:()=>{ try { localStorage.setItem('LA_INSTALL_START_ROUTE','#/admin'); } catch(e) {} window.location.href=new URL('admin-login.html?v=v118-light-admin-gateway', location.href).href; }, title:"Administración", "aria-label":"Administración" },
                 React.createElement("i", { className:"fas fa-lock" }))),
         introOpen && !loading && allPhotos.length > 0 && route !== "#/admin" && React.createElement(PurchaseIntro, { photos: allPhotos, onClose: () => setIntroOpen(false) }),
         currentAlbum && React.createElement("button", { onClick: () => setIntroOpen(true), className: "purchase-help-floating" },
