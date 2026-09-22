@@ -15,7 +15,7 @@
       const unlockedAt = Number(sessionStorage.getItem('LA_ADMIN_UNLOCKED_AT') || 0);
       const sessionValid = unlockedAt > 0 && (Date.now() - unlockedAt) < 30 * 60 * 1000;
       if (requestedAdmin && !forcePin && !sessionValid) {
-        location.replace('./admin-login.html?build=20260922-1542');
+        location.replace('./admin-login.html?build=20260922-1617');
       }
     } catch (e) {}
   })();
@@ -2225,7 +2225,7 @@ const MP_LOGO = "https://images.cults3d.com/uR8gWslmgoDYdkHjEcZfN9aMA9k=/516x516
 const PHOTO_APP_UNIT_PRICE = 2000;
 const DEFAULT_FULL_ALBUM_PRICE = 60000;
 const LEGACY_ADMIN_PIN = "160218";
-const LS_ADMIN_PASSKEY_KEY = "la_admin_passkey_id_v1";
+const LS_ADMIN_PASSKEY_KEY = "la_admin_passkey_id_v2";
 const ADMIN_KDF_ITERATIONS = 210000;
 const LS_COVER_KEY = "la_cover_overrides_v2";
 const LS_LOGO_SOURCE_KEY = "la_album_logo_sources_v1";
@@ -2240,7 +2240,7 @@ const LS_SHARED_STATE_KEY = "la_shared_admin_state_v2";
 const LS_BANNERS_KEY = "la_banner_settings_v1";
 const LS_INTRO_KEY = "la_purchase_intro_seen_v2";
 const PHOTOS_PER_PAGE = 70;
-const APP_VERSION = "v124-bulk-photo-quote";
+const APP_VERSION = "v125-passkey-rebind";
 const LS_ALBUM_CACHE_META_KEY = "la_album_cache_meta_v1";
 const ALBUM_CACHE_MAX_AGE_MS = 1000 * 60 * 60 * 12;
 const FIRESTORE_FREE_DAILY_LIMITS = {
@@ -2342,7 +2342,8 @@ async function registerAdminPasskey() {
             ],
             authenticatorSelection: {
                 authenticatorAttachment: "platform",
-                residentKey: "preferred",
+                residentKey: "required",
+                requireResidentKey: true,
                 userVerification: "required"
             },
             timeout: 60000,
@@ -2368,8 +2369,9 @@ async function authenticateAdminPasskey(ids) {
     const assertion = await navigator.credentials.get({
         publicKey: {
             challenge: adminRandomBytes(32),
-            allowCredentials: candidates.map(id => ({ type: "public-key", id: adminBase64UrlToBytes(id) })),
+            allowCredentials: candidates.map(id => ({ type: "public-key", id: adminBase64UrlToBytes(id), transports: ["internal"] })),
             userVerification: "required",
+            hints: ["client-device"],
             timeout: 30000
         }
     });
@@ -2546,7 +2548,7 @@ function applyIphoneHeadAssets(iconUrl) {
         const manifest = {
             name: launchAdmin ? `${BRAND} · Admin` : BRAND,
             short_name: launchAdmin ? 'LA Admin' : 'Lucas Abraham',
-            start_url: launchAdmin ? new URL('admin-login.html?build=20260922-1542', baseScope).href : `${baseScope}#/galeria`,
+            start_url: launchAdmin ? new URL('admin-login.html?build=20260922-1617', baseScope).href : `${baseScope}#/galeria`,
             scope: baseScope,
             display: 'standalone',
             background_color: '#000000',
@@ -5339,8 +5341,16 @@ function App() {
             try { sessionStorage.setItem('LA_ADMIN_UNLOCKED_AT', String(Date.now())); } catch (e) {}
             setAdmin(true);
             setPin("");
-            if (!adminPasskeyIds.length && supportsAdminBiometrics())
-                setAdminMessage("Acceso correcto. Podés activar Face ID o huella desde Seguridad para entrar más rápido la próxima vez.");
+            const setupBioRequested = new URLSearchParams(location.search).get("setupbio") === "1";
+            if (setupBioRequested && supportsAdminBiometrics()) {
+                setAdminMessage("PIN correcto. Ahora tocá “Activar Face ID en este iPhone” una sola vez para dejarlo vinculado.");
+                setTimeout(() => {
+                    const el = document.getElementById("admin-security-access");
+                    if (el) el.scrollIntoView({ behavior:"smooth", block:"center" });
+                }, 120);
+            } else if (!readLocalAdminPasskeyId() && supportsAdminBiometrics()) {
+                setAdminMessage("Acceso correcto. Podés activar Face ID desde Seguridad para entrar más rápido la próxima vez.");
+            }
         }
         catch (e) {
             console.warn("No se pudo validar el acceso administrador.", e);
@@ -5366,10 +5376,13 @@ function App() {
         }
         catch (e) {
             if (!automatic) {
-                if (e && e.name === "NotAllowedError")
-                    setAdminLoginError("La validación biométrica fue cancelada o no pudo completarse. Podés usar el PIN.");
-                else
+                if (e && e.name === "NotAllowedError") {
+                    writeLocalAdminPasskeyId("");
+                    setShowPinLogin(true);
+                    setAdminLoginError("Esta llave biométrica ya no está disponible en este dispositivo. Entrá con el PIN y volvé a activar Face ID una sola vez.");
+                } else {
                     setAdminLoginError((e && e.message) ? e.message : "No se pudo usar la biometría.");
+                }
             } else {
                 // Si el navegador no permite abrir Face ID automáticamente, dejamos el botón listo al instante.
                 setShowPinLogin(false);
@@ -5404,7 +5417,13 @@ function App() {
             };
             setAdminAuth(next);
             await saveSharedAdminState({ adminAuth: next });
-            setAdminMessage("Face ID / huella quedó activado para el acceso de administrador.");
+            try {
+                const url = new URL(location.href);
+                url.searchParams.delete("setupbio");
+                url.searchParams.delete("pin");
+                history.replaceState(null, "", url.pathname + (url.search ? url.search : "") + "#/admin");
+            } catch (e) {}
+            setAdminMessage("Face ID quedó vinculado correctamente a este dispositivo.");
         }
         catch (e) {
             console.warn("No se pudo activar la biometría.", e);
@@ -5519,7 +5538,7 @@ function App() {
         const adminInstall = route === '#/admin';
         const target = adminInstall ? '#/admin' : '#/galeria';
         try { localStorage.setItem('LA_INSTALL_START_ROUTE', target); } catch(e) {}
-        return adminInstall ? new URL('admin-login.html?build=20260922-1542', location.href).href : `${base || (location.href || '').split('#')[0]}#/galeria`;
+        return adminInstall ? new URL('admin-login.html?build=20260922-1617', location.href).href : `${base || (location.href || '').split('#')[0]}#/galeria`;
     };
     const getClubUrl = () => {
         const base = `${location.origin && location.origin !== 'null' ? location.origin : ''}${location.pathname || ''}`;
@@ -6814,18 +6833,18 @@ En breve te las preparo y te las envío por acá 😊
                     React.createElement("button", { onClick: async () => { const link='https://lucasabraham1996-cmd.github.io/photos/contrataciones.html#/solicitar'; try { await navigator.clipboard.writeText(link); setAdminMessage('Link público de solicitudes copiado.'); } catch(e) { window.prompt('Copiá el link público de solicitudes:', link); } }, className: "bg-sky-600 px-4 py-3 rounded-xl font-bold" }, React.createElement("i", { className: "fas fa-link mr-2" }), "Copiar link solicitudes"),
                     React.createElement("button", { onClick: goToGallery, className: "bg-indigo-600 px-4 py-3 rounded-xl font-bold" }, "Ver galer\u00EDa"))),
             adminMessage && React.createElement("div", { className: "mb-4 bg-emerald-600/15 border border-emerald-500/30 text-emerald-300 rounded-2xl px-4 py-3 text-sm" }, adminMessage),
-            React.createElement("section", { className:"mb-5 rounded-3xl border border-sky-400/20 bg-gradient-to-br from-sky-500/10 via-neutral-900 to-neutral-900 p-5" },
+            React.createElement("section", { id:"admin-security-access", className:"mb-5 rounded-3xl border border-sky-400/20 bg-gradient-to-br from-sky-500/10 via-neutral-900 to-neutral-900 p-5" },
                 React.createElement("div", { className:"flex flex-col md:flex-row md:items-center md:justify-between gap-4" },
                     React.createElement("div", { className:"flex items-start gap-3" },
                         React.createElement("div", { className:"w-11 h-11 rounded-2xl bg-sky-400/15 border border-sky-300/20 flex items-center justify-center shrink-0" }, React.createElement("i", { className:"fas fa-shield-halved text-sky-300" })),
                         React.createElement("div", null,
                             React.createElement("div", { className:"flex items-center gap-2 flex-wrap" },
                                 React.createElement("h2", { className:"font-black text-lg" }, "Seguridad de acceso"),
-                                React.createElement("span", { className:adminPasskeyIds.length ? "text-[9px] uppercase tracking-wider font-black px-2 py-1 rounded-full bg-emerald-400/10 text-emerald-300 border border-emerald-400/20" : "text-[9px] uppercase tracking-wider font-black px-2 py-1 rounded-full bg-amber-400/10 text-amber-300 border border-amber-400/20" }, adminPasskeyIds.length ? "Biometría activa" : "Biometría sin configurar")),
+                                React.createElement("span", { className:localAdminPasskeyId ? "text-[9px] uppercase tracking-wider font-black px-2 py-1 rounded-full bg-emerald-400/10 text-emerald-300 border border-emerald-400/20" : "text-[9px] uppercase tracking-wider font-black px-2 py-1 rounded-full bg-amber-400/10 text-amber-300 border border-amber-400/20" }, localAdminPasskeyId ? "Face ID vinculado" : "Face ID pendiente")),
                             React.createElement("p", { className:"text-sm text-neutral-400 mt-1" }, "Usá Face ID, huella o Windows Hello como acceso principal y dejá el PIN / contraseña como respaldo."))),
                     React.createElement("div", { className:"flex flex-col sm:flex-row gap-2" },
                         React.createElement("button", { type:"button", onClick:enableAdminBiometric, disabled:securityBusy || !supportsAdminBiometrics(), className:"bg-sky-500 hover:bg-sky-400 disabled:opacity-40 text-black px-4 py-3 rounded-xl font-black" },
-                            React.createElement("i", { className:"fas fa-fingerprint mr-2" }), adminPasskeyIds.length ? "Agregar biometría" : "Activar Face ID / huella"),
+                            React.createElement("i", { className:"fas fa-fingerprint mr-2" }), localAdminPasskeyId ? "Renovar Face ID en este dispositivo" : "Activar Face ID en este iPhone"),
                         React.createElement("button", { type:"button", onClick:()=>setSecurityOpen(v=>!v), className:"bg-neutral-800 px-4 py-3 rounded-xl font-bold" },
                             React.createElement("i", { className:"fas fa-key mr-2" }), "Cambiar contraseña"))),
                 securityOpen && React.createElement("form", { onSubmit:changeAdminPassword, className:"mt-5 pt-5 border-t border-neutral-800 grid gap-3 md:grid-cols-3" },
@@ -7578,7 +7597,7 @@ Te envío el comprobante para que puedas prepararlas.`);
                             React.createElement("i", { className: "fas fa-chevron-right ml-2" })))),
                 React.createElement(PromoBanners, { bannerSettings: bannerSettings }))),
         route !== "#/admin" && route !== "#/club" && !currentAlbum && React.createElement("div", { className:"admin-footer-access-v85" },
-            React.createElement("button", { type:"button", onClick:()=>{ try { localStorage.setItem('LA_INSTALL_START_ROUTE','#/admin'); } catch(e) {} window.location.href=new URL('admin-login.html?build=20260922-1542', location.href).href; }, title:"Administración", "aria-label":"Administración" },
+            React.createElement("button", { type:"button", onClick:()=>{ try { localStorage.setItem('LA_INSTALL_START_ROUTE','#/admin'); } catch(e) {} window.location.href=new URL('admin-login.html?build=20260922-1617', location.href).href; }, title:"Administración", "aria-label":"Administración" },
                 React.createElement("i", { className:"fas fa-lock" }))),
         introOpen && !loading && allPhotos.length > 0 && route !== "#/admin" && React.createElement(PurchaseIntro, { photos: allPhotos, onClose: () => setIntroOpen(false) }),
         currentAlbum && React.createElement("button", { onClick: () => setIntroOpen(true), className: "purchase-help-floating" },
