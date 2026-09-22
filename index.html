@@ -2126,6 +2126,142 @@ img{-webkit-user-drag:none;}
   }
 }
 </style>
+<style id="la-v122-mobile-gallery-crests">
+.mobile-gallery-hero-crests{display:none}
+@media(max-width:768px),(hover:none),(pointer:coarse){
+  /* En móvil los escudos no dependen de hover/focus ni de team-open. */
+  .mobile-gallery-hero-crests{
+    display:flex!important;
+    position:absolute!important;
+    top:30px!important;
+    right:18px!important;
+    z-index:40!important;
+    opacity:1!important;
+    visibility:visible!important;
+    pointer-events:none!important;
+  }
+  .mobile-gallery-hero-crests .gallery-cover-crests{
+    display:inline-flex!important;
+    opacity:1!important;
+    visibility:visible!important;
+    margin:0!important;
+    padding:7px 9px!important;
+    gap:6px!important;
+    border-radius:16px!important;
+    background:rgba(0,0,0,.68)!important;
+    border:1px solid rgba(255,255,255,.20)!important;
+    box-shadow:0 10px 28px rgba(0,0,0,.42)!important;
+    -webkit-backdrop-filter:blur(14px)!important;
+    backdrop-filter:blur(14px)!important;
+  }
+  .mobile-gallery-hero-crests .gallery-cover-crest{
+    display:flex!important;
+    width:42px!important;
+    height:42px!important;
+    border-radius:13px!important;
+    opacity:1!important;
+    visibility:visible!important;
+    background:rgba(255,255,255,.10)!important;
+    border:1px solid rgba(255,255,255,.18)!important;
+  }
+  .mobile-gallery-hero-crests .gallery-cover-crest img{
+    width:80%!important;
+    height:80%!important;
+    object-fit:contain!important;
+    opacity:1!important;
+    visibility:visible!important;
+  }
+  .mobile-gallery-hero-crests .gallery-cover-vs{
+    display:flex!important;
+    align-items:center!important;
+    justify-content:center!important;
+    min-width:17px!important;
+    font-size:8px!important;
+    color:#fff!important;
+    opacity:1!important;
+  }
+
+  /* Evitamos duplicar el bloque grande dentro del texto del hero en móvil. */
+  .new-gallery-hero-content > .gallery-cover-crests{
+    display:none!important;
+  }
+
+  .mobile-always-crests{
+    display:flex!important;
+    position:absolute!important;
+    top:44px!important;
+    left:auto!important;
+    right:8px!important;
+    transform:none!important;
+    z-index:12!important;
+    opacity:1!important;
+    visibility:visible!important;
+    pointer-events:none!important;
+  }
+  .mobile-always-crests .gallery-cover-crests{
+    display:inline-flex!important;
+    opacity:1!important;
+    visibility:visible!important;
+    margin:0!important;
+    padding:4px 6px!important;
+    gap:4px!important;
+    background:rgba(0,0,0,.72)!important;
+    border:1px solid rgba(255,255,255,.18)!important;
+    border-radius:13px!important;
+    box-shadow:0 8px 22px rgba(0,0,0,.38)!important;
+  }
+  .mobile-always-crests .gallery-cover-crest{
+    display:flex!important;
+    width:30px!important;
+    height:30px!important;
+    border-radius:9px!important;
+    opacity:1!important;
+    visibility:visible!important;
+    background:rgba(255,255,255,.10)!important;
+    border:1px solid rgba(255,255,255,.17)!important;
+  }
+  .mobile-always-crests .gallery-cover-crest img{
+    width:78%!important;
+    height:78%!important;
+    object-fit:contain!important;
+    opacity:1!important;
+    visibility:visible!important;
+  }
+  .mobile-always-crests .gallery-cover-vs{
+    display:flex!important;
+    align-items:center!important;
+    justify-content:center!important;
+    min-width:13px!important;
+    font-size:7px!important;
+    color:#fff!important;
+    opacity:1!important;
+  }
+  .mobile-always-crests .gallery-cover-crest-fallback,
+  .mobile-gallery-hero-crests .gallery-cover-crest-fallback{
+    align-items:center!important;
+    justify-content:center!important;
+    color:#fff!important;
+    opacity:1!important;
+    visibility:visible!important;
+  }
+
+  /* Las reglas táctiles previas ocultaban overlays cuando se abría la vista de equipos. */
+  .modern-album-card.team-open .mobile-always-crests,
+  .modern-album-card:active .mobile-always-crests,
+  .modern-album-card:focus-within .mobile-always-crests{
+    display:flex!important;
+    opacity:1!important;
+    visibility:visible!important;
+    transform:none!important;
+  }
+}
+@media(max-width:390px){
+  .mobile-gallery-hero-crests{top:27px!important;right:12px!important}
+  .mobile-gallery-hero-crests .gallery-cover-crest{width:38px!important;height:38px!important}
+  .mobile-always-crests{top:42px!important;right:6px!important}
+  .mobile-always-crests .gallery-cover-crest{width:27px!important;height:27px!important}
+}
+</style>
 </head>
 <body style="background:#050505;color:#fff;">
   <div id="boot-overlay" style="position:fixed;inset:0;z-index:99999;background:#050505;color:#fff;display:flex;align-items:center;justify-content:center;padding:24px;">
@@ -2171,7 +2307,7 @@ const LS_SHARED_STATE_KEY = "la_shared_admin_state_v2";
 const LS_BANNERS_KEY = "la_banner_settings_v1";
 const LS_INTRO_KEY = "la_purchase_intro_seen_v2";
 const PHOTOS_PER_PAGE = 70;
-const APP_VERSION = "v121-gallery-cover-crests";
+const APP_VERSION = "v122-mobile-gallery-crests";
 const LS_ALBUM_CACHE_META_KEY = "la_album_cache_meta_v1";
 const ALBUM_CACHE_MAX_AGE_MS = 1000 * 60 * 60 * 12;
 const FIRESTORE_FREE_DAILY_LIMITS = {
@@ -5971,7 +6107,7 @@ ${clone.outerHTML}`;
         const away = albumTeamSide(album, 1);
         const renderOne = (team, side) => {
             const name = String((team && team.name) || (side === 'home' ? 'Local' : 'Visitante')).trim();
-            const logo = String((team && (team.logo || team.appLogo)) || findAppTeamLogo(name) || '').trim();
+            const logo = String((team && (team.appLogo || team.logo)) || findAppTeamLogo(name) || '').trim();
             return React.createElement("span", { className:`gallery-cover-crest ${compact ? 'compact' : ''}`.trim(), title:name },
                 logo ? React.createElement("img", {
                     src:logo,
@@ -6001,6 +6137,7 @@ ${clone.outerHTML}`;
                 React.createElement("div", { className:"new-gallery-hero-bg" },
                     a.cover ? React.createElement("img", { src:a.cover, decoding:"async", fetchPriority:"high", alt:"" }) : React.createElement("div", { className:"w-full h-full bg-gradient-to-br from-sky-950 via-neutral-950 to-black" })),
                 React.createElement("div", { className:"new-gallery-hero-shade" }),
+                React.createElement("div", { className:"mobile-gallery-hero-crests" }, renderGalleryCoverCrests(a, true)),
                 React.createElement("div", { className:"new-gallery-hero-content" },
                     React.createElement("span", { className:"new-gallery-hero-kicker" }, React.createElement("i", { className:"fas fa-bolt" }), " Última galería"),
                     renderGalleryCoverCrests(a, false),
@@ -6022,7 +6159,7 @@ ${clone.outerHTML}`;
                     React.createElement("div", { className:"absolute inset-0 bg-gradient-to-t from-black via-black/38 to-transparent z-[2]" }),
                     React.createElement("div", { className:"modern-album-corner-fade" }),
                     React.createElement("div", { className:"team-album-reveal" }, renderVersusScene(albumTeamSide(a,0),albumTeamSide(a,1),{compact:true})),
-                    React.createElement("div", { className:"home-card-crests-wrap" }, renderGalleryCoverCrests(a, true)),
+                    React.createElement("div", { className:"home-card-crests-wrap mobile-always-crests" }, renderGalleryCoverCrests(a, true)),
                     React.createElement("div", { className:"absolute top-2 left-2 sm:top-3 sm:left-3 z-[3] bg-black/55 backdrop-blur-md border border-white/15 px-2.5 py-1.5 rounded-full text-[9px] sm:text-[10px] text-white album-date-chip shadow-lg" },
                         React.createElement("i", { className:"fas fa-calendar-days mr-1 text-sky-300" }), a.dateLabel || "Sin fecha"),
                     a.archived && React.createElement("div", { className:"absolute top-2 right-2 sm:top-3 sm:right-3 z-[4] bg-amber-400 text-black rounded-full px-2.5 py-1 text-[8px] font-black uppercase tracking-wider" }, "Archivo"),
