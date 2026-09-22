@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#050505">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <title>Acceso Admin · lucasabraham.ph</title>
+  <link rel="icon" href="./site-icon-dark-la.png">
+  <link rel="apple-touch-icon" href="./site-icon-dark-la.png">
+  <style>
+    :root{color-scheme:dark}
+    *{box-sizing:border-box}
+    html,body{margin:0;min-height:100%;background:#050505;color:#fff;font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display","Segoe UI",sans-serif}
+    body{min-height:100vh;min-height:100dvh;display:grid;place-items:center;padding:22px}
+    .shell{width:min(100%,390px)}
+    .card{position:relative;overflow:hidden;background:linear-gradient(160deg,rgba(22,22,26,.98),rgba(8,8,10,.98));border:1px solid rgba(255,255,255,.08);border-radius:30px;padding:28px;box-shadow:0 28px 80px rgba(0,0,0,.48)}
+    .glow{position:absolute;width:190px;height:190px;border-radius:50%;filter:blur(60px);background:rgba(14,165,233,.16);right:-80px;top:-80px;pointer-events:none}
+    .brand{width:66px;height:66px;border-radius:20px;display:grid;place-items:center;background:rgba(255,255,255,.045);border:1px solid rgba(255,255,255,.08);margin-bottom:20px}
+    .brand img{width:46px;height:46px;object-fit:contain}
+    h1{font-size:27px;line-height:1.05;margin:0 0 10px;font-weight:900;letter-spacing:-.025em}
+    p{margin:0;color:#a3a3a3;font-size:14px;line-height:1.5}
+    .primary{margin-top:24px;width:100%;min-height:58px;border:0;border-radius:18px;background:linear-gradient(135deg,#38bdf8,#2563eb);color:#fff;font-size:16px;font-weight:900;letter-spacing:-.01em;box-shadow:0 18px 44px rgba(37,99,235,.28);display:flex;align-items:center;justify-content:center;gap:10px;-webkit-tap-highlight-color:transparent}
+    .primary:active{transform:scale(.985)}
+    .primary:disabled{opacity:.55}
+    .face{width:24px;height:24px;border:2px solid currentColor;border-radius:7px;position:relative}
+    .face:before,.face:after{content:"";position:absolute;top:6px;width:3px;height:3px;border-radius:50%;background:currentColor}
+    .face:before{left:5px}.face:after{right:5px}
+    .face span{position:absolute;left:5px;right:5px;bottom:5px;height:5px;border-bottom:2px solid currentColor;border-radius:0 0 10px 10px}
+    .divider{display:flex;align-items:center;gap:12px;margin:20px 0;color:#52525b;font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.16em}
+    .divider:before,.divider:after{content:"";height:1px;background:#27272a;flex:1}
+    .secondary{width:100%;border:1px solid #303036;background:rgba(255,255,255,.025);color:#d4d4d8;border-radius:16px;padding:14px 16px;font-size:14px;font-weight:800}
+    .status{min-height:22px;margin-top:16px;text-align:center;color:#a3a3a3;font-size:12px}
+    .status.error{color:#fca5a5}
+    .hint{margin-top:18px;padding:13px 14px;border-radius:15px;background:rgba(255,255,255,.025);border:1px solid rgba(255,255,255,.055);font-size:11px;line-height:1.45;color:#71717a}
+    .back{display:block;text-align:center;margin-top:18px;color:#71717a;text-decoration:none;font-size:12px;font-weight:700}
+    @media(max-width:430px){body{padding:16px}.card{padding:24px;border-radius:26px}}
+  </style>
+</head>
+<body>
+  <main class="shell">
+    <section class="card">
+      <div class="glow"></div>
+      <div class="brand"><img src="./brand-logo.png?v=105" alt="lucasabraham.ph"></div>
+      <h1>Acceso administrador</h1>
+      <p id="subtitle">Usá Face ID o la seguridad biométrica de este dispositivo para entrar.</p>
+
+      <button id="bioBtn" class="primary" type="button">
+        <span class="face" aria-hidden="true"><span></span></span>
+        <span id="bioText">Entrar con Face ID</span>
+      </button>
+
+      <div class="divider">Opción 2</div>
+
+      <button id="pinBtn" class="secondary" type="button">Usar PIN / contraseña</button>
+      <div id="status" class="status"></div>
+
+      <div class="hint">Safari exige un toque para activar Face ID en sitios web. Una vez tocado este botón, la app usa primero la credencial guardada en este iPhone para evitar pasos extra siempre que iOS lo permita.</div>
+    </section>
+    <a class="back" href="./#/galeria">Volver a la galería</a>
+  </main>
+
+  <script>
+  (() => {
+    const PASSKEY_KEY = "la_admin_passkey_id_v1";
+    const SESSION_KEY = "LA_ADMIN_UNLOCKED_AT";
+    const VERSION = "v118-light-admin-gateway";
+    const status = document.getElementById("status");
+    const bioBtn = document.getElementById("bioBtn");
+    const bioText = document.getElementById("bioText");
+    const pinBtn = document.getElementById("pinBtn");
+
+    const b64ToBytes = (value) => {
+      const normalized = String(value || "").replace(/-/g, "+").replace(/_/g, "/");
+      const padding = (4 - (normalized.length % 4)) % 4;
+      const binary = atob(normalized + "=".repeat(padding));
+      return Uint8Array.from(binary, ch => ch.charCodeAt(0));
+    };
+    const bytesToB64 = (bytes) => {
+      let binary = "";
+      Array.from(bytes || []).forEach(b => binary += String.fromCharCode(b));
+      return btoa(binary).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/g, "");
+    };
+    const randomBytes = (length=32) => {
+      const bytes = new Uint8Array(length);
+      crypto.getRandomValues(bytes);
+      return bytes;
+    };
+    const localId = () => {
+      try { return localStorage.getItem(PASSKEY_KEY) || ""; } catch(e) { return ""; }
+    };
+    const saveLocalId = (id) => {
+      try { if(id) localStorage.setItem(PASSKEY_KEY,id); } catch(e) {}
+    };
+    const goAdmin = () => {
+      try {
+        sessionStorage.setItem(SESSION_KEY, String(Date.now()));
+        localStorage.setItem("LA_INSTALL_START_ROUTE", "#/admin");
+      } catch(e) {}
+      location.replace("./?admin=1&v=" + encodeURIComponent(VERSION) + "#/admin");
+    };
+
+    async function loginWithBiometrics() {
+      if (!window.isSecureContext || !window.PublicKeyCredential || !navigator.credentials) {
+        status.className = "status error";
+        status.textContent = "Este navegador no permite Face ID para este acceso.";
+        return;
+      }
+      bioBtn.disabled = true;
+      bioText.textContent = "Abriendo Face ID…";
+      status.className = "status";
+      status.textContent = "";
+      try {
+        const id = localId();
+        const publicKey = {
+          challenge: randomBytes(32),
+          userVerification: "required",
+          timeout: 30000
+        };
+        if (id) publicKey.allowCredentials = [{ type:"public-key", id:b64ToBytes(id) }];
+
+        const assertion = await navigator.credentials.get({ publicKey });
+        if (!assertion || !assertion.rawId) throw new Error("No se pudo validar Face ID.");
+        const credentialId = bytesToB64(new Uint8Array(assertion.rawId));
+        if (id && credentialId !== id) throw new Error("La credencial no coincide con este dispositivo.");
+        saveLocalId(credentialId);
+        status.textContent = "Acceso correcto.";
+        goAdmin();
+      } catch(e) {
+        status.className = "status error";
+        status.textContent = e && e.name === "NotAllowedError"
+          ? "Face ID se canceló. Tocá nuevamente o usá el PIN."
+          : ((e && e.message) || "No se pudo validar Face ID.");
+        bioBtn.disabled = false;
+        bioText.textContent = "Entrar con Face ID";
+      }
+    }
+
+    bioBtn.addEventListener("click", loginWithBiometrics);
+    pinBtn.addEventListener("click", () => {
+      location.href = "./?admin=1&pin=1&v=" + encodeURIComponent(VERSION) + "#/admin";
+    });
+
+    if (!localId()) {
+      document.getElementById("subtitle").textContent = "Tocá Face ID. Si es la primera vez en este acceso de iPhone, iOS puede pedirte elegir la credencial una sola vez.";
+    }
+  })();
+  </script>
+</body>
+</html>
