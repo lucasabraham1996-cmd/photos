@@ -59,16 +59,18 @@
       <button id="pinBtn" class="secondary" type="button">Usar PIN / contraseña</button>
       <div id="status" class="status"></div>
 
-      <div class="hint">Safari exige un toque para activar Face ID en sitios web. Una vez tocado este botón, la app usa primero la credencial guardada en este iPhone para evitar pasos extra siempre que iOS lo permita.</div>
+      <div class="hint">Face ID se vincula a este dispositivo. Si iOS pierde o elimina esa vinculación, la app te pedirá el PIN una sola vez para crear una nueva, en lugar de enviarte a QR o llaves físicas.</div>
     </section>
     <a class="back" href="./#/galeria">Volver a la galería</a>
   </main>
 
   <script>
   (() => {
-    const PASSKEY_KEY = "la_admin_passkey_id_v1";
+    const PASSKEY_KEY = "la_admin_passkey_id_v2";
+    const OLD_PASSKEY_KEY = "la_admin_passkey_id_v1";
     const SESSION_KEY = "LA_ADMIN_UNLOCKED_AT";
-    const VERSION = "v119-admin-fast-boot";
+    const VERSION = "v125-passkey-rebind";
+    try { localStorage.removeItem(OLD_PASSKEY_KEY); } catch(e) {}
     const status = document.getElementById("status");
     const bioBtn = document.getElementById("bioBtn");
     const bioText = document.getElementById("bioText");
@@ -104,10 +106,19 @@
       location.replace("./?admin=1&v=" + encodeURIComponent(VERSION) + "#/admin");
     };
 
+    function goPinAndSetup() {
+      location.href = "./?admin=1&pin=1&setupbio=1&v=" + encodeURIComponent(VERSION) + "#/admin";
+    }
+
     async function loginWithBiometrics() {
       if (!window.isSecureContext || !window.PublicKeyCredential || !navigator.credentials) {
         status.className = "status error";
         status.textContent = "Este navegador no permite Face ID para este acceso.";
+        return;
+      }
+      const id = localId();
+      if (!id) {
+        goPinAndSetup();
         return;
       }
       bioBtn.disabled = true;
@@ -115,38 +126,41 @@
       status.className = "status";
       status.textContent = "";
       try {
-        const id = localId();
-        const publicKey = {
-          challenge: randomBytes(32),
-          userVerification: "required",
-          timeout: 30000
-        };
-        if (id) publicKey.allowCredentials = [{ type:"public-key", id:b64ToBytes(id) }];
-
-        const assertion = await navigator.credentials.get({ publicKey });
+        const assertion = await navigator.credentials.get({
+          publicKey: {
+            challenge: randomBytes(32),
+            allowCredentials: [{ type:"public-key", id:b64ToBytes(id), transports:["internal"] }],
+            userVerification: "required",
+            hints: ["client-device"],
+            timeout: 30000
+          }
+        });
         if (!assertion || !assertion.rawId) throw new Error("No se pudo validar Face ID.");
         const credentialId = bytesToB64(new Uint8Array(assertion.rawId));
-        if (id && credentialId !== id) throw new Error("La credencial no coincide con este dispositivo.");
+        if (credentialId !== id) throw new Error("La credencial no coincide con este dispositivo.");
         saveLocalId(credentialId);
         status.textContent = "Acceso correcto.";
         goAdmin();
       } catch(e) {
+        saveLocalId("");
         status.className = "status error";
-        status.textContent = e && e.name === "NotAllowedError"
-          ? "Face ID se canceló. Tocá nuevamente o usá el PIN."
-          : ((e && e.message) || "No se pudo validar Face ID.");
+        status.textContent = "Esta vinculación de Face ID ya no está disponible. Entrá con el PIN para renovarla una sola vez.";
         bioBtn.disabled = false;
-        bioText.textContent = "Entrar con Face ID";
+        bioText.textContent = "Vincular Face ID nuevamente";
+        bioBtn.onclick = goPinAndSetup;
       }
     }
 
-    bioBtn.addEventListener("click", loginWithBiometrics);
+    if (localId()) bioBtn.addEventListener("click", loginWithBiometrics);
     pinBtn.addEventListener("click", () => {
       location.href = "./?admin=1&pin=1&v=" + encodeURIComponent(VERSION) + "#/admin";
     });
 
     if (!localId()) {
-      document.getElementById("subtitle").textContent = "Tocá Face ID. Si es la primera vez en este acceso de iPhone, iOS puede pedirte elegir la credencial una sola vez.";
+      document.getElementById("subtitle").textContent = "Face ID necesita vincularse una vez a este iPhone. Después vas a poder entrar directamente con biometría.";
+      bioText.textContent = "Vincular Face ID en este iPhone";
+      status.textContent = "Primero vas a validar tu PIN actual.";
+      bioBtn.addEventListener("click", goPinAndSetup, { once:true });
     }
   })();
   </script>
