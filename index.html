@@ -7,12 +7,15 @@
   <script>
   (() => {
     try {
-      const requestedAdmin = location.hash === '#/admin' || new URLSearchParams(location.search).get('admin') === '1';
-      const forcePin = new URLSearchParams(location.search).get('pin') === '1';
+      const params = new URLSearchParams(location.search);
+      const standalone = (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches) || navigator.standalone === true;
+      const savedAdminRoute = localStorage.getItem('LA_INSTALL_START_ROUTE') === '#/admin';
+      const requestedAdmin = location.hash === '#/admin' || params.get('admin') === '1' || (standalone && savedAdminRoute);
+      const forcePin = params.get('pin') === '1';
       const unlockedAt = Number(sessionStorage.getItem('LA_ADMIN_UNLOCKED_AT') || 0);
       const sessionValid = unlockedAt > 0 && (Date.now() - unlockedAt) < 30 * 60 * 1000;
       if (requestedAdmin && !forcePin && !sessionValid) {
-        location.replace(new URL('admin-login.html?v=v118-light-admin-gateway', location.href).href);
+        location.replace('./admin-login.html?build=20260922-1542');
       }
     } catch (e) {}
   })();
@@ -1997,7 +2000,7 @@ const LS_SHARED_STATE_KEY = "la_shared_admin_state_v2";
 const LS_BANNERS_KEY = "la_banner_settings_v1";
 const LS_INTRO_KEY = "la_purchase_intro_seen_v2";
 const PHOTOS_PER_PAGE = 70;
-const APP_VERSION = "v118-light-admin-gateway";
+const APP_VERSION = "v119-admin-fast-boot";
 const LS_ALBUM_CACHE_META_KEY = "la_album_cache_meta_v1";
 const ALBUM_CACHE_MAX_AGE_MS = 1000 * 60 * 60 * 12;
 const FIRESTORE_FREE_DAILY_LIMITS = {
@@ -2303,7 +2306,7 @@ function applyIphoneHeadAssets(iconUrl) {
         const manifest = {
             name: launchAdmin ? `${BRAND} · Admin` : BRAND,
             short_name: launchAdmin ? 'LA Admin' : 'Lucas Abraham',
-            start_url: launchAdmin ? new URL('admin-login.html?v=v118-light-admin-gateway', baseScope).href : `${baseScope}#/galeria`,
+            start_url: launchAdmin ? new URL('admin-login.html?build=20260922-1542', baseScope).href : `${baseScope}#/galeria`,
             scope: baseScope,
             display: 'standalone',
             background_color: '#000000',
@@ -5060,7 +5063,7 @@ function App() {
     const adminAutoBiometricAttemptedRef = useRef(false);
     const adminPasskeyIds = useMemo(() => normalizeAdminAuthConfig(adminAuth).passkeyIds, [adminAuth]);
     const localAdminPasskeyId = readLocalAdminPasskeyId();
-    const adminBiometricConfigured = supportsAdminBiometrics() && Boolean(localAdminPasskeyId || adminPasskeyIds.length);
+    const adminBiometricConfigured = supportsAdminBiometrics() && Boolean(localAdminPasskeyId);
 
     async function submitAdminSecret(event) {
         if (event) event.preventDefault();
@@ -5260,7 +5263,7 @@ function App() {
         const adminInstall = route === '#/admin';
         const target = adminInstall ? '#/admin' : '#/galeria';
         try { localStorage.setItem('LA_INSTALL_START_ROUTE', target); } catch(e) {}
-        return adminInstall ? new URL('admin-login.html?v=v118-light-admin-gateway', location.href).href : `${base || (location.href || '').split('#')[0]}#/galeria`;
+        return adminInstall ? new URL('admin-login.html?build=20260922-1542', location.href).href : `${base || (location.href || '').split('#')[0]}#/galeria`;
     };
     const getClubUrl = () => {
         const base = `${location.origin && location.origin !== 'null' ? location.origin : ''}${location.pathname || ''}`;
@@ -7214,7 +7217,7 @@ Te envío el comprobante para que puedas prepararlas.`);
                             React.createElement("i", { className: "fas fa-chevron-right ml-2" })))),
                 React.createElement(PromoBanners, { bannerSettings: bannerSettings }))),
         route !== "#/admin" && route !== "#/club" && !currentAlbum && React.createElement("div", { className:"admin-footer-access-v85" },
-            React.createElement("button", { type:"button", onClick:()=>{ try { localStorage.setItem('LA_INSTALL_START_ROUTE','#/admin'); } catch(e) {} window.location.href=new URL('admin-login.html?v=v118-light-admin-gateway', location.href).href; }, title:"Administración", "aria-label":"Administración" },
+            React.createElement("button", { type:"button", onClick:()=>{ try { localStorage.setItem('LA_INSTALL_START_ROUTE','#/admin'); } catch(e) {} window.location.href=new URL('admin-login.html?build=20260922-1542', location.href).href; }, title:"Administración", "aria-label":"Administración" },
                 React.createElement("i", { className:"fas fa-lock" }))),
         introOpen && !loading && allPhotos.length > 0 && route !== "#/admin" && React.createElement(PurchaseIntro, { photos: allPhotos, onClose: () => setIntroOpen(false) }),
         currentAlbum && React.createElement("button", { onClick: () => setIntroOpen(true), className: "purchase-help-floating" },
