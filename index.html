@@ -1998,6 +1998,134 @@ img{-webkit-user-drag:none;}
 .home-recent-heading{margin-top:8px}.hidden-galleries-cta{padding:14px}.hidden-galleries-cta .hg-go span{display:none}
 }
 </style>
+<style id="la-v121-gallery-cover-crests">
+.gallery-cover-crests{
+  display:inline-flex;
+  align-items:center;
+  gap:10px;
+  margin:14px 0 16px;
+  padding:8px 11px;
+  border-radius:18px;
+  background:linear-gradient(180deg,rgba(7,12,20,.62),rgba(0,0,0,.50));
+  border:1px solid rgba(255,255,255,.13);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.06),0 12px 28px rgba(0,0,0,.24);
+  -webkit-backdrop-filter:blur(12px);
+  backdrop-filter:blur(12px);
+}
+.gallery-cover-crest{
+  width:54px;
+  height:54px;
+  flex:0 0 auto;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  border-radius:16px;
+  overflow:hidden;
+  background:linear-gradient(145deg,rgba(255,255,255,.11),rgba(255,255,255,.035));
+  border:1px solid rgba(255,255,255,.14);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.07),0 8px 18px rgba(0,0,0,.22);
+}
+.gallery-cover-crest img{
+  width:78%;
+  height:78%;
+  object-fit:contain;
+  display:block;
+  filter:drop-shadow(0 4px 7px rgba(0,0,0,.28));
+}
+.gallery-cover-crest-fallback{
+  width:100%;
+  height:100%;
+  align-items:center;
+  justify-content:center;
+  color:#f8fafc;
+  font-size:13px;
+  line-height:1;
+  font-weight:950;
+  letter-spacing:.04em;
+}
+.gallery-cover-vs{
+  min-width:24px;
+  text-align:center;
+  color:#e2e8f0;
+  font-size:10px;
+  line-height:1;
+  font-weight:1000;
+  letter-spacing:.16em;
+  text-shadow:0 3px 10px rgba(0,0,0,.45);
+}
+.gallery-cover-crests.compact{
+  gap:5px;
+  margin:0;
+  padding:5px 7px;
+  border-radius:14px;
+  background:rgba(0,0,0,.58);
+  border-color:rgba(255,255,255,.14);
+  box-shadow:0 8px 20px rgba(0,0,0,.28);
+  -webkit-backdrop-filter:blur(10px);
+  backdrop-filter:blur(10px);
+}
+.gallery-cover-crests.compact .gallery-cover-crest{
+  width:31px;
+  height:31px;
+  border-radius:10px;
+}
+.gallery-cover-crests.compact .gallery-cover-crest img{
+  width:76%;
+  height:76%;
+}
+.gallery-cover-crests.compact .gallery-cover-crest-fallback{
+  font-size:8px;
+}
+.gallery-cover-crests.compact .gallery-cover-vs{
+  min-width:15px;
+  font-size:7px;
+  letter-spacing:.08em;
+}
+.home-card-crests-wrap{
+  position:absolute;
+  z-index:6;
+  top:10px;
+  left:50%;
+  transform:translateX(-50%);
+  pointer-events:none;
+}
+.modern-album-card.team-open .home-card-crests-wrap{
+  opacity:0;
+  transform:translate(-50%,-4px);
+}
+.home-card-crests-wrap{
+  transition:opacity .18s ease,transform .18s ease;
+}
+@media(max-width:640px){
+  .gallery-cover-crests{
+    margin:12px 0 14px;
+    gap:8px;
+    padding:7px 9px;
+    border-radius:16px;
+  }
+  .gallery-cover-crest{
+    width:46px;
+    height:46px;
+    border-radius:14px;
+  }
+  .gallery-cover-vs{
+    min-width:20px;
+    font-size:9px;
+  }
+  .home-card-crests-wrap{
+    top:8px;
+  }
+  .gallery-cover-crests.compact{
+    gap:4px;
+    padding:4px 6px;
+  }
+  .gallery-cover-crests.compact .gallery-cover-crest{
+    width:28px;
+    height:28px;
+    border-radius:9px;
+  }
+}
+</style>
 </head>
 <body style="background:#050505;color:#fff;">
   <div id="boot-overlay" style="position:fixed;inset:0;z-index:99999;background:#050505;color:#fff;display:flex;align-items:center;justify-content:center;padding:24px;">
@@ -2043,7 +2171,7 @@ const LS_SHARED_STATE_KEY = "la_shared_admin_state_v2";
 const LS_BANNERS_KEY = "la_banner_settings_v1";
 const LS_INTRO_KEY = "la_purchase_intro_seen_v2";
 const PHOTOS_PER_PAGE = 70;
-const APP_VERSION = "v120-new-gallery-home";
+const APP_VERSION = "v121-gallery-cover-crests";
 const LS_ALBUM_CACHE_META_KEY = "la_album_cache_meta_v1";
 const ALBUM_CACHE_MAX_AGE_MS = 1000 * 60 * 60 * 12;
 const FIRESTORE_FREE_DAILY_LIMITS = {
@@ -5837,6 +5965,32 @@ ${clone.outerHTML}`;
     const savings = regular - checkoutDigitalTotal;
     const effectiveDiscountPercent = regular > 0 ? Math.round((1 - (checkoutDigitalTotal / regular)) * 100) : 0;
     const albumPriceWithDiscount = (album) => Math.round(Number((album === null || album === void 0 ? void 0 : album.fullPrice) || 0) * (1 - (albumSiteDiscount(album === null || album === void 0 ? void 0 : album.id) / 100)));
+    const renderGalleryCoverCrests = (album, compact = false) => {
+        if (!album) return null;
+        const home = albumTeamSide(album, 0);
+        const away = albumTeamSide(album, 1);
+        const renderOne = (team, side) => {
+            const name = String((team && team.name) || (side === 'home' ? 'Local' : 'Visitante')).trim();
+            const logo = String((team && (team.logo || team.appLogo)) || findAppTeamLogo(name) || '').trim();
+            return React.createElement("span", { className:`gallery-cover-crest ${compact ? 'compact' : ''}`.trim(), title:name },
+                logo ? React.createElement("img", {
+                    src:logo,
+                    alt:name,
+                    loading:"lazy",
+                    referrerPolicy:"no-referrer",
+                    onError:e => {
+                        e.currentTarget.style.display = 'none';
+                        const fallback = e.currentTarget.nextElementSibling;
+                        if (fallback) fallback.style.display = 'flex';
+                    }
+                }) : null,
+                React.createElement("span", { className:"gallery-cover-crest-fallback", style:{ display:logo ? 'none' : 'flex' } }, teamInitials(name)));
+        };
+        return React.createElement("div", { className:`gallery-cover-crests ${compact ? 'compact' : ''}`.trim(), "aria-label":`${(home && home.name) || 'Local'} versus ${(away && away.name) || 'Visitante'}` },
+            renderOne(home, 'home'),
+            React.createElement("span", { className:"gallery-cover-vs" }, "VS"),
+            renderOne(away, 'away'));
+    };
     const renderNewestGalleryHero = () => {
         const a = newestAlbum;
         if (!a) return null;
@@ -5849,6 +6003,7 @@ ${clone.outerHTML}`;
                 React.createElement("div", { className:"new-gallery-hero-shade" }),
                 React.createElement("div", { className:"new-gallery-hero-content" },
                     React.createElement("span", { className:"new-gallery-hero-kicker" }, React.createElement("i", { className:"fas fa-bolt" }), " Última galería"),
+                    renderGalleryCoverCrests(a, false),
                     React.createElement("h2", { className:"new-gallery-hero-title" }, a.name),
                     React.createElement("div", { className:"new-gallery-hero-meta" },
                         React.createElement("span", null, React.createElement("i", { className:"fas fa-calendar-days text-sky-300" }), a.dateLabel || "Sin fecha"),
@@ -5867,6 +6022,7 @@ ${clone.outerHTML}`;
                     React.createElement("div", { className:"absolute inset-0 bg-gradient-to-t from-black via-black/38 to-transparent z-[2]" }),
                     React.createElement("div", { className:"modern-album-corner-fade" }),
                     React.createElement("div", { className:"team-album-reveal" }, renderVersusScene(albumTeamSide(a,0),albumTeamSide(a,1),{compact:true})),
+                    React.createElement("div", { className:"home-card-crests-wrap" }, renderGalleryCoverCrests(a, true)),
                     React.createElement("div", { className:"absolute top-2 left-2 sm:top-3 sm:left-3 z-[3] bg-black/55 backdrop-blur-md border border-white/15 px-2.5 py-1.5 rounded-full text-[9px] sm:text-[10px] text-white album-date-chip shadow-lg" },
                         React.createElement("i", { className:"fas fa-calendar-days mr-1 text-sky-300" }), a.dateLabel || "Sin fecha"),
                     a.archived && React.createElement("div", { className:"absolute top-2 right-2 sm:top-3 sm:right-3 z-[4] bg-amber-400 text-black rounded-full px-2.5 py-1 text-[8px] font-black uppercase tracking-wider" }, "Archivo"),
