@@ -2177,6 +2177,24 @@ img{-webkit-user-drag:none;}
   }
 }
 </style>
+<style id="la-v124-bulk-photo-quote">
+.bulk-quote-entry{display:grid;grid-template-columns:auto minmax(0,1fr) auto;align-items:center;gap:14px;margin:0 0 18px;padding:16px 17px;border-radius:22px;border:1px solid rgba(52,211,153,.20);background:radial-gradient(circle at 0 0,rgba(16,185,129,.12),transparent 36%),linear-gradient(135deg,rgba(5,46,22,.34),rgba(9,9,11,.96) 58%);box-shadow:inset 0 1px 0 rgba(255,255,255,.045),0 14px 34px rgba(0,0,0,.22)}
+.bulk-quote-entry.active{border-color:rgba(52,211,153,.45);box-shadow:inset 0 1px 0 rgba(255,255,255,.06),0 16px 38px rgba(16,185,129,.10)}
+.bulk-quote-entry-icon{width:48px;height:48px;border-radius:16px;display:grid;place-items:center;color:#6ee7b7;background:rgba(16,185,129,.12);border:1px solid rgba(52,211,153,.22);font-size:18px}
+.bulk-quote-entry-copy{min-width:0}.bulk-quote-eyebrow{display:block;margin-bottom:3px;color:#6ee7b7;font-size:9px;font-weight:950;letter-spacing:.15em;text-transform:uppercase}
+.bulk-quote-entry h3{margin:0;color:#fff;font-size:17px;font-weight:950;letter-spacing:-.015em}.bulk-quote-entry p{margin:4px 0 0;color:#a3a3a3;font-size:11px;line-height:1.45}
+.bulk-quote-start,.bulk-quote-cancel{min-height:45px;border-radius:14px;padding:0 15px;font-size:11px;font-weight:950;white-space:nowrap}
+.bulk-quote-start{background:#25D366;color:#03160a;box-shadow:0 12px 26px rgba(37,211,102,.16)}.bulk-quote-cancel{background:rgba(255,255,255,.06);color:#d4d4d8;border:1px solid rgba(255,255,255,.10)}
+.bulk-quote-photo-btn{background:linear-gradient(135deg,#34d399,#10b981)!important;color:#022c22!important;box-shadow:0 10px 26px rgba(16,185,129,.20)!important}
+.bulk-quote-floating{position:fixed;left:50%;bottom:max(12px,env(safe-area-inset-bottom));transform:translateX(-50%);z-index:70;width:min(calc(100vw - 24px),720px);display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:12px;align-items:center;padding:11px 12px;border-radius:22px;border:1px solid rgba(52,211,153,.34);background:linear-gradient(135deg,rgba(2,44,34,.97),rgba(3,18,15,.98));box-shadow:0 24px 70px rgba(0,0,0,.55),inset 0 1px 0 rgba(255,255,255,.06);-webkit-backdrop-filter:blur(18px);backdrop-filter:blur(18px)}
+.bulk-quote-floating-count{width:54px;height:54px;border-radius:17px;display:flex;flex-direction:column;align-items:center;justify-content:center;background:rgba(52,211,153,.13);border:1px solid rgba(110,231,183,.25);color:#ecfdf5}
+.bulk-quote-floating-count strong{font-size:20px;line-height:1;font-weight:1000}.bulk-quote-floating-count span{margin-top:2px;color:#6ee7b7;font-size:8px;font-weight:900;text-transform:uppercase;letter-spacing:.08em}
+.bulk-quote-floating-copy{min-width:0}.bulk-quote-floating-copy b{display:block;color:#fff;font-size:12px;font-weight:950}.bulk-quote-floating-copy small{display:block;margin-top:3px;color:#a7f3d0;font-size:9.5px;line-height:1.35}
+.bulk-quote-floating-actions{display:flex;align-items:center;gap:7px}.bulk-quote-floating-clear{width:42px;height:42px;border-radius:13px;display:grid;place-items:center;color:#d4d4d8;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.10)}
+.bulk-quote-whatsapp{min-height:44px;padding:0 16px;border-radius:14px;display:inline-flex;align-items:center;justify-content:center;gap:8px;background:#25D366;color:#04150a;font-size:11px;font-weight:1000;white-space:nowrap;box-shadow:0 12px 28px rgba(37,211,102,.20)}
+.bulk-quote-whatsapp:disabled{opacity:.38;filter:grayscale(.25);box-shadow:none}
+@media(max-width:640px){.bulk-quote-entry{grid-template-columns:auto minmax(0,1fr);gap:11px;padding:14px}.bulk-quote-entry-icon{width:43px;height:43px;border-radius:14px}.bulk-quote-entry h3{font-size:15px}.bulk-quote-entry p{font-size:10.5px}.bulk-quote-start,.bulk-quote-cancel{grid-column:1/-1;width:100%;min-height:47px}.bulk-quote-floating{grid-template-columns:auto minmax(0,1fr);gap:9px;padding:9px;border-radius:19px}.bulk-quote-floating-count{width:48px;height:48px;border-radius:15px}.bulk-quote-floating-count strong{font-size:18px}.bulk-quote-floating-copy b{font-size:11px}.bulk-quote-floating-copy small{font-size:9px}.bulk-quote-floating-actions{grid-column:1/-1;display:grid;grid-template-columns:44px minmax(0,1fr);width:100%}.bulk-quote-floating-clear{width:44px;height:44px}.bulk-quote-whatsapp{width:100%;min-height:44px}}
+</style>
 </head>
 <body style="background:#050505;color:#fff;">
   <div id="boot-overlay" style="position:fixed;inset:0;z-index:99999;background:#050505;color:#fff;display:flex;align-items:center;justify-content:center;padding:24px;">
@@ -2222,7 +2240,7 @@ const LS_SHARED_STATE_KEY = "la_shared_admin_state_v2";
 const LS_BANNERS_KEY = "la_banner_settings_v1";
 const LS_INTRO_KEY = "la_purchase_intro_seen_v2";
 const PHOTOS_PER_PAGE = 70;
-const APP_VERSION = "v123-hero-crests-only";
+const APP_VERSION = "v124-bulk-photo-quote";
 const LS_ALBUM_CACHE_META_KEY = "la_album_cache_meta_v1";
 const ALBUM_CACHE_MAX_AGE_MS = 1000 * 60 * 60 * 12;
 const FIRESTORE_FREE_DAILY_LIMITS = {
@@ -5174,6 +5192,8 @@ function App() {
     const [error, setError] = useState("");
     const [activeAlbum, setActiveAlbum] = useState(getAlbumIdFromHash(location.hash));
     const [cart, setCart] = useState([]);
+    const [bulkQuoteMode, setBulkQuoteMode] = useState(false);
+    const [bulkQuoteIds, setBulkQuoteIds] = useState([]);
     const [cartRecovery, setCartRecovery] = useState(() => { try { const v=JSON.parse(localStorage.getItem('LA_RECOVER_CART') || '[]'); return Array.isArray(v) ? v : []; } catch(e) { return []; } });
     const cartPersistenceReady = useRef(false);
     const [clubRankingAllOpen, setClubRankingAllOpen] = useState(false);
@@ -5829,7 +5849,17 @@ ${clone.outerHTML}`;
     else {
         setFocusPhoto(null);
     } }, [activeAlbum, albumPhotos.length]);
+    useEffect(() => {
+        setBulkQuoteMode(false);
+        setBulkQuoteIds([]);
+    }, [activeAlbum]);
     const selectedPhotos = allPhotos.filter(p => cart.includes(p.id));
+    const BULK_QUOTE_MIN_PHOTOS = 11;
+    const bulkQuotePhotos = useMemo(() => {
+        const albumItems = Array.isArray(currentAlbum && currentAlbum.photos) ? currentAlbum.photos : [];
+        return albumItems.filter(p => bulkQuoteIds.includes(p.id));
+    }, [currentAlbum && currentAlbum.id, currentAlbum && currentAlbum.photos, bulkQuoteIds]);
+    const bulkQuoteRemaining = Math.max(0, BULK_QUOTE_MIN_PHOTOS - bulkQuotePhotos.length);
     const matchedOrder = useMemo(() => {
         const q = cleanOperationCode(orderSearch);
         if (!q)
@@ -6095,6 +6125,50 @@ ${clone.outerHTML}`;
         const removing = cart.includes(id);
         setCart(c => c.includes(id) ? c.filter(x => x !== id) : [...c, id]);
         if (removing) setPrintedPhotoIds(ids => ids.filter(x => x !== id));
+    };
+    const startBulkQuote = () => {
+        setBulkQuoteIds([]);
+        setBulkQuoteMode(true);
+        setViewer(null);
+        setCheckoutOpen(false);
+        setTimeout(() => {
+            const el = document.getElementById('bulk-quote-selector-start');
+            if (el) el.scrollIntoView({ behavior:'smooth', block:'center' });
+        }, 80);
+    };
+    const cancelBulkQuote = () => {
+        setBulkQuoteMode(false);
+        setBulkQuoteIds([]);
+    };
+    const toggleBulkQuotePhoto = (id) => {
+        if (!bulkQuoteMode) return;
+        setBulkQuoteIds(ids => ids.includes(id) ? ids.filter(x => x !== id) : [...ids, id]);
+    };
+    const buildBulkQuoteWhatsappMessage = () => {
+        const albumName = String((currentAlbum && currentAlbum.name) || 'este álbum').trim();
+        const categories = [...new Set(bulkQuotePhotos.map(p => String((p && p.subAlbumName) || '').trim()).filter(Boolean))];
+        const categoryText = categories.length ? categories.join(' · ') : 'Galería general';
+        const photoLines = bulkQuotePhotos.map((photo, index) => {
+            const fileName = String((photo && (photo.name || photo.filename || photo.fileName)) || '').trim() || ('Foto ' + (index + 1));
+            const code = String((photo && photo.code) || '').trim();
+            return (index + 1) + '. 📷 ' + fileName + (code ? (' · Código ' + code) : '');
+        }).join('\n');
+        return '👋 ¡Hola Lucas! Tengo varias fotos mías de este partido y quería consultarte si podemos acordar un precio por todas. 📸⚽\n\n' +
+            '🏟️ *Álbum:* ' + albumName + '\n' +
+            '🗂️ *Categoría:* ' + categoryText + '\n' +
+            '📸 *Seleccioné ' + bulkQuotePhotos.length + ' fotos para negociar:*\n\n' +
+            photoLines + '\n\n' +
+            '💬 ¿En qué precio me dejarías todas estas fotos?\n\n' +
+            'Todavía no es una compra confirmada; quiero consultar el precio por cantidad. ¡Gracias!';
+    };
+    const sendBulkQuote = () => {
+        if (bulkQuotePhotos.length < BULK_QUOTE_MIN_PHOTOS) {
+            alert('Para negociar un precio por cantidad tenés que seleccionar al menos ' + BULK_QUOTE_MIN_PHOTOS + ' fotos.');
+            return;
+        }
+        const url = 'https://wa.me/' + SELLER_PHONE + '?text=' + encodeURIComponent(buildBulkQuoteWhatsappMessage());
+        const opened = window.open(url, '_blank');
+        if (!opened) window.location.href = url;
     };
     const togglePrintedPhoto = (id) => setPrintedPhotoIds(ids => ids.includes(id) ? ids.filter(x => x !== id) : [...ids, id]);
     const wmVisible = (albumId) => { var _a; return !((_a = watermarkSettings.disabledAlbums) === null || _a === void 0 ? void 0 : _a[albumId]); };
@@ -7377,6 +7451,17 @@ Te envío el comprobante para que puedas prepararlas.`);
                                 }, className: "w-full sm:w-auto shrink-0 buy-btn px-4 sm:px-5 py-3 rounded-xl font-black text-sm transition-all flex items-center justify-center gap-2" },
                                 React.createElement("i", { className: "fab fa-whatsapp text-base" }),
                                 " Comprar")))),
+                React.createElement("div", { id:"bulk-quote-selector-start", className:"bulk-quote-entry" + (bulkQuoteMode ? " active" : "") },
+                    React.createElement("div", { className:"bulk-quote-entry-icon" }, React.createElement("i", { className:"fas fa-images" })),
+                    React.createElement("div", { className:"bulk-quote-entry-copy" },
+                        React.createElement("span", { className:"bulk-quote-eyebrow" }, bulkQuoteMode ? "Selección especial activa" : "¿Saliste en muchas fotos?"),
+                        React.createElement("h3", null, "Tengo varias fotos mías"),
+                        React.createElement("p", null, bulkQuoteMode
+                            ? ("Elegí tus fotos con el botón +. Necesitás al menos " + BULK_QUOTE_MIN_PHOTOS + " para consultar un precio por cantidad.")
+                            : "Seleccioná más de 10 fotos tuyas y hablá con Lucas para negociar un precio especial por todas.")),
+                    bulkQuoteMode
+                        ? React.createElement("button", { type:"button", onClick:cancelBulkQuote, className:"bulk-quote-cancel" }, React.createElement("i", { className:"fas fa-xmark" }), " Cancelar")
+                        : React.createElement("button", { type:"button", onClick:startBulkQuote, className:"bulk-quote-start" }, React.createElement("i", { className:"fab fa-whatsapp" }), " Elegir fotos y negociar")),
                 React.createElement("div", { className: "mb-5 flex flex-col lg:flex-row lg:items-end lg:justify-between gap-3" },
                     React.createElement("div", { className: "min-w-0" },
                         React.createElement("h2", { className: "text-2xl font-black whitespace-normal break-words leading-tight" },
@@ -7437,7 +7522,7 @@ Te envío el comprobante para que puedas prepararlas.`);
                                 focusPhoto.code,
                                 " \u00B7 ",
                                 formatPrice(focusPhoto.price))),
-                        React.createElement("button", { onClick: () => toggle(focusPhoto.id), className: `${cart.includes(focusPhoto.id) ? 'buy-btn' : 'buy-btn'} w-full sm:w-auto px-4 py-3 rounded-xl font-black text-sm` }, cart.includes(focusPhoto.id) ? 'Agregada al carrito' : 'Agregar al carrito'))),
+                        React.createElement("button", { onClick: () => bulkQuoteMode ? toggleBulkQuotePhoto(focusPhoto.id) : toggle(focusPhoto.id), className: (bulkQuoteMode ? "bulk-quote-photo-btn" : "buy-btn") + " w-full sm:w-auto px-4 py-3 rounded-xl font-black text-sm" }, bulkQuoteMode ? (bulkQuoteIds.includes(focusPhoto.id) ? "Seleccionada para negociar" : "Seleccionar para negociar") : (cart.includes(focusPhoto.id) ? "Agregada al carrito" : "Agregar al carrito")))),
                 totalAlbumPages > 1 && React.createElement("div", { className: "page-panel rounded-2xl p-3 mb-4 flex flex-col gap-3" },
                     React.createElement("div", { className: "flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2" },
                         React.createElement("p", { className: "page-current-badge text-sm" },
@@ -7461,17 +7546,17 @@ Te envío el comprobante para que puedas prepararlas.`);
                             "Siguiente",
                             React.createElement("i", { className: "fas fa-chevron-right ml-2" })))),
                 React.createElement("div", { className: `${viewMode === 'mosaic' ? 'album-mosaic-grid' : viewMode === 'large' ? 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4' : 'grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-7 gap-2 sm:gap-3'} pb-20` }, pagedPhotos.map((photo, photoIndex) => {
-                    const isSelected = cart.includes(photo.id);
+                    const isSelected = bulkQuoteMode ? bulkQuoteIds.includes(photo.id) : cart.includes(photo.id);
                     const isFocus = (focusPhoto === null || focusPhoto === void 0 ? void 0 : focusPhoto.id) === photo.id;
-                    return React.createElement("div", { key: photo.id, className: `contain-strict mosaic-tile relative overflow-hidden ${viewMode === 'mosaic' ? getMosaicSpanClass(photo, photoIndex, pagedPhotos.length) : 'rounded-xl aspect-[4/5]'} cursor-pointer transition-all duration-300 ${isSelected ? 'ring-2 ring-indigo-500 scale-[0.97] shadow-[0_0_30px_rgba(99,102,241,0.2)]' : isFocus && viewMode === 'gallery' ? 'ring-2 ring-emerald-400 bg-neutral-900' : 'hover:opacity-90 bg-neutral-900 border border-neutral-800'}` },
+                    return React.createElement("div", { key: photo.id, className: `contain-strict mosaic-tile relative overflow-hidden ${viewMode === 'mosaic' ? getMosaicSpanClass(photo, photoIndex, pagedPhotos.length) : 'rounded-xl aspect-[4/5]'} cursor-pointer transition-all duration-300 ${isSelected ? (bulkQuoteMode ? 'ring-2 ring-emerald-400 scale-[0.97] shadow-[0_0_30px_rgba(52,211,153,0.22)]' : 'ring-2 ring-indigo-500 scale-[0.97] shadow-[0_0_30px_rgba(99,102,241,0.2)]') : isFocus && viewMode === 'gallery' ? 'ring-2 ring-emerald-400 bg-neutral-900' : 'hover:opacity-90 bg-neutral-900 border border-neutral-800'}` },
                         React.createElement("button", { onClick: () => viewMode === 'gallery' ? setFocusPhoto(photo) : setViewer(photo), className: "absolute inset-0 z-10", "aria-label": "Ver foto" }),
                         React.createElement("img", { src: toImgUrl(photo.rawUrl || photo.fullUrl || photo.url, 360), loading: "lazy", decoding: "async", draggable: false, onContextMenu: e => e.preventDefault(), className: "protected-photo w-full h-full object-cover pointer-events-none" }),
                         React.createElement(PreviewWatermark, { ...wmProps(photo.albumId), compact: viewMode === 'mosaic' }),
-                        React.createElement("div", { className: `absolute inset-0 ${isSelected ? 'bg-indigo-900/40' : 'bg-transparent'} pointer-events-none` }),
+                        React.createElement("div", { className: `absolute inset-0 ${isSelected ? (bulkQuoteMode ? 'bg-emerald-900/35' : 'bg-indigo-900/40') : 'bg-transparent'} pointer-events-none` }),
                         React.createElement("div", { className: "absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent p-2 pt-6 pointer-events-none" },
                             React.createElement("p", { className: "text-white/80 font-mono text-[9px] sm:text-[10px] truncate" }, photo.name),
-                            React.createElement("p", { className: "text-sky-300 text-[9px] font-bold" }, formatPrice(photo.price))),
-                        React.createElement("button", { onClick: (e) => { e.stopPropagation(); toggle(photo.id); }, className: `absolute top-2 right-2 sm:top-3 sm:right-3 w-8 h-8 rounded-full flex items-center justify-center transition-all duration-300 z-20 ${isSelected ? 'bg-indigo-500 text-white scale-110 shadow-lg' : 'bg-black/50 text-white/60 border border-white/20 backdrop-blur-sm'}` },
+                            React.createElement("p", { className: (bulkQuoteMode ? "text-emerald-300" : "text-sky-300") + " text-[9px] font-bold" }, bulkQuoteMode ? (isSelected ? "Seleccionada para negociar" : "Tocá + para seleccionar") : formatPrice(photo.price))),
+                        React.createElement("button", { onClick: (e) => { e.stopPropagation(); bulkQuoteMode ? toggleBulkQuotePhoto(photo.id) : toggle(photo.id); }, className: `absolute top-2 right-2 sm:top-3 sm:right-3 w-8 h-8 rounded-full flex items-center justify-center transition-all duration-300 z-20 ${isSelected ? (bulkQuoteMode ? 'bg-emerald-400 text-black scale-110 shadow-lg' : 'bg-indigo-500 text-white scale-110 shadow-lg') : 'bg-black/50 text-white/60 border border-white/20 backdrop-blur-sm'}` },
                             React.createElement("i", { className: `fas ${isSelected ? 'fa-check' : 'fa-plus'} text-sm` })));
                 })),
                 totalAlbumPages > 1 && React.createElement("div", { className: "page-panel rounded-2xl p-3 mt-[-64px] mb-6 flex flex-col gap-3" },
@@ -7683,15 +7768,25 @@ Te envío el comprobante para que puedas prepararlas.`);
                                 React.createElement("i", { className: "fas fa-certificate text-amber-300" }),
                                 React.createElement("span", null, "Aviso de licencia")),
                             React.createElement("p", { className: "text-amber-100/90" }, "Esta imagen tiene licencia, debe ser adquirida para su uso y no puede utilizarse con la marca de agua."))),
-                    React.createElement("button", { onClick: () => toggle(viewer.id), className: "w-full buy-btn font-black py-4 rounded-xl mb-3" }, cart.includes(viewer.id) ? 'Quitar del carrito' : 'Agregar al carrito'),
+                    React.createElement("button", { onClick: () => bulkQuoteMode ? toggleBulkQuotePhoto(viewer.id) : toggle(viewer.id), className: "w-full " + (bulkQuoteMode ? "bulk-quote-photo-btn" : "buy-btn") + " font-black py-4 rounded-xl mb-3" }, bulkQuoteMode ? (bulkQuoteIds.includes(viewer.id) ? "Quitar de la negociación" : "Seleccionar para negociar") : (cart.includes(viewer.id) ? "Quitar del carrito" : "Agregar al carrito")),
                     React.createElement("button", { onClick: () => setViewer(null), className: "w-full bg-neutral-800 py-4 rounded-xl font-bold" }, "Cerrar")))),
+        bulkQuoteMode && currentAlbum && React.createElement("div", { className:"bulk-quote-floating up" },
+            React.createElement("div", { className:"bulk-quote-floating-count" },
+                React.createElement("strong", null, bulkQuotePhotos.length),
+                React.createElement("span", null, "fotos")),
+            React.createElement("div", { className:"bulk-quote-floating-copy" },
+                React.createElement("b", null, bulkQuotePhotos.length >= BULK_QUOTE_MIN_PHOTOS ? "Ya podés consultar tu precio" : ("Seleccioná " + BULK_QUOTE_MIN_PHOTOS + " o más fotos")),
+                React.createElement("small", null, bulkQuotePhotos.length >= BULK_QUOTE_MIN_PHOTOS ? "Lucas te responderá con un precio por todas." : ("Te faltan " + bulkQuoteRemaining + " foto" + (bulkQuoteRemaining === 1 ? "" : "s") + " para habilitar WhatsApp."))),
+            React.createElement("div", { className:"bulk-quote-floating-actions" },
+                React.createElement("button", { type:"button", onClick:cancelBulkQuote, className:"bulk-quote-floating-clear", title:"Cancelar negociación" }, React.createElement("i", { className:"fas fa-xmark" })),
+                React.createElement("button", { type:"button", onClick:sendBulkQuote, disabled:bulkQuotePhotos.length < BULK_QUOTE_MIN_PHOTOS, className:"bulk-quote-whatsapp" }, React.createElement("i", { className:"fab fa-whatsapp" }), React.createElement("span", null, bulkQuotePhotos.length >= BULK_QUOTE_MIN_PHOTOS ? "Hablar con Lucas" : ("Faltan " + bulkQuoteRemaining))))),
         cart.length === 0 && cartRecovery.length > 0 && React.createElement("div", { className:"cart-recovery-bar up" },
             React.createElement("button", { type:"button", onClick:restoreSavedCart, className:"cart-restore-btn" }, React.createElement("i", { className:"fas fa-rotate-left" }), " Restaurar carrito"),
             React.createElement("button", { type:"button", onClick:cancelSavedCart, className:"cart-cancel-btn" }, React.createElement("i", { className:"fas fa-xmark" }), " Cancelar carrito")),
-        cart.length > 0 && !checkoutOpen && React.createElement("button", { onClick: openCheckout, className: "mobile-buy-shortcut" },
+        !bulkQuoteMode && cart.length > 0 && !checkoutOpen && React.createElement("button", { onClick: openCheckout, className: "mobile-buy-shortcut" },
             React.createElement("i", { className: "fas fa-cart-shopping" }),
             " Ir a comprar"),
-        cart.length > 0 && React.createElement("div", { className: "fixed bottom-4 sm:bottom-6 inset-x-0 mx-auto w-[calc(100vw-24px)] sm:w-[calc(100%-32px)] max-w-2xl z-40 up" },
+        !bulkQuoteMode && cart.length > 0 && React.createElement("div", { className: "fixed bottom-4 sm:bottom-6 inset-x-0 mx-auto w-[calc(100vw-24px)] sm:w-[calc(100%-32px)] max-w-2xl z-40 up" },
             React.createElement("div", { className: "buy-gradient rounded-3xl p-3 sm:p-4 flex flex-col sm:flex-row items-center justify-between gap-3" },
                 React.createElement("div", { className: "flex items-center gap-3 w-full sm:w-auto" },
                     React.createElement("div", { className: "bg-sky-500/20 border border-sky-300/35 text-white w-12 h-12 rounded-2xl flex items-center justify-center font-bold text-xl shadow-lg" }, cart.length),
