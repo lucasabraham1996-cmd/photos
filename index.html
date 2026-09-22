@@ -1984,7 +1984,7 @@ const LS_SHARED_STATE_KEY = "la_shared_admin_state_v2";
 const LS_BANNERS_KEY = "la_banner_settings_v1";
 const LS_INTRO_KEY = "la_purchase_intro_seen_v2";
 const PHOTOS_PER_PAGE = 70;
-const APP_VERSION = "v116-admin-passkey-security";
+const APP_VERSION = "v117-instant-admin-biometric";
 const LS_ALBUM_CACHE_META_KEY = "la_album_cache_meta_v1";
 const ALBUM_CACHE_MAX_AGE_MS = 1000 * 60 * 60 * 12;
 const FIRESTORE_FREE_DAILY_LIMITS = {
@@ -2103,7 +2103,10 @@ async function authenticateAdminPasskey(ids) {
     if (!supportsAdminBiometrics())
         throw new Error("Face ID o huella no está disponible en este navegador.");
     const localId = readLocalAdminPasskeyId();
-    const candidates = [...new Set([...(Array.isArray(ids) ? ids : []), localId].map(v => String(v || "").trim()).filter(Boolean))].slice(-8);
+    const remoteIds = [...new Set((Array.isArray(ids) ? ids : []).map(v => String(v || "").trim()).filter(Boolean))].slice(-8);
+    // Si este dispositivo ya tiene una credencial registrada, pedimos SOLO esa.
+    // Así iPhone/Android/Windows evitan, cuando es posible, mostrar un selector de varias llaves.
+    const candidates = localId ? [localId] : remoteIds;
     if (!candidates.length)
         throw new Error("Todavía no hay un acceso biométrico configurado.");
     const assertion = await navigator.credentials.get({
@@ -2111,7 +2114,7 @@ async function authenticateAdminPasskey(ids) {
             challenge: adminRandomBytes(32),
             allowCredentials: candidates.map(id => ({ type: "public-key", id: adminBase64UrlToBytes(id) })),
             userVerification: "required",
-            timeout: 60000
+            timeout: 30000
         }
     });
     if (!assertion || !assertion.rawId)
@@ -5034,8 +5037,10 @@ function App() {
     const ownInputRef = useRef(null);
     const homeLogoRef = useRef(null);
     const awayLogoRef = useRef(null);
+    const adminAutoBiometricAttemptedRef = useRef(false);
     const adminPasskeyIds = useMemo(() => normalizeAdminAuthConfig(adminAuth).passkeyIds, [adminAuth]);
-    const adminBiometricConfigured = supportsAdminBiometrics() && adminPasskeyIds.length > 0;
+    const localAdminPasskeyId = readLocalAdminPasskeyId();
+    const adminBiometricConfigured = supportsAdminBiometrics() && Boolean(localAdminPasskeyId || adminPasskeyIds.length);
 
     async function submitAdminSecret(event) {
         if (event) event.preventDefault();
@@ -5065,31 +5070,46 @@ function App() {
             setAdminLoginBusy(false);
         }
     }
-    async function submitAdminBiometric() {
+    async function submitAdminBiometric(options = {}) {
         if (adminLoginBusy) return;
-        if (!sharedReady) {
-            setAdminLoginError("Esperá un instante: estamos cargando la seguridad del administrador.");
-            return;
-        }
+        const automatic = options && options.automatic === true;
         setAdminLoginBusy(true);
-        setAdminLoginError("");
+        if (!automatic) setAdminLoginError("");
         try {
             const credentialId = await authenticateAdminPasskey(adminPasskeyIds);
             if (!credentialId)
                 throw new Error("No se pudo validar la biometría.");
             setAdmin(true);
             setShowPinLogin(false);
+            setAdminLoginError("");
         }
         catch (e) {
-            if (e && e.name === "NotAllowedError")
-                setAdminLoginError("La validación biométrica fue cancelada o no pudo completarse. Podés usar el PIN.");
-            else
-                setAdminLoginError((e && e.message) ? e.message : "No se pudo usar la biometría.");
+            if (!automatic) {
+                if (e && e.name === "NotAllowedError")
+                    setAdminLoginError("La validación biométrica fue cancelada o no pudo completarse. Podés usar el PIN.");
+                else
+                    setAdminLoginError((e && e.message) ? e.message : "No se pudo usar la biometría.");
+            } else {
+                // Si el navegador no permite abrir Face ID automáticamente, dejamos el botón listo al instante.
+                setShowPinLogin(false);
+            }
         }
         finally {
             setAdminLoginBusy(false);
         }
     }
+
+    useEffect(() => {
+        if (route !== "#/admin" || admin || adminAutoBiometricAttemptedRef.current)
+            return;
+        if (!supportsAdminBiometrics() || !readLocalAdminPasskeyId())
+            return;
+        adminAutoBiometricAttemptedRef.current = true;
+        const timer = setTimeout(() => {
+            submitAdminBiometric({ automatic: true });
+        }, 80);
+        return () => clearTimeout(timer);
+    }, [route, admin]);
     async function enableAdminBiometric() {
         if (securityBusy) return;
         setSecurityBusy(true);
@@ -6343,10 +6363,10 @@ En breve te las preparo y te las envío por acá 😊
                 React.createElement("div", { className:"w-16 h-16 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center mb-5" },
                     React.createElement("img", { src:"./brand-logo.png?v=105", alt:BRAND, className:"w-11 h-11 object-contain" })),
                 React.createElement("h1", { className: "text-2xl font-black mb-2 pr-10" }, "Acceso admin"),
-                React.createElement("p", { className: "text-neutral-400 text-sm mb-5" }, !sharedReady ? "Cargando seguridad del administrador..." : (adminBiometricConfigured ? "Entrá con Face ID, huella o el desbloqueo seguro de tu dispositivo." : "Entrá con tu PIN o contraseña. Después podés activar Face ID o huella desde Seguridad.")),
-                adminBiometricConfigured && React.createElement("button", { type:"button", onClick:submitAdminBiometric, disabled:adminLoginBusy || !sharedReady, className:"w-full bg-gradient-to-r from-sky-400 to-blue-600 text-white py-4 rounded-2xl font-black shadow-[0_16px_40px_rgba(37,99,235,.22)] disabled:opacity-50" },
+                React.createElement("p", { className: "text-neutral-400 text-sm mb-5" }, adminBiometricConfigured ? (adminLoginBusy ? "Validando con la seguridad de este dispositivo..." : "Face ID / huella es tu acceso principal. El PIN queda como alternativa.") : (!sharedReady ? "Preparando acceso seguro..." : "Entrá con tu PIN o contraseña. Después podés activar Face ID o huella desde Seguridad.")),
+                adminBiometricConfigured && React.createElement("button", { type:"button", onClick:()=>submitAdminBiometric(), disabled:adminLoginBusy, className:"w-full bg-gradient-to-r from-sky-400 to-blue-600 text-white py-4 rounded-2xl font-black shadow-[0_16px_40px_rgba(37,99,235,.22)] disabled:opacity-50" },
                     React.createElement("i", { className:"fas fa-fingerprint mr-2" }),
-                    !sharedReady ? "Cargando seguridad..." : (adminLoginBusy ? "Validando..." : "Entrar con Face ID / huella")),
+                    adminLoginBusy ? "Abriendo Face ID / huella..." : "Entrar con Face ID / huella"),
                 adminBiometricConfigured && React.createElement("div", { className:"flex items-center gap-3 my-4 text-[10px] uppercase tracking-[.16em] text-neutral-600" },
                     React.createElement("span", { className:"h-px bg-neutral-800 flex-1" }),
                     React.createElement("span", null, "Opción 2"),
