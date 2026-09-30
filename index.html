@@ -3337,6 +3337,7 @@ function formatAlbumDate(ts) {
     return new Intl.DateTimeFormat("es-AR", { day: "2-digit", month: "short", year: "numeric" }).format(new Date(ts)).replace(".", "");
 }
 const NEW_ALBUM_MAX_AGE_DAYS = 5;
+const HOME_RECENT_MAX_AGE_DAYS = 15;
 function albumAgeDays(album, now = Date.now()) {
     const ts = Number(album && album.dateTs) || 0;
     if (!ts) return Infinity;
@@ -5799,7 +5800,10 @@ ${clone.outerHTML}`;
     const archivedAlbums = useMemo(() => displayAlbums.filter(a => a.archived), [displayAlbums]);
     const newestAlbum = activeAlbums[0] || null;
     const newAlbums = useMemo(() => activeAlbums.filter(isAlbumNew), [activeAlbums]);
-    const recentHomeAlbums = useMemo(() => newAlbums.filter(a => !newestAlbum || a.id !== newestAlbum.id), [newAlbums, newestAlbum && newestAlbum.id]);
+    const recentHomeAlbums = useMemo(() => activeAlbums.filter(a => {
+        const age = albumAgeDays(a);
+        return age >= 0 && age < HOME_RECENT_MAX_AGE_DAYS && (!newestAlbum || a.id !== newestAlbum.id);
+    }), [activeAlbums, newestAlbum && newestAlbum.id]);
     const homeSearchAlbums = useMemo(() => {
         const q = norm(albumSearch);
         if (!q) return [];
@@ -5809,10 +5813,10 @@ ${clone.outerHTML}`;
         ? homeSearchAlbums.filter(a => !newestAlbum || a.id !== newestAlbum.id)
         : recentHomeAlbums, [albumSearch, homeSearchAlbums, recentHomeAlbums, newestAlbum && newestAlbum.id]);
     const hiddenHomeAlbumCount = useMemo(() => {
-        const visibleIds = new Set(newAlbums.map(a => a.id));
+        const visibleIds = new Set(recentHomeAlbums.map(a => a.id));
         if (newestAlbum) visibleIds.add(newestAlbum.id);
         return displayAlbums.filter(a => !visibleIds.has(a.id)).length;
-    }, [displayAlbums, newAlbums, newestAlbum && newestAlbum.id]);
+    }, [displayAlbums, recentHomeAlbums, newestAlbum && newestAlbum.id]);
     const filteredAlbums = useMemo(() => { const q = norm(albumSearch); if (!q)
         return activeAlbums; return activeAlbums.filter(a => norm(a.name).includes(q) || norm(a.dateLabel).includes(q)); }, [activeAlbums, albumSearch]);
     const filteredArchivedAlbums = useMemo(() => { const q = norm(albumSearch); if (!q)
@@ -7414,8 +7418,8 @@ React.createElement("div", { id: "order-search-panel", className: "bg-neutral-90
                         `${homeSearchAlbums.length} resultado${homeSearchAlbums.length === 1 ? '' : 's'} encontrados`),
                     !norm(albumSearch) && recentHomeAlbums.length > 0 && React.createElement("div", { className:"home-recent-heading" },
                         React.createElement("div", null,
-                            React.createElement("h2", null, "También son nuevas"),
-                            React.createElement("p", null, "Galerías publicadas durante los últimos 5 días."))),
+                            React.createElement("h2", null, "Galerías recientes"),
+                            React.createElement("p", null, "Galerías publicadas durante los últimos 15 días."))),
                     homeGridAlbums.length > 0 && React.createElement("div", { className:"home-gallery-grid" }, homeGridAlbums.map(renderHomeAlbumCard)),
                     !norm(albumSearch) && hiddenHomeAlbumCount > 0 && React.createElement("button", { type:"button", onClick:()=>setMatchPickerOpen(true), className:"hidden-galleries-cta" },
                         React.createElement("span", { className:"hg-icon" }, React.createElement("i", { className:"fas fa-layer-group" })),
