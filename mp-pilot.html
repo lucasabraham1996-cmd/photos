@@ -154,6 +154,29 @@ function normalizeSnapshot(data){
  }
  return {albums:Array.from(grouped.values()).filter(a=>a.photos.length>0),skipped};
 }
+async function getSiteStateAppsScript(){
+ const base="https://script.google.com/macros/s/AKfycbwQixATrOYyu-wUnm23Cgy6_zbuUNOjbYQ636fEqHIt4GqzTZxVBJvhwireNt5isFE8lQ/exec";
+ const name="mpPilotState_"+Date.now()+"_"+Math.random().toString(36).slice(2);
+ return new Promise((resolve,reject)=>{
+   const script=document.createElement("script");
+   let done=false;
+   const cleanup=()=>{
+     if(done)return;
+     done=true;clearTimeout(timer);
+     script.remove();
+     // callback silencioso por posibles respuestas tardías
+     window[name]=()=>{};
+   };
+   const timer=setTimeout(()=>{cleanup();reject(Error("La configuración de Apps Script tardó demasiado"))},18000);
+   window[name]=data=>{cleanup();const state=data?.state||data;
+     if(!state||!state.discountSettings||!Array.isArray(state.coupons))reject(Error("Apps Script no devolvió descuentos y cupones"));
+     else resolve(state);
+   };
+   script.onerror=()=>{cleanup();reject(Error("No se pudo leer Apps Script"))};
+   script.src=base+"?action=getSiteState&callback="+name;
+   document.head.append(script);
+ });
+}
 async function loadRemoteSiteSettings(){
  const scriptUrls=[
   "https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js",
@@ -208,12 +231,17 @@ async function refreshCache(){
  }catch(e){log("No se pudo leer el catálogo público: "+String(e.message||e)+". "+(albums.length?"Se usará la caché anterior.":"Sin fotos cargadas."),true)}
  settingsVerified=false;
  try{
-  const remote=await loadRemoteSiteSettings();
+  let remote;
+  try{remote=await loadRemoteSiteSettings()}
+  catch(firebaseError){
+    console.warn("Configuración Firebase no disponible; se consulta Apps Script",firebaseError);
+    remote=await getSiteStateAppsScript();
+  }
   settings=remote.discountSettings;
   coupons=remote.coupons;
   settingsVerified=true;
  }catch(e){
-  $("syncInfo").textContent="No fue posible consultar la configuración central de descuentos: "+String(e.message||e)+". Se muestra una vista local, pero NO se habilita la sincronización de precios hasta resolverlo.";
+  $("syncInfo").textContent="No fue posible consultar la configuración central de descuentos: "+String(e.message||e)+". Se muestran las galerías, pero NO se habilita la sincronización de precios hasta resolverlo.";
   log("Galerías cargadas, pero todavía faltan precios/promociones verificados. "+String(e.message||e),true);
  }
  const total=albums.reduce((n,a)=>n+a.photos.length,0);
