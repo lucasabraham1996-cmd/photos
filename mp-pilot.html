@@ -98,33 +98,142 @@ function driveId(link){
  return /^[A-Za-z0-9_-]{10,100}$/.test(id||"")?id:"";
  }catch(_){return ""}
 }
-function refreshCache(){
- const cached=read(KEY_ALBUMS,[]);
+
+function norm(v){return String(v||"").trim().toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[^a-z0-9]+/g,"_").replace(/^_|_$/g,"")}
+function pick(row,keys){const map={};for(const k of Object.keys(row||{}))map[norm(k)]=row[k];for(const k of keys){const v=map[norm(k)];if(v!==undefined&&String(v).trim()!=="")return String(v).trim()}return ""}
+function firstCell(row){for(const k of ["A","a","Col 1","col 1","col1","Column 1","column 1","valor","value"]){if(row?.[k]!==undefined&&String(row[k]||"").trim())return String(row[k]).trim()}return Object.values(row||{}).map(x=>String(x||"").trim()).find(Boolean)||""}
+function parseDate(v){
+ const s=String(v||"").trim();
+ if(!s)return null;
+ if(/^\d+(?:\.\d+)?$/.test(s)){const n=Number(s);if(n>=20000&&n<=90000)return new Date(1899,11,30).getTime()+Math.round(n*86400000);if(n>1e12)return n;if(n>1e9)return n*1000}
+ const m=s.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{2,4})$/);
+ if(m)return new Date(Number(m[3].length===2?"20"+m[3]:m[3]),Number(m[2])-1,Number(m[1])).getTime();
+ const t=Date.parse(s);return Number.isNaN(t)?null:t
+}
+function dateFromRows(rows){for(const row of rows||[]){const v=pick(row,["fecha","date","día","dia","fecha album","fecha_album","evento fecha","fecha evento"]);if(v){const t=parseDate(v);if(t)return t}}return 0}
+function imageLink(row){
+ const isImage=v=>/^https?:\/\//i.test(String(v||""))&&/drive\.google\.com|googleusercontent|postimg|imgur|cloudinary|firebasestorage|\.jpe?g|\.png|\.webp|\.gif/i.test(String(v||""));
+ const direct=pick(row,["url","imagen","image","foto","preview","link","enlace","archivo","photo","src","miniatura","thumbnail"]);
+ return isImage(direct)?direct:Object.values(row||{}).find(isImage)||"";
+}
+function priceNum(v){return Number(String(v||"").replace(/[^0-9]/g,""))||0}
+function normalizeSnapshot(data){
+ if(!data||!Array.isArray(data.albums)||!data.albums.length)throw Error("El catálogo público llegó vacío");
+ const grouped=new Map();
+ let skipped=0;
+ for(const [sheetIdx,sheet] of data.albums.entries()){
+  const title=String(sheet.name||sheet.album||sheet.title||"Álbum "+(sheetIdx+1));
+  const parts=title.split(":");
+  const baseName=parts[0].trim()||title;
+  const subName=parts.length>1?parts.slice(1).join(":").trim():"";
+  const rows=sheet.rows||sheet.photos||sheet.data||[];
+  if(!Array.isArray(rows))continue;
+  const timestamp=dateFromRows(rows);
+  const albumId=(norm(baseName)||"album_"+(sheetIdx+1))+"_"+(timestamp?String(timestamp):"sin_fecha");
+  const subAlbumId=albumId+"_"+(norm(subName)||"general");
+  const offset=["tit","titulo","title"].includes(norm(firstCell(rows[0])))?1:0;
+  const teamMeta=new Set([firstCell(rows[offset]),firstCell(rows[offset+1])].filter(Boolean));
+  const all=[];
+  for(const [i,row] of rows.entries()){
+   if(teamMeta.has(firstCell(row)))continue;
+   const link=imageLink(row);
+   if(!link)continue;
+   if(!driveId(link)){skipped++;continue}
+   const values=Object.values(row||{}).map(v=>String(v||"").trim());
+   const name=pick(row,["nombre de foto","nombre_foto","nombre foto","nombre","name","titulo","title","archivo","filename","foto","jugador","player"])||values[1]||"Foto "+(i+1);
+   if(["no","false","0","ocultar","hide"].includes(norm(pick(row,["activa","active","visible","publicar"]))))continue;
+   all.push({id:subAlbumId+"_"+(i+1),name,driveLink:link});
+  }
+  if(!all.length)continue;
+  const fullPrice=priceNum(pick(rows[0]||{},["album completo","album_completo","precio_album","precio album","precio completo","fullprice","precio"]))||60000;
+  const current=grouped.get(albumId)||{id:albumId,name:baseName,fullPrice,photos:[],archived:Boolean(sheet.hidden||sheet.archived)};
+  current.fullPrice=fullPrice;
+  current.photos.push(...all);
+  current.archived=current.archived&&Boolean(sheet.hidden||sheet.archived);
+  grouped.set(albumId,current);
+ }
+ return {albums:Array.from(grouped.values()).filter(a=>a.photos.length>0),skipped};
+}
+async function loadRemoteSiteSettings(){
+ const scriptUrls=[
+  "https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js",
+  "https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js",
+  "https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js"
+ ];
+ const loadScript=url=>new Promise((resolve,reject)=>{
+  const element=document.createElement("script");element.src=url;element.async=true;
+  element.onload=resolve;element.onerror=()=>reject(Error("No se pudo cargar Firebase"));
+  document.head.append(element);
+ });
+ for(const url of scriptUrls)await loadScript(url);
+ const config={
+  apiKey:"AIzaSyAznAxOW-leFrKw3tIjRV5vilIjvRKsgk0",
+  authDomain:"lucasabraham-b84aa.firebaseapp.com",
+  projectId:"lucasabraham-b84aa",
+  storageBucket:"lucasabraham-b84aa.firebasestorage.app",
+  messagingSenderId:"1057661064112",
+  appId:"1:1057661064112:web:6952c87bd6a5388c0e3c75"
+ };
+ const app=firebase.apps?.length?firebase.app():firebase.initializeApp(config);
+ if(!firebase.auth().currentUser)await firebase.auth().signInAnonymously();
+ const snapshot=await firebase.firestore(app).doc("artifacts/lucasabraham-ph-db/config/shared_state").get({source:"server"});
+ if(!snapshot?.exists)throw Error("La configuración de promociones todavía no está disponible");
+ const remote=snapshot.data()||{};
+ if(!remote.discountSettings||!Array.isArray(remote.coupons))throw Error("Faltan descuentos o cupones sincronizados en Firebase");
+ return remote;
+}
+let settingsVerified=false;
+async function refreshCache(){
+ $("reload").disabled=true;
+ $("syncInfo").textContent="Leyendo catálogo público y promociones vigentes…";
+ const local=read(KEY_ALBUMS,[]);
  const shared=read(KEY_SHARED,{});
  settings=shared.discountSettings||read(KEY_DISCOUNTS,{percent:0,excludedAlbums:{}});
  coupons=Array.isArray(shared.coupons)?shared.coupons:read(KEY_COUPONS,[]);
- albums=Array.isArray(cached)?cached.map(a=>({
-   id:String(a.id||""),name:String(a.name||a.id||""),
-   fullPrice:Number(a.fullPrice||60000),
-   photos:(Array.isArray(a.photos)?a.photos:[]).map(p=>({
-     id:String(p.id||""),name:String(p.name||"Foto"),driveLink:driveLink(p)
-   }))
+ albums=Array.isArray(local)?local.map(a=>({
+  id:String(a.id||""),name:String(a.name||a.id||""),fullPrice:Number(a.fullPrice||60000),
+  photos:(Array.isArray(a.photos)?a.photos:[]).map(p=>({id:String(p.id||""),name:String(p.name||"Foto"),driveLink:driveLink(p)}))
  })).filter(a=>a.id&&a.photos.length):[];
- const amount=albums.reduce((n,a)=>n+a.photos.length,0);
- $("count").value=albums.length+" galerías · "+amount+" fotos";
- const choose=$("album").value;
+ let catalogSource="caché local";
+ let ignored=0;
+ try{
+   const response=await fetch("./gallery-snapshot.json?mp-pilot="+Date.now(),{cache:"no-store"});
+   if(!response.ok)throw Error("HTTP "+response.status);
+   const snapshot=await response.json();
+   const normalized=normalizeSnapshot(snapshot);
+   if(!normalized.albums.length)throw Error("No se encontraron enlaces originales de Drive");
+   albums=normalized.albums;
+   ignored=normalized.skipped;
+   catalogSource="snapshot público";
+ }catch(e){log("No se pudo leer el catálogo público: "+String(e.message||e)+". "+(albums.length?"Se usará la caché anterior.":"Sin fotos cargadas."),true)}
+ settingsVerified=false;
+ try{
+  const remote=await loadRemoteSiteSettings();
+  settings=remote.discountSettings;
+  coupons=remote.coupons;
+  settingsVerified=true;
+ }catch(e){
+  $("syncInfo").textContent="No fue posible consultar la configuración central de descuentos: "+String(e.message||e)+". Se muestra una vista local, pero NO se habilita la sincronización de precios hasta resolverlo.";
+  log("Galerías cargadas, pero todavía faltan precios/promociones verificados. "+String(e.message||e),true);
+ }
+ const total=albums.reduce((n,a)=>n+a.photos.length,0);
+ $("count").value=albums.length+" galerías · "+total+" fotos";
+ const old=$("album").value;
  $("album").replaceChildren();
  for(const a of albums){const opt=document.createElement("option");opt.value=a.id;opt.textContent=a.name+" ("+a.photos.length+" fotos)";$("album").append(opt)}
- if(albums.some(a=>a.id===choose))$("album").value=choose;
+ if(albums.some(a=>a.id===old))$("album").value=old;
  $("coupon").replaceChildren();
- let opt=document.createElement("option");opt.value="";opt.textContent="Sin cupón";$("coupon").append(opt);
+ const none=document.createElement("option");none.value="";none.textContent="Sin cupón";$("coupon").append(none);
  for(const c of coupons.filter(x=>x&&x.active!==false)){
-   opt=document.createElement("option");opt.value=String(c.code||"").trim().toUpperCase();
-   opt.textContent=String(c.code||"")+" · "+Number(c.percent||0)+"% OFF";$("coupon").append(opt);
+  const opt=document.createElement("option");opt.value=String(c.code||"").trim().toUpperCase();
+  opt.textContent=String(c.code||"")+" · "+Number(c.percent||0)+"% OFF";$("coupon").append(opt)
  }
- $("syncInfo").textContent=albums.length?"Catálogo leído del navegador. Revisá que los precios y cupones estén actualizados antes de sincronizar.":"No hay galerías en la caché. Abrí la app en otra pestaña, esperá que cargue y volvé a pulsar aquí.";
+ if(settingsVerified){$("syncInfo").textContent="Se leyeron "+albums.length+" galerías y "+total+" fotos desde "+catalogSource+". Promociones recuperadas de Firebase."+(ignored?" Se omitieron "+ignored+" imágenes sin un enlace Drive válido.":"")}
+ $("sync").disabled=!settingsVerified||!albums.length;
+ $("reload").disabled=false;
  updateQuote();
 }
+
 function sitePercent(a){const n=Number(settings.percent)||0;return settings.excludedAlbums?.[a.id]?0:Math.max(0,Math.min(100,n))}
 function updateQuote(){
  const album=albums.find(a=>a.id===$("album").value)||null;
