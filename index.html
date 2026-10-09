@@ -5366,6 +5366,11 @@ function App() {
     const [mpTrialDownloads, setMpTrialDownloads] = useState([]);
     const [mpCatalogueSetupKey,setMpCatalogueSetupKey] = useState('');
     const [mpCatalogueSync,setMpCatalogueSync] = useState({status:'idle',message:''});
+    const [mpAdminOrders,setMpAdminOrders] = useState([]);
+    const [mpAdminOrdersOffset,setMpAdminOrdersOffset] = useState(0);
+    const [mpAdminOrdersBusy,setMpAdminOrdersBusy] = useState(false);
+    const [mpAdminOrdersError,setMpAdminOrdersError] = useState('');
+    const [mpAdminOrdersHasMore,setMpAdminOrdersHasMore] = useState(false);
     const mpCatalogueBusyRef=useRef(false);
     const mpCreateBusyRef=useRef(false);
     const mpStatusBusyRef=useRef(false);
@@ -6505,7 +6510,7 @@ En breve te las preparo y te las envío por acá 😊
             showSync('error','No se pudo sincronizar: '+detail);
             return false;
         }finally{
-            clearTimeout(timeout);mpCatalogueBusyRef.current=false;setMpTrialBusy(false);setMpCatalogueSetupKey('');
+            clearTimeout(timeout);mpCatalogueBusyRef.current=false;setMpTrialBusy(false);
         }
     };
     const openMpCheckout=purchase=>{
@@ -6633,6 +6638,26 @@ En breve te las preparo y te las envío por acá 😊
     };
     const syncMpCatalogueAndRetry=async()=>{
         if(await syncMpCatalogue())return beginMpTrial(true);
+    };
+    // Esta consulta es exclusiva del panel administrador; la clave nunca se envía a los compradores.
+    const fetchMpAdminOrders=async(loadMore=false)=>{
+        if(!admin||mpAdminOrdersBusy)return;
+        const key=String(mpCatalogueSetupKey||'').trim();
+        if(!key){setMpAdminOrdersError('Ingresá tu clave administrativa de Cloudflare en el campo de Mercado Pago para consultar las ventas.');return;}
+        setMpAdminOrdersBusy(true);setMpAdminOrdersError('');
+        try{
+            const offset=loadMore?mpAdminOrdersOffset:0;
+            const response=await fetch(MP_TRIAL_BASE+'/api/admin-orders',{
+                method:'POST',headers:{'Content-Type':'application/json','X-Setup-Key':key},
+                body:JSON.stringify({offset})
+            });
+            const data=await response.json().catch(()=>null);
+            if(!response.ok||!data||!data.ok)throw Error(data&&data.error||'No se pudieron cargar las ventas. Comprobá que el Worker esté actualizado.');
+            setMpAdminOrders(prev=>loadMore?[...prev,...data.orders]:data.orders);
+            setMpAdminOrdersOffset(offset+data.orders.length);
+            setMpAdminOrdersHasMore(Boolean(data.has_more));
+        }catch(err){setMpAdminOrdersError(String(err&&err.message||err))}
+        finally{setMpAdminOrdersBusy(false)}
     };
     const renderMpCatalogueSyncControls=(retry=false)=>React.createElement("div",{className:"mp-catalogue-controls"},
         React.createElement("label",{htmlFor:retry?'mp-catalogue-key-checkout':'mp-catalogue-key-admin'},"Clave MP_SETUP_KEY"),
@@ -7615,6 +7640,33 @@ React.createElement("div", { id: "order-search-panel", className: "bg-neutral-90
                 React.createElement("p", { className:"text-xs text-sky-100/75 mt-1 mb-3" },
                     "Actualiza en Cloudflare las fotos originales, el precio de cada álbum, descuentos web y cupones. Repetir cuando cambies los precios o las promociones."),
                 renderMpCatalogueSyncControls()),
+            admin && React.createElement("section",{className:"rounded-3xl border border-sky-400/25 bg-neutral-900 p-4 sm:p-5 mb-6","aria-label":"Historial Mercado Pago"},
+                React.createElement("div",{className:"flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3"},
+                    React.createElement("div",null,
+                        React.createElement("h3",{className:"font-black text-lg text-white"},React.createElement("i",{className:"fas fa-file-invoice-dollar text-sky-300 mr-2"}),"Ventas Mercado Pago · todas las órdenes"),
+                        React.createElement("p",{className:"text-xs text-neutral-400 mt-1"},"Consulta directa a Cloudflare, incluso cuando el cliente no volvió a la web después de pagar.")),
+                    React.createElement("button",{type:"button",onClick:()=>fetchMpAdminOrders(false),disabled:mpAdminOrdersBusy,className:"buy-btn rounded-xl px-4 py-3 text-xs font-black"},
+                        mpAdminOrdersBusy?"Cargando órdenes…":"Ver / actualizar ventas")),
+                React.createElement("p",{className:"text-[11px] text-neutral-500 mt-2"},"Acceso reservado al administrador. Usa la clave ingresada arriba, sin guardarla en el navegador."),
+                mpAdminOrdersError&&React.createElement("p",{role:"alert",className:"mt-3 text-xs text-amber-200"},mpAdminOrdersError),
+                React.createElement("div",{className:"grid gap-3 mt-4 max-h-[560px] overflow-y-auto"},
+                    mpAdminOrders.map(o=>React.createElement("article",{key:o.checkout_id,className:"border border-white/10 bg-black/40 rounded-2xl p-3 sm:p-4"},
+                        React.createElement("div",{className:"flex flex-wrap items-center justify-between gap-2"},
+                            React.createElement("div",{className:"min-w-0"},
+                                React.createElement("p",{className:"text-xs text-neutral-400"},new Date(o.created_at).toLocaleString('es-AR')),
+                                React.createElement("b",{className:"text-sm text-white break-all"},o.order_id||o.checkout_id)),
+                            React.createElement("span",{className:`text-xs font-black px-3 py-2 rounded-xl ${o.paid?'bg-emerald-500/15 text-emerald-200 border border-emerald-400/25':'bg-amber-500/15 text-amber-200 border border-amber-400/25'}`},o.paid?'Pago acreditado':o.payment_status||'Pendiente')),
+                        React.createElement("div",{className:"flex flex-wrap gap-2 mt-3 text-sm items-center"},
+                            React.createElement("b",{className:"text-white"},formatPrice(o.amount)),
+                            React.createElement("span",{className:"text-neutral-400"},(o.photos||[]).length+" fotos"),
+                            o.print_count>0&&React.createElement("span",{className:"print-order-badge"},"Impresiones: "+o.print_count),
+                            o.paid&&React.createElement("span",{className:"text-[11px] text-amber-200"},"Factura C: pendiente de emitir en ARCA")),
+                        React.createElement("div",{className:"admin-order-links"},(o.photos||[]).map((p,i)=>p.download_url&&React.createElement("a",{key:i,href:p.download_url,target:"_blank",rel:"noopener noreferrer"},
+                            React.createElement("i",{className:"fas fa-download"}),p.name||("Foto "+(i+1))))),
+                        o.paid&&React.createElement("div",{className:"flex flex-wrap gap-2 mt-3"},
+                            React.createElement("a",{href:"https://facturador.afip.gob.ar/",target:"_blank",rel:"noopener noreferrer",className:"text-xs font-black rounded-xl bg-sky-600 text-white px-3 py-2"},"Emitir factura C en ARCA"),
+                            React.createElement("button",{type:"button",onClick:()=>navigator.clipboard.writeText('Pedido: '+(o.order_id||o.checkout_id)+' · Importe: '+formatPrice(o.amount)+' · Fecha: '+o.created_at),className:"text-xs font-black rounded-xl bg-neutral-800 text-white px-3 py-2"},"Copiar datos para facturar"))))),
+                mpAdminOrdersHasMore&&React.createElement("button",{type:"button",disabled:mpAdminOrdersBusy,onClick:()=>fetchMpAdminOrders(true),className:"mt-4 px-4 py-3 rounded-xl text-xs font-black bg-neutral-800"},"Cargar 50 órdenes más")),
             React.createElement("div", { className:"mt-8 mb-6" },
                 React.createElement("p", { className:"text-[10px] uppercase tracking-[.18em] text-neutral-600 font-black mb-2" }, "Información técnica")),
             React.createElement("div", { className: "mb-4 bg-blue-500/10 border border-blue-500/25 text-blue-100 rounded-2xl px-4 py-3 text-xs leading-relaxed" },
