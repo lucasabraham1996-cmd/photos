@@ -256,6 +256,59 @@ function imageMime(bytes) {
     new TextDecoder().decode(bytes.slice(8,12)) === 'WEBP') return 'image/webp';
   return '';
 }
+async function imageStream(file, onComplete) {
+  if (!file.body) throw new HttpError(502, 'Drive no devolvió una imagen válida');
+  const reader = file.body.getReader(), pending = [], prefix = new Uint8Array(100);
+  const declared = file.headers.get('Content-Length') || '';
+  const encoding = (file.headers.get('Content-Encoding') || 'identity').toLowerCase();
+  const expected = encoding === 'identity' && /^\d+$/.test(declared) && Number.isSafeInteger(Number(declared))
+    ? Number(declared) : null;
+  let size = 0, prefixSize = 0, cancelled = false;
+  const incomplete = () => new HttpError(502, 'No se pudo completar la fotografía. Tu pago sigue registrado; reintentá la descarga');
+  try {
+    // Solo conservar la cabecera de imagen y el bloque inicial, sin cargar el original completo.
+    while (prefixSize < prefix.length) {
+      const part = await reader.read();
+      if (part.done) break;
+      if (!part.value.byteLength) continue;
+      size += part.value.byteLength;
+      if (expected !== null && size > expected) throw incomplete();
+      pending.push(part.value);
+      const n = Math.min(prefix.length - prefixSize, part.value.byteLength);
+      prefix.set(part.value.subarray(0, n), prefixSize);
+      prefixSize += n;
+    }
+    if (prefixSize < prefix.length || !imageMime(prefix))
+      throw new HttpError(502, 'Drive no devolvió una imagen válida');
+  } catch (err) {
+    await reader.cancel().catch(() => {});
+    throw err instanceof HttpError ? err : incomplete();
+  }
+  const body = new ReadableStream({
+    async pull(controller) {
+      try {
+        if (pending.length) { controller.enqueue(pending.shift()); return; }
+        const part = await reader.read();
+        if (cancelled) return;
+        if (part.done) {
+          if (expected !== null && size !== expected) throw incomplete();
+          // Registrar evidencia solo tras EOF completo, nunca ante cancelación o error de Drive.
+          if (onComplete) await onComplete();
+          if (!cancelled) controller.close();
+          return;
+        }
+        size += part.value.byteLength;
+        if (expected !== null && size > expected) throw incomplete();
+        controller.enqueue(part.value);
+      } catch (_) {
+        await reader.cancel().catch(() => {});
+        if (!cancelled) controller.error(incomplete());
+      }
+    },
+    cancel(reason) { cancelled = true; pending.length = 0; return reader.cancel(reason); }
+  }, { highWaterMark: 0 });
+  return { body, mime: imageMime(prefix) };
+}
 async function download(request, env, url) {
   await rateLimit(request, env, 'download', 60);
   const parts = url.pathname.split('/');
@@ -278,33 +331,16 @@ async function download(request, env, url) {
   let file;
   try {
     file = await fetch('https://drive.google.com/uc?export=download&id=' + encodeURIComponent(item.drive_id),
-      { redirect: 'follow', signal: AbortSignal.timeout(20000) });
+      { redirect: 'follow', signal: AbortSignal.timeout(120000) });
   } catch (_) { throw new HttpError(502, 'No se pudo obtener la fotografía. Reintentá la descarga'); }
   const contentType = (file.headers.get('Content-Type') || '').split(';')[0].toLowerCase();
   if (!file.ok || !['image/jpeg','image/png','image/webp','application/octet-stream'].includes(contentType))
     throw new HttpError(502, 'El original de Drive no se pudo descargar. Tu pago sigue registrado');
-  let body = file.body, mime = contentType;
-  if (row.mode === 'validation') {
-    // Evidencia real de bytes completos y firma de imagen; no marcar una página HTML como entrega.
-    const reader = file.body.getReader(), chunks = [];
-    let size = 0;
-    for (;;) {
-      const part = await reader.read();
-      if (part.done) break;
-      size += part.value.length;
-      if (size > 20000000) { await reader.cancel(); throw new HttpError(502, 'La foto de validación supera 20 MB'); }
-      chunks.push(part.value);
-    }
-    const bytes = new Uint8Array(size);
-    let offset = 0;
-    for (const part of chunks) { bytes.set(part, offset); offset += part.length; }
-    mime = imageMime(bytes);
-    if (!mime || size < 100) throw new HttpError(502, 'Drive no devolvió una imagen válida');
-    body = bytes;
+  const { body, mime } = await imageStream(file, row.mode === 'validation' ? async () => {
     await env.LA_ORDERS_DB.prepare(
       'UPDATE la_mp_live_orders SET download_verified_at=COALESCE(download_verified_at,?),updated_at=? WHERE checkout_id=?'
     ).bind(now(), now(), row.checkout_id).run();
-  }
+  } : undefined);
   const filename = String(item.name || 'foto.jpg').replace(/[\r\n/\\]/g, '_').slice(0,200);
   return new Response(body, { headers: {
     'Content-Type': mime, 'Content-Disposition': "attachment; filename*=UTF-8''" + encodeURIComponent(filename),

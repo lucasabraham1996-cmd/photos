@@ -19,6 +19,24 @@ const schemas=['mp-test-schema.sql','mp-multi-schema.sql','mp-live-schema.sql'].
 const appSource=readFileSync(new URL('../index.html',import.meta.url),'utf8');
 const stamp='2026-10-09T00:00:00.000Z';
 
+function streamedPhoto(options) {
+  const size=options.size||200, chunkSize=options.chunkSize||65536;
+  const magic=options.magic||[255,216,255];
+  let offset=0;options.generated=0;options.cancelled=false;
+  const body=new ReadableStream({
+    pull(controller){
+      if(options.failAt!==undefined&&offset>=options.failAt){controller.error(Error('Drive connection lost'));return}
+      if(offset===size){controller.close();return}
+      const end=Math.min(size,offset+chunkSize),bytes=new Uint8Array(end-offset);
+      for(const [at,value] of [...magic.map((value,i)=>[i,value]),[size-2,255],[size-1,217]])
+        if(at>=offset&&at<end)bytes[at-offset]=value;
+      offset=end;options.generated=offset;controller.enqueue(bytes);
+    },
+    cancel(){options.cancelled=true}
+  },{highWaterMark:0});
+  return new Response(body,{headers:{'Content-Type':'image/jpeg',
+    'Content-Length':String(options.declaredSize??size)}});
+}
 function fixture() {
   const db=new DatabaseSync(':memory:');
   for(const schema of schemas)db.exec(schema);
@@ -38,7 +56,7 @@ function fixture() {
   }};
   const env={LA_ORDERS_DB:d1,MP_ACCESS_TOKEN_PROD:'production-fixture',MP_WEBHOOK_SECRET_PROD:'webhook-fixture',
     MP_SETUP_KEY:'admin-fixture',MP_LIVE_MODE:'validation',MP_ACCESS_TOKEN_TEST:'test-fixture'};
-  const state={posts:[],orders:new Map(),mpReads:0,driveReads:0,driveHTML:false,failCreateOnce:false};
+  const state={posts:[],orders:new Map(),mpReads:0,driveReads:0,driveHTML:false,driveOptions:null,failCreateOnce:false};
   const originalFetch=globalThis.fetch;
   globalThis.fetch=async(url,options={})=>{
     url=String(url);
@@ -59,6 +77,7 @@ function fixture() {
     if(url.startsWith('https://drive.google.com/')){
       state.driveReads++;
       if(state.driveHTML)return new Response('<html>Drive permission required</html>',{headers:{'Content-Type':'text/html'}});
+      if(state.driveOptions)return streamedPhoto(state.driveOptions);
       const bytes=new Uint8Array(200);bytes.set([255,216,255]);bytes.set([255,217],198);
       return new Response(bytes,{headers:{'Content-Type':'image/jpeg'}});
     }
@@ -94,8 +113,8 @@ function fixture() {
       const res=await this.request('/api/live-status',{checkout_id:purchase.checkout_id,receipt_token:purchase.receipt_token});
       return {status:res.status,...await res.json()};
     },
-    download(purchase,token=purchase.receipt_token){
-      return this.request('/api/live-download/'+purchase.checkout_id+'/0',undefined,{'X-Receipt-Token':token});
+    download(purchase,token=purchase.receipt_token,handler=worker){
+      return this.request('/api/live-download/'+purchase.checkout_id+'/0',undefined,{'X-Receipt-Token':token},'GET',handler);
     },
     close(){globalThis.fetch=originalFetch;db.close()}
   };
@@ -196,14 +215,75 @@ test('Una página HTML de Drive no cuenta como descarga verificada',()=>withFixt
   f.env.MP_LIVE_MODE='public';
   assert.equal((await (await f.request('/api/payment-config')).json()).public_enabled,false);
 }));
+test('Una foto de 24 MiB se entrega por streaming y habilita la validación solo al terminar',async()=>{
+  for(const handler of [worker,bundleWorker])await withFixture(async f=>{
+    const p=await f.create();await f.download(p);f.paid(p);await f.notify(p);
+    const options=f.state.driveOptions={size:24*1024*1024};
+    const file=await f.download(p,p.receipt_token,handler);
+    assert.equal(file.status,200);assert.equal(file.headers.get('Content-Type'),'image/jpeg');
+    assert.ok(options.generated<options.size,'No debe leer todo Drive antes de devolver la respuesta');
+    assert.equal(f.db.prepare('SELECT download_verified_at FROM la_mp_live_orders').get().download_verified_at,null);
+    f.env.MP_LIVE_MODE='public';
+    assert.equal((await (await f.request('/api/payment-config')).json()).public_enabled,false);
+    let received=0;for await(const chunk of file.body)received+=chunk.byteLength;
+    assert.equal(received,options.size);
+    assert.ok(f.db.prepare('SELECT download_verified_at FROM la_mp_live_orders').get().download_verified_at);
+    assert.equal((await (await f.request('/api/payment-config')).json()).public_enabled,true);
+    assert.equal(f.state.posts.length,1);
+  });
+});
+test('Una descarga truncada no registra entrega aunque tenga firma JPEG válida',()=>withFixture(async f=>{
+  const p=await f.create();await f.download(p);f.paid(p);await f.notify(p);
+  f.state.driveOptions={size:200,declaredSize:400};
+  const file=await f.download(p);assert.equal(file.status,200);
+  await assert.rejects(file.arrayBuffer(),/No se pudo completar la fotografía/);
+  assert.equal(f.db.prepare('SELECT download_verified_at FROM la_mp_live_orders').get().download_verified_at,null);
+  f.env.MP_LIVE_MODE='public';
+  assert.equal((await (await f.request('/api/payment-config')).json()).public_enabled,false);
+}));
+test('Una caída de Drive permite reintentar la misma compra pagada sin crear otro cobro',()=>withFixture(async f=>{
+  const p=await f.create();await f.download(p);f.paid(p);await f.notify(p);
+  f.state.driveOptions={size:2000,chunkSize:256,failAt:512};
+  const file=await f.download(p);assert.equal(file.status,200);
+  await assert.rejects(file.arrayBuffer(),/No se pudo completar la fotografía/);
+  assert.equal(f.db.prepare('SELECT download_verified_at FROM la_mp_live_orders').get().download_verified_at,null);
+  f.state.driveOptions={size:24*1024*1024};
+  const retry=await f.download(p);let received=0;
+  for await(const chunk of retry.body)received+=chunk.byteLength;
+  assert.equal(received,24*1024*1024);
+  assert.ok(f.db.prepare('SELECT download_verified_at FROM la_mp_live_orders').get().download_verified_at);
+  assert.equal(f.state.posts.length,1);
+}));
+test('Cancelar la descarga cancela Drive y no registra una entrega completa',()=>withFixture(async f=>{
+  const p=await f.create();await f.download(p);f.paid(p);
+  const options=f.state.driveOptions={size:24*1024*1024};
+  const file=await f.download(p),reader=file.body.getReader();
+  assert.equal((await reader.read()).value.byteLength,65536);
+  await reader.cancel('buyer cancelled download');
+  assert.equal(options.cancelled,true);
+  assert.ok(options.generated<options.size);
+  assert.equal(f.db.prepare('SELECT download_verified_at FROM la_mp_live_orders').get().download_verified_at,null);
+}));
+test('La firma de imagen puede llegar dividida entre bloques de Drive',()=>withFixture(async f=>{
+  const p=await f.create();f.paid(p);f.state.driveOptions={size:200,chunkSize:1};
+  const file=await f.download(p);assert.equal(file.status,200);
+  assert.equal((await file.arrayBuffer()).byteLength,200);
+  assert.ok(f.db.prepare('SELECT download_verified_at FROM la_mp_live_orders').get().download_verified_at);
+}));
+test('Un cuerpo inválido rotulado como JPEG se rechaza antes de entregar datos',()=>withFixture(async f=>{
+  const p=await f.create();f.paid(p);const options=f.state.driveOptions={size:2000,magic:[60,104,116,109,108]};
+  assert.equal((await f.download(p)).status,502);
+  assert.equal(options.cancelled,true);
+  assert.equal(f.db.prepare('SELECT download_verified_at FROM la_mp_live_orders').get().download_verified_at,null);
+}));
 test('La apertura pública requiere bloqueo previo, pago correcto y bytes recibidos',()=>withFixture(async f=>{
   const p=await f.create();f.paid(p);
-  assert.equal((await f.download(p)).status,200); // Sin bloqueo previo no alcanza.
+  const file=await f.download(p);assert.equal(file.status,200);await file.arrayBuffer(); // Sin bloqueo previo no alcanza.
   f.env.MP_LIVE_MODE='public';
   assert.equal((await (await f.request('/api/payment-config')).json()).public_enabled,false);
   f.env.MP_LIVE_MODE='validation';
   f.state.orders.get(p.order_id).status='created';f.state.orders.get(p.order_id).status_detail='created';
-  await f.download(p);f.paid(p);await f.download(p);
+  await f.download(p);f.paid(p);await (await f.download(p)).arrayBuffer();
   f.env.MP_LIVE_MODE='public';
   assert.equal((await (await f.request('/api/payment-config')).json()).public_enabled,false); // Falta webhook.
   await f.notify(p);
@@ -310,7 +390,7 @@ test('Aplicación conserva el intento para reintentar un POST fallido sin duplic
   assert.equal(f.state.orders.size,1);
 }));
 test('En modo público la aplicación no pide ni envía MP_SETUP_KEY',()=>withFixture(async f=>{
-  const p=await f.create();await f.download(p);f.paid(p);await f.notify(p);await f.download(p);f.env.MP_LIVE_MODE='public';
+  const p=await f.create();await f.download(p);f.paid(p);await f.notify(p);await (await f.download(p)).arrayBuffer();f.env.MP_LIVE_MODE='public';
   const app=appHarness(f,{mode:'public',available:true,public_enabled:true,validation_amount:200});
   await app.actions.submitMpTrial({kind:'photos',items:[{album_id:'album-01',photo_id:'photo-0'}]},2000);
   assert.equal(app.context.promptCount,0);assert.equal(app.context.mpTrialPurchase.amount,2000);

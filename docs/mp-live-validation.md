@@ -3,7 +3,7 @@
 ## Estado de esta rama
 
 Preparada y probada **localmente**. Lucas desplegó el nuevo Worker en modo
-`validation`. No se modificó `main` ni se realizó una compra real desde esta sesión.
+`validation` y completó una compra real de ARS 200. No se modificó `main`.
 
 El acceso automatizado a Cloudflare quedó bloqueado por su verificación. Lucas
 continúa la configuración en su propio navegador, con revisión de sus capturas.
@@ -39,8 +39,18 @@ La captura de `2026-10-09T17:11:29Z` confirmó esta respuesta de
 {"ok":true,"mode":"validation","public_enabled":false,"available":true,"validation_amount":200}
 ```
 
-Queda pendiente la compra real de validación y sus cuatro evidencias antes de
-habilitar los cobros públicos.
+La captura de `2026-10-09T17:23:57Z` confirmó el bloqueo de descarga anterior al
+pago, la acreditación real de ARS 200 y el webhook recibido y autenticado. La
+fotografía es `QUINTA-CAAB-CACP-404.jpg`. Su descarga falló porque el original
+supera el límite de 20 MB del primer módulo de validación.
+
+Se corrigió ese límite usando streaming: se verifica la cabecera de imagen, se
+transfiere sin almacenar todo el original en memoria y se registra la evidencia
+al terminar el flujo, comprobando el tamaño declarado cuando corresponde. Una
+cancelación, interrupción o respuesta truncada no registra entrega completa.
+El mismo pedido pagado permite reintentar; no es necesario crear otro cobro.
+Esta corrección todavía requiere desplegarse y verificar la fotografía real
+antes de habilitar los cobros públicos.
 
 ## Archivos y compatibilidad
 
@@ -159,8 +169,10 @@ node scripts/build-mp-worker.mjs
 node --check /tmp/lucasabraham-mp-deploy.mjs
 ```
 
-34 pruebas correctas: 13 de precios y 21 de flujo, firma, SQLite, idempotencia,
-rechazos, reembolsos y aplicación → Worker → SQLite.
+40 pruebas correctas: 13 de precios y 27 de flujo, firma, SQLite, idempotencia,
+rechazos, reembolsos, streaming y aplicación → Worker → SQLite. Incluyen una foto
+de 24 MiB en el módulo fuente y el bundle, cancelación, truncamiento, interrupción
+y reintento de una compra pagada sin generar otra orden.
 Mercado Pago y Drive se simulan en estas pruebas. **No prueban un cobro real.**
 
 Referencias oficiales utilizadas:
