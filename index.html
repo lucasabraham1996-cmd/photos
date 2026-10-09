@@ -6651,7 +6651,7 @@ En breve te las preparo y te las envío por acá 😊
         const photos=selectedPhotos.length?selectedPhotos:mpTrialPurchase&&mpTrialPurchase.order_data&&mpTrialPurchase.order_data.items||[];
         const amount=selectedPhotos.length?checkoutTotal:mpTrialPurchase&&mpTrialPurchase.amount||0;
         const printCount=selectedPhotos.length?printSelectedPhotos.length:mpTrialPurchase&&mpTrialPurchase.order_data&&mpTrialPurchase.order_data.printCount||0;
-        const details=photos.slice(0,25).map(p=>'• '+p.albumName+' · '+(p.code||p.name)).join('\n');
+        const details=photos.slice(0,25).map(p=>'• '+p.albumName+' · '+(p.name||p.code||p.id)).join('\n');
         const message='Hola Lucas! Quiero consultar otros medios de pago para estas fotos.\n\n'+details+
             (photos.length>25?'\nY '+(photos.length-25)+' fotos más.':'')+
             '\n\nTotal de la selección: '+formatPrice(amount)+

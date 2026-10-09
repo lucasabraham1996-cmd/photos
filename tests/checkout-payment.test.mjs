@@ -19,7 +19,7 @@ test('El carrito ofrece pago directo y consulta al WhatsApp personal sin registr
   const url=new URL(actions[1].props.href);
   assert.equal(url.hostname,'wa.me');assert.equal(url.pathname,'/5493515580770');
   assert.match(url.searchParams.get('text'),/consultar otros medios de pago/);
-  assert.match(url.searchParams.get('text'),/All Boys · 001/);
+  assert.match(url.searchParams.get('text'),/All Boys · Foto 1.jpg/);
   assert.doesNotMatch(url.searchParams.get('text'),/comprobante|transferí|puntos|club/i);
   assert.equal(nodes(tree).some(n=>/checkout-floating-cta|checkout-simple-cta/.test(n.props.className||'')),false);
   assert.equal(h.ctx.requests.length,0);assert.equal(h.storage.size,0);
