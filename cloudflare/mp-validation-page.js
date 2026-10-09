@@ -16,6 +16,7 @@ ol{padding-left:23px}li{margin:14px 0}#message{white-space:pre-wrap;overflow-wra
 <section class="card"><form id="form">
 <label for="key">Clave de administración</label><input id="key" type="password" autocomplete="off" required>
 <button id="create" disabled>Preparar compra privada</button>
+<button id="recover" type="button" class="secondary" disabled>Recuperar compra ya pagada</button>
 </form><p id="photo"></p><a id="pay" class="action" hidden target="_blank" rel="noopener noreferrer">Abrir Mercado Pago</a>
 <button id="status" class="secondary" hidden>Revisar estado</button>
 <button id="download" hidden>Descargar fotografía</button><p id="message" role="status" aria-live="polite">Comprobando disponibilidad…</p></section>
@@ -68,7 +69,7 @@ async function check(){
   }
   $('paid').textContent='Verificado: Mercado Pago acreditó '+money(state.amount)+'.';$('paid').className='success';
   message('Pago acreditado. Tu fotografía está lista.');
-  if(!purchase.downloaded&&autoDownloaded!==purchase.checkout_id){autoDownloaded=purchase.checkout_id;try{await getFile()}catch(e){autoDownloaded='';throw e}}
+  if(!purchase.downloaded&&autoDownloaded!==purchase.checkout_id){autoDownloaded=purchase.checkout_id;try{await getFile()}catch(e){autoDownloaded='';message(e.message)}}
  }catch(e){$('download').hidden=true;message(e.message)}
  finally{busy=false}
 }
@@ -96,13 +97,30 @@ $('form').addEventListener('submit',async event=>{
  }catch(e){message(e.message)}
  finally{busy=false;$('create').disabled=Boolean(purchase)}
 });
+$('recover').addEventListener('click',async()=>{
+ if(busy||!config||!config.available||config.mode!=='validation')return;
+ const key=$('key').value;
+ if(!key){message('Ingresá la clave de administración para recuperar la compra acreditada.');$('key').focus();return}
+ busy=true;$('recover').disabled=true;$('key').value='';let recovered=false;
+ try{
+  const result=await call('/api/live-recover',{},key);
+  purchase={...result,name:result.name,amount:result.quote.amount,paid:true,downloaded:false,
+   before_blocked:Boolean(result.verification&&result.verification.before_payment_blocked),
+   webhook_received:Boolean(result.verification&&result.verification.webhook_received)};
+  saved();localStorage.removeItem('LA_MP_VALIDATION_REQUEST');$('create').disabled=true;
+  message('Compra acreditada recuperada. Comprobando la descarga…');recovered=true;
+ }catch(e){message(e.message)}
+ finally{busy=false;$('recover').disabled=false}
+ if(recovered)await check();
+});
 $('status').addEventListener('click',check);
 $('download').addEventListener('click',()=>getFile().catch(e=>message(e.message)));
-fetch('/api/payment-config').then(r=>r.json()).then(data=>{
+const initialization=fetch('/api/payment-config').then(r=>r.json()).then(async data=>{
  config=data;$('amount').textContent=money(data.validation_amount||200);
  $('create').disabled=!data.available||data.mode!=='validation'||Boolean(purchase);
+ $('recover').disabled=!data.available||data.mode!=='validation';
  message(data.available&&data.mode==='validation'?'Ingresá la clave de administración para preparar una foto.':'La validación privada todavía no está habilitada.');
- if(purchase){saved();check()}
+ if(purchase){saved();await check()}
 }).catch(()=>message('No se pudo comprobar la configuración. Los cobros permanecen cerrados.'));
 const timer=setInterval(()=>{if(!document.hidden&&attempts++<90&&purchase&&(!purchase.paid||!purchase.downloaded||!purchase.webhook_received))check()},10000);
 window.addEventListener('focus',check);

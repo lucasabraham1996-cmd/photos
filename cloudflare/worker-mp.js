@@ -249,6 +249,28 @@ async function checkoutStatus(request, env) {
     downloads: state.paid ? items.map((p, i) => ({ name: p.name,
       url: '/api/live-download/' + row.checkout_id + '/' + i })) : [] };
 }
+async function recoverValidation(request, env) {
+  requireAdmin(request, env);
+  const config = await paymentConfig(env);
+  if (!config.available || config.mode !== 'validation')
+    throw new HttpError(503, 'La recuperación privada solo está disponible durante la validación');
+  await rateLimit(request, env, 'recover', 6);
+  const row = await env.LA_ORDERS_DB.prepare(
+    "SELECT * FROM la_mp_live_orders WHERE mode='validation' AND paid_verified_at IS NOT NULL ORDER BY paid_verified_at DESC LIMIT 1"
+  ).first();
+  if (!row) throw new HttpError(404, 'No se encontró una compra de validación acreditada');
+  const state = await refreshOrder(env, row);
+  if (!state.paid) throw new HttpError(409, 'Mercado Pago no confirma la acreditación de esa compra. El pedido sigue registrado');
+  // La clave de administración permite recuperar únicamente la validación privada.
+  // Reemplazar el recibo perdido, conservando la orden, el pago y sus evidencias.
+  const token = Array.from(crypto.getRandomValues(new Uint8Array(32)), x => x.toString(16).padStart(2,'0')).join('');
+  await env.LA_ORDERS_DB.prepare(
+    "UPDATE la_mp_live_orders SET receipt_hash=?,updated_at=? WHERE checkout_id=? AND mode='validation'"
+  ).bind(await hash(token), now(), row.checkout_id).run();
+  return { ...checkoutResult(row, token), name: JSON.parse(row.items_json)[0].name,
+    verification: { before_payment_blocked: Boolean(row.before_payment_blocked_at),
+      webhook_received: Boolean(row.webhook_verified_at) } };
+}
 function imageMime(bytes) {
   if (bytes.length >= 3 && bytes[0] === 255 && bytes[1] === 216 && bytes[2] === 255) return 'image/jpeg';
   if (bytes.length >= 8 && bytes.slice(0,8).every((v,i) => v === [137,80,78,71,13,10,26,10][i])) return 'image/png';
@@ -428,6 +450,8 @@ export default {
         return json(await createCheckout(request, env), 200, origin);
       if (path === '/api/live-status' && request.method === 'POST')
         return json(await checkoutStatus(request, env), 200, origin);
+      if (path === '/api/live-recover' && request.method === 'POST')
+        return json(await recoverValidation(request, env), 200, origin);
       if (path.startsWith('/api/live-download/') && request.method === 'GET') {
         const res = await download(request, env, url);
         if (origin === APP_ORIGIN) {

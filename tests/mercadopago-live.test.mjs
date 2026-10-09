@@ -8,6 +8,7 @@ import { DatabaseSync } from 'node:sqlite';
 import { readFileSync } from 'node:fs';
 import { createHmac } from 'node:crypto';
 import worker from '../cloudflare/worker-mp.js';
+import validationPage from '../cloudflare/mp-validation-page.js';
 import { buildWorker } from '../scripts/build-mp-worker.mjs';
 const bundleWorker=(await import('data:text/javascript;base64,'+Buffer.from(buildWorker()).toString('base64'))).default;
 
@@ -135,6 +136,46 @@ test('Validación exige clave y permite solamente una foto digital',()=>withFixt
   assert.equal((await f.request('/api/live-checkout',f.input())).status,401);
   assert.equal((await f.request('/api/live-checkout',f.input(3),{'X-Setup-Key':'admin-fixture'})).status,400);
   assert.equal(f.state.posts.length,0);
+}));
+test('Recuperar una validación exige clave y se rechaza fuera del modo privado',()=>withFixture(async f=>{
+  const p=await f.create();f.paid(p);await f.status(p);
+  const original=f.db.prepare('SELECT receipt_hash FROM la_mp_live_orders').get().receipt_hash;
+  for(const key of ['', 'incorrecta'])
+    assert.equal((await f.request('/api/live-recover',{},key?{'X-Setup-Key':key}:{})).status,401);
+  f.env.MP_LIVE_MODE='public';
+  assert.equal((await f.request('/api/live-recover',{}, {'X-Setup-Key':'admin-fixture'})).status,503);
+  assert.equal(f.db.prepare('SELECT receipt_hash FROM la_mp_live_orders').get().receipt_hash,original);
+  assert.equal(f.state.posts.length,1);
+}));
+test('Recuperación devuelve la compra acreditada aunque exista otro intento pendiente',()=>withFixture(async f=>{
+  const paid=await f.create();await f.download(paid);f.paid(paid);await f.notify(paid);
+  const pending=await f.create();await f.download(pending);
+  const response=await f.request('/api/live-recover',{}, {'X-Setup-Key':'admin-fixture'});
+  const recovered=await response.json();assert.equal(response.status,200);
+  assert.equal(recovered.checkout_id,paid.checkout_id);assert.equal(recovered.order_id,paid.order_id);
+  assert.equal(recovered.quote.amount,200);assert.equal(recovered.name,'Foto 0.jpg');
+  assert.equal(recovered.verification.before_payment_blocked,true);assert.equal(recovered.verification.webhook_received,true);
+  assert.match(recovered.receipt_token,/^[a-f0-9]{64}$/);assert.notEqual(recovered.receipt_token,paid.receipt_token);
+  assert.equal((await f.download(paid)).status,403);
+  const file=await f.download(recovered);assert.equal(file.status,200);await file.arrayBuffer();
+  assert.ok(f.db.prepare('SELECT download_verified_at FROM la_mp_live_orders WHERE checkout_id=?').get(paid.checkout_id).download_verified_at);
+  assert.equal(f.db.prepare('SELECT payment_valid FROM la_mp_live_orders WHERE checkout_id=?').get(pending.checkout_id).payment_valid,0);
+  assert.equal(f.db.prepare('SELECT COUNT(*) AS n FROM la_mp_live_orders').get().n,2);
+  assert.equal(f.state.posts.length,2);
+}));
+test('Recuperación no crea una orden cuando aún no existe una compra acreditada',()=>withFixture(async f=>{
+  await f.create();
+  assert.equal((await f.request('/api/live-recover',{}, {'X-Setup-Key':'admin-fixture'})).status,404);
+  assert.equal(f.state.posts.length,1);assert.equal(f.state.mpReads,0);
+}));
+test('Recuperación consulta Mercado Pago y rechaza una compra reembolsada sin cambiar su recibo',()=>withFixture(async f=>{
+  const p=await f.create();f.paid(p);await f.status(p);
+  const original=f.db.prepare('SELECT receipt_hash FROM la_mp_live_orders').get().receipt_hash;
+  f.paid(p,{status_detail:'refunded'});
+  assert.equal((await f.request('/api/live-recover',{}, {'X-Setup-Key':'admin-fixture'})).status,409);
+  assert.equal(f.db.prepare('SELECT receipt_hash FROM la_mp_live_orders').get().receipt_hash,original);
+  assert.equal(f.db.prepare('SELECT payment_valid FROM la_mp_live_orders').get().payment_valid,0);
+  assert.equal(f.state.posts.length,1);
 }));
 test('La foto de validación cobra $200, usa retorno propio y no envía payer ficticio',()=>withFixture(async f=>{
   const p=await f.create(f.input(1,{return_to:'validation'})),payload=f.state.posts[0].payload;
@@ -334,6 +375,49 @@ test('Rate limit rechaza el séptimo intento y no crea pedidos adicionales',()=>
   for(let i=0;i<6;i++)assert.equal((await f.request('/api/live-checkout',f.input(),{'X-Setup-Key':'incorrecta'})).status,401);
   assert.equal((await f.request('/api/live-checkout',f.input(),{'X-Setup-Key':'admin-fixture'})).status,429);
   assert.equal(f.state.posts.length,0);
+}));
+
+function validationHarness(f,purchase) {
+  const storage=new Map([['LA_MP_VALIDATION_PURCHASE',JSON.stringify(purchase)]]),elements=new Map(),downloads=[];
+  const element=id=>{
+    if(!elements.has(id))elements.set(id,{value:'',textContent:'',className:'',disabled:false,
+      hidden:['pay','status','download'].includes(id),handlers:{},
+      addEventListener(event,handler){this.handlers[event]=handler},focus(){}});
+    return elements.get(id);
+  };
+  const context={
+    document:{hidden:false,getElementById:element,body:{appendChild(){}},
+      createElement(){return {click(){downloads.push('photo')},remove(){}}}},
+    window:{addEventListener(){}},setTimeout(){},setInterval(){return 1},
+    URL:{createObjectURL(){return 'blob:fixture'},revokeObjectURL(){}},
+    localStorage:{getItem:key=>storage.get(key)||null,setItem:(key,value)=>storage.set(key,value),removeItem:key=>storage.delete(key)},
+    fetch:(path,options={})=>f.request(path,options.body===undefined?undefined:JSON.parse(options.body),
+      options.headers||{},options.method||'GET')
+  };
+  const script=validationPage.match(/<script>([\s\S]*?)<\/script>/)[1];
+  const initialization=new Function('ctx','with(ctx){'+script+';return initialization;}')(context);
+  return {storage,elements,downloads,element,ready:()=>initialization};
+}
+test('La página recupera el pedido pagado y descarga sin abrir otro checkout',()=>withFixture(async f=>{
+  const paid=await f.create();await f.download(paid);f.paid(paid);await f.notify(paid);
+  const pending=await f.create();await f.download(pending);
+  const page=validationHarness(f,{...pending,name:'Foto 0.jpg',amount:200,before_blocked:true,paid:false,downloaded:false});
+  await page.ready();assert.equal(page.element('pay').hidden,false);
+  page.element('key').value='admin-fixture';await page.element('recover').handlers.click();
+  const saved=JSON.parse(page.storage.get('LA_MP_VALIDATION_PURCHASE'));
+  assert.equal(saved.checkout_id,paid.checkout_id);assert.equal(saved.paid,true);assert.equal(saved.downloaded,true);
+  assert.equal(page.element('pay').hidden,true);assert.equal(page.element('key').value,'');
+  assert.equal(page.downloads.length,1);assert.equal(f.state.posts.length,2);
+  assert.equal([...page.storage.values()].some(value=>value.includes('admin-fixture')),false);
+}));
+test('La página conserva el botón de descarga para reintentar después de una interrupción',()=>withFixture(async f=>{
+  const p=await f.create();await f.download(p);f.paid(p);await f.notify(p);
+  f.state.driveOptions={size:2000,chunkSize:256,failAt:512};
+  const page=validationHarness(f,{...p,name:'Foto 0.jpg',amount:200,before_blocked:true,paid:true,downloaded:false});
+  await page.ready();assert.equal(page.element('download').hidden,false);assert.equal(page.downloads.length,0);
+  f.state.driveOptions=null;await page.element('download').handlers.click();
+  assert.equal(page.downloads.length,1);assert.equal(f.state.posts.length,1);
+  assert.equal(JSON.parse(page.storage.get('LA_MP_VALIDATION_PURCHASE')).downloaded,true);
 }));
 
 function appHarness(f,config={mode:'validation',available:true,validation_amount:200,public_enabled:false}) {

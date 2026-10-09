@@ -16,7 +16,7 @@ conservaron los cuatro secretos del piloto. Las capturas confirmaron las variabl
 `MP_LIVE_MODE=validation`, `MP_VALIDATION_AMOUNT=200`, `MP_APP_URL` y el secreto
 `MP_ACCESS_TOKEN_PROD`. Lucas informó que agregó también `MP_WEBHOOK_SECRET_PROD`.
 La disponibilidad del módulo desplegado confirma que recibe los secretos requeridos;
-su validez real se verificará al crear el cobro y recibir el webhook autenticado.
+su validez real se confirmó con la compra acreditada y el webhook autenticado.
 
 El 9 de octubre de 2026, la consulta previa de D1 registró `2026-10-09T17:03:31Z`
 y las tablas `la_mp_bundle_orders`, `la_mp_catalog`, `la_mp_pricing` y
@@ -51,6 +51,14 @@ cancelación, interrupción o respuesta truncada no registra entrega completa.
 El mismo pedido pagado permite reintentar; no es necesario crear otro cobro.
 Esta corrección todavía requiere desplegarse y verificar la fotografía real
 antes de habilitar los cobros públicos.
+
+La captura de `2026-10-09T17:39:52Z` mostró un pedido pendiente en la página,
+sin las evidencias del pedido previamente acreditado. Se agregó una recuperación
+privada: la clave de administración recupera la última validación acreditada,
+consulta otra vez Mercado Pago y reemplaza su recibo de descarga. Conserva el
+pedido, el importe y las evidencias anteriores; no crea otro cobro. La página
+reintenta la descarga y mantiene el botón disponible si se interrumpe.
+Este módulo de recuperación también requiere despliegue y verificación real.
 
 ## Archivos y compatibilidad
 
@@ -122,6 +130,12 @@ Las credenciales permanecen dentro de Cloudflare; no van a GitHub ni al navegado
 7. Confirmar que el archivo abrió correctamente y la notificación productiva llegó.
    No registrar la verificación como completada si falta alguna de estas evidencias.
 
+Si se perdió el recibo del navegador o la página muestra otro intento pendiente
+después de pagar: ingresar la clave de administración y pulsar **Recuperar compra
+ya pagada**. `POST /api/live-recover` solo funciona en modo `validation`, requiere
+esa clave y verifica nuevamente la acreditación. No preparar ni pagar otra orden.
+El recibo anterior de esa validación queda invalidado al recuperarla.
+
 `POST /api/live-diagnostics`, autorizado mediante `X-Setup-Key`, muestra los últimos
 pedidos de validación y su evidencia, sin revelar claves ni tokens de descarga.
 D1 registra bloqueo previo, comprobación de pago, webhook autenticado y recepción
@@ -157,8 +171,9 @@ No se ejecutó esta apertura en esta sesión.
 - Los originales de Drive siguen públicos, tal como están en la web existente.
   Este control protege las descargas de este checkout; no restringe enlaces de Drive
   que ya sean conocidos. Cambiar esa accesibilidad requeriría otra migración.
-- La recuperación automática usa el mismo navegador. Conservar su recibo local;
-  no se agregó envío de recibos por email.
+- La recuperación automática usa el recibo del mismo navegador. Para la validación
+  privada existe además recuperación mediante clave de administración; los pedidos
+  públicos no utilizan esta ruta. No se agregó envío de recibos por email.
 
 ## Verificación local
 
@@ -169,10 +184,11 @@ node scripts/build-mp-worker.mjs
 node --check /tmp/lucasabraham-mp-deploy.mjs
 ```
 
-40 pruebas correctas: 13 de precios y 27 de flujo, firma, SQLite, idempotencia,
-rechazos, reembolsos, streaming y aplicación → Worker → SQLite. Incluyen una foto
+46 pruebas correctas: 13 de precios y 33 de flujo, firma, SQLite, idempotencia,
+rechazos, reembolsos, streaming, recuperación y aplicación → Worker → SQLite. Incluyen una foto
 de 24 MiB en el módulo fuente y el bundle, cancelación, truncamiento, interrupción
-y reintento de una compra pagada sin generar otra orden.
+y reintento de una compra pagada sin generar otra orden. La página privada se
+ejecuta con el Worker y SQLite para comprobar la recuperación y el reintento.
 Mercado Pago y Drive se simulan en estas pruebas. **No prueban un cobro real.**
 
 Referencias oficiales utilizadas:
