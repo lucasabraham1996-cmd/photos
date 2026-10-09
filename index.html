@@ -6523,7 +6523,7 @@ En breve te las preparo y te las envío por acá 😊
     const submitMpTrial=async(selection,expectedTotal,openCheckout=false)=>{
         if(mpCreateBusyRef.current||mpStatusBusyRef.current)return;
         const mode=MP_TRIAL_ENABLED?'test':mpPaymentConfig.mode;
-        if(!MP_TRIAL_ENABLED&&!mpPaymentConfig.public_enabled){
+        if(!MP_TRIAL_ENABLED&&!mpPaymentConfig.public_enabled&&!(admin&&mode==='validation')){
             setMpTrialMessage('Los pagos automáticos todavía no están disponibles. Podés comprar por WhatsApp.');
             return;
         }
@@ -6533,9 +6533,10 @@ En breve te las preparo y te las envío por acá 😊
             try{openMpCheckout(mpTrialPurchase);}catch(err){setMpTrialMessage(String(err&&err.message||err));}
             return mpTrialPurchase;
         }
-        // La única solicitud de clave es para pruebas iniciadas por el administrador.
-        const setupKey=mode==='test'?window.prompt('Clave administrativa para compra ficticia de prueba:'):'';
-        if(mode==='test'&&!setupKey)return;
+        // Solo el administrador puede iniciar ensayos técnicos. El comprador jamás introduce claves.
+        const setupKey=(mode==='test'||(mode==='validation'&&admin))
+            ?window.prompt('Clave administrativa para pruebas de Mercado Pago:'):'';
+        if((mode==='test'||mode==='validation')&&!setupKey)return;
         mpCreateBusyRef.current=true;
         setMpTrialBusy(true);
         setMpTrialMessage('Preparando tu compra en Mercado Pago...');
