@@ -2,8 +2,10 @@
 
 ## Estado de esta rama
 
-Preparada y probada **localmente**. Lucas desplegó el nuevo Worker en modo
-`validation` y completó una compra real de ARS 200. No se modificó `main`.
+La validación privada de extremo a extremo está confirmada. Lucas desplegó el
+Worker en modo `validation`, completó una compra real de ARS 200 y recibió la
+fotografía. La integración está lista para publicarse en la aplicación; habilitar
+los cobros públicos requiere cambiar `MP_LIVE_MODE` a `public` en Cloudflare.
 
 El acceso automatizado a Cloudflare quedó bloqueado por su verificación. Lucas
 continúa la configuración en su propio navegador, con revisión de sus capturas.
@@ -49,8 +51,8 @@ transfiere sin almacenar todo el original en memoria y se registra la evidencia
 al terminar el flujo, comprobando el tamaño declarado cuando corresponde. Una
 cancelación, interrupción o respuesta truncada no registra entrega completa.
 El mismo pedido pagado permite reintentar; no es necesario crear otro cobro.
-Esta corrección todavía requiere desplegarse y verificar la fotografía real
-antes de habilitar los cobros públicos.
+La corrección se desplegó y su descarga real quedó confirmada en la captura
+final indicada abajo.
 
 La captura de `2026-10-09T17:39:52Z` mostró un pedido pendiente en la página,
 sin las evidencias del pedido previamente acreditado. Se agregó una recuperación
@@ -58,7 +60,12 @@ privada: la clave de administración recupera la última validación acreditada,
 consulta otra vez Mercado Pago y reemplaza su recibo de descarga. Conserva el
 pedido, el importe y las evidencias anteriores; no crea otro cobro. La página
 reintenta la descarga y mantiene el botón disponible si se interrumpe.
-Este módulo de recuperación también requiere despliegue y verificación real.
+
+La captura de `2026-10-09T17:58:30Z` confirmó el despliegue del módulo de
+recuperación, la misma fotografía y los cuatro controles en verde: bloqueo
+previo, acreditación de ARS 200, fotografía recibida y webhook autenticado.
+Lucas confirmó el resultado y solicitó avanzar con la aplicación. La página
+ocultó el enlace de pago y mostró la opción de descargar el pedido acreditado.
 
 ## Archivos y compatibilidad
 
@@ -157,7 +164,8 @@ los cobros públicos bloqueados si no existe una validación en D1 con estas pru
 
 Solo después de revisar el circuito real y el archivo descargado: publicar la rama
 revisada de la aplicación y habilitar el modo público. El botón de WhatsApp permanece.
-No se ejecutó esta apertura en esta sesión.
+La validación real está confirmada; el modo público del Worker todavía requiere
+el cambio de variable y su comprobación mediante `/api/payment-config`.
 
 ## Seguridad y límites actuales
 
