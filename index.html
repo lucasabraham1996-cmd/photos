@@ -2215,6 +2215,9 @@ if (!window.React || !window.ReactDOM) {
     throw new Error('No se pudieron cargar React y ReactDOM. Revisá la conexión o el bloqueo de contenido del navegador.');
 }
 const { useEffect, useMemo, useRef, useState } = React;
+// Pausa del Club: conservar historial y saldos; cerrar accesos y operaciones nuevas.
+const CLUB_ENABLED = false;
+const isClubRecord = o => Boolean(o && (['benefit_redemption','club_points_adjustment','club_points_transfer'].includes(o.type) || o.benefitRedemption === true || o.manualPointsAdjustment === true));
 const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwQixATrOYyu-wUnm23Cgy6_zbuUNOjbYQ636fEqHIt4GqzTZxVBJvhwireNt5isFE8lQ/exec";
 const FALLBACK_PUBLISHED_SHEET_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQvPPaZazUa43TBu127nq74y-UMDRRMKdQpOCWOWT6cc5YnsRwcTrzGA7NYM-QbYEnFSkMbdkgkaOn8/pub?output=csv";
 const BRAND = "lucasabraham.ph";
@@ -3181,6 +3184,8 @@ function orderPrintInfo(order) {
     return { has: count > 0, count, items: printed, format: o.printFormat || '10x15 cm' };
 }
 async function saveOrderRemote(order){
+    if(!CLUB_ENABLED&&isClubRecord(order))return {firebase:false,script:false,error:'Operación pausada'};
+    if(!CLUB_ENABLED)order={...order,wantsPoints:false};
     const clean={...order,id:order.id||order.orderId||order.codigo||order.code,date:order.date||new Date().toISOString(),items:Array.isArray(order.items)?order.items:[]};
     if(!clean.id)throw new Error('Falta el código del pedido');
     const key=normalizeOrderCode(clean.id);
@@ -5573,6 +5578,7 @@ function App() {
         return `${base || (location.href || '').split('#')[0]}#/club`;
     };
     const openClub = () => {
+        if (!CLUB_ENABLED) return;
         setClubPointsOpen(Boolean(clubSessionPhone));
         setClubRegisterOpen(false);
         setClubModalOpen(true);
@@ -5583,6 +5589,7 @@ function App() {
         if (location.hash === '#/club') location.hash = '#/galeria';
     };
     const shareClubLink = async () => {
+        if (!CLUB_ENABLED) return;
         const url = getClubUrl();
         try {
             if (navigator.share) {
@@ -5656,6 +5663,7 @@ ${clone.outerHTML}`;
     useEffect(() => { const h = () => { let hash = location.hash || "#/galeria"; try { const standalone = (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches) || navigator.standalone === true; const saved = localStorage.getItem('LA_INSTALL_START_ROUTE'); const adminQuery = new URLSearchParams(location.search).get('admin') === '1'; const recoverAdminShortcut = (adminQuery && !location.hash) || (standalone && saved === '#/admin' && (!location.hash || location.hash === '#/galeria')); if (recoverAdminShortcut) { if (hash !== '#/admin') location.hash = '#/admin'; hash = '#/admin'; } if (hash === '#/admin') localStorage.setItem('LA_INSTALL_START_ROUTE','#/admin'); } catch(e) {} setRoute(hash); setActiveAlbum(getAlbumIdFromHash(hash)); setActiveSubAlbum(getSubAlbumIdFromHash(hash)); }; addEventListener('hashchange', h); h(); return () => removeEventListener('hashchange', h); }, []);
     useEffect(() => {
         if (route !== '#/club') return;
+        if (!CLUB_ENABLED) { setClubModalOpen(false); location.hash = '#/galeria'; return; }
         setClubPointsOpen(Boolean(clubSessionPhone));
         setClubRegisterOpen(false);
         setClubModalOpen(true);
@@ -5749,14 +5757,14 @@ ${clone.outerHTML}`;
     useEffect(() => { saveDiscountSettings(discountSettings); if (sharedReady)
         saveSharedAdminState({ discountSettings }).catch(e => { console.warn(e); setAdminMessage('No se pudo sincronizar el descuento.'); }); }, [discountSettings, sharedReady]);
     useEffect(() => {
-        if (!sharedReady) return;
+        if (!CLUB_ENABLED || !sharedReady) return;
         const timer = setTimeout(() => {
             saveSharedAdminState({ clubProducts }).catch(e => { console.warn(e); setAdminMessage('No se pudo sincronizar el Club de beneficios.'); });
         }, 450);
         return () => clearTimeout(timer);
     }, [clubProducts, sharedReady]);
     useEffect(() => {
-        if (!sharedReady) return;
+        if (!CLUB_ENABLED || !sharedReady) return;
         const timer = setTimeout(() => saveSharedAdminState({ clubUsers }).catch(e => console.warn('No se pudieron sincronizar usuarios del Club.', e)), 450);
         return () => clearTimeout(timer);
     }, [clubUsers, sharedReady]);
@@ -5914,14 +5922,15 @@ ${clone.outerHTML}`;
         const q = cleanOperationCode(orderSearch);
         if (!q)
             return null;
-        if (directOrder && cleanOperationCode(directOrder.id) === q)
+        if (directOrder && cleanOperationCode(directOrder.id) === q && (CLUB_ENABLED || !isClubRecord(directOrder)))
             return directOrder;
-        return findOrderInList(orders, q);
+        const found = findOrderInList(orders, q);
+        return CLUB_ENABLED || !isClubRecord(found) ? found : null;
     }, [orders, orderSearch, directOrder]);
     const isTruthyStatus = (v) => v === true || String(v || '').toLowerCase() === 'true' || String(v || '').toLowerCase() === 'si' || String(v || '').toLowerCase() === 'sí' || String(v || '').toLowerCase() === '1';
     const orderStatusText = (o) => norm((o === null || o === void 0 ? void 0 : o.status) || (o === null || o === void 0 ? void 0 : o.estado) || '');
     const isResolvedOrder = (o) => isTruthyStatus(o === null || o === void 0 ? void 0 : o.delivered) || isTruthyStatus(o === null || o === void 0 ? void 0 : o.rejected) || isTruthyStatus(o === null || o === void 0 ? void 0 : o.cancelled) || ['entregado', 'cargado_y_entregado', 'rechazado', 'cancelado', 'anulado', 'no pagado', 'no_pagado', 'resuelto'].includes(orderStatusText(o));
-    const isPendingOrder = (o) => o && normalizeOrderCode(o.id || o.orderId || o.codigo || o.code) && !isResolvedOrder(o);
+    const isPendingOrder = (o) => o && (CLUB_ENABLED || !isClubRecord(o)) && normalizeOrderCode(o.id || o.orderId || o.codigo || o.code) && !isResolvedOrder(o);
     const recentOrders = useMemo(() => mergeOrders(orders).filter(o => isPendingOrder(o) && !adminResolvedIds.includes(normalizeOrderCode(o.id || o.orderId || o.codigo || o.code))).sort((a, b) => new Date(b.date || 0) - new Date(a.date || 0)).slice(0, 10), [orders, adminResolvedIds]);
     const firebaseDailyEstimate = useMemo(() => {
         const all = mergeOrders(orders);
@@ -6011,6 +6020,7 @@ ${clone.outerHTML}`;
         return account;
     };
     const customerDniStats = useMemo(() => {
+        if (!CLUB_ENABLED) return [];
         const phones = new Set(clubUsers.map(u => normalizeClubPhone(u.phone)).filter(Boolean));
         mergeOrders(orders).forEach(o => { const phone = normalizeClubPhone(o.phone || o.celular || o.customerPhone); if (phone) phones.add(phone); });
         return Array.from(phones).map(phone => clubAccountFromOrders(orders, phone)).sort((a,b) => b.points - a.points || b.spent - a.spent || b.purchases - a.purchases);
@@ -6027,7 +6037,7 @@ ${clone.outerHTML}`;
     const unseenAdminOrders = useMemo(() => mergeOrders(orders).filter(o => {
         const id = normalizeOrderCode(o && o.id);
         const ts = Date.parse((o && o.date) || 0);
-        return id && Number.isFinite(ts) && ts >= ADMIN_NOTIFICATION_START && !isTruthyStatus(o.delivered) && !isTruthyStatus(o.rejected) && !adminReviewedIds.includes(id);
+        return (CLUB_ENABLED || !isClubRecord(o)) && id && Number.isFinite(ts) && ts >= ADMIN_NOTIFICATION_START && !isTruthyStatus(o.delivered) && !isTruthyStatus(o.rejected) && !adminReviewedIds.includes(id);
     }).sort((a,b) => new Date(b.date || 0) - new Date(a.date || 0)), [orders, adminReviewedIds]);
     const unseenAdminBookingRequests = useMemo(() => (adminBookingRequests || []).filter(b => b && b.id && b.requestSource === 'public' && b.status === 'pendiente' && !adminReviewedBookingIds.includes(String(b.id))).sort((a,b) => new Date(b.createdAt || b.updatedAt || 0) - new Date(a.createdAt || a.updatedAt || 0)), [adminBookingRequests, adminReviewedBookingIds]);
     const unseenAdminTotal = unseenAdminOrders.length + unseenAdminBookingRequests.length;
@@ -6253,9 +6263,10 @@ ${clone.outerHTML}`;
     const customerWhatsappUrl = rawPhone => {
         const local = normalizeClubPhone(rawPhone);
         if (!local) return '';
-        return `https://api.whatsapp.com/send?phone=549${local}&text=${encodeURIComponent('Hola! Te escribo de lucasabraham.ph por tu pedido o canje para coordinar la entrega.')}`;
+        return `https://api.whatsapp.com/send?phone=549${local}&text=${encodeURIComponent(CLUB_ENABLED?'Hola! Te escribo de lucasabraham.ph por tu pedido o canje para coordinar la entrega.':'Hola! Te escribo de lucasabraham.ph por tu pedido para coordinar la entrega.')}`;
     };
     const saveCheckoutCustomer = async () => {
+        if (!CLUB_ENABLED) return;
         const name = String(checkoutCustomerName || "").trim().replace(/\s{2,}/g, " ");
         const phone = normalizeClubPhone(checkoutPhone);
         if (!name) { alert("Ingresá nombre y apellido."); return; }
@@ -6349,13 +6360,13 @@ En breve te las preparo y te las envío por acá 😊
     function orderConfirmationWhatsappUrl(orderLike) {
         const phone = normalizeClubPhone(orderLike && (orderLike.phone || orderLike.celular || orderLike.customerPhone));
         if (!phone) return '';
-        const message = String((orderLike && orderLike.confirmationMessage) || buildOrderConfirmationMessage(orderLike || {}));
+        const message = String((CLUB_ENABLED && orderLike && orderLike.confirmationMessage) || buildOrderConfirmationMessage(orderLike || {}));
         return `https://api.whatsapp.com/send?phone=549${phone}&text=${encodeURIComponent(message)}`;
     }
 
     const buildOrderPackage = (forcedOrder) => {
         const order = forcedOrder || checkoutOrderCode || ('LA-' + Math.floor(10000 + Math.random() * 90000));
-        const cleanPhone = checkoutWantsPoints && customerDetailsSaved ? normalizeClubPhone(checkoutPhone) : '';
+        const cleanPhone = CLUB_ENABLED && checkoutWantsPoints && customerDetailsSaved ? normalizeClubPhone(checkoutPhone) : '';
         const cleanCustomerName = cleanPhone ? cleanWhatsappPersonName(checkoutCustomerName) : '';
         const playerName = selectedOrderPlayerName(selectedPhotos);
 
@@ -6404,9 +6415,9 @@ En breve te las preparo y te las envío por acá 😊
     // Cobros de prueba: sincronización del catálogo por administrador.
     // Los clientes NUNCA pueden indicar precios; Cloudflare los calcula desde D1.
     const syncMpCatalogue=async()=>{
-        if(!admin||mpTrialBusy)return;
+        if(!admin||mpTrialBusy)return false;
         const setupKey=window.prompt('Clave MP_SETUP_KEY para sincronizar catálogo (solo administrador):');
-        if(!setupKey)return;
+        if(!setupKey)return false;
         const data={
             albums:displayAlbums.map(a=>({
                 id:a.id,name:a.name,fullPrice:a.fullPrice,
@@ -6417,6 +6428,7 @@ En breve te las preparo y te las envío por acá 😊
         };
         setMpTrialBusy(true);
         setAdminMessage('Sincronizando catálogo y promociones con Cloudflare...');
+        setMpTrialMessage('Sincronizando las galerías y sus precios…');
         try{
             const response=await fetch(MP_TRIAL_BASE+'/api/admin-catalog-sync',{
                 method:'POST',
@@ -6426,8 +6438,12 @@ En breve te las preparo y te las envío por acá 😊
             const result=await response.json();
             if(!response.ok||!result.ok)throw Error(result.error||'Error de sincronización');
             setAdminMessage('Catálogo sincronizado: '+result.albums+' galerías y '+result.photos+' fotos. Promociones y cupones actualizados.');
+            setMpTrialMessage('Galerías sincronizadas: '+result.albums+' galerías y '+result.photos+' fotos.');
+            return true;
         }catch(err){
             setAdminMessage('No se pudo sincronizar Mercado Pago: '+String(err&&err.message||err));
+            setMpTrialMessage('No se pudo sincronizar: '+String(err&&err.message||err));
+            return false;
         }finally{setMpTrialBusy(false)}
     };
     const submitMpTrial=async(selection,expectedTotal)=>{
@@ -6484,6 +6500,7 @@ En breve te las preparo y te las envío por acá 😊
                 kind:data.quote.kind,quantity:data.quote.quantity,amount:data.quote.amount,
                 order_data:localOrder?{...localOrder,total:data.quote.amount,
                     ...(mode==='validation'?{wantsPoints:false,phone:'',customerName:''}:{}),
+                    ...(!CLUB_ENABLED?{wantsPoints:false}:{}),
                     paymentProvider:'mercadopago',paymentMode:mode,mpOrderId:data.order_id,
                     mpCheckoutId:data.checkout_id}:null
             };
@@ -6524,7 +6541,10 @@ En breve te las preparo y te las envío por acá 😊
             print_ids:checkoutPrint?printSelectedPhotos.map(p=>p.id):[],
             coupon:appliedCoupon?appliedCoupon.code:''
         };
-        submitMpTrial(selection,checkoutTotal);
+        return submitMpTrial(selection,checkoutTotal);
+    };
+    const syncMpCatalogueAndRetry=async()=>{
+        if(await syncMpCatalogue())return beginMpTrial();
     };
     const beginAlbumMpTrial=(album)=>{
         if(!album||!MP_PAYMENT_VISIBLE)return;
@@ -6579,7 +6599,7 @@ En breve te las preparo y te las envío por acá 😊
                     // La venta entra al historial existente después de verificar el pago.
                     // No se envía el token de descarga y la entrega/Club conserva su confirmación habitual.
                     try{
-                        const record={...saved.order_data,paid:true,paymentStatus:'accredited'};
+                        const record={...saved.order_data,paid:true,paymentStatus:'accredited',...(!CLUB_ENABLED?{wantsPoints:false}:{})};
                         const sync=await saveOrderRemote(record);
                         if(sync&&(sync.firebase||sync.script)){
                             saved={...saved,order_synced:true};
@@ -6622,7 +6642,7 @@ En breve te las preparo y te las envío por acá 😊
         if(e&&e.preventDefault)e.preventDefault();
         if(orderSavingRef.current)return;
         if(!cart.length||!selectedPhotos.length){alert('Seleccioná al menos una foto antes de comprar.');return}
-        if(checkoutWantsPoints&&!customerDetailsSaved){setCustomerDetailsOpen(true);alert('Guardá los datos del Club o elegí continuar sin sumar puntos.');return}
+        if(CLUB_ENABLED&&checkoutWantsPoints&&!customerDetailsSaved){setCustomerDetailsOpen(true);alert('Guardá los datos del Club o elegí continuar sin sumar puntos.');return}
         if(checkoutPrint&&!printSelectedPhotos.length){alert('Elegí al menos una foto para imprimir o desactivá la impresión.');return}
         const fixedCode=checkoutOrderCode||newOrderCode();
         if(!checkoutOrderCode)setCheckoutOrderCode(fixedCode);
@@ -6669,6 +6689,7 @@ En breve te las preparo y te las envío por acá 😊
     };
 
     const addClubProduct = () => {
+        if (!CLUB_ENABLED) return;
         const name = String(newClubProductName || '').trim();
         const points = Math.max(1, Math.round(Number(newClubProductPoints) || 0));
         if (!name) { setAdminMessage('Ingresá el nombre del producto del Club.'); return; }
@@ -6682,6 +6703,7 @@ En breve te las preparo y te las envío por acá 😊
         setAdminMessage('Producto agregado al Club de beneficios.');
     };
     async function addManualClubPoints() {
+        if (!CLUB_ENABLED) return;
         const phone = normalizeClubPhone(manualPointsDni);
         const amount = Math.max(1, Math.round(Number(manualPointsAmount) || 0));
         if (!phone || phone.length < 10) { setAdminMessage('Ingresá un celular válido para sumar puntos.'); return; }
@@ -6694,20 +6716,23 @@ En breve te las preparo y te las envío por acá 😊
         } catch(e) { console.error(e); setAdminMessage('No se pudieron guardar los puntos manuales.'); } finally { setManualPointsSaving(false); }
     }
     async function transferClubPoints() {
+        if (!CLUB_ENABLED) return;
         const from=normalizeClubPhone(transferFromPhone), to=normalizeClubPhone(transferToPhone), amount=Math.max(1,Math.round(Number(transferPointsAmount)||0));
         if(!from||!to||from===to) { setAdminMessage('Ingresá dos celulares distintos y válidos.'); return; }
         const account=clubAccountFromOrders(orders,from); if(account.points<amount){ setAdminMessage(`El origen tiene ${account.points} puntos; no alcanza para transferir ${amount}.`); return; }
         const movement={ id:'CT-'+Date.now().toString(36).toUpperCase()+'-'+Math.floor(100+Math.random()*900), date:new Date().toISOString(), type:'club_points_transfer', fromPhone:from, toPhone:to, transferredPoints:amount, delivered:true, status:'acreditado', subtotal:0,total:0 };
         try { const saved=await saveOrderRemote(movement); if(!saved.firebase&&!saved.script) throw new Error(saved.error||'No se pudo guardar'); const next=mergeOrders(readLocalOrders(),orders,[movement]); saveLocalOrders(next); setOrders(next); setTransferPointsAmount(1); setAdminMessage(`Transferidos ${amount} puntos de ${from} a ${to}.`); } catch(e){ console.error(e); setAdminMessage('No se pudo completar la transferencia.'); }
     }
-    const toggleClubProduct = (id) => setClubProducts(prev => prev.map(p => p.id === id ? { ...p, active:p.active === false ? true : false } : p));
-    const deleteClubProduct = (id) => setClubProducts(prev => prev.filter(p => p.id !== id));
+    const toggleClubProduct = (id) => { if(CLUB_ENABLED)setClubProducts(prev => prev.map(p => p.id === id ? { ...p, active:p.active === false ? true : false } : p)); };
+    const deleteClubProduct = (id) => { if(CLUB_ENABLED)setClubProducts(prev => prev.filter(p => p.id !== id)); };
     async function loadClubOrdersForPhone(rawPhone) {
+        if (!CLUB_ENABLED) return [];
         const phone=normalizeClubPhone(rawPhone); if(!phone) return [];
         try { const all=await loadOrdersRemote(); return mergeOrders(all).filter(o => normalizeClubPhone(o.phone||o.celular||o.customerPhone)===phone || (o.type==='club_points_transfer' && [normalizeClubPhone(o.fromPhone),normalizeClubPhone(o.toPhone)].includes(phone))); } catch(e){ console.warn(e); }
         return mergeOrders(readLocalOrders()).filter(o => normalizeClubPhone(o.phone||o.celular||o.customerPhone)===phone || (o.type==='club_points_transfer' && [normalizeClubPhone(o.fromPhone),normalizeClubPhone(o.toPhone)].includes(phone)));
     }
     async function lookupClubPoints(rawPhone = '') {
+        if (!CLUB_ENABLED) return;
         const phone = normalizeClubPhone(rawPhone || clubLookupDni);
         if (!phone || phone.length < 10) {
             setClubMessage('Escribí un celular válido. Por ejemplo: 351 5580770.');
@@ -6787,6 +6812,7 @@ En breve te las preparo y te las envío por acá 😊
         }
     }
     async function registerClubUser() {
+        if (!CLUB_ENABLED) return;
         const phone = normalizeClubPhone(clubLookupDni);
         const name = String(clubRegisterName || '').trim();
         const surname = String(clubRegisterSurname || '').trim();
@@ -6820,6 +6846,7 @@ En breve te las preparo y te las envío por acá 😊
     }
     const logoutClub=()=>{ setClubSessionPhone(''); setClubLookupResult(null); setClubLookupDni(''); try{localStorage.removeItem('LA_CLUB_PHONE');}catch(e){} };
     async function redeemClubProduct(product) {
+        if (!CLUB_ENABLED) return;
         if(!product||product.active===false) return; const phone=normalizeClubPhone(clubSessionPhone||clubLookupDni); const profile=clubProfileForPhone(phone);
         if(!phone||!profile){ setClubPointsOpen(true); setClubMessage('Primero iniciá sesión con tu celular o registrate.'); return; }
         setClubRedeeming(product.id);
@@ -6924,12 +6951,14 @@ En breve te las preparo y te las envío por acá 😊
     }
     function setOrderDecisionAndClose(order, decision) {
         if (!(order === null || order === void 0 ? void 0 : order.id)) return;
+        if (!CLUB_ENABLED && isClubRecord(order)) return;
         const now = new Date().toISOString();
         const partial = decision === 'delivered'
             ? { delivered: true, rejected: false, status: 'entregado', deliveredAt: now, resolvedAt: now }
             : decision === 'rejected'
                 ? { delivered: false, rejected: true, status: 'rechazado', rejectedAt: now, resolvedAt: now }
                 : { delivered: false, rejected: false, status: 'pendiente', deliveredAt: '', rejectedAt: '', resolvedAt: '' };
+        if (!CLUB_ENABLED && decision === 'delivered' && !isTruthyStatus(order.delivered)) partial.wantsPoints = false;
         const updatedOrder = { ...order, ...partial, id: order.id };
         const localNext = mergeOrders(readLocalOrders(), orders, [updatedOrder]);
         saveLocalOrders(localNext);
@@ -7179,7 +7208,7 @@ React.createElement("div", { id: "order-search-panel", className: "bg-neutral-90
                             React.createElement("button", { onClick: () => { navigator.clipboard.writeText(buildDeliveryLinksMessage(matchedOrder)); setAdminMessage('Mensaje con links copiado.'); }, className: "bg-white text-black px-4 py-3 rounded-xl font-black text-sm" },
                                 React.createElement("i", { className: "fas fa-copy mr-2" }),
                                 "Copiar mensaje con links"),
-                            React.createElement("button", { onClick: () => { const confirmation = String(matchedOrder.confirmationMessage || buildOrderConfirmationMessage(matchedOrder)); navigator.clipboard.writeText(confirmation).then(() => setAdminMessage('Confirmación copiada.')).catch(() => setAdminMessage('No se pudo copiar la confirmación.')); }, className: "bg-sky-500 text-black px-4 py-3 rounded-xl font-black text-sm" },
+                            React.createElement("button", { onClick: () => { const confirmation = String((CLUB_ENABLED && matchedOrder.confirmationMessage) || buildOrderConfirmationMessage(matchedOrder)); navigator.clipboard.writeText(confirmation).then(() => setAdminMessage('Confirmación copiada.')).catch(() => setAdminMessage('No se pudo copiar la confirmación.')); }, className: "bg-sky-500 text-black px-4 py-3 rounded-xl font-black text-sm" },
                                 React.createElement("i", { className: "fas fa-message mr-2" }),
                                 "Copiar confirmación"),
                             orderConfirmationWhatsappUrl(matchedOrder) && React.createElement("button", { onClick: () => window.open(orderConfirmationWhatsappUrl(matchedOrder), '_blank'), className: "bg-[#25D366] text-black px-4 py-3 rounded-xl font-black text-sm" },
@@ -7251,12 +7280,12 @@ React.createElement("div", { id: "order-search-panel", className: "bg-neutral-90
                                     React.createElement("button", { onClick: () => openOrderFromQueue(o), className: "bg-neutral-800 hover:bg-neutral-700 px-3 py-2 rounded-xl text-xs font-black" }, "Abrir")));
                         })))),
             React.createElement("div", { className: "bg-neutral-900 border border-neutral-800 rounded-3xl p-5 mb-6" },
-                React.createElement("div", { className:"flex flex-col lg:flex-row lg:items-start lg:justify-between gap-3 mb-4" },
+                CLUB_ENABLED && React.createElement("div", { className:"flex flex-col lg:flex-row lg:items-start lg:justify-between gap-3 mb-4" },
                     React.createElement("div", null,
                         React.createElement("h2", { className: "text-xl font-black" }, React.createElement("i", { className:"fas fa-gift mr-2 text-orange-300" }), "Club de beneficios"),
                         React.createElement("p", { className: "text-neutral-400 text-sm mt-1" }, "Regla: 1 punto por cada $5.000 acumulados. Cada compra individual de $10.000 o más suma además 1 punto extra (por ejemplo, $10.000 = 3 puntos). Los canjes descuentan puntos.")),
                     React.createElement("span", { className:"club-order-badge" }, `${clubProducts.filter(p => p.active !== false).length} productos activos`)),
-                React.createElement("div", { className:"bg-black/30 border border-orange-500/15 rounded-2xl p-4 mb-5" },
+                CLUB_ENABLED && React.createElement("div", { className:"bg-black/30 border border-orange-500/15 rounded-2xl p-4 mb-5" },
                     React.createElement("h3", { className:"font-black text-sm mb-3" }, "Productos y premios del Club"),
                     React.createElement("div", { className:"grid md:grid-cols-4 gap-2" },
                         React.createElement("input", { value:newClubProductName, onChange:e => setNewClubProductName(e.target.value), placeholder:"Nombre del producto", className:"bg-black border border-neutral-700 rounded-xl px-3 py-3 text-sm outline-none" }),
@@ -7272,7 +7301,7 @@ React.createElement("div", { id: "order-search-panel", className: "bg-neutral-90
                             React.createElement("div", { className:"min-w-0 flex-1" }, React.createElement("b", { className:"text-xs block truncate" }, product.name), React.createElement("span", { className:"text-[10px] text-orange-300" }, `${product.points} puntos · ${product.active === false ? 'Pausado' : 'Activo'}`)),
                             React.createElement("button", { onClick:() => toggleClubProduct(product.id), className:"bg-neutral-800 px-2 py-2 rounded-lg text-[10px] font-black" }, product.active === false ? "Activar" : "Pausar"),
                             React.createElement("button", { onClick:() => deleteClubProduct(product.id), className:"bg-red-500/15 text-red-200 px-2 py-2 rounded-lg text-[10px]" }, React.createElement("i", { className:"fas fa-trash" }))))),
-                React.createElement("div", { className:"bg-black/30 border border-emerald-500/20 rounded-2xl p-4 mb-5" },
+                CLUB_ENABLED && React.createElement("div", { className:"bg-black/30 border border-emerald-500/20 rounded-2xl p-4 mb-5" },
                     React.createElement("h3", { className:"font-black text-sm mb-3" }, React.createElement("i", { className:"fas fa-coins mr-2 text-emerald-300" }), "Gestión de puntos por celular"),
                     React.createElement("div", { className:"grid sm:grid-cols-[1fr,110px,auto] gap-2 mb-3" },
                         React.createElement("input", { value:manualPointsDni, inputMode:"tel", onChange:e=>setManualPointsDni(e.target.value), placeholder:"Celular del usuario", className:"bg-black border border-neutral-700 rounded-xl px-3 py-3 text-sm" }),
@@ -7283,8 +7312,8 @@ React.createElement("div", { id: "order-search-panel", className: "bg-neutral-90
                         React.createElement("input", { value:transferToPhone, inputMode:"tel", onChange:e=>setTransferToPhone(e.target.value), placeholder:"Celular destino", className:"bg-black border border-neutral-700 rounded-xl px-3 py-3 text-sm" }),
                         React.createElement("input", { type:"number", min:"1", value:transferPointsAmount, onChange:e=>setTransferPointsAmount(e.target.value), className:"bg-black border border-neutral-700 rounded-xl px-3 py-3 text-sm" }),
                         React.createElement("button", { onClick:transferClubPoints, className:"bg-sky-500 text-black rounded-xl px-4 py-3 text-xs font-black" }, "Transferir"))),
-                React.createElement("button", { type:"button", onClick:()=>setPointsAdminOpen(v=>!v), className:"w-full mb-3 bg-gradient-to-r from-neutral-900 to-neutral-800 border border-orange-400/15 rounded-2xl px-4 py-3.5 text-sm font-black flex items-center justify-between" }, React.createElement("span", null, React.createElement("i", { className:"fas fa-ranking-star mr-2 text-orange-300" }), "Ranking del Club · usuarios y puntos"), React.createElement("i", { className:`fas ${pointsAdminOpen?'fa-chevron-up':'fa-chevron-down'}` })),
-                pointsAdminOpen && React.createElement("div", { className:"club-ranking-shell mb-4" },
+                CLUB_ENABLED && React.createElement("button", { type:"button", onClick:()=>setPointsAdminOpen(v=>!v), className:"w-full mb-3 bg-gradient-to-r from-neutral-900 to-neutral-800 border border-orange-400/15 rounded-2xl px-4 py-3.5 text-sm font-black flex items-center justify-between" }, React.createElement("span", null, React.createElement("i", { className:"fas fa-ranking-star mr-2 text-orange-300" }), "Ranking del Club · usuarios y puntos"), React.createElement("i", { className:`fas ${pointsAdminOpen?'fa-chevron-up':'fa-chevron-down'}` })),
+                CLUB_ENABLED && pointsAdminOpen && React.createElement("div", { className:"club-ranking-shell mb-4" },
                     React.createElement("div", { className:"club-ranking-titlebar" }, React.createElement("div", null, React.createElement("b", null, "Ranking por puntos disponibles"), React.createElement("span", null, "Sólo aparecen usuarios con saldo mayor a 0")), React.createElement("span", { className:"club-ranking-count" }, `${clubRankingStats.length} usuarios`)),
                     clubRankingStats.length===0 && React.createElement("p", { className:"text-sm text-neutral-500 p-4" }, "Todavía no hay usuarios con puntos disponibles."),
                     clubRankingStats.length>0 && React.createElement("div", { className:"club-ranking-table" },
@@ -7295,7 +7324,7 @@ React.createElement("div", { id: "order-search-panel", className: "bg-neutral-90
                             React.createElement("div", { className:"club-ranking-activity" }, React.createElement("b", null, `${r.purchases} compra${r.purchases===1?'':'s'}`), React.createElement("span", null, `${formatPrice(r.spent)} · ${r.redeemedPoints} canjeados`)),
                             React.createElement("div", { className:"club-ranking-points" }, r.points, React.createElement("small", null,"pts"))))),
                     clubRankingStats.length>10 && React.createElement("button", { type:"button", onClick:()=>setClubRankingAllOpen(v=>!v), className:"club-ranking-more" }, clubRankingAllOpen ? React.createElement(React.Fragment,null,"Ver sólo top 10 ",React.createElement("i",{className:"fas fa-chevron-up"})) : React.createElement(React.Fragment,null,`Ver ${clubRankingStats.length-10} más `,React.createElement("i",{className:"fas fa-chevron-down"})))),
-                React.createElement("h3", { className:"font-black text-lg mt-5 mb-1" }, "Pedidos y canjes pendientes"),
+                React.createElement("h3", { className:"font-black text-lg mt-5 mb-1" }, CLUB_ENABLED?"Pedidos y canjes pendientes":"Pedidos pendientes"),
                 React.createElement("p", { className:"text-xs text-neutral-500 mb-3" }, "Al entregar o rechazar, desaparecen de esta lista automáticamente."),
                 React.createElement("div", { className:"grid gap-2 max-h-[440px] overflow-auto" }, adminOrderLedger.map(o => {
                     const isRedemption = o.type === 'benefit_redemption' || o.benefitRedemption === true;
@@ -7586,7 +7615,7 @@ React.createElement("div", { id: "order-search-panel", className: "bg-neutral-90
                     React.createElement("button", { onClick: () => window.open(`https://wa.me/${SELLER_PHONE}`, '_blank'), className: "la-insta-btn la-insta-whatsapp", title: "WhatsApp" },
                         React.createElement("i", { className: "fab fa-whatsapp" }),
                         React.createElement("span", null, "WhatsApp")),
-                    React.createElement("button", { onClick: openClub, className: "la-insta-btn la-club-header", title: "Club de beneficios" },
+                    CLUB_ENABLED && React.createElement("button", { onClick: openClub, className: "la-insta-btn la-club-header", title: "Club de beneficios" },
                         React.createElement("img", { src:"https://i.postimg.cc/jSdxMNpb/LA-Marca-de-agua-copia2.png", className:"club-header-logo", alt:"Club lucasabraham.ph" }),
                         React.createElement("span", null, "Club")),
                     )),
@@ -7864,8 +7893,8 @@ Te envío el comprobante para que puedas prepararlas.`);
         currentAlbum && React.createElement("button", { onClick: () => setIntroOpen(true), className: "purchase-help-floating" },
             React.createElement("i", { className: "fas fa-circle-question" }),
             "¿Cómo compro las fotos?"),
-        clubModalOpen && React.createElement("button", { type:"button", onClick:closeClub, className:"club-global-close", "aria-label":"Cerrar Club de beneficios", title:"Cerrar Club" }, React.createElement("i", { className:"fas fa-xmark" })),
-        clubModalOpen && React.createElement(Modal, { onClose:closeClub, max:"max-w-2xl" },
+        CLUB_ENABLED && clubModalOpen && React.createElement("button", { type:"button", onClick:closeClub, className:"club-global-close", "aria-label":"Cerrar Club de beneficios", title:"Cerrar Club" }, React.createElement("i", { className:"fas fa-xmark" })),
+        CLUB_ENABLED && clubModalOpen && React.createElement(Modal, { onClose:closeClub, max:"max-w-2xl" },
             React.createElement("div", { className:"club-modal-shell relative" },
 
                 React.createElement("div", { className:"club-modal-header" },
@@ -7927,10 +7956,10 @@ Te envío el comprobante para que puedas prepararlas.`);
                         " Revisar compra"),
                     React.createElement("h2", { className: "text-2xl sm:text-3xl font-black mb-1 text-white" }, "Confirmá tu compra"),
                     React.createElement("p", { className: "text-sky-100/75 text-sm leading-relaxed" }, MP_PAYMENT_VISIBLE?"Pagá con Mercado Pago y descargá tus fotos al acreditar el pago, o coordiná por WhatsApp.":"Copiá el alias, transferí por Mercado Pago y finalizá la compra por WhatsApp.")),
-                React.createElement("div", { className:"checkout-guest-choice", role:"group", "aria-label":"Elegí cómo comprar" },
+                CLUB_ENABLED && React.createElement("div", { className:"checkout-guest-choice", role:"group", "aria-label":"Elegí cómo comprar" },
                     React.createElement("button", { type:"button", className:`checkout-guest-btn ${!checkoutWantsPoints ? 'active' : ''}`, onClick:()=>{setCheckoutWantsPoints(false);setCustomerDetailsSaved(false);setCustomerDetailsOpen(false);setCheckoutPriorClubAccount(null);setCheckoutCustomerName('');setCheckoutPhone('');setClubSessionPhone('');try{localStorage.removeItem('LA_CLUB_PHONE')}catch(e){}} }, "Continuar sin sumar puntos"),
                     React.createElement("p", null, MP_PAYMENT_VISIBLE?"No necesitás registrarte. Elegí tus fotos y cómo querés pagar.":"No necesitás registrarte. Elegí tus fotos, finalizá el pedido y envialo por WhatsApp.")),
-                React.createElement("div", { className: "mb-3" },
+                CLUB_ENABLED && React.createElement("div", { className: "mb-3" },
                     React.createElement("button", { type:"button", onClick:() => setCustomerDetailsOpen(v => !v), className:`benefits-glass-btn ${customerDetailsOpen || customerDetailsSaved ? 'active' : ''}` },
                         React.createElement("i", { className:"fas fa-gift" }),
                         React.createElement("span", null,
@@ -8011,6 +8040,9 @@ Te envío el comprobante para que puedas prepararlas.`);
                                 key:i,type:"button",onClick:()=>downloadMpFile(file).catch(err=>setMpTrialMessage(String(err&&err.message||err))),
                                 className:"block bg-emerald-700/80 rounded-lg px-3 py-2 text-white text-xs font-bold truncate"
                             }, React.createElement("i",{className:"fas fa-download mr-2"}),file.name||("Foto "+(i+1)))))),
+                    admin && React.createElement("button", {type:"button",onClick:syncMpCatalogueAndRetry,disabled:mpTrialBusy||!displayAlbums.length,
+                        className:"mt-3 w-full rounded-xl border border-sky-300/30 bg-sky-950 px-3 py-3 text-sky-100 font-bold disabled:opacity-50"},
+                        mpTrialBusy?"Sincronizando…":"Sincronizar galerías y reintentar"),
                     mpTrialMessage && React.createElement("p", {role:"status",className:"text-xs text-sky-100 mt-2 leading-relaxed"},mpTrialMessage)),
                     React.createElement("p", { className:"text-xs text-sky-100/70 mb-2" }, "O transferí al alias y enviá el comprobante por WhatsApp:"),
                     React.createElement("button", { type: "button", onClick: () => { navigator.clipboard.writeText(MP_ALIAS); setAliasCopied(true); setTimeout(() => setAliasCopied(false), 1800); }, className: "checkout-simple-alias" },

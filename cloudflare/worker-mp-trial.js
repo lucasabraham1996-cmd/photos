@@ -129,15 +129,15 @@ function computePriceBasket(requested,catalogRows,coupons) {
   return {kind,amount,items:selected.map(({site_percent,...rest})=>rest),printed:printIds,quantity:selected.length,
     base_total:selected.length*2000,cart_discount_percent:cartDiscount*100,coupon:couponCode,coupon_percent:couponPct,print_surcharge:printIds.length*3000};
 }
-async function multiRead(request) {
+async function multiRead(request,maxSize=1500000) {
   const raw=await request.text();
-  if(raw.length>1500000)throw Error("Solicitud demasiado grande");
+  if(raw.length>maxSize)throw Error("Solicitud demasiado grande");
   return JSON.parse(raw);
 }
 async function syncCatalogue(request,env,origin) {
   if(!env.MP_SETUP_KEY||request.headers.get("X-Setup-Key")!==env.MP_SETUP_KEY)return result({error:"No autorizado"},401,origin);
   let data;
-  try{data=await multiRead(request);}catch(e){return result({error:String(e.message||e)},400,origin);}
+  try{data=await multiRead(request,6000000);}catch(e){return result({error:String(e.message||e)},400,origin);}
   const albums=data.albums;
   const config=data.discountSettings||{};
   const coupons=data.coupons;

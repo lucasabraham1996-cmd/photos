@@ -78,8 +78,14 @@ ocultó el enlace de pago y mostró la opción de descargar el pedido acreditado
 
 WhatsApp, descuentos actuales, cupones e impresión siguen disponibles. En modo público,
 la venta pagada se guarda en el historial existente de Firebase/Apps Script.
-La confirmación habitual de entrega y Club no se reemplaza.
-Las ventas de validación no acumulan puntos. Las impresiones se coordinan por WhatsApp.
+La confirmación habitual de entrega se conserva. Por solicitud de Lucas del
+9 de octubre de 2026, el Club está pausado: no aparecen accesos, puntos, premios,
+canjes ni opciones del Club en la compra o la administración. Se conservan los
+usuarios, productos, saldos y movimientos existentes, sin borrarlos. Las nuevas
+compras no activan puntos; las altas, ajustes, transferencias y canjes están
+bloqueados y se desactivó el guardado automático del Club. Las confirmaciones
+usan el texto actual, evitando mensajes antiguos sobre puntos.
+Las impresiones se coordinan por WhatsApp.
 El álbum completo entrega la lista de fotos, sin añadir un ZIP.
 
 ## Configuración del Worker existente
@@ -167,6 +173,23 @@ revisada de la aplicación y habilitar el modo público. El botón de WhatsApp p
 La validación real está confirmada; el modo público del Worker todavía requiere
 el cambio de variable y su comprobación mediante `/api/payment-config`.
 
+## Sincronización del catálogo completo
+
+Lucas encontró una galería que no estaba sincronizada con Mercado Pago. El
+snapshot actual contiene 21 galerías y 12.006 fotografías normalizadas; su envío
+ocupa aproximadamente 2,2 millones de caracteres, superando el límite anterior
+de 1,5 millones. La ruta autenticada `/api/admin-catalog-sync` ahora acepta hasta
+6 millones. Se conserva el límite anterior para las demás solicitudes del piloto.
+
+El módulo actualizado es `cloudflare/worker-mp-recuperacion.mjs`, generado desde
+las fuentes de esta rama. Requiere desplegarse en el Worker existente conservando
+las variables, los secretos y D1. No requiere otra migración ni otro pago privado.
+Después, desde el carrito con sesión de administrador, **Sincronizar galerías y
+reintentar** solicita la clave existente en el navegador y actualiza todo el
+catálogo, descuentos y cupones antes de reintentar la selección. La clave no se
+guarda en almacenamiento del navegador ni en el pedido. Los compradores comunes
+no pueden sincronizar precios. La sincronización real todavía requiere esa acción.
+
 ## Seguridad y límites actuales
 
 - El servidor calcula los precios desde D1 y conserva el UUID de idempotencia y el
@@ -187,16 +210,21 @@ el cambio de variable y su comprobación mediante `/api/payment-config`.
 
 ```sh
 node scripts/check-app-js.cjs
-node --test tests/mercadopago-*.test.*
+node --test tests/mercadopago-*.test.* tests/club-pause.test.mjs
 node scripts/build-mp-worker.mjs
 node --check /tmp/lucasabraham-mp-deploy.mjs
 ```
 
-46 pruebas correctas: 13 de precios y 33 de flujo, firma, SQLite, idempotencia,
+54 pruebas correctas: 13 de precios, 35 de flujo y catálogo, y 6 de pausa del Club.
+Cubren firma, SQLite, idempotencia,
 rechazos, reembolsos, streaming, recuperación y aplicación → Worker → SQLite. Incluyen una foto
 de 24 MiB en el módulo fuente y el bundle, cancelación, truncamiento, interrupción
 y reintento de una compra pagada sin generar otra orden. La página privada se
 ejecuta con el Worker y SQLite para comprobar la recuperación y el reintento.
+El catálogo de la app se normaliza con su código real y se prueba en el Worker
+fuente y el módulo único, conservando el pedido privado acreditado. La app se
+ejecuta con hooks y DOM simulados para comprobar la ausencia del Club, el bloqueo
+de operaciones y la conservación de saldos y registros.
 Mercado Pago y Drive se simulan en estas pruebas. **No prueban un cobro real.**
 
 Referencias oficiales utilizadas:

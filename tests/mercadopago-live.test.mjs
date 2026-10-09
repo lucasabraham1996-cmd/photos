@@ -10,6 +10,7 @@ import { createHmac } from 'node:crypto';
 import worker from '../cloudflare/worker-mp.js';
 import validationPage from '../cloudflare/mp-validation-page.js';
 import { buildWorker } from '../scripts/build-mp-worker.mjs';
+import { appHarness as fullAppHarness } from './app-harness.mjs';
 const bundleWorker=(await import('data:text/javascript;base64,'+Buffer.from(buildWorker()).toString('base64'))).default;
 
 const ORIGIN='https://lucasabraham1996-cmd.github.io';
@@ -377,6 +378,40 @@ test('Rate limit rechaza el séptimo intento y no crea pedidos adicionales',()=>
   assert.equal(f.state.posts.length,0);
 }));
 
+test('Sincroniza el catálogo real de más de 1,5 MB sin alterar el pedido acreditado',()=>withFixture(async f=>{
+  const paid=await f.create();await f.download(paid);f.paid(paid);await f.notify(paid);await (await f.download(paid)).arrayBuffer();
+  const ui=fullAppHarness({admin:true,loading:false,introOpen:false});
+  const albums=ui.normalizeAlbums(JSON.parse(readFileSync(new URL('../gallery-snapshot.json',import.meta.url),'utf8')));
+  ui.state.albums=albums;ui.ctx.window.prompt=()=> 'admin-fixture';ui.render();
+  let bodySize=0;
+  for(const handler of [worker,bundleWorker]){
+    ui.ctx.fetch=(url,options)=>{
+      bodySize=options.body.length;
+      return f.request(String(url).slice(BASE.length),JSON.parse(options.body),options.headers,options.method,handler);
+    };
+    assert.equal(await ui.actions().syncMpCatalogue(),true);
+    assert.ok(bodySize>1500000);assert.ok(bodySize<6000000);
+  }
+  assert.equal(f.db.prepare('SELECT COUNT(*) AS n FROM la_mp_catalog WHERE updated_at=(SELECT updated_at FROM la_mp_pricing WHERE id=1)').get().n,albums.length);
+  assert.equal(f.db.prepare('SELECT COUNT(*) AS n FROM la_mp_live_orders').get().n,1);
+  const old=await f.download(paid);assert.equal(old.status,200);await old.arrayBuffer();
+  const album=albums[0],photo=album.photos[0];
+  const next=await f.create(f.input(1,{selection:{kind:'photos',items:[{album_id:album.id,photo_id:photo.id}]}}));
+  assert.equal(next.quote.catalog_amount,2000);
+}));
+test('Un administrador sincroniza una galería ausente y reintenta el mismo carrito sin duplicar cobros',()=>withFixture(async f=>{
+  const p=await f.create();await f.download(p);f.paid(p);await f.notify(p);await (await f.download(p)).arrayBuffer();
+  f.env.MP_LIVE_MODE='public';f.db.prepare('DELETE FROM la_mp_catalog').run();
+  const app=appHarness(f,{mode:'public',available:true,public_enabled:true});
+  app.context.admin=true;app.context.displayAlbums=[{id:'album-01',name:'Álbum',fullPrice:60000,
+    photos:[{id:'photo-0',name:'Foto 0.jpg',rawUrl:'https://drive.google.com/file/d/validDriveId123450/view'}]}];
+  await app.actions.beginMpTrial();assert.equal(app.context.mpTrialPurchase,null);assert.equal(f.state.posts.length,1);
+  await app.actions.syncMpCatalogueAndRetry();
+  assert.ok(app.context.mpTrialPurchase);assert.equal(app.context.mpTrialPurchase.amount,2000);
+  assert.equal(app.context.promptCount,1);assert.equal(f.state.posts.length,2);
+  assert.equal(app.context.mpTrialPurchase.order_data.wantsPoints,false);
+}));
+
 function validationHarness(f,purchase) {
   const storage=new Map([['LA_MP_VALIDATION_PURCHASE',JSON.stringify(purchase)]]),elements=new Map(),downloads=[];
   const element=id=>{
@@ -422,7 +457,7 @@ test('La página conserva el botón de descarga para reintentar después de una 
 
 function appHarness(f,config={mode:'validation',available:true,validation_amount:200,public_enabled:false}) {
   const storage=new Map(),effects=[],downloads=[],remoteOrders=[];
-  const context={admin:false,mpTrialBusy:false,MP_TRIAL_ENABLED:false,MP_PAYMENT_VISIBLE:true,
+  const context={admin:false,CLUB_ENABLED:false,mpTrialBusy:false,MP_TRIAL_ENABLED:false,MP_PAYMENT_VISIBLE:true,
     MP_TRIAL_BASE:BASE,mpPaymentConfig:config,mpTrialPurchase:null,mpTrialDownloads:[],
     mpCreateBusyRef:{current:false},mpStatusBusyRef:{current:false},mpAutoDownloadRef:{current:''},
     selectedPhotos:[{id:'photo-0',albumId:'album-01'}],checkoutTotal:2000,checkoutPrint:false,appliedCoupon:null,
@@ -444,7 +479,7 @@ function appHarness(f,config={mode:'validation',available:true,validation_amount
   const start=appSource.indexOf('    const syncMpCatalogue='),end=appSource.indexOf('    const sendOrder=',start);
   assert.ok(start>0&&end>start);
   const actions=new Function('ctx','with(ctx){'+appSource.slice(start,end)+
-    ';return {submitMpTrial,beginMpTrial,checkMpTrial,downloadMpFile};}')(context);
+    ';return {syncMpCatalogue,syncMpCatalogueAndRetry,submitMpTrial,beginMpTrial,checkMpTrial,downloadMpFile};}')(context);
   return {context,actions,storage,effects,downloads,remoteOrders};
 }
 test('Aplicación → Worker → SQLite: no descarga antes de pagar; descarga una vez al acreditarse',()=>withFixture(async f=>{
