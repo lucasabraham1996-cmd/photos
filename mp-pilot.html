@@ -1,0 +1,242 @@
+<!doctype html>
+<html lang="es-AR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>Pruebas de Mercado Pago · lucasabraham.ph</title>
+<style>
+:root{color-scheme:dark;--bg:#060e1c;--panel:#0e1b31;--border:#274261;--fg:#eef7ff;--muted:#a6bbd1;--blue:#48a8ff;--good:#6df3ae;--warn:#ffcf77}
+*{box-sizing:border-box}body{background:radial-gradient(circle at 60% -30%,#153d6b 0%,transparent 50%),var(--bg);color:var(--fg);font:15px/1.5 system-ui,Segoe UI,sans-serif;margin:0;padding:20px}main{max-width:900px;margin:auto}
+header{margin-bottom:20px}header h1{font-size:clamp(24px,3vw,38px);line-height:1.15;margin:8px 0}header p{color:var(--muted);max-width:700px}h2{font-size:18px;margin:0 0 8px}.tag{font-size:11px;letter-spacing:.12em;border:1px solid #3987c6;border-radius:100px;display:inline-block;padding:6px 10px;color:#a4d6ff;font-weight:800}
+section{border:1px solid var(--border);background:linear-gradient(135deg,#12253e,#0b172a);padding:19px;border-radius:20px;margin:14px 0;box-shadow:0 12px 30px #0003}.sub{color:var(--muted);font-size:13px;margin:0 0 14px}label{display:block;font-size:12px;letter-spacing:.02em;color:var(--muted);font-weight:700;margin:10px 0 5px}
+input,select{width:100%;border:1px solid #436181;background:#07162b;color:white;border-radius:11px;padding:12px;font-size:15px}
+input:focus,select:focus{outline:2px solid #2b8dcb;outline-offset:1px}input[type=checkbox]{width:auto;margin-right:8px;accent-color:#3a9aff}
+.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:15px}button,.action{display:inline-flex;align-items:center;justify-content:center;gap:6px;border-radius:12px;background:#1283e7;color:white;font:700 14px system-ui;text-decoration:none;padding:12px 16px;border:0;cursor:pointer}
+button:disabled{opacity:.45;cursor:not-allowed}.secondary{background:#1c3955;border:1px solid #3d5b79}.good{background:#08774b}.box{background:#09172a;border:1px solid #37516f;border-radius:12px;padding:14px;margin:12px 0}.quote{font-size:27px;font-weight:900;letter-spacing:-.035em}
+.muted{color:var(--muted)}.ok{color:var(--good)}.warn{color:var(--warn)}.err{color:#ff9999}.note{font-size:13px;color:var(--muted)}.hidden{display:none!important}
+#messages{white-space:pre-wrap;overflow-wrap:anywhere;max-height:220px;overflow:auto}#downloads{display:grid;gap:7px;max-height:310px;overflow:auto}#downloads a{color:#c0e1ff;display:block;padding:8px;border:1px solid #345a80;border-radius:8px;overflow:hidden;text-overflow:ellipsis}
+footer{font-size:12px;text-align:center;color:#8fa4bd;margin:30px 0}
+@media(max-width:620px){body{padding:12px}.grid{grid-template-columns:1fr}section{padding:14px}.actions>*{flex:1}}
+</style>
+</head>
+<body>
+<main>
+<header><span class="tag">HERRAMIENTA DE PRUEBAS · NO VENTAS REALES</span>
+<h1>Mercado Pago + galerías <span style="color:#62bbff">lucasabraham.ph</span></h1>
+<p>Esta página prueba el pago de fotos, promociones, impresiones y álbumes completos sin cambiar la aplicación pública. Usá exclusivamente una cuenta compradora de prueba.</p></header>
+
+<section>
+<h2>1 · Cargar precios y fotografías</h2>
+<p class="sub">Abrí primero la <a href="./#/galeria" target="_blank" rel="noopener" style="color:#9edaff">galería pública</a> en este mismo navegador, esperá a que carguen las fotos y volvé acá. La herramienta reutiliza la caché local y las promociones existentes.</p>
+<div class="grid">
+<div><label for="key">Clave privada MP_SETUP_KEY</label><input type="password" id="key" autocomplete="off" placeholder="Ingresar la clave, no se guarda"></div>
+<div><label for="count">Fotos encontradas en la app</label><input id="count" readonly value="Sin cargar"></div>
+</div>
+<div class="actions">
+<button id="reload" class="secondary">Leer galerías de la app</button>
+<button id="sync">Sincronizar catálogo con Cloudflare</button>
+</div>
+<div id="syncInfo" class="note" role="status"></div>
+</section>
+
+<section>
+<h2>2 · Preparar una compra de prueba</h2>
+<p class="sub">Cloudflare volverá a calcular el precio antes de generar la orden. Si cambió alguna promoción, rechazará la diferencia y no cobrará.</p>
+<div class="grid">
+<div><label for="album">Galería</label><select id="album"><option value="">Primero cargá las galerías</option></select></div>
+<div><label for="mode">Qué querés probar</label>
+<select id="mode">
+<option value="photos">Fotografías seleccionadas</option>
+<option value="album">Álbum completo</option>
+</select></div>
+<div id="nBox"><label for="qty">Cantidad de fotos (primeras del álbum)</label>
+<input type="number" min="1" max="500" value="3" id="qty"></div>
+<div id="pBox"><label for="prints">Cantidad de esas fotos para imprimir (+$3.000 c/u)</label>
+<input type="number" min="0" max="500" value="0" id="prints"></div>
+<div id="couponBox"><label for="coupon">Cupón disponible (opcional)</label><select id="coupon"><option value="">Sin cupón</option></select></div>
+</div>
+<div class="box"><div class="muted" id="quoteDescription">Seleccioná una galería.</div>
+<div class="quote" id="quoteTotal">$0</div>
+<div class="note">Precio por foto $2.000 · 3 o más, 10% OFF · 5 o más, 15% OFF · según descuentos web y cupones activos</div></div>
+<div class="actions"><button id="checkout">Crear orden de prueba</button></div>
+</section>
+
+<section>
+<h2>3 · Pagar y comprobar</h2>
+<p class="sub">La compra permanece en pruebas. Abrí Mercado Pago, aboná con el comprador ficticio y volvé para consultar el estado.</p>
+<div id="purchaseInfo" class="box">Todavía no creaste una orden de prueba.</div>
+<div class="actions">
+<a id="payLink" class="action hidden" target="_blank" rel="noopener noreferrer">Abrir Mercado Pago de prueba</a>
+<button id="verify" class="secondary" disabled>Verificar acreditación</button>
+</div>
+<div id="downloadsWrap" class="hidden">
+<h2 style="margin-top:15px">Fotografías autorizadas para descargar</h2>
+<p class="note">Las fotos originales siguen públicas en Drive; este piloto controla únicamente la entrega por el checkout. Las impresiones físicas requieren coordinación posterior.</p>
+<div id="downloads"></div></div>
+</section>
+<section><h2>Resultado</h2><div id="messages" class="note" role="status">Esperando acción…</div></section>
+<footer>Herramienta separada de la aplicación principal · No habilita cobros reales ni emite facturas.</footer>
+</main>
+<script>
+(()=>{
+"use strict";
+const API="https://lucasabraham-ph-api.lucasantonioabraham.workers.dev";
+const KEY_ALBUMS="la_album_cache_v1",KEY_SHARED="la_shared_admin_state_v2",KEY_DISCOUNTS="la_site_discount_settings_v1",KEY_COUPONS="la_coupon_settings_v1",KEY_PURCHASE="LA_MP_TRIAL_PURCHASE";
+const $=id=>document.getElementById(id);
+const money=n=>new Intl.NumberFormat("es-AR",{style:"currency",currency:"ARS",maximumFractionDigits:0}).format(n||0);
+let albums=[],settings={percent:0,excludedAlbums:{}},coupons=[],activeQuote=null;
+let purchase=null;
+const read=(name,fallback)=>{try{return JSON.parse(localStorage.getItem(name)||"null")??fallback}catch(_){return fallback}};
+const log=(msg,bad=false)=>{$("messages").className=bad?"err":"ok";$("messages").textContent=msg};
+const show=(id,visible)=>$(id).classList.toggle("hidden",!visible);
+function driveLink(photo){return photo.rawUrl||photo.driveLink||photo.originalUrl||photo.fullUrl||photo.url||""}
+function driveId(link){
+ try{const u=new URL(link);if(u.hostname!=="drive.google.com"||u.protocol!=="https:")return "";
+ const match=u.pathname.match(/^\/file\/d\/([A-Za-z0-9_-]{10,100})(?:\/|$)/);
+ const id=match?match[1]:u.searchParams.get("id");
+ return /^[A-Za-z0-9_-]{10,100}$/.test(id||"")?id:"";
+ }catch(_){return ""}
+}
+function refreshCache(){
+ const cached=read(KEY_ALBUMS,[]);
+ const shared=read(KEY_SHARED,{});
+ settings=shared.discountSettings||read(KEY_DISCOUNTS,{percent:0,excludedAlbums:{}});
+ coupons=Array.isArray(shared.coupons)?shared.coupons:read(KEY_COUPONS,[]);
+ albums=Array.isArray(cached)?cached.map(a=>({
+   id:String(a.id||""),name:String(a.name||a.id||""),
+   fullPrice:Number(a.fullPrice||60000),
+   photos:(Array.isArray(a.photos)?a.photos:[]).map(p=>({
+     id:String(p.id||""),name:String(p.name||"Foto"),driveLink:driveLink(p)
+   }))
+ })).filter(a=>a.id&&a.photos.length):[];
+ const amount=albums.reduce((n,a)=>n+a.photos.length,0);
+ $("count").value=albums.length+" galerías · "+amount+" fotos";
+ const choose=$("album").value;
+ $("album").replaceChildren();
+ for(const a of albums){const opt=document.createElement("option");opt.value=a.id;opt.textContent=a.name+" ("+a.photos.length+" fotos)";$("album").append(opt)}
+ if(albums.some(a=>a.id===choose))$("album").value=choose;
+ $("coupon").replaceChildren();
+ let opt=document.createElement("option");opt.value="";opt.textContent="Sin cupón";$("coupon").append(opt);
+ for(const c of coupons.filter(x=>x&&x.active!==false)){
+   opt=document.createElement("option");opt.value=String(c.code||"").trim().toUpperCase();
+   opt.textContent=String(c.code||"")+" · "+Number(c.percent||0)+"% OFF";$("coupon").append(opt);
+ }
+ $("syncInfo").textContent=albums.length?"Catálogo leído del navegador. Revisá que los precios y cupones estén actualizados antes de sincronizar.":"No hay galerías en la caché. Abrí la app en otra pestaña, esperá que cargue y volvé a pulsar aquí.";
+ updateQuote();
+}
+function sitePercent(a){const n=Number(settings.percent)||0;return settings.excludedAlbums?.[a.id]?0:Math.max(0,Math.min(100,n))}
+function updateQuote(){
+ const album=albums.find(a=>a.id===$("album").value)||null;
+ const isAlbum=$("mode").value==="album";
+ show("nBox",!isAlbum);show("pBox",!isAlbum);show("couponBox",!isAlbum);
+ if(!album){activeQuote=null;$("quoteDescription").textContent="No hay galería seleccionada";$("quoteTotal").textContent="$0";return}
+ let selection,amount,description;
+ if(isAlbum){
+   amount=Math.round(album.fullPrice*(1-sitePercent(album)/100));
+   selection={kind:"album",album_id:album.id};
+   description="Álbum completo · "+album.photos.length+" fotografías"+(sitePercent(album)?" · descuento web "+sitePercent(album)+"%":"");
+ } else {
+   const n=Math.min(500,album.photos.length,Math.max(1,parseInt($("qty").value,10)||1));
+   const printN=Math.min(n,Math.max(0,parseInt($("prints").value,10)||0));
+   const d=n>=5?.15:n>=3?.10:0;
+   const discounted=n*Math.round(2000*(1-d)*(1-sitePercent(album)/100));
+   const code=$("coupon").value;
+   const cp=coupons.find(c=>String(c.code||"").toUpperCase()===code)?.percent||0;
+   amount=Math.round(discounted*(1-Number(cp)/100))+printN*3000;
+   const chosen=album.photos.slice(0,n);
+   selection={kind:"photos",items:chosen.map(p=>({album_id:album.id,photo_id:p.id})),print_ids:chosen.slice(0,printN).map(p=>p.id),coupon:code};
+   description=n+" fotos · descuento por cantidad "+Math.round(d*100)+"% · web "+sitePercent(album)+"% · cupón "+cp+"% · impresiones "+printN;
+ }
+ activeQuote={selection,amount};
+ $("quoteDescription").textContent=description;
+ $("quoteTotal").textContent=money(amount);
+}
+async function sync(){
+ if(!albums.length){log("Primero cargá las galerías.",true);return}
+ const key=$("key").value.trim();
+ if(!key){log("Escribí MP_SETUP_KEY para continuar.",true);return}
+ $("sync").disabled=true;
+ try{
+   const bad=[];
+   for(const a of albums)for(const p of a.photos)if(!driveId(p.driveLink)){bad.push(a.name+" / "+p.name);if(bad.length>5)break}
+   if(bad.length)throw Error("Hay enlaces de fotos que no son de Drive o que faltan. Ejemplos: "+bad.slice(0,5).join(" | ")+". No se sincronizó para evitar vender fotos equivocadas.");
+   let total=0;
+   // Dividir en lotes pequeños por límite del Worker y evitar peticiones enormes.
+   let pack=[],bytes=0;
+   const packs=[];
+   for(const a of albums){
+     const size=JSON.stringify(a).length;
+     if(size>1100000)throw Error("Álbum muy grande para el límite actual de pruebas: "+a.name);
+     if(pack.length&&(pack.length>=8||bytes+size>600000)){packs.push(pack);pack=[];bytes=0}
+     pack.push(a);bytes+=size;
+   }
+   if(pack.length)packs.push(pack);
+   for(let i=0;i<packs.length;i++){
+     log("Sincronizando grupo "+(i+1)+"/"+packs.length+"…");
+     const response=await fetch(API+"/api/admin-catalog-sync",{method:"POST",headers:{"Content-Type":"application/json","X-Setup-Key":key},body:JSON.stringify({
+       albums:packs[i],discountSettings:settings,coupons
+     })});
+     const data=await response.json();
+     if(!response.ok||!data.ok)throw Error(data.error||"Error HTTP "+response.status);
+     total+=data.photos||0;
+   }
+   $("syncInfo").textContent="Sincronización terminada: "+albums.length+" galerías y "+total+" fotos. Repetir si cambian precios o promociones.";
+   log("Catálogo sincronizado correctamente. Ahora podés generar una compra de prueba.");
+ }catch(e){log("Error de sincronización: "+String(e.message||e),true)}
+ finally{$("sync").disabled=false}
+}
+async function checkout(){
+ if(!activeQuote){log("Elegí una galería primero.",true);return}
+ const key=$("key").value.trim();
+ if(!key){log("Escribí la clave privada MP_SETUP_KEY.",true);return}
+ $("checkout").disabled=true;
+ try{
+   const res=await fetch(API+"/api/basket-checkout",{method:"POST",headers:{"Content-Type":"application/json","X-Setup-Key":key},body:JSON.stringify({
+     selection:activeQuote.selection,expected_total:activeQuote.amount
+   })});
+   const data=await res.json();
+   if(!res.ok||!data.ok)throw Error(data.error||"Error al crear orden");
+   purchase={order_id:data.order_id,receipt_token:data.receipt_token,checkout_url:data.checkout_url,amount:data.quote?.amount,kind:data.quote?.kind};
+   localStorage.setItem(KEY_PURCHASE,JSON.stringify(purchase));
+   renderPurchase();
+   log("Orden de prueba creada correctamente. Usá un comprador ficticio para pagarla.");
+ }catch(e){log("Error al crear la orden: "+String(e.message||e),true)}
+ finally{$("checkout").disabled=false}
+}
+function renderPurchase(){
+ if(!purchase){$("purchaseInfo").textContent="Todavía no creaste ninguna orden.";show("payLink",false);$("verify").disabled=true;return}
+ $("purchaseInfo").textContent="Orden: "+purchase.order_id+" · "+money(purchase.amount)+" · "+(purchase.kind==="album"?"Álbum completo":"Fotos seleccionadas");
+ $("payLink").href=purchase.checkout_url||"#";show("payLink",Boolean(purchase.checkout_url));
+ $("verify").disabled=false;show("downloadsWrap",false);
+}
+async function verify(){
+ if(!purchase)return;
+ $("verify").disabled=true;
+ try{
+   const res=await fetch(API+"/api/basket-status",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({order_id:purchase.order_id,receipt_token:purchase.receipt_token})});
+   const data=await res.json();
+   if(!res.ok||!data.ok)throw Error(data.error||"Error consultando MP");
+   if(!data.paid){log("El pago aún no está acreditado. Estado: "+data.status+" / "+data.status_detail);show("downloadsWrap",false);return}
+   const d=$("downloads");d.replaceChildren();
+   for(const [i,file]of(data.downloads||[]).entries()){
+     const a=document.createElement("a");a.href=API+file.url;a.target="_blank";a.rel="noopener noreferrer";
+     a.textContent=(i+1)+". "+file.name+" — Descargar original";d.append(a);
+   }
+   show("downloadsWrap",true);
+   log("¡Pago de prueba acreditado! "+(data.downloads||[]).length+" fotografías disponibles para descargar."+(data.print_requested?" La impresión física se entrega por separado.":""));
+ }catch(e){log("Error verificando el pago: "+String(e.message||e),true)}
+ finally{$("verify").disabled=false}
+}
+$("reload").addEventListener("click",refreshCache);
+$("sync").addEventListener("click",sync);
+$("checkout").addEventListener("click",checkout);
+$("verify").addEventListener("click",verify);
+for(const id of["album","mode","qty","prints","coupon"])$(id).addEventListener("change",updateQuote);
+purchase=read(KEY_PURCHASE,null);
+if(purchase&&(!purchase.order_id||!purchase.receipt_token))purchase=null;
+refreshCache();renderPurchase();
+})();
+</script>
+</body>
+</html>
