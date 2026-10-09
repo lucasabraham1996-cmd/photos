@@ -138,6 +138,26 @@ test('Validación exige clave y permite solamente una foto digital',()=>withFixt
   assert.equal((await f.request('/api/live-checkout',f.input(3),{'X-Setup-Key':'admin-fixture'})).status,400);
   assert.equal(f.state.posts.length,0);
 }));
+test('Solo el administrador consulta las órdenes de MP y los links originales, sin habilitar acceso público',()=>withFixture(async f=>{
+  const p=await f.create();
+  assert.equal((await f.request('/api/admin-orders',{offset:0})).status,401);
+  assert.equal((await f.request('/api/admin-orders',{offset:0},{'X-Setup-Key':'incorrecta'})).status,401);
+  const res=await f.request('/api/admin-orders',{offset:0},{'X-Setup-Key':'admin-fixture'});
+  assert.equal(res.status,200);
+  const before=await res.json();
+  assert.equal(before.orders.length,1);
+  assert.equal(before.orders[0].paid,false);
+  assert.equal(before.orders[0].photos.length,1);
+  assert.equal(before.orders[0].photos[0].download_url,
+    'https://drive.google.com/uc?export=download&id=validDriveId123450');
+  assert.equal(before.has_more,false);
+  f.paid(p);await f.notify(p);
+  const after=await (await f.request('/api/admin-orders',{offset:0},{'X-Setup-Key':'admin-fixture'})).json();
+  assert.equal(after.orders[0].paid,true);
+  assert.equal(after.orders[0].invoice_status,'pendiente_emision_arca');
+  assert.equal((await f.request('/api/admin-orders',{offset:-1},{'X-Setup-Key':'admin-fixture'})).status,400);
+}));
+
 test('Recuperar una validación exige clave y se rechaza fuera del modo privado',()=>withFixture(async f=>{
   const p=await f.create();f.paid(p);await f.status(p);
   const original=f.db.prepare('SELECT receipt_hash FROM la_mp_live_orders').get().receipt_hash;
@@ -458,7 +478,7 @@ test('La página conserva el botón de descarga para reintentar después de una 
 
 function appHarness(f,config={mode:'validation',available:true,validation_amount:200,public_enabled:false}) {
   const storage=new Map(),effects=[],downloads=[],remoteOrders=[];
-  const context={admin:false,CLUB_ENABLED:false,mpTrialBusy:false,MP_TRIAL_ENABLED:false,MP_PAYMENT_VISIBLE:true,
+  const context={admin:true,CLUB_ENABLED:false,mpTrialBusy:false,MP_TRIAL_ENABLED:false,MP_PAYMENT_VISIBLE:true,
     MP_TRIAL_BASE:BASE,mpPaymentConfig:config,mpTrialPurchase:null,mpTrialDownloads:[],
     mpCreateBusyRef:{current:false},mpStatusBusyRef:{current:false},mpAutoDownloadRef:{current:''},
     mpCatalogueBusyRef:{current:false},mpCatalogueSetupKey:'admin-fixture',mpCatalogueSync:{status:'idle',message:''},
