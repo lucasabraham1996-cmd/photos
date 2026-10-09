@@ -48,7 +48,7 @@
   <meta name="twitter:description" content="Fotos deportivas protegidas · Compra directa por WhatsApp" />
   <meta name="twitter:image" content="https://lucasabraham1996-cmd.github.io/photos/social-preview-la.png?v=105" />
   <title>lucasabraham.ph - Galería de Clientes</title>
-  <meta name="app-version" content="v126-mercadopago-direct-checkout" /><style>html{color-scheme:dark}html,body{margin:0;min-height:100%;background:#050505;color:#fff}#root{min-height:100vh;background:#050505;color:#fff}
+  <meta name="app-version" content="v127-orders-and-checkout" /><style>html{color-scheme:dark}html,body{margin:0;min-height:100%;background:#050505;color:#fff}#root{min-height:100vh;background:#050505;color:#fff}
     /* v41: estilo versus moderno para portada y álbum */
     .team-album-reveal{background:linear-gradient(180deg,rgba(3,7,18,.12),rgba(2,6,23,.28))}
     .team-reveal-half{left:12px!important;right:12px!important;width:auto!important;height:33%!important;padding:12px 16px!important;box-shadow:0 16px 36px rgba(0,0,0,.28),inset 0 1px 0 rgba(255,255,255,.14)!important;border:1px solid rgba(255,255,255,.10)!important;overflow:hidden}
@@ -738,6 +738,12 @@
     .checkout-simple-row:last-child{border-bottom:0}
     .checkout-simple-alias{display:flex;align-items:center;gap:10px;width:100%;padding:12px 13px;border-radius:18px;background:#fff;color:#0f172a!important;border:1px solid rgba(125,211,252,.38);box-shadow:0 14px 30px rgba(14,165,233,.14)}
     .checkout-simple-alias img{height:22px;width:auto;object-fit:contain;flex-shrink:0}.checkout-simple-alias *{color:#0f172a!important}
+    .checkout-simple-coupon{border:1px solid rgba(56,189,248,.5)!important;background:linear-gradient(135deg,rgba(8,47,73,.75),rgba(2,6,23,.92))!important}
+    .checkout-simple-coupon .coupon-actions{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:9px}
+    .checkout-simple-coupon input{min-width:0;width:100%;box-sizing:border-box;font-size:16px}
+    @media(max-width:420px){.checkout-simple-coupon .coupon-actions{grid-template-columns:minmax(0,1fr)}.checkout-simple-coupon .coupon-actions button{width:100%}}
+    .admin-order-links{display:flex;flex-wrap:wrap;gap:6px;margin-top:9px}
+    .admin-order-links a{display:inline-flex;gap:7px;align-items:center;max-width:100%;color:#bae6fd!important;border:1px solid rgba(56,189,248,.36);background:rgba(14,165,233,.10);border-radius:12px;padding:8px 10px;font-size:11px;font-weight:800}
     .checkout-simple-coupon summary{cursor:pointer;list-style:none}.checkout-simple-coupon summary::-webkit-details-marker{display:none}
     .checkout-simple-coupon[open] summary{margin-bottom:10px}
     .checkout-simple-cta{min-height:60px;font-size:15px;letter-spacing:.01em;box-shadow:0 18px 42px rgba(34,197,94,.32)!important}
@@ -5343,12 +5349,12 @@ function App() {
     const [checkoutPriorClubAccount, setCheckoutPriorClubAccount] = useState(null);
     const [checkoutPointsLoading, setCheckoutPointsLoading] = useState(false);
     // El backend decide la apertura pública. ?mp_live=1 solo muestra la validación privada.
-    const MP_TRIAL_ENABLED = new URLSearchParams(location.search).get('mp_trial') === '1';
+    const MP_TRIAL_ENABLED = admin && new URLSearchParams(location.search).get('mp_trial') === '1';
     const MP_LIVE_PREVIEW = new URLSearchParams(location.search).get('mp_live') === '1';
     const MP_TRIAL_BASE = 'https://lucasabraham-ph-api.lucasantonioabraham.workers.dev';
     const [mpPaymentConfig,setMpPaymentConfig] = useState({mode:'disabled',public_enabled:false,available:false,validation_amount:200,loading:true});
-    const MP_PAYMENT_VISIBLE = MP_TRIAL_ENABLED || mpPaymentConfig.public_enabled ||
-        (MP_LIVE_PREVIEW && mpPaymentConfig.mode==='validation');
+    // La validación privada se hace en el Worker: no corresponde solicitar credenciales en el carrito público.
+    const MP_PAYMENT_VISIBLE = MP_TRIAL_ENABLED || mpPaymentConfig.public_enabled;
     const [mpTrialPurchase, setMpTrialPurchase] = useState(() => {
         try {
             const stored = JSON.parse(localStorage.getItem(MP_TRIAL_ENABLED?'LA_MP_TRIAL_PURCHASE':'LA_MP_LIVE_PURCHASE') || 'null');
@@ -6513,7 +6519,7 @@ En breve te las preparo y te las envío por acá 😊
     const submitMpTrial=async(selection,expectedTotal,openCheckout=false)=>{
         if(mpCreateBusyRef.current||mpStatusBusyRef.current)return;
         const mode=MP_TRIAL_ENABLED?'test':mpPaymentConfig.mode;
-        if(mode==='disabled'||(!MP_TRIAL_ENABLED&&!mpPaymentConfig.available)){
+        if(!MP_TRIAL_ENABLED&&!mpPaymentConfig.public_enabled){
             setMpTrialMessage('Los pagos automáticos todavía no están disponibles. Podés comprar por WhatsApp.');
             return;
         }
@@ -6523,10 +6529,9 @@ En breve te las preparo y te las envío por acá 😊
             try{openMpCheckout(mpTrialPurchase);}catch(err){setMpTrialMessage(String(err&&err.message||err));}
             return mpTrialPurchase;
         }
-        const setupKey=mode==='public'?'':window.prompt(mode==='validation'?
-            'Clave de administración para validar una compra real privada. Se cobra una foto por '+formatPrice(mpPaymentConfig.validation_amount)+'.':
-            'Clave MP_SETUP_KEY para una compra ficticia de prueba:');
-        if(mode!=='public'&&!setupKey)return;
+        // La única solicitud de clave es para pruebas iniciadas por el administrador.
+        const setupKey=mode==='test'?window.prompt('Clave administrativa para compra ficticia de prueba:'):'';
+        if(mode==='test'&&!setupKey)return;
         mpCreateBusyRef.current=true;
         setMpTrialBusy(true);
         setMpTrialMessage('Preparando tu compra en Mercado Pago...');
@@ -6620,11 +6625,6 @@ En breve te las preparo y te las envío por acá 😊
     };
     const beginMpTrial=(openCheckout=false)=>{
         if(!selectedPhotos.length||!MP_PAYMENT_VISIBLE)return;
-        if(!MP_TRIAL_ENABLED&&mpPaymentConfig.mode==='validation'&&
-            (selectedPhotos.length!==1||checkoutPrint||appliedCoupon)){
-            setMpTrialMessage('Para validar el pago real, elegí una sola foto digital, sin cupón ni impresión.');
-            return;
-        }
         if(checkoutPrint&&!printSelectedPhotos.length){
             setMpTrialMessage('Elegí las fotos para imprimir o desactivá la impresión.');
             return;
@@ -8097,7 +8097,7 @@ React.createElement("div", { id: "order-search-panel", className: "bg-neutral-90
                         React.createElement("span",null,
                             React.createElement("strong",null,mpCurrentCartPaid?"Pago acreditado":mpTrialBusy?"Preparando pago…":"Pagar con Mercado Pago"),
                             React.createElement("small",null,formatPrice(mpResumeWithoutCart?mpTrialPurchase.amount:
-                                mpPaymentConfig.mode==='validation'?mpPaymentConfig.validation_amount:checkoutTotal))),
+                                checkoutTotal))),
                         React.createElement("i",{className:"fas fa-arrow-right","aria-hidden":true})),
                     React.createElement("p",{className:"mp-payment-hint",role:"status"},
                         !MP_PAYMENT_VISIBLE?(mpPaymentConfig.loading?"Comprobando disponibilidad de Mercado Pago…":"Mercado Pago no está disponible ahora. Podés consultar por WhatsApp."):
@@ -8114,7 +8114,6 @@ React.createElement("div", { id: "order-search-panel", className: "bg-neutral-90
                             mpTrialDownloads.map((file,i)=>React.createElement("button",{
                                 key:i,type:"button",onClick:()=>downloadMpFile(file).catch(err=>setMpTrialMessage(String(err&&err.message||err))),className:"mp-download-button"
                             },React.createElement("i",{className:"fas fa-download","aria-hidden":true}),file.name||("Foto "+(i+1)))))),
-                    admin&&renderMpCatalogueSyncControls(true),
                     mpTrialMessage&&React.createElement("p",{role:"status",className:"mp-payment-message"},mpTrialMessage)),
                 React.createElement("div", { className: "checkout-simple-card mb-3" },
                     React.createElement("div", { className: "checkout-simple-row" },
@@ -8150,15 +8149,16 @@ React.createElement("div", { id: "order-search-panel", className: "bg-neutral-90
                             React.createElement("b", { className:"block text-[10px] text-white truncate" }, p.name || p.code),
                             React.createElement("small", { className:"block text-[9px] text-blue-200/65 truncate" }, `Código ${p.code}`)),
                         React.createElement("i", { className:`fas ${printedPhotoIds.includes(p.id) ? 'fa-circle-check text-blue-300' : 'fa-circle text-white/25'}` }))))),
-                React.createElement("details", { className: "checkout-simple-card checkout-simple-coupon mb-3" },
+                React.createElement("details", { open:true, className: "checkout-simple-card checkout-simple-coupon mb-3" },
                     React.createElement("summary", { className: "flex items-center justify-between gap-3 text-sm font-black text-white" },
                         React.createElement("span", null, "Tengo cupón de descuento"),
                         React.createElement("i", { className: "fas fa-chevron-down text-xs text-sky-200" })),
-                    React.createElement("div", { className: "flex flex-col sm:flex-row gap-2" },
-                        React.createElement("input", { value: checkoutCoupon, onChange: e => setCheckoutCoupon(e.target.value), placeholder: "Ingresar cupón", className: "flex-1 bg-black/55 border border-sky-300/20 rounded-xl px-3 py-3 outline-none uppercase text-white" }),
+                    React.createElement("div", { className: "coupon-actions" },
+                        React.createElement("input", { value: checkoutCoupon, onChange: e => setCheckoutCoupon(e.target.value), placeholder: "Código de descuento", "aria-label":"Código de cupón", className: "bg-black/55 border border-sky-300/40 rounded-xl px-3 py-3 outline-none uppercase text-white" }),
                         React.createElement("button", { onClick: applyCoupon, className: "buy-btn px-4 py-3 rounded-xl font-black text-sm transition-all" }, "Aplicar")),
                     couponMessage && React.createElement("p", { className: `text-xs mt-2 ${appliedCoupon ? 'text-sky-200' : 'text-amber-300'}` }, couponMessage)),
-                React.createElement("p", { className: "text-center text-[11px] text-sky-100/65 leading-relaxed mt-3" }, "Las fotos digitales se habilitan al aprobarse el pago en Mercado Pago. Otros medios se acuerdan con Lucas por WhatsApp."))),
+                React.createElement("p", { className: "text-center text-[11px] text-sky-100/65 leading-relaxed mt-3" }, "Las fotos digitales se habilitan al aprobarse el pago en Mercado Pago. Otros medios se acuerdan con Lucas por WhatsApp."),
+                mpTrialPurchase&&mpTrialPurchase.paid&&React.createElement("a",{className:"inline-flex items-center justify-center gap-2 text-xs font-bold text-sky-200 border border-sky-400/25 rounded-xl px-3 py-3 mt-3",target:"_blank",rel:"noopener noreferrer",href:'https://wa.me/'+SELLER_PHONE+'?text='+encodeURIComponent('Hola Lucas, necesito la factura fiscal de mi compra '+mpTrialPurchase.order_id+' por '+formatPrice(mpTrialPurchase.amount)+'.')},React.createElement("i",{className:"fas fa-file-invoice"}),"Solicitar factura fiscal"))),
         MP_PAYMENT_VISIBLE && mpTrialPurchase && !checkoutOpen && React.createElement("button", {
             type:"button", onClick:()=>setCheckoutOpen(true),
             className:"fixed bottom-28 right-3 z-[81] bg-sky-700 text-white text-xs font-black px-4 py-3 rounded-2xl shadow-xl border border-sky-200/25"
