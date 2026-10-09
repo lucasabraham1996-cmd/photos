@@ -1,46 +1,64 @@
-# Compra digital de prueba — lucasabraham.ph
+# Mercado Pago: carrito completo y álbumes, solo modo PRUEBA
 
-**Estado: piloto técnico, NO apto para ventas reales.** La rama `feature/mercadopago-descarga-prueba` no cambia la web pública y conserva el flujo WhatsApp. El botón nuevo aparece solamente con `?mp_trial=1` (antes del fragmento `#/galeria`). Solo admite **una foto digital de $2.000**, sin descuentos, cupones o impresiones.
+**No fusionar ni usar con compradores reales todavía.** La web pública sigue en `main`, sin cambios. El botón experimental aparece únicamente si abrís la app con `?mp_trial=1` antes del hash (por ejemplo, `/photos/?mp_trial=1#/galeria`).
 
-## Qué cambia
-- Checkout Pro en test desde el carrito existente. El precio de $2.000 se fija en el Worker, **no** se acepta el precio que manda el navegador.
-- Orden persistida en D1 vinculada al ID de foto, al ID de Google Drive y al token privado del comprador (almacenado como SHA-256).
-- Webhook con firma HMAC (ID original o minúsculas; ambas variantes se verifican con la clave).
-- Consulta a Mercado Pago del estado de la orden. Solo si `processed/accredited`, el comprador puede acceder a la descarga.
-- Se mantienen las marcas de agua, las carpetas existentes y el proceso por WhatsApp.
-- **Advertencia:** las imágenes de Drive siguen públicas, por decisión actual de negocio. La descarga sólo está condicionada dentro del circuito de compra; cualquiera que obtenga el enlace público original aún puede descargarlo.
+## Opciones implementadas
 
-## Requisitos antes de probar
-1. Crear en Cloudflare → D1 una base de datos (p. ej. `la-ventas-prueba`).
-2. Ejecutar en la consola SQL de D1 el contenido de `docs/mp-test-schema.sql`.
-3. En `lucasabraham-ph-api` agregar binding de D1 con nombre exacto `LA_ORDERS_DB`.
-4. Mantener los secretos `MP_ACCESS_TOKEN_TEST`, `MP_WEBHOOK_SECRET_TEST` y `MP_SETUP_KEY` existentes. **No subirlos a GitHub**.
-5. Reemplazar el código de Cloudflare Worker por `cloudflare/worker-mp-trial.js` solo cuando se esté listo para probar. Hacer copia del Worker actual antes: este archivo sustituye la página anterior de diagnóstico por un endpoint `/health`.
-6. En Mercado Pago, modo prueba, mantener Webhook `https://lucasabraham-ph-api.lucasantonioabraham.workers.dev/webhook/mp`, evento Order.
-7. Para probar la interfaz sin publicar: usar vista previa de la rama, o fusionar tras revisar que el marcador `mp_trial=1` sigue ocultando el piloto al público.
+| Modalidad | Importe calculado por Cloudflare |
+| --- | --- |
+| Foto individual | $2.000 |
+| 3–4 fotos | 10% OFF en cada foto |
+| 5 o más fotos | 15% OFF en cada foto |
+| Descuento web | porcentaje vigente, por álbum, sin aplicar a las excepciones del administrador |
+| Cupón | porcentaje válido y activo, hasta 90% OFF, aplicado al total digital |
+| Impresión 10×15 | +$3.000 por cada foto señalada para imprimir, sumado después de descuentos digitales |
+| Álbum completo | `fullPrice` indicado en la galería, con descuento web si corresponde |
+| Compras digitales mixtas | Fotos seleccionadas en el carrito, incluso de distintos álbumes |
 
-## Funcionamiento
-- El comprador elige una foto digital de $2.000 (sin promoción), abre el carrito y usa la acción piloto.
-- La página solicita la clave `MP_SETUP_KEY` **solo a quien está probando**. No queda almacenada.
-- El Worker crea la orden, guarda la selección y devuelve un link de checkout. El usuario abre Mercado Pago en otra pestaña con comprador ficticio.
-- De vuelta en la app, `Verificar pago` consulta al servidor. Si hay acreditación, aparece `Descargar foto`. La sesión de prueba puede recuperarse desde localStorage.
-- La API solo libera el redireccionamiento para el token vinculado a esa orden y si verificó la acreditación directamente en Mercado Pago.
+Los cupones **no** se aplican al álbum completo porque el checkout de álbum vigente en la app tampoco los ofrece allí. Las tarifas de cobertura, sesión y fotografía fuera del carrito siguen siendo **solicitudes de reserva**, no ventas de archivos descargables.
 
-## Limitaciones y trabajo pendiente
-- No habilitar sin integrar la emisión de **factura C** a ARCA y revisar el número de IIBB.
-- Antes de producción, validar promociones, descuentos web, cupones, combos por cantidad, impresiones y álbum completo del lado servidor.
-- Proteger el modo productivo con medidas antiabuso/rate limit, registros de auditoría, recuperación de compra por email, soporte de ZIP para varias fotos y test completo móvil/escritorio.
-- La API de Google Drive no está integrada: en piloto se usa el enlace de un original **público** ya presente en la galería. El botón puede pasar por confirmación/intersticial de Drive en archivos grandes.
-- Las pruebas no emitirán factura ni generan ingresos reales.
-- No modificar permisos actuales de Drive mientras la app siga usando las URLs públicas.
+## Protección del precio
 
-## Smoke tests
-- Sin `?mp_trial=1`: sólo WhatsApp.
-- Con `?mp_trial=1`: para una foto sin descuentos aparece el botón piloto.
-- Código `MP_SETUP_KEY` incorrecto: HTTP 401.
-- El cliente intenta cambiar el importe: el Worker fija $2.000.
-- Orden no pagada: no entrega descarga.
-- Orden `processed/accredited`: habilita redirección al original.
-- Firma de webhook incorrecta: HTTP 401.
-- Verificar que las galerías y las marcas de agua siguen visibles.
+El navegador **solo manda IDs de fotos, ID de álbum, código de cupón y selección de impresiones**. Cloudflare calcula el precio usando el catálogo sincronizado por el administrador en D1. El total mostrado debe coincidir con el calculado; en caso contrario, se rechaza la orden sin cobrarla.
 
+## Preparación en Cloudflare
+
+1. Crear una base de datos Cloudflare D1 (por ejemplo, `la-fotos-pedidos-test`).
+2. Ejecutar **ambos** esquemas: `docs/mp-test-schema.sql` y **después** `docs/mp-multi-schema.sql`.
+3. En Workers → `lucasabraham-ph-api` → Bindings, agregar D1 binding de nombre exacto `LA_ORDERS_DB` apuntando a la base creada.
+4. Conservar los secretos existentes `MP_ACCESS_TOKEN_TEST`, `MP_WEBHOOK_SECRET_TEST`, `MP_SETUP_KEY` (nunca pegarlos en GitHub).
+5. Guardar una copia del Worker actual y desplegar `cloudflare/worker-mp-trial.js`.
+6. Mantener el webhook de Orders en modo prueba a `/webhook/mp`.
+
+## Preparación en el administrador de la app
+
+1. Probar la rama de desarrollo (no la pública) en una vista previa con `?mp_trial=1`.
+2. Ingresar al administrador y presionar **Sincronizar catálogo con Mercado Pago**.
+3. Escribir `MP_SETUP_KEY` cuando se solicite. El secreto se envía por HTTPS, no se guarda localmente.
+4. Si cambiás galerías, cupones o descuentos, **volvé a sincronizar** antes de cobrar con la versión piloto.
+
+El servidor rechazará catálogos sin enlaces de Google Drive válidos o con fotos duplicadas. Revisa los mensajes en el panel para detectar archivos faltantes.
+
+## Probar distintos escenarios
+- Una foto digital a $2.000.
+- 3 fotos con 10% OFF (total $5.400).
+- 5 fotos con 15% OFF (total $8.500).
+- 3 fotos con descuento web de 10% más cupón del 20% (total $3.888).
+- 3 fotos con descuento web de 10%, cupón 20% y 2 impresiones (total $9.888).
+- Álbum de $60.000, o $54.000 si lleva descuento web del 10%.
+- Cupón inexistente, foto que no pertenece a un álbum y precio manipulado: deben rechazarse.
+- Sin pago, el botón de descarga no aparece. Con estado `processed/accredited`, se muestra el listado de archivos autorizados.
+
+**Nota sobre entregas:** para compras de muchas fotos o álbum completo, se entrega una **lista individual de enlaces de descarga**, no un ZIP único. Para impresión física, Mercado Pago cobra el adicional pero la entrega/retiro se coordina manualmente. Las imágenes de Drive siguen públicas por la decisión del usuario: el control del checkout no impide descargar un original a quien ya conozca su enlace.
+
+## Pendientes antes de vender de verdad
+- Integración de facturación automática C con ARCA y verificación de datos de Ingresos Brutos.
+- Pasar a credenciales productivas, webhook productivo, pruebas reales y política de reembolsos.
+- Sustituir `MP_SETUP_KEY` de piloto (no apto para público) por autenticación/checkout público con rate limiting, antifraude, idempotencia y recuperación de compras por email.
+- Sincronizar automáticamente cambios del administrador o mostrar advertencia cuando los precios no coincidan.
+- ZIP por álbum para descarga masiva, considerando límites de Google Drive/Cloudflare.
+- Registrar órdenes e impresiones en el administrador y coordinar entregas físicas.
+- Resguardar privacidad de compradores y auditar controles de acceso.
+
+## Estado de pruebas
+El JS de la app y del Worker pasan validación sintáctica. 12 casos de cálculo del servidor evaluados, todos correctos; no equivalen a una prueba real de usuario final. No se desplegó esta rama en Cloudflare ni GitHub Pages.
