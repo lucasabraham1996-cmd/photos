@@ -6510,7 +6510,7 @@ En breve te las preparo y te las envío por acá 😊
             showSync('error','No se pudo sincronizar: '+detail);
             return false;
         }finally{
-            clearTimeout(timeout);mpCatalogueBusyRef.current=false;setMpTrialBusy(false);
+            clearTimeout(timeout);mpCatalogueBusyRef.current=false;setMpTrialBusy(false);setMpCatalogueSetupKey('');
         }
     };
     const openMpCheckout=purchase=>{
