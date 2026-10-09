@@ -1,0 +1,24 @@
+name: Verify payment checkout
+on:
+  push:
+    paths:
+      - 'index.html'
+      - 'cloudflare/**'
+      - 'tests/**'
+      - 'docs/mp-live-schema.sql'
+      - 'scripts/build-mp-worker.mjs'
+      - '.github/workflows/verify-payments.yml'
+  pull_request:
+  workflow_dispatch:
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Check application JavaScript
+        run: node scripts/check-app-js.cjs
+      - name: Run payment and safety tests
+        run: node --experimental-sqlite --test tests/mercadopago-pricing.test.cjs tests/mercadopago-live.test.mjs tests/checkout-payment.test.mjs tests/club-pause.test.mjs
