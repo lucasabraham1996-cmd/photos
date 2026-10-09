@@ -5295,6 +5295,18 @@ function App() {
     const [clubModalOpen, setClubModalOpen] = useState(false);
     const [checkoutPriorClubAccount, setCheckoutPriorClubAccount] = useState(null);
     const [checkoutPointsLoading, setCheckoutPointsLoading] = useState(false);
+    // Piloto de Mercado Pago: oculto salvo que se abra ?mp_trial=1.
+    const MP_TRIAL_ENABLED = new URLSearchParams(location.search).get('mp_trial') === '1';
+    const MP_TRIAL_BASE = 'https://lucasabraham-ph-api.lucasantonioabraham.workers.dev';
+    const [mpTrialPurchase, setMpTrialPurchase] = useState(() => {
+        try {
+            const stored = JSON.parse(localStorage.getItem('LA_MP_TRIAL_PURCHASE') || 'null');
+            return stored && stored.order_id && stored.receipt_token ? stored : null;
+        } catch (_) { return null; }
+    });
+    const [mpTrialBusy, setMpTrialBusy] = useState(false);
+    const [mpTrialMessage, setMpTrialMessage] = useState('');
+    const [mpTrialDownload, setMpTrialDownload] = useState('');
     const [checkoutSaving, setCheckoutSaving] = useState(false);
     const [checkoutSaveError, setCheckoutSaveError] = useState("");
     const orderSavingRef = useRef(false);
@@ -6374,6 +6386,76 @@ En breve te las preparo y te las envío por acá 😊
             return `https://api.whatsapp.com/send?phone=${SELLER_PHONE}`;
         return safeOrderWhatsappUrl(buildOrderPackage(checkoutOrderCode || newOrderCode()));
     };
+    // Checkout de prueba: solo una foto digital sin cupones, promos ni impresión.
+    const mpTrialPhoto = selectedPhotos.length === 1 ? selectedPhotos[0] : null;
+    const mpTrialLink = mpTrialPhoto && (mpTrialPhoto.rawUrl || mpTrialPhoto.driveLink || mpTrialPhoto.fullUrl || '');
+    const canMpTrial = Boolean(MP_TRIAL_ENABLED && mpTrialPhoto &&
+        cart.length === 1 && !checkoutPrint && !appliedCoupon &&
+        checkoutTotal === PHOTO_APP_UNIT_PRICE && PHOTO_APP_UNIT_PRICE === 2000 &&
+        !hasSiteDiscount(mpTrialPhoto.albumId) && extractDriveId(mpTrialLink));
+    const beginMpTrial = async () => {
+        if (!canMpTrial || mpTrialBusy) return;
+        const setupKey = window.prompt('Clave privada MP_SETUP_KEY (solo para la prueba):');
+        if (!setupKey) return;
+        setMpTrialBusy(true);
+        setMpTrialMessage('Creando orden de prueba...');
+        setMpTrialDownload('');
+        try {
+            const response = await fetch(MP_TRIAL_BASE + '/api/test-checkout', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'X-Setup-Key': setupKey },
+                body: JSON.stringify({
+                    photo: { id: mpTrialPhoto.id, name: mpTrialPhoto.name, driveLink: mpTrialLink }
+                })
+            });
+            const data = await response.json();
+            if (!response.ok || !data.ok || !data.receipt_token || !data.order_id) {
+                throw new Error(data.error || 'No se pudo crear la orden.');
+            }
+            const purchase = {
+                order_id: data.order_id,
+                receipt_token: data.receipt_token,
+                checkout_url: data.checkout_url,
+                photo_name: mpTrialPhoto.name
+            };
+            localStorage.setItem('LA_MP_TRIAL_PURCHASE', JSON.stringify(purchase));
+            setMpTrialPurchase(purchase);
+            setMpTrialMessage('Orden creada. Abrí Mercado Pago con el comprador de prueba.');
+        } catch (err) {
+            setMpTrialMessage('Error de prueba: ' + String(err && err.message || err));
+        } finally {
+            setMpTrialBusy(false);
+        }
+    };
+    const checkMpTrial = async () => {
+        if (!mpTrialPurchase || mpTrialBusy) return;
+        setMpTrialBusy(true);
+        setMpTrialMessage('Consultando el pago directamente en Mercado Pago...');
+        try {
+            const response = await fetch(MP_TRIAL_BASE + '/api/trial-status', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    order_id: mpTrialPurchase.order_id,
+                    receipt_token: mpTrialPurchase.receipt_token
+                })
+            });
+            const data = await response.json();
+            if (!response.ok || !data.ok) throw new Error(data.error || 'No se pudo consultar la orden.');
+            if (data.paid && data.download_url) {
+                setMpTrialDownload(MP_TRIAL_BASE + data.download_url);
+                setMpTrialMessage('¡Pago de prueba acreditado! Ya podés descargar tu foto.');
+            } else {
+                setMpTrialDownload('');
+                setMpTrialMessage('Pago todavía no acreditado. Estado: ' + String(data.status || 'pendiente') + '.');
+            }
+        } catch (err) {
+            setMpTrialMessage('Error de consulta: ' + String(err && err.message || err));
+        } finally {
+            setMpTrialBusy(false);
+        }
+    };
+
     const sendOrder=async(e)=>{
         if(e&&e.preventDefault)e.preventDefault();
         if(orderSavingRef.current)return;
@@ -7757,7 +7839,33 @@ Te envío el comprobante para que puedas prepararlas.`);
                 React.createElement("button", { type: "button", onClick: sendOrder, disabled: !cart.length, className: `final-buy-btn checkout-simple-cta w-full py-4 rounded-2xl font-black transition-all flex items-center justify-center ${!cart.length ? 'opacity-40 pointer-events-none' : ''}` },
                     React.createElement("i", { className: "fab fa-whatsapp mr-2" }),
                     "Finalizar compra"),
+                MP_TRIAL_ENABLED && React.createElement("div", { className: "mt-3 rounded-2xl border border-sky-400/40 bg-sky-400/10 p-3" },
+                    React.createElement("p", { className: "text-xs font-black text-sky-200 mb-2" }, "Mercado Pago · PILOTO (sin dinero real)"),
+                    canMpTrial && React.createElement("button", {
+                        type: "button", onClick: beginMpTrial, disabled: mpTrialBusy,
+                        className: "w-full rounded-xl bg-sky-600 hover:bg-sky-500 text-white font-black px-3 py-3 disabled:opacity-50"
+                    }, mpTrialBusy ? "Procesando..." : "Crear compra digital de prueba · $2.000"),
+                    !canMpTrial && React.createElement("p", { className: "text-xs text-sky-100/75" },
+                        "Este piloto admite solo una foto digital de $2.000, sin cupón, descuento ni impresión. El resto continúa por WhatsApp."),
+                    mpTrialPurchase && React.createElement("div", { className: "mt-3 grid gap-2" },
+                        React.createElement("p", { className: "text-[11px] text-sky-100/80 break-all" }, "Orden: " + mpTrialPurchase.order_id),
+                        mpTrialPurchase.checkout_url && React.createElement("a", {
+                            href: mpTrialPurchase.checkout_url, target: "_blank", rel: "noopener noreferrer",
+                            className: "block text-center bg-blue-600 text-white rounded-xl px-3 py-3 font-black text-sm"
+                        }, "Abrir Mercado Pago (cuenta ficticia)"),
+                        React.createElement("button", { type:"button", onClick:checkMpTrial, disabled:mpTrialBusy,
+                            className:"w-full rounded-xl bg-neutral-800 border border-white/20 px-3 py-3 text-white font-bold disabled:opacity-50" },
+                            "Verificar pago de prueba"),
+                        mpTrialDownload && React.createElement("a", {
+                            href:mpTrialDownload, target:"_blank", rel:"noopener noreferrer",
+                            className:"block text-center bg-emerald-600 text-white rounded-xl px-3 py-3 font-black text-sm"
+                        }, "Descargar foto original")),
+                    mpTrialMessage && React.createElement("p", { role:"status", className:"text-xs text-sky-100 mt-2 leading-relaxed" }, mpTrialMessage)),
                 React.createElement("p", { className: "text-center text-[11px] text-sky-100/65 leading-relaxed mt-3" }, "No necesitás registrarte para comprar. Se abre WhatsApp con el pedido listo; enviá el mensaje y adjuntá el comprobante."))),
+        MP_TRIAL_ENABLED && mpTrialPurchase && !checkoutOpen && React.createElement("button", {
+            type:"button", onClick:()=>setCheckoutOpen(true),
+            className:"fixed bottom-28 right-3 z-[81] bg-sky-700 text-white text-xs font-black px-4 py-3 rounded-2xl shadow-xl border border-sky-200/25"
+        }, "Ver compra de prueba"),
         checkoutOpen && checkoutSaveError && React.createElement("div", { className:"checkout-save-error", role:"alert" }, checkoutSaveError, React.createElement("button", { type:"button", onClick:()=>navigator.clipboard.writeText(checkoutOrderCode||'').catch(()=>{}), className:"checkout-save-copy" }, "Copiar código")),
         checkoutOpen && React.createElement("button", { type:"button", onClick:sendOrder, disabled:!cart.length||checkoutSaving, className:"checkout-floating-cta" }, React.createElement("i", { className:"fab fa-whatsapp" }), "Finalizar compra"),
         iphoneInstallOpen && admin && React.createElement(IphoneInstallModal, { onClose: () => setIphoneInstallOpen(false), onDownload: downloadAppForIphone, onCopy: copyGalleryInstallUrl, onOpen: () => window.open(getGalleryInstallUrl(), '_blank') }),
