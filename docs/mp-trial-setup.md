@@ -1,5 +1,9 @@
 # Mercado Pago: carrito completo y álbumes, solo modo PRUEBA
 
+**Actualización:** la preparación para una compra real privada está en
+[`mp-live-validation.md`](mp-live-validation.md). Este documento conserva las
+instrucciones del sandbox; no describe la configuración productiva nueva.
+
 **No fusionar ni usar con compradores reales todavía.** La web pública sigue en `main`, sin cambios. El botón experimental aparece únicamente si abrís la app con `?mp_trial=1` antes del hash (por ejemplo, `/photos/?mp_trial=1#/galeria`).
 
 ## Opciones implementadas

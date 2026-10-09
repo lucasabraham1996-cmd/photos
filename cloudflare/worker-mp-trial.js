@@ -361,3 +361,6 @@ export default {
     }
   }
 };
+
+// El Worker productivo reutiliza el cálculo del piloto sin duplicar las tarifas.
+export { computePriceBasket, verifyWebhook, hash, randomToken };
