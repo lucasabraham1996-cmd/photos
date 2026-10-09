@@ -2,6 +2,12 @@
 const MP = "https://api.mercadopago.com/v1/orders";
 const ORIGIN = "https://lucasabraham1996-cmd.github.io";
 const PRICE = 2000;
+// Mercado Pago Checkout Pro Orders exige identificar al comprador ficticio
+// en la orden de sandbox: siempre utilizar su email real @testuser.com.
+function getTestBuyerEmail(env) {
+  const email=String(env.MP_TEST_BUYER_EMAIL||"").trim().toLowerCase();
+  return /^[^\s@]+@testuser\.com$/.test(email)?email:"";
+}
 function result(data, status=200, origin="") {
   const h = {"Content-Type":"application/json; charset=utf-8","Cache-Control":"no-store","X-Content-Type-Options":"nosniff"};
   if(origin===ORIGIN){h["Access-Control-Allow-Origin"]=ORIGIN;h["Access-Control-Allow-Methods"]="POST, OPTIONS";h["Access-Control-Allow-Headers"]="Content-Type, X-Setup-Key";h.Vary="Origin";}
@@ -200,10 +206,13 @@ async function createBasket(request,env,origin) {
     shown_total:expected,
     needs_refresh:true
   },409,origin);
+  const payerEmail=getTestBuyerEmail(env);
+  if(!payerEmail)return result({error:"Configurá MP_TEST_BUYER_EMAIL con el email @testuser.com del comprador ficticio en Cloudflare. No uses el nombre de usuario."},503,origin);
   const requestId=crypto.randomUUID();
   const orderData={
     type:"online",processing_mode:"manual",total_amount:quote.amount.toFixed(2),
     external_reference:"LA-CART-TEST-"+requestId,
+    payer:{email:payerEmail},
     items:[{title:quote.kind==="album"?"Album digital completo - "+String(requested.album_id||"").slice(0,60):"Fotografias deportivas digitales",quantity:1,unit_price:quote.amount.toFixed(2)}]
   };
   let response,mp;
@@ -295,7 +304,7 @@ export default {
       if(origin!==ORIGIN)return result({error:"Origen no autorizado"},403);
       return new Response(null,{status:204,headers:{"Access-Control-Allow-Origin":ORIGIN,"Access-Control-Allow-Methods":"POST, OPTIONS","Access-Control-Allow-Headers":"Content-Type, X-Setup-Key","Access-Control-Max-Age":"600"}});
     }
-    if(path==="/health")return result({ok:true,trial:true,database:Boolean(env.LA_ORDERS_DB)});
+    if(path==="/health")return result({ok:true,trial:true,database:Boolean(env.LA_ORDERS_DB),test_buyer_email_configured:Boolean(getTestBuyerEmail(env))});
     if(!env.LA_ORDERS_DB||!env.MP_ACCESS_TOKEN_TEST)return result({error:"Faltan D1 o credenciales de prueba"},503,origin);
     try{
       if(path==="/api/admin-catalog-sync"&&request.method==="POST")return await syncCatalogue(request,env,origin);
@@ -311,8 +320,10 @@ export default {
         const name=String(p.name||"").trim().slice(0,180);
         if(!id||!photoId||!name)return result({error:"Seleccioná una fotografía válida"},400,origin);
         // Solo una foto digital; el cliente no decide cuánto paga.
+        const payerEmail=getTestBuyerEmail(env);
+        if(!payerEmail)return result({error:"Configurá MP_TEST_BUYER_EMAIL con el correo @testuser.com del comprador ficticio."},503,origin);
         const key=crypto.randomUUID();
-        const payload={type:"online",processing_mode:"manual",total_amount:PRICE.toFixed(2),external_reference:"LA-TRIAL-"+key,items:[{title:"Fotografia deportiva digital",quantity:1,unit_price:PRICE.toFixed(2)}]};
+        const payload={type:"online",processing_mode:"manual",total_amount:PRICE.toFixed(2),external_reference:"LA-TRIAL-"+key,payer:{email:payerEmail},items:[{title:"Fotografia deportiva digital",quantity:1,unit_price:PRICE.toFixed(2)}]};
         const mpRes=await fetch(MP,{method:"POST",headers:{Authorization:"Bearer "+env.MP_ACCESS_TOKEN_TEST,"Content-Type":"application/json",Accept:"application/json","X-Idempotency-Key":key},body:JSON.stringify(payload)});
         const order=await mpRes.json();
         if(!mpRes.ok||!cleanId(order.id)||!/^https:\/\//.test(order.checkout_url||""))return result({error:String(order.message||order.error||"Mercado Pago rechazó la orden").slice(0,200)},502,origin);
