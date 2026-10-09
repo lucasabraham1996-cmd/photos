@@ -34,7 +34,7 @@ test('Sin clave, la sincronización explica el problema junto al botón sin usar
   assert.equal(h.ctx.requests.length,0);
 });
 test('La sincronización muestra progreso y resultado, evita un segundo envío y borra la clave',async()=>{
-  const h=appHarness({...base,admin:true,mpCatalogueSetupKey:'admin-fixture'});h.render();
+  const h=appHarness({...base,admin:true,route:'#/admin',checkoutOpen:false,mpCatalogueSetupKey:'admin-fixture'});h.render();
   let release,requests=0;
   h.ctx.fetch=(_,options)=>{
     requests++;assert.equal(options.headers['X-Setup-Key'],'admin-fixture');
@@ -56,12 +56,12 @@ test('Errores de clave, límite antiguo, Cloudflare y conexión quedan visibles 
     [()=>new Response('<html>Forbidden</html>',{status:403}),/HTTP 403/],
     [()=>{throw new TypeError('Failed to fetch')},/conectar con Cloudflare/]
   ]){
-    const h=appHarness({...base,admin:true,mpCatalogueSetupKey:'admin-fixture'});h.render();
+    const h=appHarness({...base,admin:true,route:'#/admin',checkoutOpen:false,mpCatalogueSetupKey:'admin-fixture'});h.render();
     h.ctx.fetch=async()=>response();assert.equal(await h.actions().syncMpCatalogue(),false);
     assert.match(h.state.mpCatalogueSync.message,expected);assert.equal(h.state.mpTrialBusy,false);
     assert.ok(nodes(h.render()).some(n=>n.props.role==='alert'&&expected.test(textContent(n))));
   }
-  const h=appHarness({...base,admin:true,mpCatalogueSetupKey:'admin-fixture'});let timer;
+  const h=appHarness({...base,admin:true,route:'#/admin',checkoutOpen:false,mpCatalogueSetupKey:'admin-fixture'});let timer;
   h.ctx.setTimeout=fn=>{timer=fn};h.ctx.fetch=(_,options)=>new Promise((_,reject)=>{
     options.signal.addEventListener('abort',()=>reject(new DOMException('Aborted','AbortError')));
   });h.render();const pending=h.actions().syncMpCatalogue();timer();
