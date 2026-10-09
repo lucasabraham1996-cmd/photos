@@ -2,11 +2,13 @@
 const MP = "https://api.mercadopago.com/v1/orders";
 const ORIGIN = "https://lucasabraham1996-cmd.github.io";
 const PRICE = 2000;
-// Mercado Pago Checkout Pro Orders exige identificar al comprador ficticio
-// en la orden de sandbox: siempre utilizar su email real @testuser.com.
+// El panel de Mercado Pago expone el USUARIO de prueba, NO su correo.
+// Orders sandbox requiere un payer.email con dominio @testuser.com cuando se envía payer.
+// Se usa un correo genérico de prueba; si el secreto trae un correo válido, se respeta.
+// El correo de payer NO sustituye el login con la cuenta de prueba del checkout.
 function getTestBuyerEmail(env) {
   const email=String(env.MP_TEST_BUYER_EMAIL||"").trim().toLowerCase();
-  return /^[^\s@]+@testuser\.com$/.test(email)?email:"";
+  return /^[^\s@]+@testuser\.com$/.test(email)?email:"test@testuser.com";
 }
 function result(data, status=200, origin="") {
   const h = {"Content-Type":"application/json; charset=utf-8","Cache-Control":"no-store","X-Content-Type-Options":"nosniff"};
@@ -207,7 +209,6 @@ async function createBasket(request,env,origin) {
     needs_refresh:true
   },409,origin);
   const payerEmail=getTestBuyerEmail(env);
-  if(!payerEmail)return result({error:"Configurá MP_TEST_BUYER_EMAIL con el email @testuser.com del comprador ficticio en Cloudflare. No uses el nombre de usuario."},503,origin);
   const requestId=crypto.randomUUID();
   const orderData={
     type:"online",processing_mode:"manual",total_amount:quote.amount.toFixed(2),
@@ -321,7 +322,6 @@ export default {
         if(!id||!photoId||!name)return result({error:"Seleccioná una fotografía válida"},400,origin);
         // Solo una foto digital; el cliente no decide cuánto paga.
         const payerEmail=getTestBuyerEmail(env);
-        if(!payerEmail)return result({error:"Configurá MP_TEST_BUYER_EMAIL con el correo @testuser.com del comprador ficticio."},503,origin);
         const key=crypto.randomUUID();
         const payload={type:"online",processing_mode:"manual",total_amount:PRICE.toFixed(2),external_reference:"LA-TRIAL-"+key,payer:{email:payerEmail},items:[{title:"Fotografia deportiva digital",quantity:1,unit_price:PRICE.toFixed(2)}]};
         const mpRes=await fetch(MP,{method:"POST",headers:{Authorization:"Bearer "+env.MP_ACCESS_TOKEN_TEST,"Content-Type":"application/json",Accept:"application/json","X-Idempotency-Key":key},body:JSON.stringify(payload)});
