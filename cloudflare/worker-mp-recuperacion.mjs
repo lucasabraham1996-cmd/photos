@@ -745,6 +745,35 @@ async function checkoutStatus(request, env) {
     downloads: state.paid ? items.map((p, i) => ({ name: p.name,
       url: '/api/live-download/' + row.checkout_id + '/' + i })) : [] };
 }
+// Solo administración. Nunca se entregan enlaces originales ni información de pedidos al público.
+async function adminOrders(request,env) {
+  requireAdmin(request,env);
+  await rateLimit(request,env,'admin-orders',40);
+  const body=await readJSON(request);
+  const offset=Number(body.offset||0);
+  if(!Number.isSafeInteger(offset)||offset<0||offset>100000)
+    throw new HttpError(400,'Página inválida');
+  const limit=50;
+  const rows=await env.LA_ORDERS_DB.prepare(
+    'SELECT checkout_id,mp_order_id,mode,kind,amount,items_json,print_ids_json,mp_status,status_detail,payment_valid,created_at,paid_verified_at,download_verified_at FROM la_mp_live_orders ORDER BY created_at DESC LIMIT ? OFFSET ?'
+  ).bind(limit+1,offset).all();
+  const records=rows.results||[];
+  return {ok:true,offset,has_more:records.length>limit,orders:records.slice(0,limit).map(r=>{
+    const photos=JSON.parse(r.items_json||'[]');
+    return {
+      checkout_id:r.checkout_id,order_id:r.mp_order_id||'',mode:r.mode,kind:r.kind,
+      amount:r.amount,created_at:r.created_at,paid_at:r.paid_verified_at||null,
+      payment_status:r.mp_status,payment_detail:r.status_detail,
+      paid:r.payment_valid===1,downloaded:Boolean(r.download_verified_at),
+      print_count:JSON.parse(r.print_ids_json||'[]').length,
+      invoice_status:r.payment_valid===1?'pendiente_emision_arca':'no_corresponde',
+      photos:photos.map(p=>({name:p.name||'Fotografía',album_id:p.album_id||'',photo_id:p.id||'',
+        download_url:/^[a-zA-Z0-9_-]{10,100}$/.test(String(p.drive_id||''))?
+          'https://drive.google.com/uc?export=download&id='+encodeURIComponent(p.drive_id):null}))
+    };
+  })};
+}
+
 async function recoverValidation(request, env) {
   requireAdmin(request, env);
   const config = await paymentConfig(env);
@@ -930,7 +959,7 @@ export default {
         'Content-Security-Policy': "default-src 'self'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; connect-src 'self'; img-src 'self' blob:; object-src 'none'; base-uri 'none'; frame-ancestors 'none'",
         'X-Frame-Options': 'DENY' }
     });
-    const livePath = path.startsWith('/api/live-') || path === '/api/payment-config' || path === '/webhook/mp/live';
+    const livePath = path.startsWith('/api/live-') || path === '/api/admin-orders' || path === '/api/payment-config' || path === '/webhook/mp/live';
     if (!livePath && path !== '/health') return trial.fetch(request, env);
     if (request.method === 'OPTIONS') return json({}, 200, origin);
     try {
@@ -942,6 +971,8 @@ export default {
         return json(await paymentConfig(env), 200, origin);
       if (!env.LA_ORDERS_DB || !env.MP_ACCESS_TOKEN_PROD)
         throw new HttpError(503, 'La integración real todavía no está configurada');
+      if (path === '/api/admin-orders' && request.method === 'POST')
+        return json(await adminOrders(request,env),200,origin);
       if (path === '/api/live-checkout' && request.method === 'POST')
         return json(await createCheckout(request, env), 200, origin);
       if (path === '/api/live-status' && request.method === 'POST')
