@@ -229,6 +229,10 @@ async function refreshCache(){
    ignored=normalized.skipped;
    catalogSource="snapshot público";
  }catch(e){log("No se pudo leer el catálogo público: "+String(e.message||e)+". "+(albums.length?"Se usará la caché anterior.":"Sin fotos cargadas."),true)}
+ // Mostrar las galerías enseguida, sin esperar a Firebase/Apps Script.
+ const partialCount=albums.reduce((n,a)=>n+a.photos.length,0);
+ $("count").value=albums.length+" galerías · "+partialCount+" fotos";
+ $("syncInfo").textContent="Catálogo leído: "+albums.length+" galerías y "+partialCount+" fotos. Consultando ahora las promociones vigentes…";
  settingsVerified=false;
  try{
   let remote;
