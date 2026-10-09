@@ -2,14 +2,45 @@
 
 ## Estado de esta rama
 
-Preparada y probada **localmente**. No se modificó `main`, no se desplegó este nuevo
-Worker y no se realizó ninguna compra real desde esta sesión.
+Preparada y probada **localmente**. Lucas desplegó el nuevo Worker en modo
+`validation`. No se modificó `main` ni se realizó una compra real desde esta sesión.
 
-El Worker existente respondió `/health` con `trial: true` y `database: true`.
-El panel de Cloudflare bloqueó el acceso con “There was a problem with verification”
-y el botón de ingreso deshabilitado. Por ese motivo todavía no se pudieron inspeccionar
-sus versiones, identificador D1, bindings ni nombres de secretos productivos.
-No se modificó la base remota ni sus secretos.
+El acceso automatizado a Cloudflare quedó bloqueado por su verificación. Lucas
+continúa la configuración en su propio navegador, con revisión de sus capturas.
+El Worker existente es `lucasabraham-ph-api`; la versión original registrada fue
+`f4912db2`. Se resguardó su código en `worker-respaldo-09-10-2026.txt` y se verificó
+que corresponde al piloto conservado en esta rama.
+
+El binding `LA_ORDERS_DB` permanece conectado a `la-fotos-pedidos-test`. Se
+conservaron los cuatro secretos del piloto. Las capturas confirmaron las variables
+`MP_LIVE_MODE=validation`, `MP_VALIDATION_AMOUNT=200`, `MP_APP_URL` y el secreto
+`MP_ACCESS_TOKEN_PROD`. Lucas informó que agregó también `MP_WEBHOOK_SECRET_PROD`.
+La disponibilidad del módulo desplegado confirma que recibe los secretos requeridos;
+su validez real se verificará al crear el cobro y recibir el webhook autenticado.
+
+El 9 de octubre de 2026, la consulta previa de D1 registró `2026-10-09T17:03:31Z`
+y las tablas `la_mp_bundle_orders`, `la_mp_catalog`, `la_mp_pricing` y
+`la_mp_test_orders`. Antes de ejecutar la migración aditiva, se obtuvo este punto
+de recuperación con `/bookmark`:
+
+```text
+00000007-00000000-000050ff-8a65bc8c256a655021dd2ad6a608d51d
+```
+
+La migración aditiva se ejecutó en la misma D1. Una consulta separada, revisada
+en la captura de `2026-10-09T17:07:00Z`, confirmó las seis tablas: las cuatro
+anteriores más `la_mp_live_orders` y `la_mp_live_rate_limits`. También confirmó
+ambos índices nuevos, `idx_la_mp_live_status` y `idx_la_mp_live_rate_expiry`.
+El módulo único para el editor de Cloudflare pasó `node --check` y se desplegó.
+La captura de `2026-10-09T17:11:29Z` confirmó esta respuesta de
+`/api/payment-config`:
+
+```json
+{"ok":true,"mode":"validation","public_enabled":false,"available":true,"validation_amount":200}
+```
+
+Queda pendiente la compra real de validación y sus cuatro evidencias antes de
+habilitar los cobros públicos.
 
 ## Archivos y compatibilidad
 
