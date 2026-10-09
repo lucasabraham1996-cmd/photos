@@ -48,7 +48,7 @@
   <meta name="twitter:description" content="Fotos deportivas protegidas · Compra directa por WhatsApp" />
   <meta name="twitter:image" content="https://lucasabraham1996-cmd.github.io/photos/social-preview-la.png?v=105" />
   <title>lucasabraham.ph - Galería de Clientes</title>
-  <meta name="app-version" content="v121-whatsapp-dynamic-messages" /><style>html{color-scheme:dark}html,body{margin:0;min-height:100%;background:#050505;color:#fff}#root{min-height:100vh;background:#050505;color:#fff}
+  <meta name="app-version" content="v126-mercadopago-direct-checkout" /><style>html{color-scheme:dark}html,body{margin:0;min-height:100%;background:#050505;color:#fff}#root{min-height:100vh;background:#050505;color:#fff}
     /* v41: estilo versus moderno para portada y álbum */
     .team-album-reveal{background:linear-gradient(180deg,rgba(3,7,18,.12),rgba(2,6,23,.28))}
     .team-reveal-half{left:12px!important;right:12px!important;width:auto!important;height:33%!important;padding:12px 16px!important;box-shadow:0 16px 36px rgba(0,0,0,.28),inset 0 1px 0 rgba(255,255,255,.14)!important;border:1px solid rgba(255,255,255,.10)!important;overflow:hidden}
@@ -2195,6 +2195,39 @@ img{-webkit-user-drag:none;}
 .bulk-quote-whatsapp:disabled{opacity:.38;filter:grayscale(.25);box-shadow:none}
 @media(max-width:640px){.bulk-quote-entry{grid-template-columns:auto minmax(0,1fr);gap:11px;padding:14px}.bulk-quote-entry-icon{width:43px;height:43px;border-radius:14px}.bulk-quote-entry h3{font-size:15px}.bulk-quote-entry p{font-size:10.5px}.bulk-quote-start,.bulk-quote-cancel{grid-column:1/-1;width:100%;min-height:47px}.bulk-quote-floating{grid-template-columns:auto minmax(0,1fr);gap:9px;padding:9px;border-radius:19px}.bulk-quote-floating-count{width:48px;height:48px;border-radius:15px}.bulk-quote-floating-count strong{font-size:18px}.bulk-quote-floating-copy b{font-size:11px}.bulk-quote-floating-copy small{font-size:9px}.bulk-quote-floating-actions{grid-column:1/-1;display:grid;grid-template-columns:44px minmax(0,1fr);width:100%}.bulk-quote-floating-clear{width:44px;height:44px}.bulk-quote-whatsapp{width:100%;min-height:44px}}
 </style>
+
+<style id="la-payment-options">
+.checkout-simple-shell{padding-bottom:18px!important}
+.checkout-payment-options{margin:0 0 14px;padding:16px;border:1px solid #009ee3;border-radius:20px;background:linear-gradient(155deg,#062334,#07131c);box-shadow:0 8px 30px rgba(0,158,227,.18)}
+.payment-options-label{margin:0 0 12px;color:#c6f1ff!important;font-size:11px;font-weight:900;letter-spacing:.12em;text-transform:uppercase}
+.mp-pay-button{width:100%;min-height:90px;border:0;border-radius:16px;padding:14px 16px;display:flex;align-items:center;gap:12px;background:linear-gradient(115deg,#009ee3,#00b7ec);color:#012f46!important;box-shadow:0 8px 24px rgba(0,158,227,.3);cursor:pointer;transition:filter .15s,transform .15s}
+.mp-pay-button:hover:not(:disabled){filter:brightness(1.08);transform:translateY(-1px)}
+.mp-pay-button:disabled{opacity:.6;cursor:default}
+.mp-pay-button>img{width:56px;height:56px;object-fit:contain;flex:0 0 56px}
+.mp-pay-button>span{flex:1;min-width:0;text-align:left}
+.mp-pay-button strong{display:block;font-size:20px;font-weight:950;line-height:1.15;color:#012f46!important}
+.mp-pay-button small{display:block;margin-top:6px;font-size:16px;font-weight:800;color:#012f46!important}
+.mp-pay-button>i{font-size:17px;flex-shrink:0}
+.mp-payment-hint,.other-payment-hint{margin:10px 2px 14px;font-size:12px;line-height:1.5;color:#c0d9e6!important}
+.other-payment-button{display:flex;align-items:center;gap:12px;width:100%;min-height:64px;box-sizing:border-box;border:1px solid #36b86b;border-radius:14px;padding:12px 14px;background:rgba(22,163,74,.1);color:#bff6cf!important;text-decoration:none;font-size:15px;font-weight:850;line-height:1.3;transition:background .15s}
+.other-payment-button:hover{background:rgba(22,163,74,.22)}
+.other-payment-button>span{flex:1}.other-payment-button>i:first-child{font-size:25px;color:#4ade80!important}.other-payment-button>i:last-child{font-size:12px}
+.other-payment-hint{margin-bottom:0;color:#a2bfb1!important}
+.mp-pay-button:focus-visible,.other-payment-button:focus-visible,.mp-catalogue-submit:focus-visible{outline:3px solid white;outline-offset:3px}
+.mp-purchase-status{margin-top:16px;padding-top:14px;border-top:1px solid #234759}
+.mp-purchase-reference{font-size:11px;color:#c0d9e6!important;overflow-wrap:anywhere;margin-bottom:10px}
+.mp-status-button,.mp-download-button{width:100%;padding:12px;border:1px solid #476b80;border-radius:12px;background:#133042;color:#fff!important;font-size:13px;font-weight:800;cursor:pointer}
+.mp-download-list{display:grid;gap:8px;margin-top:10px;max-height:240px;overflow-y:auto}.mp-download-button{background:#115e36;border-color:#34a46b;text-align:left;overflow-wrap:anywhere}.mp-download-button i{margin-right:8px}
+.mp-payment-message{margin-top:12px;font-size:12px;line-height:1.5;color:#d2edf9!important;overflow-wrap:anywhere}
+.mp-catalogue-controls{display:grid;gap:8px;margin-top:14px;padding-top:14px;border-top:1px solid #32617a}
+.mp-catalogue-controls label{font-size:12px;font-weight:800;color:#c6f1ff!important}
+.mp-catalogue-controls input{width:100%;min-width:0;box-sizing:border-box;border:1px solid #527d93;border-radius:10px;padding:12px;background:#031421;color:white!important;font-size:16px}
+.mp-catalogue-controls small{font-size:11px;line-height:1.5;color:#b5cdd8!important}
+.mp-catalogue-submit{padding:12px;border:0;border-radius:11px;background:#03699c;color:white!important;font-size:13px;font-weight:900;cursor:pointer}.mp-catalogue-submit:disabled{opacity:.55;cursor:wait}
+.mp-catalogue-result{margin:0;padding:12px;border-radius:10px;font-size:13px;line-height:1.5;overflow-wrap:anywhere;background:#13364b;color:#d0f0ff!important}
+.mp-catalogue-result.error{background:#431d22;color:#ffd3d3!important;border:1px solid #98545c}.mp-catalogue-result.success{background:#0d3b25;color:#c7ffdd!important;border:1px solid #258859}
+@media(max-width:380px){.checkout-payment-options{padding:12px}.mp-pay-button{padding:12px;gap:9px}.mp-pay-button strong{font-size:18px}.mp-pay-button>img{width:44px;height:44px;flex-basis:44px}.other-payment-button{padding:11px;font-size:14px;gap:9px}}
+</style>
 </head>
 <body style="background:#050505;color:#fff;">
   <div id="boot-overlay" style="position:fixed;inset:0;z-index:99999;background:#050505;color:#fff;display:flex;align-items:center;justify-content:center;padding:24px;">
@@ -2224,7 +2257,7 @@ const BRAND = "lucasabraham.ph";
 const HANDLE = "@lucasabraham.ph";
 const SELLER_PHONE = "5493515580770";
 const MP_ALIAS = "lucasabraham.mp";
-const MP_LOGO = "https://images.cults3d.com/uR8gWslmgoDYdkHjEcZfN9aMA9k=/516x516/filters:no_upscale()/https://fbi.cults3d.com/uploaders/29809200/illustration-file/42fe9a48-e8dd-4162-93b4-afddc0bee16d/MP_RGB_HANDSHAKE_pluma_horizontal.png";
+const MP_LOGO = "./assets/mercadopago-mark.svg";
 const PHOTO_APP_UNIT_PRICE = 2000;
 const DEFAULT_FULL_ALBUM_PRICE = 60000;
 const LEGACY_ADMIN_PIN = "160218";
@@ -2243,7 +2276,7 @@ const LS_SHARED_STATE_KEY = "la_shared_admin_state_v2";
 const LS_BANNERS_KEY = "la_banner_settings_v1";
 const LS_INTRO_KEY = "la_purchase_intro_seen_v2";
 const PHOTOS_PER_PAGE = 70;
-const APP_VERSION = "v125-passkey-rebind";
+const APP_VERSION = "v126-mercadopago-direct-checkout";
 const LS_ALBUM_CACHE_META_KEY = "la_album_cache_meta_v1";
 const ALBUM_CACHE_MAX_AGE_MS = 1000 * 60 * 60 * 12;
 const FIRESTORE_FREE_DAILY_LIMITS = {
@@ -5199,7 +5232,15 @@ function App() {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState("");
     const [activeAlbum, setActiveAlbum] = useState(getAlbumIdFromHash(location.hash));
-    const [cart, setCart] = useState([]);
+    const mpReturnedCheckout=useMemo(()=>{
+        if(new URLSearchParams(location.search).get('mp_return')!=='1')return null;
+        try{
+            const saved=JSON.parse(localStorage.getItem('LA_MP_CHECKOUT_STATE')||'null');
+            const purchase=JSON.parse(localStorage.getItem('LA_MP_LIVE_PURCHASE')||'null');
+            return saved&&purchase&&saved.order_id===purchase.order_id&&Array.isArray(saved.cart)?saved:null;
+        }catch(_){return null;}
+    },[]);
+    const [cart, setCart] = useState(()=>mpReturnedCheckout?mpReturnedCheckout.cart:[]);
     const [bulkQuoteMode, setBulkQuoteMode] = useState(false);
     const [bulkQuoteIds, setBulkQuoteIds] = useState([]);
     const [cartRecovery, setCartRecovery] = useState(() => { try { const v=JSON.parse(localStorage.getItem('LA_RECOVER_CART') || '[]'); return Array.isArray(v) ? v : []; } catch(e) { return []; } });
@@ -5248,14 +5289,14 @@ function App() {
     const [checkoutOpen, setCheckoutOpen] = useState(false);
     const [checkoutOrderCode, setCheckoutOrderCode] = useState("");
     const [checkoutCoupon, setCheckoutCoupon] = useState("");
-    const [appliedCoupon, setAppliedCoupon] = useState(null);
+    const [appliedCoupon, setAppliedCoupon] = useState(()=>mpReturnedCheckout&&mpReturnedCheckout.coupon||null);
     const [couponMessage, setCouponMessage] = useState("");
     const [checkoutCustomerName, setCheckoutCustomerName] = useState("");
     const [checkoutPhone, setCheckoutPhone] = useState("");
     const [checkoutDni, setCheckoutDni] = useState("");
     const [checkoutWantsPoints, setCheckoutWantsPoints] = useState(false);
-    const [checkoutPrint, setCheckoutPrint] = useState(false);
-    const [printedPhotoIds, setPrintedPhotoIds] = useState([]);
+    const [checkoutPrint, setCheckoutPrint] = useState(()=>Boolean(mpReturnedCheckout&&mpReturnedCheckout.print));
+    const [printedPhotoIds, setPrintedPhotoIds] = useState(()=>mpReturnedCheckout&&mpReturnedCheckout.print_ids||[]);
     const [customerDetailsOpen, setCustomerDetailsOpen] = useState(true);
     const [customerDetailsSaved, setCustomerDetailsSaved] = useState(false);
     const [customerSavedMessage, setCustomerSavedMessage] = useState("");
@@ -5316,6 +5357,9 @@ function App() {
     const [mpTrialBusy, setMpTrialBusy] = useState(false);
     const [mpTrialMessage, setMpTrialMessage] = useState('');
     const [mpTrialDownloads, setMpTrialDownloads] = useState([]);
+    const [mpCatalogueSetupKey,setMpCatalogueSetupKey] = useState('');
+    const [mpCatalogueSync,setMpCatalogueSync] = useState({status:'idle',message:''});
+    const mpCatalogueBusyRef=useRef(false);
     const mpCreateBusyRef=useRef(false);
     const mpStatusBusyRef=useRef(false);
     const mpAutoDownloadRef=useRef('');
@@ -6415,43 +6459,68 @@ En breve te las preparo y te las envío por acá 😊
     // Cobros de prueba: sincronización del catálogo por administrador.
     // Los clientes NUNCA pueden indicar precios; Cloudflare los calcula desde D1.
     const syncMpCatalogue=async()=>{
-        if(!admin||mpTrialBusy)return false;
-        const setupKey=window.prompt('Clave MP_SETUP_KEY para sincronizar catálogo (solo administrador):');
-        if(!setupKey)return false;
-        const data={
-            albums:displayAlbums.map(a=>({
-                id:a.id,name:a.name,fullPrice:a.fullPrice,
-                photos:(a.photos||[]).map(p=>({id:p.id,name:p.name,driveLink:p.rawUrl||p.driveLink||p.fullUrl||p.url}))
-            })),
-            discountSettings:{percent:discountSettings.percent||0,excludedAlbums:discountSettings.excludedAlbums||{}},
-            coupons:coupons.map(x=>({code:x.code,percent:x.percent,active:x.active!==false}))
+        if(!admin||mpTrialBusy||mpCatalogueBusyRef.current)return false;
+        const setupKey=String(mpCatalogueSetupKey||'').trim();
+        const showSync=(status,message)=>{
+            setMpCatalogueSync({status,message});setAdminMessage(message);setMpTrialMessage(message);
         };
+        if(!setupKey){showSync('error','Ingresá la clave MP_SETUP_KEY en el campo de sincronización.');return false;}
+        if(!displayAlbums.length){showSync('error','Esperá a que carguen las galerías antes de sincronizar.');return false;}
+        mpCatalogueBusyRef.current=true;
         setMpTrialBusy(true);
-        setAdminMessage('Sincronizando catálogo y promociones con Cloudflare...');
-        setMpTrialMessage('Sincronizando las galerías y sus precios…');
+        showSync('working','Sincronizando '+displayAlbums.length+' galerías, precios y promociones…');
+        const controller=new AbortController();
+        const timeout=setTimeout(()=>controller.abort(),45000);
         try{
+            const data={
+                albums:displayAlbums.map(a=>({
+                    id:a.id,name:a.name,fullPrice:a.fullPrice,
+                    photos:(a.photos||[]).map(p=>({id:p.id,name:p.name,driveLink:p.rawUrl||p.driveLink||p.fullUrl||p.url}))
+                })),
+                discountSettings:{percent:discountSettings.percent||0,excludedAlbums:discountSettings.excludedAlbums||{}},
+                coupons:coupons.map(x=>({code:x.code,percent:x.percent,active:x.active!==false}))
+            };
             const response=await fetch(MP_TRIAL_BASE+'/api/admin-catalog-sync',{
                 method:'POST',
                 headers:{'Content-Type':'application/json','X-Setup-Key':setupKey},
-                body:JSON.stringify(data)
+                body:JSON.stringify(data),signal:controller.signal
             });
-            const result=await response.json();
+            const result=await response.json().catch(()=>null);
+            if(response.status===401)throw Error('La clave MP_SETUP_KEY no es correcta. Revisala en Cloudflare y reintentá.');
+            if(response.status===413||result&&/demasiado grande/.test(result.error||''))
+                throw Error('El Worker todavía tiene el límite anterior. Publicá el Worker actualizado en Cloudflare y reintentá.');
+            if(!result)throw Error('Cloudflare no devolvió una respuesta válida (HTTP '+response.status+').');
             if(!response.ok||!result.ok)throw Error(result.error||'Error de sincronización');
-            setAdminMessage('Catálogo sincronizado: '+result.albums+' galerías y '+result.photos+' fotos. Promociones y cupones actualizados.');
-            setMpTrialMessage('Galerías sincronizadas: '+result.albums+' galerías y '+result.photos+' fotos.');
+            showSync('success','Catálogo sincronizado: '+result.albums+' galerías y '+result.photos+' fotos. Ya podés reintentar el pago.');
             return true;
         }catch(err){
-            setAdminMessage('No se pudo sincronizar Mercado Pago: '+String(err&&err.message||err));
-            setMpTrialMessage('No se pudo sincronizar: '+String(err&&err.message||err));
+            const detail=controller.signal.aborted?'La conexión tardó más de 45 segundos. Reintentá la sincronización.':
+                err&&err.name==='TypeError'?'No se pudo conectar con Cloudflare. Revisá la conexión y reintentá.':String(err&&err.message||err);
+            showSync('error','No se pudo sincronizar: '+detail);
             return false;
-        }finally{setMpTrialBusy(false)}
+        }finally{
+            clearTimeout(timeout);mpCatalogueBusyRef.current=false;setMpTrialBusy(false);setMpCatalogueSetupKey('');
+        }
     };
-    const submitMpTrial=async(selection,expectedTotal)=>{
+    const openMpCheckout=purchase=>{
+        const url=new URL(purchase.checkout_url);
+        if(url.protocol!=='https:'||!['www.mercadopago.com.ar','sandbox.mercadopago.com.ar'].includes(url.hostname)||
+            !url.pathname.startsWith('/checkout/')||url.searchParams.get('order_id')!==purchase.order_id)
+            throw Error('Mercado Pago no devolvió un enlace de pago válido.');
+        window.location.assign(url.href);
+    };
+    const submitMpTrial=async(selection,expectedTotal,openCheckout=false)=>{
         if(mpCreateBusyRef.current||mpStatusBusyRef.current)return;
         const mode=MP_TRIAL_ENABLED?'test':mpPaymentConfig.mode;
         if(mode==='disabled'||(!MP_TRIAL_ENABLED&&!mpPaymentConfig.available)){
             setMpTrialMessage('Los pagos automáticos todavía no están disponibles. Podés comprar por WhatsApp.');
             return;
+        }
+        const selectionSignature=JSON.stringify({selection,expected_total:expectedTotal,mode});
+        if(openCheckout&&mpTrialPurchase&&mpTrialPurchase.selection_signature===selectionSignature&&
+            !mpTrialPurchase.paid&&mpTrialPurchase.ready){
+            try{openMpCheckout(mpTrialPurchase);}catch(err){setMpTrialMessage(String(err&&err.message||err));}
+            return mpTrialPurchase;
         }
         const setupKey=mode==='public'?'':window.prompt(mode==='validation'?
             'Clave de administración para validar una compra real privada. Se cobra una foto por '+formatPrice(mpPaymentConfig.validation_amount)+'.':
@@ -6498,6 +6567,7 @@ En breve te las preparo y te las envío por acá 😊
                 order_id:data.order_id,receipt_token:data.receipt_token,checkout_url:data.checkout_url,
                 checkout_id:data.checkout_id||'',mode:data.mode||'test',paid:false,ready:mode!=='validation',
                 kind:data.quote.kind,quantity:data.quote.quantity,amount:data.quote.amount,
+                selection_signature:selectionSignature,
                 order_data:localOrder?{...localOrder,total:data.quote.amount,
                     ...(mode==='validation'?{wantsPoints:false,phone:'',customerName:''}:{}),
                     ...(!CLUB_ENABLED?{wantsPoints:false}:{}),
@@ -6520,11 +6590,34 @@ En breve te las preparo y te las envío por acá 😊
             setMpTrialMessage('Compra por '+formatPrice(data.quote.amount)+' preparada. '+
                 (mode==='test'?'Abrí Mercado Pago con el comprador de prueba.':
                 'Al acreditar el pago, las fotos se habilitan automáticamente.'));
+            if(openCheckout){
+                if(mode!=='test')localStorage.setItem('LA_MP_CHECKOUT_STATE',JSON.stringify({
+                    order_id:purchase.order_id,cart:selection.kind==='photos'?cart:[],
+                    print:checkoutPrint,print_ids:printedPhotoIds,coupon:appliedCoupon
+                }));
+                openMpCheckout(purchase);
+            }
+            return purchase;
         }catch(err){
             setMpTrialMessage('Mercado Pago: '+String(err&&err.message||err));
         }finally{mpCreateBusyRef.current=false;setMpTrialBusy(false)}
     };
-    const beginMpTrial=()=>{
+    const mpSelectionForCart=()=>({
+        kind:'photos',items:selectedPhotos.map(p=>({album_id:p.albumId,photo_id:p.id})),
+        print_ids:checkoutPrint?printSelectedPhotos.map(p=>p.id):[],coupon:appliedCoupon?appliedCoupon.code:''
+    });
+    const mpCurrentCartPaid=Boolean(mpTrialPurchase&&mpTrialPurchase.paid&&mpTrialPurchase.selection_signature===
+        JSON.stringify({selection:mpSelectionForCart(),expected_total:checkoutTotal,mode:MP_TRIAL_ENABLED?'test':mpPaymentConfig.mode}));
+    const mpResumeWithoutCart=Boolean(MP_PAYMENT_VISIBLE&&mpTrialPurchase&&!mpTrialPurchase.paid&&mpTrialPurchase.ready&&!selectedPhotos.length);
+    const payWithMercadoPago=()=>{
+        if(mpTrialBusy)return;
+        if(mpResumeWithoutCart){
+            try{openMpCheckout(mpTrialPurchase);}catch(err){setMpTrialMessage(String(err&&err.message||err));}
+            return;
+        }
+        return beginMpTrial(true);
+    };
+    const beginMpTrial=(openCheckout=false)=>{
         if(!selectedPhotos.length||!MP_PAYMENT_VISIBLE)return;
         if(!MP_TRIAL_ENABLED&&mpPaymentConfig.mode==='validation'&&
             (selectedPhotos.length!==1||checkoutPrint||appliedCoupon)){
@@ -6535,21 +6628,41 @@ En breve te las preparo y te las envío por acá 😊
             setMpTrialMessage('Elegí las fotos para imprimir o desactivá la impresión.');
             return;
         }
-        const selection={
-            kind:'photos',
-            items:selectedPhotos.map(p=>({album_id:p.albumId,photo_id:p.id})),
-            print_ids:checkoutPrint?printSelectedPhotos.map(p=>p.id):[],
-            coupon:appliedCoupon?appliedCoupon.code:''
-        };
-        return submitMpTrial(selection,checkoutTotal);
+        const selection=mpSelectionForCart();
+        return submitMpTrial(selection,checkoutTotal,openCheckout===true);
     };
     const syncMpCatalogueAndRetry=async()=>{
-        if(await syncMpCatalogue())return beginMpTrial();
+        if(await syncMpCatalogue())return beginMpTrial(true);
+    };
+    const renderMpCatalogueSyncControls=(retry=false)=>React.createElement("div",{className:"mp-catalogue-controls"},
+        React.createElement("label",{htmlFor:retry?'mp-catalogue-key-checkout':'mp-catalogue-key-admin'},"Clave MP_SETUP_KEY"),
+        React.createElement("input",{id:retry?'mp-catalogue-key-checkout':'mp-catalogue-key-admin',type:"password",
+            value:mpCatalogueSetupKey,onChange:e=>setMpCatalogueSetupKey(e.target.value),disabled:mpTrialBusy,
+            autoComplete:"off",spellCheck:false,placeholder:"Pegá la clave de Cloudflare aquí"}),
+        React.createElement("small",null,"La clave se usa para esta sincronización y no se guarda."),
+        React.createElement("button",{type:"button",onClick:retry?syncMpCatalogueAndRetry:syncMpCatalogue,
+            disabled:mpTrialBusy,className:"mp-catalogue-submit"},
+            mpCatalogueSync.status==='working'?"Sincronizando galerías…":retry?"Sincronizar galerías y reintentar":"Sincronizar catálogo con Mercado Pago"),
+        mpCatalogueSync.message&&React.createElement("p",{
+            role:mpCatalogueSync.status==='error'?"alert":"status","aria-live":"polite",
+            className:"mp-catalogue-result "+mpCatalogueSync.status
+        },mpCatalogueSync.message));
+    const otherPaymentWhatsappUrl=()=>{
+        const photos=selectedPhotos.length?selectedPhotos:mpTrialPurchase&&mpTrialPurchase.order_data&&mpTrialPurchase.order_data.items||[];
+        const amount=selectedPhotos.length?checkoutTotal:mpTrialPurchase&&mpTrialPurchase.amount||0;
+        const printCount=selectedPhotos.length?printSelectedPhotos.length:mpTrialPurchase&&mpTrialPurchase.order_data&&mpTrialPurchase.order_data.printCount||0;
+        const details=photos.slice(0,25).map(p=>'• '+p.albumName+' · '+(p.code||p.name)).join('\n');
+        const message='Hola Lucas! Quiero consultar otros medios de pago para estas fotos.\n\n'+details+
+            (photos.length>25?'\nY '+(photos.length-25)+' fotos más.':'')+
+            '\n\nTotal de la selección: '+formatPrice(amount)+
+            (printCount?'\nCon impresión 10x15 de '+printCount+' fotos.':'')+
+            '\n¿Cómo podemos acordar el pago?';
+        return 'https://wa.me/'+SELLER_PHONE+'?text='+encodeURIComponent(message);
     };
     const beginAlbumMpTrial=(album)=>{
         if(!album||!MP_PAYMENT_VISIBLE)return;
         if(!MP_TRIAL_ENABLED&&mpPaymentConfig.mode!=='public')return;
-        submitMpTrial({kind:'album',album_id:album.id},albumPriceWithDiscount(album));
+        return submitMpTrial({kind:'album',album_id:album.id},albumPriceWithDiscount(album),true);
     };
     const downloadMpFile=async(file,purchase=mpTrialPurchase)=>{
         if(!purchase)return;
@@ -7491,9 +7604,7 @@ React.createElement("div", { id: "order-search-panel", className: "bg-neutral-90
                 React.createElement("h3", { className:"text-sky-200 font-black" }, "Mercado Pago · Sincronizar precios y galerías"),
                 React.createElement("p", { className:"text-xs text-sky-100/75 mt-1 mb-3" },
                     "Actualiza en Cloudflare las fotos originales, el precio de cada álbum, descuentos web y cupones. Repetir cuando cambies los precios o las promociones."),
-                React.createElement("button", {type:"button",onClick:syncMpCatalogue,disabled:mpTrialBusy||!displayAlbums.length,
-                    className:"bg-sky-600 text-white font-black rounded-xl px-4 py-3 disabled:opacity-50"},
-                    mpTrialBusy?"Sincronizando...":"Sincronizar catálogo con Mercado Pago")),
+                renderMpCatalogueSyncControls()),
             React.createElement("div", { className:"mt-8 mb-6" },
                 React.createElement("p", { className:"text-[10px] uppercase tracking-[.18em] text-neutral-600 font-black mb-2" }, "Información técnica")),
             React.createElement("div", { className: "mb-4 bg-blue-500/10 border border-blue-500/25 text-blue-100 rounded-2xl px-4 py-3 text-xs leading-relaxed" },
@@ -7955,10 +8066,10 @@ Te envío el comprobante para que puedas prepararlas.`);
                         React.createElement("i", { className: "fas fa-bag-shopping" }),
                         " Revisar compra"),
                     React.createElement("h2", { className: "text-2xl sm:text-3xl font-black mb-1 text-white" }, "Confirmá tu compra"),
-                    React.createElement("p", { className: "text-sky-100/75 text-sm leading-relaxed" }, MP_PAYMENT_VISIBLE?"Pagá con Mercado Pago y descargá tus fotos al acreditar el pago, o coordiná por WhatsApp.":"Copiá el alias, transferí por Mercado Pago y finalizá la compra por WhatsApp.")),
+                    React.createElement("p", { className: "text-sky-100/75 text-sm leading-relaxed" }, "Pagá con Mercado Pago o consultá otro medio de pago por WhatsApp.")),
                 CLUB_ENABLED && React.createElement("div", { className:"checkout-guest-choice", role:"group", "aria-label":"Elegí cómo comprar" },
                     React.createElement("button", { type:"button", className:`checkout-guest-btn ${!checkoutWantsPoints ? 'active' : ''}`, onClick:()=>{setCheckoutWantsPoints(false);setCustomerDetailsSaved(false);setCustomerDetailsOpen(false);setCheckoutPriorClubAccount(null);setCheckoutCustomerName('');setCheckoutPhone('');setClubSessionPhone('');try{localStorage.removeItem('LA_CLUB_PHONE')}catch(e){}} }, "Continuar sin sumar puntos"),
-                    React.createElement("p", null, MP_PAYMENT_VISIBLE?"No necesitás registrarte. Elegí tus fotos y cómo querés pagar.":"No necesitás registrarte. Elegí tus fotos, finalizá el pedido y envialo por WhatsApp.")),
+                    React.createElement("p", null, "No necesitás registrarte. Elegí tus fotos y cómo querés pagar.")),
                 CLUB_ENABLED && React.createElement("div", { className: "mb-3" },
                     React.createElement("button", { type:"button", onClick:() => setCustomerDetailsOpen(v => !v), className:`benefits-glass-btn ${customerDetailsOpen || customerDetailsSaved ? 'active' : ''}` },
                         React.createElement("i", { className:"fas fa-gift" }),
@@ -7986,6 +8097,34 @@ Te envío el comprobante para que puedas prepararlas.`);
                             cart.length,
                             " fotos seleccionadas")),
                     React.createElement("b", { className: "text-3xl sm:text-4xl text-white leading-none" }, formatPrice(checkoutTotal))),
+                React.createElement("section", { className:"checkout-payment-options",id:"checkout-mercadopago","aria-label":"Cómo querés pagar" },
+                    React.createElement("p",{className:"payment-options-label"},"Elegí cómo pagar"),
+                    React.createElement("button", {type:"button",onClick:payWithMercadoPago,
+                        disabled:!MP_PAYMENT_VISIBLE||mpTrialBusy||mpCurrentCartPaid||(!selectedPhotos.length&&!mpResumeWithoutCart),
+                        className:"mp-pay-button","aria-busy":mpTrialBusy},
+                        React.createElement("img",{src:MP_LOGO,alt:"","aria-hidden":true}),
+                        React.createElement("span",null,
+                            React.createElement("strong",null,mpCurrentCartPaid?"Pago acreditado":mpTrialBusy?"Preparando pago…":"Pagar con Mercado Pago"),
+                            React.createElement("small",null,formatPrice(mpResumeWithoutCart?mpTrialPurchase.amount:
+                                mpPaymentConfig.mode==='validation'?mpPaymentConfig.validation_amount:checkoutTotal))),
+                        React.createElement("i",{className:"fas fa-arrow-right","aria-hidden":true})),
+                    React.createElement("p",{className:"mp-payment-hint",role:"status"},
+                        !MP_PAYMENT_VISIBLE?(mpPaymentConfig.loading?"Comprobando disponibilidad de Mercado Pago…":"Mercado Pago no está disponible ahora. Podés consultar por WhatsApp."):
+                        MP_TRIAL_ENABLED?"Compra ficticia con la cuenta de prueba.":"Pago seguro. Tus fotos se habilitan al aprobarse el pago."),
+                    React.createElement("a",{href:otherPaymentWhatsappUrl(),target:"_blank",rel:"noopener noreferrer",className:"other-payment-button"},
+                        React.createElement("i",{className:"fab fa-whatsapp","aria-hidden":true}),
+                        React.createElement("span",null,"Consultar otros medios de pago"),
+                        React.createElement("i",{className:"fas fa-arrow-up-right-from-square","aria-hidden":true})),
+                    React.createElement("p",{className:"other-payment-hint"},"Hablá directamente con Lucas por WhatsApp para acordar el pago."),
+                    mpTrialPurchase&&React.createElement("div",{className:"mp-purchase-status"},
+                        React.createElement("p",{className:"mp-purchase-reference"},"Tu compra: "+formatPrice(mpTrialPurchase.amount||0)+" · "+mpTrialPurchase.order_id),
+                        React.createElement("button",{type:"button",onClick:checkMpTrial,disabled:mpTrialBusy,className:"mp-status-button"},"Actualizar estado del pago"),
+                        mpTrialDownloads.length>0&&React.createElement("div",{className:"mp-download-list"},
+                            mpTrialDownloads.map((file,i)=>React.createElement("button",{
+                                key:i,type:"button",onClick:()=>downloadMpFile(file).catch(err=>setMpTrialMessage(String(err&&err.message||err))),className:"mp-download-button"
+                            },React.createElement("i",{className:"fas fa-download","aria-hidden":true}),file.name||("Foto "+(i+1)))))),
+                    admin&&renderMpCatalogueSyncControls(true),
+                    mpTrialMessage&&React.createElement("p",{role:"status",className:"mp-payment-message"},mpTrialMessage)),
                 React.createElement("div", { className: "checkout-simple-card mb-3" },
                     React.createElement("div", { className: "checkout-simple-row" },
                         React.createElement("span", { className: "text-sky-100/70" }, "Subtotal"),
@@ -8004,53 +8143,6 @@ Te envío el comprobante para que puedas prepararlas.`);
                     React.createElement("div", { className: "checkout-simple-row" },
                         React.createElement("span", { className: "text-sky-100/70" }, "Entrega"),
                         React.createElement("b", { className: "text-white" }, MP_PAYMENT_VISIBLE?"Descarga automática o WhatsApp":"WhatsApp"))),
-                React.createElement("div", { className: "checkout-simple-card mb-3" },
-                    React.createElement("div", { className: "flex items-start justify-between gap-3 mb-3" },
-                        React.createElement("div", null,
-                            React.createElement("p", { className: "text-[11px] uppercase tracking-[0.16em] text-sky-100/70 font-black mb-1" }, "Forma de pago"),
-                            React.createElement("h3", { className: "text-base font-black text-white" }, "Mercado Pago")),
-                        React.createElement("img", { src: MP_LOGO, alt: "Mercado Pago", className: "checkout-pay-logo" })),
-                React.createElement("div", { className: "mb-3 rounded-2xl border border-sky-400/40 bg-sky-400/10 p-3", id:"checkout-mercadopago" },
-                    React.createElement("p", { className: "text-xs font-black text-sky-200 mb-2" },
-                        MP_TRIAL_ENABLED?"Mercado Pago · prueba ficticia":
-                        mpPaymentConfig.mode==='validation'?"Validación privada · compra real de "+formatPrice(mpPaymentConfig.validation_amount):
-                        "Mercado Pago · descarga al acreditar el pago"),
-                    React.createElement("button", {
-                        type:"button", onClick:beginMpTrial, disabled:!MP_PAYMENT_VISIBLE||mpTrialBusy||!selectedPhotos.length,
-                        className:"w-full rounded-xl bg-sky-600 hover:bg-sky-500 text-white font-black px-3 py-3 disabled:opacity-50"
-                    }, mpTrialBusy?"Procesando...":!MP_PAYMENT_VISIBLE&&mpPaymentConfig.loading?"Comprobando Mercado Pago...":!MP_TRIAL_ENABLED&&mpPaymentConfig.mode==='validation'&&MP_LIVE_PREVIEW?
-                        "Validar una foto por "+formatPrice(mpPaymentConfig.validation_amount):
-                        "Pagar con Mercado Pago · "+formatPrice(checkoutTotal)),
-                    React.createElement("p", { className:"text-[11px] text-sky-100/70 mt-2" },
-                        !MP_PAYMENT_VISIBLE?(mpPaymentConfig.loading?"Comprobando disponibilidad del pago automático...":"El pago automático no está disponible en este momento. Podés comprar por WhatsApp."):
-                        MP_TRIAL_ENABLED?"Usá la cuenta compradora de prueba.":
-                        "La descarga se habilita automáticamente cuando Mercado Pago acredita el pago."),
-                    mpTrialPurchase && React.createElement("div", { className:"mt-3 grid gap-2" },
-                        React.createElement("p", { className:"text-[11px] text-sky-100/80 break-all" },
-                            "Orden: "+mpTrialPurchase.order_id+" · "+formatPrice(mpTrialPurchase.amount||0)),
-                        mpTrialPurchase.checkout_url && (mpTrialPurchase.mode!=='validation'||mpTrialPurchase.ready) && !mpTrialPurchase.paid && React.createElement("a", {
-                            href:mpTrialPurchase.checkout_url,target:"_blank",rel:"noopener noreferrer",
-                            className:"block text-center bg-blue-600 text-white rounded-xl px-3 py-3 font-black text-sm"
-                        }, (mpTrialPurchase.mode||'test')==='test'?"Abrir Mercado Pago (cuenta ficticia)":"Abrir Mercado Pago para pagar "+formatPrice(mpTrialPurchase.amount||0)),
-                        React.createElement("button", {type:"button",onClick:checkMpTrial,disabled:mpTrialBusy,
-                            className:"w-full rounded-xl bg-neutral-800 border border-white/20 px-3 py-3 text-white font-bold disabled:opacity-50"},
-                            "Actualizar estado del pago"),
-                        mpTrialDownloads.length>0 && React.createElement("div", {className:"max-h-60 overflow-y-auto grid gap-2"},
-                            mpTrialDownloads.map((file,i)=>React.createElement("button",{
-                                key:i,type:"button",onClick:()=>downloadMpFile(file).catch(err=>setMpTrialMessage(String(err&&err.message||err))),
-                                className:"block bg-emerald-700/80 rounded-lg px-3 py-2 text-white text-xs font-bold truncate"
-                            }, React.createElement("i",{className:"fas fa-download mr-2"}),file.name||("Foto "+(i+1)))))),
-                    admin && React.createElement("button", {type:"button",onClick:syncMpCatalogueAndRetry,disabled:mpTrialBusy||!displayAlbums.length,
-                        className:"mt-3 w-full rounded-xl border border-sky-300/30 bg-sky-950 px-3 py-3 text-sky-100 font-bold disabled:opacity-50"},
-                        mpTrialBusy?"Sincronizando…":"Sincronizar galerías y reintentar"),
-                    mpTrialMessage && React.createElement("p", {role:"status",className:"text-xs text-sky-100 mt-2 leading-relaxed"},mpTrialMessage)),
-                    React.createElement("p", { className:"text-xs text-sky-100/70 mb-2" }, "O transferí al alias y enviá el comprobante por WhatsApp:"),
-                    React.createElement("button", { type: "button", onClick: () => { navigator.clipboard.writeText(MP_ALIAS); setAliasCopied(true); setTimeout(() => setAliasCopied(false), 1800); }, className: "checkout-simple-alias" },
-                        React.createElement("img", { src: MP_LOGO, alt: "Mercado Pago" }),
-                        React.createElement("span", { className: "min-w-0 flex-1 text-left" },
-                            React.createElement("span", { className: "block text-[11px] uppercase tracking-[0.14em] font-black opacity-70" }, aliasCopied ? "Alias copiado" : "Copiar alias"),
-                            React.createElement("span", { className: "block text-base font-black truncate" }, MP_ALIAS)),
-                        React.createElement("i", { className: `fas ${aliasCopied ? 'fa-circle-check' : 'fa-copy'} text-lg` }))),
                 React.createElement("button", { type:"button", onClick:() => setCheckoutPrint(v => { const next=!v; if(!next) setPrintedPhotoIds([]); return next; }), className:`print-order-btn mb-3 ${checkoutPrint ? 'active' : ''}` },
                     React.createElement("i", { className:"fas fa-print" }),
                     React.createElement("span", null, React.createElement("b", null, "Quiero impresión de fotos 10x15"), React.createElement("small", null, `+$3.000 por cada foto que elijas${checkoutPrint ? ` · ${printSelectedPhotos.length} seleccionada${printSelectedPhotos.length === 1 ? '' : 's'} · +${formatPrice(printSurcharge)}` : ''}`)),
@@ -8075,16 +8167,12 @@ Te envío el comprobante para que puedas prepararlas.`);
                         React.createElement("input", { value: checkoutCoupon, onChange: e => setCheckoutCoupon(e.target.value), placeholder: "Ingresar cupón", className: "flex-1 bg-black/55 border border-sky-300/20 rounded-xl px-3 py-3 outline-none uppercase text-white" }),
                         React.createElement("button", { onClick: applyCoupon, className: "buy-btn px-4 py-3 rounded-xl font-black text-sm transition-all" }, "Aplicar")),
                     couponMessage && React.createElement("p", { className: `text-xs mt-2 ${appliedCoupon ? 'text-sky-200' : 'text-amber-300'}` }, couponMessage)),
-                React.createElement("button", { type: "button", onClick: sendOrder, disabled: !cart.length, className: `final-buy-btn checkout-simple-cta w-full py-4 rounded-2xl font-black transition-all flex items-center justify-center ${!cart.length ? 'opacity-40 pointer-events-none' : ''}` },
-                    React.createElement("i", { className: "fab fa-whatsapp mr-2" }),
-                    "Finalizar compra"),
-                React.createElement("p", { className: "text-center text-[11px] text-sky-100/65 leading-relaxed mt-3" }, MP_PAYMENT_VISIBLE?"Mercado Pago habilita la descarga al acreditar el pago. También podés coordinar por WhatsApp.":"No necesitás registrarte para comprar. Se abre WhatsApp con el pedido listo; enviá el mensaje y adjuntá el comprobante."))),
+                React.createElement("p", { className: "text-center text-[11px] text-sky-100/65 leading-relaxed mt-3" }, "Las fotos digitales se habilitan al aprobarse el pago en Mercado Pago. Otros medios se acuerdan con Lucas por WhatsApp."))),
         MP_PAYMENT_VISIBLE && mpTrialPurchase && !checkoutOpen && React.createElement("button", {
             type:"button", onClick:()=>setCheckoutOpen(true),
             className:"fixed bottom-28 right-3 z-[81] bg-sky-700 text-white text-xs font-black px-4 py-3 rounded-2xl shadow-xl border border-sky-200/25"
         }, "Ver mi compra"),
         checkoutOpen && checkoutSaveError && React.createElement("div", { className:"checkout-save-error", role:"alert" }, checkoutSaveError, React.createElement("button", { type:"button", onClick:()=>navigator.clipboard.writeText(checkoutOrderCode||'').catch(()=>{}), className:"checkout-save-copy" }, "Copiar código")),
-        checkoutOpen && React.createElement("button", { type:"button", onClick:sendOrder, disabled:!cart.length||checkoutSaving, className:"checkout-floating-cta" }, React.createElement("i", { className:"fab fa-whatsapp" }), MP_PAYMENT_VISIBLE?"Comprar por WhatsApp":"Finalizar compra"),
         iphoneInstallOpen && admin && React.createElement(IphoneInstallModal, { onClose: () => setIphoneInstallOpen(false), onDownload: downloadAppForIphone, onCopy: copyGalleryInstallUrl, onOpen: () => window.open(getGalleryInstallUrl(), '_blank') }),
         priceAdminOpen && admin && React.createElement(PriceAdminModal, { onClose: () => setPriceAdminOpen(false), priceSettings: priceSettings, setPriceSettings: setPriceSettings, setAdminMessage: setAdminMessage }),
         bookingOpen && React.createElement(PriceModal, { onClose: () => setBookingOpen(false), priceSettings: priceSettings }),

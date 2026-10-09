@@ -382,9 +382,10 @@ test('Sincroniza el catálogo real de más de 1,5 MB sin alterar el pedido acred
   const paid=await f.create();await f.download(paid);f.paid(paid);await f.notify(paid);await (await f.download(paid)).arrayBuffer();
   const ui=fullAppHarness({admin:true,loading:false,introOpen:false});
   const albums=ui.normalizeAlbums(JSON.parse(readFileSync(new URL('../gallery-snapshot.json',import.meta.url),'utf8')));
-  ui.state.albums=albums;ui.ctx.window.prompt=()=> 'admin-fixture';ui.render();
+  ui.state.albums=albums;
   let bodySize=0;
   for(const handler of [worker,bundleWorker]){
+    ui.state.mpCatalogueSetupKey='admin-fixture';ui.render();
     ui.ctx.fetch=(url,options)=>{
       bodySize=options.body.length;
       return f.request(String(url).slice(BASE.length),JSON.parse(options.body),options.headers,options.method,handler);
@@ -408,7 +409,7 @@ test('Un administrador sincroniza una galería ausente y reintenta el mismo carr
   await app.actions.beginMpTrial();assert.equal(app.context.mpTrialPurchase,null);assert.equal(f.state.posts.length,1);
   await app.actions.syncMpCatalogueAndRetry();
   assert.ok(app.context.mpTrialPurchase);assert.equal(app.context.mpTrialPurchase.amount,2000);
-  assert.equal(app.context.promptCount,1);assert.equal(f.state.posts.length,2);
+  assert.equal(app.context.promptCount,0);assert.equal(f.state.posts.length,2);
   assert.equal(app.context.mpTrialPurchase.order_data.wantsPoints,false);
 }));
 
@@ -460,19 +461,22 @@ function appHarness(f,config={mode:'validation',available:true,validation_amount
   const context={admin:false,CLUB_ENABLED:false,mpTrialBusy:false,MP_TRIAL_ENABLED:false,MP_PAYMENT_VISIBLE:true,
     MP_TRIAL_BASE:BASE,mpPaymentConfig:config,mpTrialPurchase:null,mpTrialDownloads:[],
     mpCreateBusyRef:{current:false},mpStatusBusyRef:{current:false},mpAutoDownloadRef:{current:''},
+    mpCatalogueBusyRef:{current:false},mpCatalogueSetupKey:'admin-fixture',mpCatalogueSync:{status:'idle',message:''},
     selectedPhotos:[{id:'photo-0',albumId:'album-01'}],checkoutTotal:2000,checkoutPrint:false,appliedCoupon:null,
+    cart:['photo-0'],printedPhotoIds:[],
     printSelectedPhotos:[],displayAlbums:[],discountSettings:{},coupons:[],
     formatPrice:v=>'$'+v,albumPriceWithDiscount:()=>60000,location:{search:'?mp_live=1'},
     buildOrderPackage:id=>({orderData:{id,date:stamp,total:2000,items:[{id:'photo-0'}],delivered:false,status:'pendiente'}}),
     saveOrderRemote:async order=>{remoteOrders.push(order);return {firebase:true,script:false}},
-    promptCount:0,window:{prompt(){context.promptCount++;return 'admin-fixture'},open(){},addEventListener(){},removeEventListener(){}},
+    promptCount:0,window:{prompt(){context.promptCount++;return 'admin-fixture'},open(){},location:{assign(){}},addEventListener(){},removeEventListener(){}},
     document:{hidden:false,body:{appendChild(){}},createElement(){return {click(){downloads.push('file')},remove(){}}},addEventListener(){},removeEventListener(){}},
-    URL:{createObjectURL(){return 'blob:fixture'},revokeObjectURL(){}},setTimeout(){},setInterval(){return 1},clearInterval(){},
+    URL:class extends URL{static createObjectURL(){return 'blob:fixture'}static revokeObjectURL(){}},setTimeout(){},setInterval(){return 1},clearInterval(){},
     localStorage:{getItem:k=>storage.get(k)||null,setItem:(k,v)=>storage.set(k,v),removeItem:k=>storage.delete(k)},
     fetch:(url,options={})=>f.request(String(url).slice(BASE.length),
       options.body===undefined?undefined:JSON.parse(options.body),options.headers||{},options.method||'GET'),
     useEffect:fn=>effects.push(fn),setMpTrialBusy:v=>{context.mpTrialBusy=v},
     setMpTrialMessage:v=>{context.message=v},setMpTrialDownloads:v=>{context.mpTrialDownloads=v},
+    setMpCatalogueSync:v=>{context.mpCatalogueSync=v},setMpCatalogueSetupKey:v=>{context.mpCatalogueSetupKey=v},
     setCheckoutOpen:v=>{context.checkoutOpen=v},setAdminMessage(){},
     setMpTrialPurchase:v=>{context.mpTrialPurchase=typeof v==='function'?v(context.mpTrialPurchase):v}
   };

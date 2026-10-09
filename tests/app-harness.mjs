@@ -7,14 +7,15 @@ export function appHarness(overrides = {}) {
   const end = html.indexOf('</script>', start);
   let script = html.slice(start, end);
   const appStart = script.indexOf('function App() {');
-  const renderStart = script.indexOf('\n    return React.createElement(', appStart);
+  const renderStart = script.indexOf('\n    if (error && !albums.length', appStart);
   if (renderStart < 0) throw Error('No se encontró el render de App');
   const names = [...script.slice(appStart, renderStart).matchAll(/const\s+\[(\w+),\s*\w+\]\s*=\s*useState\(/g)].map(m => m[1]);
   script = script.slice(0, renderStart) + `
     ctx.actions={buildOrderPackage,buildOrderConfirmationMessage,orderConfirmationWhatsappUrl,
       openClub,saveCheckoutCustomer,addClubProduct,addManualClubPoints,transferClubPoints,
       registerClubUser,redeemClubProduct,lookupClubPoints,clubAccountFromOrders,
-      syncMpCatalogue,syncMpCatalogueAndRetry,submitMpTrial,beginMpTrial,setOrderDecisionAndClose};
+      syncMpCatalogue,syncMpCatalogueAndRetry,submitMpTrial,beginMpTrial,payWithMercadoPago,
+      otherPaymentWhatsappUrl,setOrderDecisionAndClose};
 ` + script.slice(renderStart);
   const state = { ...overrides }, effects = [], storage = new Map(), requests = [];
   let cursor = 0, refCursor = 0;

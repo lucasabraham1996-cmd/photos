@@ -1,0 +1,106 @@
+import { test } from 'node:test';
+import assert from 'node:assert/strict';
+import { appHarness, nodes, textContent } from './app-harness.mjs';
+
+const photo={id:'photo-01',albumId:'album-01',albumName:'All Boys',name:'Foto 1.jpg',code:'001',price:2000,
+  rawUrl:'https://drive.google.com/file/d/validDriveId12345/view',url:'https://drive.google.com/file/d/validDriveId12345/view'};
+const base={albums:[{id:'album-01',name:'All Boys',fullPrice:60000,dateTs:Date.now(),photos:[photo],subalbums:[]}],
+  cart:[photo.id],loading:false,introOpen:false,checkoutOpen:true,
+  mpPaymentConfig:{mode:'public',available:true,public_enabled:true,loading:false}};
+const reply=(data,status=200)=>new Response(JSON.stringify(data),{status,headers:{'Content-Type':'application/json'}});
+const paymentButton=tree=>nodes(tree).find(n=>n.props.className==='mp-pay-button');
+
+test('El carrito ofrece pago directo y consulta al WhatsApp personal sin registrar una venta',()=>{
+  const h=appHarness(base),tree=h.render();
+  const card=nodes(tree).find(n=>n.props.id==='checkout-mercadopago');
+  const actions=nodes(card).filter(n=>n.type==='button'||n.type==='a');
+  assert.equal(actions.length,2);assert.equal(actions[0].props.disabled,false);
+  assert.match(textContent(actions[0]),/Pagar con Mercado Pago/);
+  const url=new URL(actions[1].props.href);
+  assert.equal(url.hostname,'wa.me');assert.equal(url.pathname,'/5493515580770');
+  assert.match(url.searchParams.get('text'),/consultar otros medios de pago/);
+  assert.match(url.searchParams.get('text'),/All Boys · 001/);
+  assert.doesNotMatch(url.searchParams.get('text'),/comprobante|transferí|puntos|club/i);
+  assert.equal(nodes(tree).some(n=>/checkout-floating-cta|checkout-simple-cta/.test(n.props.className||'')),false);
+  assert.equal(h.ctx.requests.length,0);assert.equal(h.storage.size,0);
+});
+test('Sin clave, la sincronización explica el problema junto al botón sin usar diálogos',async()=>{
+  const h=appHarness({...base,admin:true,route:'#/admin',checkoutOpen:false});
+  h.ctx.window.prompt=()=>{throw Error('No se debe abrir un diálogo')};h.render();
+  assert.equal(await h.actions().syncMpCatalogue(),false);
+  const tree=h.render(),field=nodes(tree).find(n=>n.props.id==='mp-catalogue-key-admin');
+  assert.equal(field.props.type,'password');
+  assert.ok(nodes(tree).some(n=>n.props.role==='alert'&&/Ingresá la clave/.test(textContent(n))));
+  assert.equal(h.ctx.requests.length,0);
+});
+test('La sincronización muestra progreso y resultado, evita un segundo envío y borra la clave',async()=>{
+  const h=appHarness({...base,admin:true,mpCatalogueSetupKey:'admin-fixture'});h.render();
+  let release,requests=0;
+  h.ctx.fetch=(_,options)=>{
+    requests++;assert.equal(options.headers['X-Setup-Key'],'admin-fixture');
+    return new Promise(resolve=>{release=resolve});
+  };
+  const actions=h.actions(),first=actions.syncMpCatalogue();
+  assert.equal(h.state.mpCatalogueSync.status,'working');
+  assert.equal(await actions.syncMpCatalogue(),false);assert.equal(requests,1);
+  release(reply({ok:true,albums:21,photos:12006}));assert.equal(await first,true);
+  assert.equal(h.state.mpCatalogueSetupKey,'');
+  const tree=h.render();
+  assert.ok(nodes(tree).some(n=>n.props.className==='mp-catalogue-result success'&&/21 galerías y 12006 fotos/.test(textContent(n))));
+  assert.equal([...h.storage.values()].some(value=>value.includes('admin-fixture')),false);
+});
+test('Errores de clave, límite antiguo, Cloudflare y conexión quedan visibles y permiten reintentar',async()=>{
+  for(const [response,expected] of [
+    [()=>reply({error:'Unauthorized'},401),/no es correcta/],
+    [()=>reply({error:'Solicitud demasiado grande'},400),/límite anterior/],
+    [()=>new Response('<html>Forbidden</html>',{status:403}),/HTTP 403/],
+    [()=>{throw new TypeError('Failed to fetch')},/conectar con Cloudflare/]
+  ]){
+    const h=appHarness({...base,admin:true,mpCatalogueSetupKey:'admin-fixture'});h.render();
+    h.ctx.fetch=async()=>response();assert.equal(await h.actions().syncMpCatalogue(),false);
+    assert.match(h.state.mpCatalogueSync.message,expected);assert.equal(h.state.mpTrialBusy,false);
+    assert.ok(nodes(h.render()).some(n=>n.props.role==='alert'&&expected.test(textContent(n))));
+  }
+  const h=appHarness({...base,admin:true,mpCatalogueSetupKey:'admin-fixture'});let timer;
+  h.ctx.setTimeout=fn=>{timer=fn};h.ctx.fetch=(_,options)=>new Promise((_,reject)=>{
+    options.signal.addEventListener('abort',()=>reject(new DOMException('Aborted','AbortError')));
+  });h.render();const pending=h.actions().syncMpCatalogue();timer();
+  assert.equal(await pending,false);assert.match(h.state.mpCatalogueSync.message,/45 segundos/);
+  assert.equal(h.state.mpTrialBusy,false);
+});
+test('Un clic abre Mercado Pago después de guardar el recibo y reusa el pago pendiente',async()=>{
+  const h=appHarness(base),navigations=[];h.render();let requests=0;
+  h.ctx.fetch=async(_,options)=>{
+    requests++;assert.equal(options.headers['X-Setup-Key'],undefined);
+    return reply({ok:true,mode:'public',order_id:'ORD123',checkout_id:'checkout-123',receipt_token:'receipt-fixture',
+      checkout_url:'https://www.mercadopago.com.ar/checkout/v1/redirect?order_id=ORD123',
+      quote:{kind:'photos',quantity:1,amount:2000}});
+  };
+  h.ctx.window.location.assign=url=>{
+    assert.equal(JSON.parse(h.storage.get('LA_MP_LIVE_PURCHASE')).receipt_token,'receipt-fixture');
+    assert.deepEqual(JSON.parse(h.storage.get('LA_MP_CHECKOUT_STATE')).cart,[photo.id]);
+    navigations.push(url);
+  };
+  await paymentButton(h.render()).props.onClick();
+  assert.equal(requests,1);assert.equal(navigations.length,1);
+  assert.match(navigations[0],/^https:\/\/www.mercadopago.com.ar\/checkout\//);
+  await paymentButton(h.render()).props.onClick();
+  assert.equal(requests,1);assert.equal(navigations.length,2);
+  h.state.mpTrialPurchase={...h.state.mpTrialPurchase,paid:true};
+  assert.equal(paymentButton(h.render()).props.disabled,true);
+});
+test('Volver de Mercado Pago restaura selección, impresión y cupón; nunca abre un enlace ajeno',async()=>{
+  const {cart:_,...rest}=base;
+  const h=appHarness(rest);h.ctx.location.search='?mp_return=1';
+  h.storage.set('LA_MP_LIVE_PURCHASE',JSON.stringify({order_id:'ORD123',receipt_token:'receipt-fixture'}));
+  h.storage.set('LA_MP_CHECKOUT_STATE',JSON.stringify({order_id:'ORD123',cart:[photo.id],print:true,
+    print_ids:[photo.id],coupon:{code:'AHORRO',percent:10}}));h.render();
+  assert.deepEqual(h.state.cart,[photo.id]);assert.equal(h.state.checkoutPrint,true);
+  assert.deepEqual(h.state.printedPhotoIds,[photo.id]);assert.equal(h.state.appliedCoupon.code,'AHORRO');
+  const bad=appHarness(base);bad.render();let navigated=false;
+  bad.ctx.window.location.assign=()=>{navigated=true};
+  bad.ctx.fetch=async()=>reply({ok:true,mode:'public',order_id:'ORD123',checkout_id:'checkout-123',receipt_token:'receipt-fixture',
+    checkout_url:'https://example.com/checkout/?order_id=ORD123',quote:{kind:'photos',quantity:1,amount:2000}});
+  await paymentButton(bad.render()).props.onClick();assert.equal(navigated,false);
+  assert.match(bad.state.mpTrialMessage,/enlace de pago válido/);
+});

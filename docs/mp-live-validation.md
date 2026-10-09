@@ -173,6 +173,36 @@ revisada de la aplicación y habilitar el modo público. El botón de WhatsApp p
 La validación real está confirmada; el modo público del Worker todavía requiere
 el cambio de variable y su comprobación mediante `/api/payment-config`.
 
+## Pago directo y respuesta de sincronización
+
+El carrito muestra dos opciones junto al total: **Pagar con Mercado Pago**, en
+celeste con el ícono de la marca incluido en el repositorio, y **Consultar otros
+medios de pago**, que abre el WhatsApp personal `5493515580770` con selección e
+importe para acordar el pago. Esta consulta no guarda una venta ni solicita un
+comprobante. Se retiraron el alias y el botón flotante de WhatsApp del carrito.
+Los accesos al alias fuera del carrito permanecen disponibles.
+
+El botón de Mercado Pago guarda primero el recibo y después abre el checkout en
+la misma pestaña. Un reintento de la selección pendiente reutiliza su enlace.
+Al volver, restaura selección, impresión y cupón; una compra idéntica ya pagada
+muestra **Pago acreditado** y no permite cobrarla otra vez desde ese botón.
+
+La sincronización usa un campo de contraseña en el panel administrador y el
+carrito administrador, en lugar de `window.prompt`. Muestra progreso y resultado
+persistentes junto al botón; distingue clave incorrecta, límite anterior,
+respuesta no JSON, conexión fallida y espera mayor a 45 segundos. La clave se
+borra de memoria al terminar y no se guarda en almacenamiento local.
+La sincronización del Worker real sigue pendiente de la acción de Lucas.
+
+El plazo de disponibilidad del dinero se configura en la cuenta de Mercado Pago
+para Checkout, en **Tu negocio → Costos y cuotas**. Seleccionar **Al instante**
+tiene un costo mayor que esperar 18 días. No se cambió esa opción desde código
+ni se verificó aún la configuración de la cuenta. La aprobación del pago y la
+entrega digital se verifican por la orden acreditada y no esperan ese plazo.
+Referencia oficial:
+https://www.mercadolibre.com.ar/ayuda/16181
+https://www.mercadopago.com.ar/herramientas-para-vender/check-out
+
 ## Sincronización del catálogo completo
 
 Lucas encontró una galería que no estaba sincronizada con Mercado Pago. El
@@ -215,7 +245,7 @@ node scripts/build-mp-worker.mjs
 node --check /tmp/lucasabraham-mp-deploy.mjs
 ```
 
-54 pruebas correctas: 13 de precios, 35 de flujo y catálogo, y 6 de pausa del Club.
+60 pruebas correctas: 13 de precios, 35 de flujo y catálogo, 6 de pausa del Club y 6 de pago y sincronización en la app.
 Cubren firma, SQLite, idempotencia,
 rechazos, reembolsos, streaming, recuperación y aplicación → Worker → SQLite. Incluyen una foto
 de 24 MiB en el módulo fuente y el bundle, cancelación, truncamiento, interrupción
