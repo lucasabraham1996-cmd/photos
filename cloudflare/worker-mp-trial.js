@@ -172,6 +172,11 @@ async function syncCatalogue(request,env,origin) {
   return result({ok:true,albums:albums.length,photos:totalPhotos,discount_web:global,synced_at:now},200,origin);
 }
 async function createBasket(request,env,origin) {
+  // Las compras de este piloto solo se crean con la clave de pruebas.
+  // En producción se reemplazará por un checkout público autenticado, con rate limiting.
+  if(!env.MP_SETUP_KEY||request.headers.get("X-Setup-Key")!==env.MP_SETUP_KEY){
+    return result({error:"Clave de pruebas incorrecta"},401,origin);
+  }
   let input;
   try{input=await multiRead(request);}catch(_){return result({error:"Solicitud inválida"},400,origin);}
   const requested=input.selection||{};
