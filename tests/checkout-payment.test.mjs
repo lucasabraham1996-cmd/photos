@@ -104,3 +104,22 @@ test('Volver de Mercado Pago restaura selección, impresión y cupón; nunca abr
   await paymentButton(bad.render()).props.onClick();assert.equal(navigated,false);
   assert.match(bad.state.mpTrialMessage,/enlace de pago válido/);
 });
+test('El álbum completo ofrece las mismas dos opciones y su botón paga el álbum correcto',async()=>{
+  const h=appHarness({...base,activeAlbum:'album-01',route:'#/album/album-01',checkoutOpen:false,purchaseHelpOpen:true});
+  let tree=h.render(),card=nodes(tree).find(n=>n.props.id==='album-payment-options');
+  assert.ok(card);assert.equal(nodes(card).filter(n=>n.type==='a'||n.type==='button').length,2);
+  const consultation=new URL(nodes(card).find(n=>n.type==='a').props.href);
+  assert.match(consultation.searchParams.get('text'),/colección completa de All Boys/);
+  assert.match(consultation.searchParams.get('text'),/60\.000/);
+  assert.doesNotMatch(consultation.searchParams.get('text'),/alias|comprobante/i);
+  assert.doesNotMatch(textContent(tree),/Copiá el alias|Finalizar compra|adjuntás el comprobante/i);
+  let navigated=false;
+  h.ctx.window.location.assign=()=>{navigated=true};
+  h.ctx.fetch=async(_,options)=>{
+    const input=JSON.parse(options.body);
+    assert.deepEqual(input.selection,{kind:'album',album_id:'album-01'});assert.equal(input.expected_total,60000);
+    return reply({ok:true,mode:'public',order_id:'ORD123',checkout_id:'checkout-123',receipt_token:'receipt-fixture',
+      checkout_url:'https://www.mercadopago.com.ar/checkout/v1/redirect?order_id=ORD123',quote:{kind:'album',quantity:1,amount:60000}});
+  };
+  await nodes(card).find(n=>n.type==='button').props.onClick();assert.equal(navigated,true);
+});

@@ -180,6 +180,8 @@ celeste con el ícono de la marca incluido en el repositorio, y **Consultar otro
 medios de pago**, que abre el WhatsApp personal `5493515580770` con selección e
 importe para acordar el pago. Esta consulta no guarda una venta ni solicita un
 comprobante. Se retiraron el alias y el botón flotante de WhatsApp del carrito.
+El álbum completo ofrece las mismas dos opciones y abre directamente su checkout.
+La introducción y la ayuda explican Mercado Pago y la consulta por WhatsApp.
 Los accesos al alias fuera del carrito permanecen disponibles.
 
 El botón de Mercado Pago guarda primero el recibo y después abre el checkout en
@@ -245,7 +247,7 @@ node scripts/build-mp-worker.mjs
 node --check /tmp/lucasabraham-mp-deploy.mjs
 ```
 
-60 pruebas correctas: 13 de precios, 35 de flujo y catálogo, 6 de pausa del Club y 6 de pago y sincronización en la app.
+61 pruebas correctas: 13 de precios, 35 de flujo y catálogo, 6 de pausa del Club y 7 de pago y sincronización en la app.
 Cubren firma, SQLite, idempotencia,
 rechazos, reembolsos, streaming, recuperación y aplicación → Worker → SQLite. Incluyen una foto
 de 24 MiB en el módulo fuente y el bundle, cancelación, truncamiento, interrupción
