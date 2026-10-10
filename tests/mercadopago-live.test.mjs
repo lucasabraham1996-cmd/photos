@@ -480,6 +480,8 @@ function appHarness(f,config={mode:'validation',available:true,validation_amount
   const storage=new Map(),effects=[],downloads=[],remoteOrders=[];
   const context={admin:true,CLUB_ENABLED:false,mpTrialBusy:false,MP_TRIAL_ENABLED:false,MP_PAYMENT_VISIBLE:true,
     MP_TRIAL_BASE:BASE,mpPaymentConfig:config,mpTrialPurchase:null,mpTrialDownloads:[],
+    mpReceiptView:false,mpVerifiedReceipt:false,mpVerifiedCheckoutId:'',
+    mpVerifiedCheckoutRef:{current:''},
     mpCreateBusyRef:{current:false},mpStatusBusyRef:{current:false},mpAutoDownloadRef:{current:''},
     mpCatalogueBusyRef:{current:false},mpCatalogueSetupKey:'admin-fixture',mpCatalogueSync:{status:'idle',message:''},
     mpZipLoaderRef:{current:null},mpZipBusy:false,
@@ -501,6 +503,8 @@ function appHarness(f,config={mode:'validation',available:true,validation_amount
     setMpZipBusy:v=>{context.mpZipBusy=v},
     setMpMobilePreview:v=>{context.mpMobilePreview=v},
     setMpMobilePreviewBusy:v=>{context.mpMobilePreviewBusy=v},
+    setMpVerifiedCheckoutId:v=>{context.mpVerifiedCheckoutId=v},
+    setMpReceiptView:v=>{context.mpReceiptView=v},
     setMpCatalogueSync:v=>{context.mpCatalogueSync=v},setMpCatalogueSetupKey:v=>{context.mpCatalogueSetupKey=v},
     setCheckoutOpen:v=>{context.checkoutOpen=v},setAdminMessage(){},
     setMpTrialPurchase:v=>{context.mpTrialPurchase=typeof v==='function'?v(context.mpTrialPurchase):v}
@@ -511,7 +515,7 @@ function appHarness(f,config={mode:'validation',available:true,validation_amount
     ';return {syncMpCatalogue,syncMpCatalogueAndRetry,submitMpTrial,beginMpTrial,checkMpTrial,downloadMpFile,mpPrivateReceiptLink,mpMobileDelivery,mpOriginalPhotoLink,showMpMobilePreview};}')(context);
   return {context,actions,storage,effects,downloads,remoteOrders};
 }
-test('Aplicación → Worker → SQLite: no descarga antes de pagar; descarga una vez al acreditarse',()=>withFixture(async f=>{
+test('Aplicación → Worker → SQLite: no descarga automática; solo habilita archivos acreditados',()=>withFixture(async f=>{
   const app=appHarness(f);
   await app.actions.submitMpTrial({kind:'photos',items:[{album_id:'album-01',photo_id:'photo-0'}]},2000);
   assert.ok(app.context.mpTrialPurchase.ready);assert.equal(app.context.mpTrialPurchase.amount,200);
@@ -519,9 +523,10 @@ test('Aplicación → Worker → SQLite: no descarga antes de pagar; descarga un
   assert.equal(app.remoteOrders.length,0);
   f.paid(app.context.mpTrialPurchase);
   await app.actions.checkMpTrial();
-  assert.equal(app.downloads.length,1);assert.equal(app.context.mpTrialDownloads.length,1);
-  assert.equal(app.context.mpTrialPurchase.auto_downloaded,true);
-  await app.actions.checkMpTrial();assert.equal(app.downloads.length,1);
+  assert.equal(app.downloads.length,0);assert.equal(app.context.mpTrialDownloads.length,1);
+  assert.equal(app.context.mpTrialPurchase.auto_downloaded,undefined);
+  assert.equal(app.context.mpVerifiedCheckoutId,app.context.mpTrialPurchase.checkout_id);
+  await app.actions.checkMpTrial();assert.equal(app.downloads.length,0);
   assert.equal(app.remoteOrders.length,1);
   assert.equal(app.remoteOrders[0].paid,true);
   assert.equal(app.remoteOrders[0].total,200);
@@ -537,7 +542,7 @@ test('Aplicación conserva el intento para reintentar un POST fallido sin duplic
   assert.equal(f.state.posts[0].idempotency,f.state.posts[1].idempotency);
   assert.equal(f.state.orders.size,1);
 }));
-test('Compras de tres fotos generan un único ZIP automáticamente, con descarga reintentable',()=>withFixture(async f=>{
+test('Tres fotos quedan protegidas hasta acreditarse y no descargan nada automáticamente',()=>withFixture(async f=>{
   const validated=await f.create();await f.download(validated);f.paid(validated);await f.notify(validated);
   await (await f.download(validated)).arrayBuffer();
   f.env.MP_LIVE_MODE='public';
@@ -553,12 +558,11 @@ test('Compras de tres fotos generan un único ZIP automáticamente, con descarga
   assert.equal(app.downloads.length,0);
   f.paid(purchase);await f.notify(purchase);
   await app.actions.checkMpTrial();
-  assert.equal(app.downloads.length,1);
-  assert.equal(names.length,3);
-  assert.equal(names[0][0],'01-Foto 0.jpg');
-  assert.equal(app.context.mpTrialPurchase.auto_downloaded,true);
+  assert.equal(app.downloads.length,0);
+  assert.equal(names.length,0);
+  assert.equal(app.context.mpTrialPurchase.auto_downloaded,undefined);
   assert.equal(app.context.mpTrialDownloads.length,3);
-  await app.actions.checkMpTrial();assert.equal(app.downloads.length,1);
+  await app.actions.checkMpTrial();assert.equal(app.downloads.length,0);
   assert.equal(f.state.posts.length,2); // Una validación + una compra, no un segundo cobro.
 }));
 
@@ -578,6 +582,12 @@ test('En celular no hay ZIP automático: cada foto tiene descarga nativa autenti
   assert.equal(app.downloads.length,0,'El móvil no inicia ZIP ni varias descargas sin tocar nada');
   assert.equal(app.context.mpTrialDownloads.length,3);
   assert.equal(app.context.mpTrialPurchase.auto_downloaded,undefined);
+  assert.equal(app.actions.mpOriginalPhotoLink(app.context.mpTrialDownloads[0]),'',
+    'Una interfaz sin el comprobante verificado no puede armar enlaces');
+  // Simula el render de React posterior a confirmar la orden en el servidor.
+  app.context.mpReceiptView=true;
+  app.context.mpVerifiedReceipt=true;
+  app.context.mpVerifiedCheckoutRef.current=purchase.checkout_id;
   const links=app.context.mpTrialDownloads.map(file=>app.actions.mpOriginalPhotoLink(file));
   assert.equal(new Set(links).size,3);
   for(let i=0;i<links.length;i++){
@@ -594,6 +604,9 @@ test('En celular no hay ZIP automático: cada foto tiene descarga nativa autenti
 test('Enlace privado permite recuperar fotos con el UUID y comprobante, sin volver a pagar',()=>withFixture(async f=>{
   const app=appHarness(f);
   const checkout_id=crypto.randomUUID(),receipt_token='a'.repeat(64);
+  assert.equal(app.actions.mpPrivateReceiptLink({checkout_id,receipt_token}),'',
+    'Antes de verificar pago, no se revela enlace de recuperación');
+  app.context.mpVerifiedReceipt=true;app.context.mpVerifiedCheckoutRef.current=checkout_id;
   const url=app.actions.mpPrivateReceiptLink({checkout_id,receipt_token});
   assert.equal(url,ORIGIN+'/photos/#/compra/'+checkout_id+'/'+receipt_token);
   assert.equal(app.actions.mpPrivateReceiptLink({checkout_id,receipt_token:'invalid'}),'');
