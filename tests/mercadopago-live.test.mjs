@@ -233,6 +233,22 @@ test('Pendiente: no muestra enlaces, devuelve 403 y no consulta Drive',()=>withF
   const row=f.db.prepare('SELECT * FROM la_mp_live_orders').get();
   assert.ok(row.before_payment_blocked_at);assert.equal(row.paid_verified_at,null);
 }));
+test('Enlaces móviles con token tampoco entregan nada antes del pago',()=>withFixture(async f=>{
+  const p=await f.create(f.input(3));
+  for(const i of [0,1,2]){
+    const path='/api/live-download/'+p.checkout_id+'/'+i+'?token='+p.receipt_token;
+    const res=await f.request(path,undefined,{},'GET');
+    assert.equal(res.status,403,'Fotografía '+i+' protegida antes del pago');
+  }
+  assert.equal(f.state.driveReads,0);
+  f.paid(p);await f.notify(p);
+  const file=await f.request('/api/live-download/'+p.checkout_id+'/1?token='+p.receipt_token,undefined,{},'GET');
+  assert.equal(file.status,200);await file.arrayBuffer();
+  assert.equal(f.state.driveReads,1);
+  const wrong=await f.request('/api/live-download/'+p.checkout_id+'/1?token='+'b'.repeat(64),undefined,{},'GET');
+  assert.equal(wrong.status,403);
+}));
+
 test('Un comprobante ajeno nunca permite consultar ni descargar',()=>withFixture(async f=>{
   const p=await f.create();f.paid(p);
   assert.equal((await f.download(p,'b'.repeat(64))).status,403);
