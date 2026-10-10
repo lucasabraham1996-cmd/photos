@@ -116,14 +116,15 @@ test('Un clic abre Mercado Pago después de guardar el recibo y reusa el pago pe
   assert.equal(paymentButton(h.render()).props.disabled,false,
     'Una compra antigua no bloquea un carrito nuevo');
 });
-test('Volver de Mercado Pago restaura selección, impresión y cupón; nunca abre un enlace ajeno',async()=>{
+test('Volver de Mercado Pago abre ticket sin restaurar un carrito viejo ni enlaces ajenos',async()=>{
   const {cart:_,...rest}=base;
   const h=appHarness(rest);h.ctx.location.search='?mp_return=1';
   h.storage.set('LA_MP_LIVE_PURCHASE',JSON.stringify({order_id:'ORD123',receipt_token:'receipt-fixture'}));
   h.storage.set('LA_MP_CHECKOUT_STATE',JSON.stringify({order_id:'ORD123',cart:[photo.id],print:true,
     print_ids:[photo.id],coupon:{code:'AHORRO',percent:10}}));h.render();
-  assert.deepEqual(h.state.cart,[photo.id]);assert.equal(h.state.checkoutPrint,true);
-  assert.deepEqual(h.state.printedPhotoIds,[photo.id]);assert.equal(h.state.appliedCoupon.code,'AHORRO');
+  assert.deepEqual(h.state.cart,[]);assert.equal(h.state.checkoutPrint,false);
+  assert.deepEqual(h.state.printedPhotoIds,[]);assert.equal(h.state.appliedCoupon,null);
+  assert.equal(h.state.mpReceiptView,true,'La devolución debe abrir el comprobante y no el carrito');
   const bad=appHarness(base);bad.render();let navigated=false;
   bad.ctx.window.location.assign=()=>{navigated=true};
   bad.ctx.fetch=async()=>reply({ok:true,mode:'public',order_id:'ORD123',checkout_id:'checkout-123',receipt_token:'receipt-fixture',
