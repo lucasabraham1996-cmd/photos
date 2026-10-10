@@ -29,7 +29,7 @@ test('La administración conserva los pedidos comunes y oculta movimientos y con
 test('Las compras nuevas no activan puntos y las confirmaciones no reutilizan promociones antiguas', () => {
   const h=appHarness(base);h.render();const a=h.actions();
   const pkg=a.buildOrderPackage('LA-NEW');
-  assert.equal(pkg.orderData.wantsPoints,false);assert.equal(pkg.orderData.phone,'');
+  assert.equal(pkg.orderData.wantsPoints,false);assert.equal(pkg.orderData.phone,phone);assert.equal(pkg.orderData.customerName,'Lucas Abraham');
   assert.doesNotMatch(pkg.confirmationMessage,/puntos|club|beneficios/i);
   const url=a.orderConfirmationWhatsappUrl({phone,customerName:'Lucas',confirmationMessage:'Sumaste puntos del Club'});
   assert.doesNotMatch(decodeURIComponent(url),/puntos|club|beneficios/i);
