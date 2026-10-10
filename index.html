@@ -6643,7 +6643,7 @@ En breve te las preparo y te las envío por acá 😊
         kind:'photos',items:selectedPhotos.map(p=>({album_id:p.albumId,photo_id:p.id})),
         print_ids:checkoutPrint?printSelectedPhotos.map(p=>p.id):[],coupon:appliedCoupon?appliedCoupon.code:''
     });
-    const mpCurrentCartPaid=Boolean(mpTrialPurchase&&mpTrialPurchase.paid&&mpTrialPurchase.selection_signature===
+    const mpCurrentCartPaid=Boolean(mpVerifiedReceipt&&mpTrialPurchase&&mpTrialPurchase.selection_signature===
         JSON.stringify({selection:mpSelectionForCart(),expected_total:checkoutTotal,mode:MP_TRIAL_ENABLED?'test':mpPaymentConfig.mode}));
     const mpResumeWithoutCart=Boolean(MP_PAYMENT_VISIBLE&&mpTrialPurchase&&!mpTrialPurchase.paid&&mpTrialPurchase.ready&&!selectedPhotos.length);
     const payWithMercadoPago=()=>{
