@@ -244,7 +244,7 @@ async function checkoutStatus(request, env) {
   const state = await refreshOrder(env, row);
   const items = JSON.parse(row.items_json);
   return { ok: true, ...state, checkout_id: row.checkout_id, order_id: row.mp_order_id,
-    mode: row.mode, kind: row.kind, amount: row.amount,
+    mode: row.mode, kind: row.kind, amount: row.amount, created_at: row.created_at,
     verification: { before_payment_blocked: Boolean(row.before_payment_blocked_at),
       webhook_received: Boolean(row.webhook_verified_at), download_verified: Boolean(row.download_verified_at) },
     print_requested: JSON.parse(row.print_ids_json).length > 0,
