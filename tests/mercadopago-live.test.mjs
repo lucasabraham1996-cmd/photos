@@ -486,7 +486,7 @@ function appHarness(f,config={mode:'validation',available:true,validation_amount
     selectedPhotos:[{id:'photo-0',albumId:'album-01'}],checkoutTotal:2000,checkoutPrint:false,appliedCoupon:null,
     cart:['photo-0'],printedPhotoIds:[],
     printSelectedPhotos:[],displayAlbums:[],discountSettings:{},coupons:[],
-    formatPrice:v=>'$'+v,albumPriceWithDiscount:()=>60000,location:{search:'?mp_live=1'},
+    formatPrice:v=>'$'+v,albumPriceWithDiscount:()=>60000,location:{search:'?mp_live=1',pathname:'/photos/',origin:ORIGIN},
     buildOrderPackage:id=>({orderData:{id,date:stamp,total:2000,items:[{id:'photo-0'}],delivered:false,status:'pendiente'}}),
     saveOrderRemote:async order=>{remoteOrders.push(order);return {firebase:true,script:false}},
     promptCount:0,window:{prompt(){context.promptCount++;return 'admin-fixture'},open(){},location:{assign(){}},addEventListener(){},removeEventListener(){}},
@@ -505,7 +505,7 @@ function appHarness(f,config={mode:'validation',available:true,validation_amount
   const start=appSource.indexOf('    const syncMpCatalogue='),end=appSource.indexOf('    const sendOrder=',start);
   assert.ok(start>0&&end>start);
   const actions=new Function('ctx','with(ctx){'+appSource.slice(start,end)+
-    ';return {syncMpCatalogue,syncMpCatalogueAndRetry,submitMpTrial,beginMpTrial,checkMpTrial,downloadMpFile};}')(context);
+    ';return {syncMpCatalogue,syncMpCatalogueAndRetry,submitMpTrial,beginMpTrial,checkMpTrial,downloadMpFile,mpPrivateReceiptLink};}')(context);
   return {context,actions,storage,effects,downloads,remoteOrders};
 }
 test('Aplicación → Worker → SQLite: no descarga antes de pagar; descarga una vez al acreditarse',()=>withFixture(async f=>{
@@ -557,6 +557,14 @@ test('Compras de tres fotos generan un único ZIP automáticamente, con descarga
   assert.equal(app.context.mpTrialDownloads.length,3);
   await app.actions.checkMpTrial();assert.equal(app.downloads.length,1);
   assert.equal(f.state.posts.length,2); // Una validación + una compra, no un segundo cobro.
+}));
+
+test('Enlace privado permite recuperar fotos con el UUID y comprobante, sin volver a pagar',()=>withFixture(async f=>{
+  const app=appHarness(f);
+  const checkout_id=crypto.randomUUID(),receipt_token='a'.repeat(64);
+  const url=app.actions.mpPrivateReceiptLink({checkout_id,receipt_token});
+  assert.equal(url,ORIGIN+'/photos/#/compra/'+checkout_id+'/'+receipt_token);
+  assert.equal(app.actions.mpPrivateReceiptLink({checkout_id,receipt_token:'invalid'}),'');
 }));
 
 test('En modo público la aplicación no pide ni envía MP_SETUP_KEY',()=>withFixture(async f=>{
