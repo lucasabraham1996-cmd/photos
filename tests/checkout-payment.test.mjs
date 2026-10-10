@@ -6,6 +6,7 @@ const photo={id:'photo-01',albumId:'album-01',albumName:'All Boys',name:'Foto 1.
   rawUrl:'https://drive.google.com/file/d/validDriveId12345/view',url:'https://drive.google.com/file/d/validDriveId12345/view'};
 const base={albums:[{id:'album-01',name:'All Boys',fullPrice:60000,dateTs:Date.now(),photos:[photo],subalbums:[]}],
   cart:[photo.id],loading:false,introOpen:false,checkoutOpen:true,
+  checkoutCustomerName:'Lucas Abraham',checkoutPhone:'3515580770',
   mpPaymentConfig:{mode:'public',available:true,public_enabled:true,loading:false}};
 const reply=(data,status=200)=>new Response(JSON.stringify(data),{status,headers:{'Content-Type':'application/json'}});
 const paymentButton=tree=>nodes(tree).find(n=>n.props.className==='mp-pay-button');
