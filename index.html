@@ -5247,7 +5247,8 @@ function App() {
             return saved&&purchase&&saved.order_id===purchase.order_id&&Array.isArray(saved.cart)?saved:null;
         }catch(_){return null;}
     },[]);
-    const [cart, setCart] = useState(()=>mpReturnedCheckout?mpReturnedCheckout.cart:[]);
+    // El carrito debe nacer vacío tras un pago: el ticket es independiente de la selección.
+    const [cart, setCart] = useState([]);
     const [bulkQuoteMode, setBulkQuoteMode] = useState(false);
     const [bulkQuoteIds, setBulkQuoteIds] = useState([]);
     const [cartRecovery, setCartRecovery] = useState(() => { try { const v=JSON.parse(localStorage.getItem('LA_RECOVER_CART') || '[]'); return Array.isArray(v) ? v : []; } catch(e) { return []; } });
@@ -5296,14 +5297,14 @@ function App() {
     const [checkoutOpen, setCheckoutOpen] = useState(false);
     const [checkoutOrderCode, setCheckoutOrderCode] = useState("");
     const [checkoutCoupon, setCheckoutCoupon] = useState("");
-    const [appliedCoupon, setAppliedCoupon] = useState(()=>mpReturnedCheckout&&mpReturnedCheckout.coupon||null);
+    const [appliedCoupon, setAppliedCoupon] = useState(null);
     const [couponMessage, setCouponMessage] = useState("");
     const [checkoutCustomerName, setCheckoutCustomerName] = useState("");
     const [checkoutPhone, setCheckoutPhone] = useState("");
     const [checkoutDni, setCheckoutDni] = useState("");
     const [checkoutWantsPoints, setCheckoutWantsPoints] = useState(false);
-    const [checkoutPrint, setCheckoutPrint] = useState(()=>Boolean(mpReturnedCheckout&&mpReturnedCheckout.print));
-    const [printedPhotoIds, setPrintedPhotoIds] = useState(()=>mpReturnedCheckout&&mpReturnedCheckout.print_ids||[]);
+    const [checkoutPrint, setCheckoutPrint] = useState(false);
+    const [printedPhotoIds, setPrintedPhotoIds] = useState([]);
     const [customerDetailsOpen, setCustomerDetailsOpen] = useState(true);
     const [customerDetailsSaved, setCustomerDetailsSaved] = useState(false);
     const [customerSavedMessage, setCustomerSavedMessage] = useState("");
@@ -5359,17 +5360,32 @@ function App() {
     const MP_TRIAL_BASE = 'https://lucasabraham-ph-api.lucasantonioabraham.workers.dev';
     const [mpPaymentConfig,setMpPaymentConfig] = useState({mode:'disabled',public_enabled:false,available:false,validation_amount:200,loading:true});
     // La validación privada se hace en el Worker: no corresponde solicitar credenciales en el carrito público.
-    const MP_PAYMENT_VISIBLE = MP_TRIAL_ENABLED || mpPaymentConfig.public_enabled ||
-        Boolean(mpAccessFromLink) || Boolean((()=>{try{return localStorage.getItem('LA_MP_LIVE_PURCHASE')}catch(_){return false}})());
+    const MP_PAYMENT_VISIBLE = MP_TRIAL_ENABLED || mpPaymentConfig.public_enabled || Boolean(mpAccessFromLink) ||
+        new URLSearchParams(location.search).get('mp_return')==='1';
+    const MP_RECEIPTS_STORAGE_KEY='LA_MP_PURCHASE_RECEIPTS_V1';
+    const readMpReceipts=()=>{
+        try{
+            const raw=JSON.parse(localStorage.getItem(MP_RECEIPTS_STORAGE_KEY)||'[]');
+            return Array.isArray(raw)?raw.filter(p=>p&&p.checkout_id&&p.receipt_token&&p.order_id).slice(0,15):[];
+        }catch(_){return []}
+    };
+    const [mpReceipts,setMpReceipts]=useState(readMpReceipts);
+    const [mpHistoryOpen,setMpHistoryOpen]=useState(false);
+    const mpReturnRequested=new URLSearchParams(location.search).get('mp_return')==='1'||Boolean(mpAccessFromLink);
     const [mpTrialPurchase, setMpTrialPurchase] = useState(() => {
         if(mpAccessFromLink)return mpAccessFromLink;
+        // Una compra anterior guardada no debe reaparecer sola al visitar la galería.
+        if(!mpReturnRequested)return null;
         try {
-            const stored = JSON.parse(localStorage.getItem(MP_TRIAL_ENABLED?'LA_MP_TRIAL_PURCHASE':'LA_MP_LIVE_PURCHASE') || 'null');
-            return stored && stored.order_id && stored.receipt_token ? stored : null;
-        } catch (_) { return null; }
+            const saved=JSON.parse(localStorage.getItem(MP_TRIAL_ENABLED?'LA_MP_TRIAL_PURCHASE':'LA_MP_LIVE_PURCHASE')||'null');
+            return saved&&saved.order_id&&saved.receipt_token&&saved.checkout_id?saved:null;
+        }catch(_){return null}
     });
+    const [mpReturnMissing,setMpReturnMissing]=useState(Boolean(mpReturnRequested&&!mpAccessFromLink&&
+        !mpReturnedCheckout));
+    const [mpReceiptDismissed,setMpReceiptDismissed]=useState(false);
     // Cada ingreso al carrito empieza en modo compra. El recibo es una vista separada.
-    const [mpReceiptView,setMpReceiptView]=useState(Boolean(mpReturnedCheckout||mpAccessFromLink));
+    const [mpReceiptView,setMpReceiptView]=useState(Boolean(mpReturnRequested));
     // Se restablece en cada carga; un valor localStorage.paid NO autoriza el acceso visual a descargas.
     const [mpVerifiedCheckoutId,setMpVerifiedCheckoutId]=useState('');
     const mpVerifiedCheckoutRef=useRef('');
@@ -6316,6 +6332,55 @@ ${clone.outerHTML}`;
     const handleSwipeEnd = (cb) => e => { var _a, _b; if (touchStartX.current === null)
         return; const end = ((_b = (_a = e.changedTouches) === null || _a === void 0 ? void 0 : _a[0]) === null || _b === void 0 ? void 0 : _b.clientX) || 0; const diff = end - touchStartX.current; touchStartX.current = null; if (Math.abs(diff) > 45)
         cb(diff < 0 ? 1 : -1); };
+    const rememberMpReceipt=(purchase)=>{
+        if(!purchase||!purchase.checkout_id||!purchase.receipt_token||!purchase.order_id)return;
+        const next=[{...purchase,receipt_saved_at:purchase.receipt_saved_at||new Date().toISOString()},
+            ...readMpReceipts().filter(p=>p.checkout_id!==purchase.checkout_id)].slice(0,15);
+        try{localStorage.setItem(MP_RECEIPTS_STORAGE_KEY,JSON.stringify(next))}catch(_){}
+        setMpReceipts(next);
+    };
+    const clearMpReturnAddress=()=>{
+        try{
+            const current=new URL(location.href);
+            current.searchParams.delete('mp_return');current.searchParams.delete('mp_live');
+            if(/^#\/compra\//.test(current.hash))current.hash='#/galeria';
+            history.replaceState(history.state||null,'',current.pathname+current.search+current.hash);
+        }catch(_){}
+    };
+    const closeMpCheckout=()=>{
+        closeMpMobilePreview();
+        setCheckoutOpen(false);
+        if(mpReceiptView){
+            setMpReceiptDismissed(true);
+            setMpReceiptView(false);
+            setMpReturnMissing(false);
+            setCart([]);
+            setCartRecovery([]);
+            setCheckoutPrint(false);setPrintedPhotoIds([]);
+            setAppliedCoupon(null);
+            setMpTrialDownloads([]);
+            setMpVerifiedCheckoutId('');
+            mpVerifiedCheckoutRef.current='';
+            setMpTrialPurchase(null);
+            try{
+                localStorage.removeItem('LA_MP_CHECKOUT_STATE');
+                localStorage.removeItem('LA_MP_LIVE_PURCHASE');
+                localStorage.removeItem('LA_RECOVER_CART');
+            }catch(_){}
+            clearMpReturnAddress();
+        }
+    };
+    const openSavedMpReceipt=(purchase)=>{
+        if(!purchase||!purchase.checkout_id||!purchase.receipt_token)return;
+        setMpHistoryOpen(false);
+        setMpTrialPurchase({...purchase,paid:false});
+        setMpVerifiedCheckoutId('');mpVerifiedCheckoutRef.current='';
+        setMpTrialDownloads([]);
+        setMpTrialMessage('Verificando el ticket con Mercado Pago...');
+        setMpReceiptView(true);setMpReceiptDismissed(false);
+        setMpReturnMissing(false);
+        setCheckoutOpen(true);
+    };
     const openCheckout = () => {
         // Nunca enseñar una compra anterior en el checkout de una selección nueva.
         setMpReceiptView(false);
@@ -6599,7 +6664,8 @@ En breve te las preparo y te las envío por acá 😊
             if(!response.ok||!data.ok)throw Error(data.error||'No se pudo crear la orden');
             const purchase={
                 order_id:data.order_id,receipt_token:data.receipt_token,checkout_url:data.checkout_url,
-                checkout_id:data.checkout_id||'',mode:data.mode||'test',paid:false,ready:mode!=='validation',
+                checkout_id:data.checkout_id||'',created_at:new Date().toISOString(),
+                mode:data.mode||'test',paid:false,ready:mode!=='validation',
                 kind:data.quote.kind,quantity:data.quote.quantity,amount:data.quote.amount,
                 selection_signature:selectionSignature,
                 order_data:localOrder?{...localOrder,total:data.quote.amount,
@@ -6611,6 +6677,7 @@ En breve te las preparo y te las envío por acá 😊
             localStorage.setItem(mode==='test'?'LA_MP_TRIAL_PURCHASE':'LA_MP_LIVE_PURCHASE',JSON.stringify(purchase));
             if(mode!=='test')localStorage.removeItem('LA_MP_LIVE_REQUEST');
             setMpTrialPurchase(purchase);
+            rememberMpReceipt(purchase);
             setMpVerifiedCheckoutId('');
             mpVerifiedCheckoutRef.current='';
             setMpReceiptView(false);
@@ -6856,6 +6923,7 @@ En breve te las preparo y te las envío por acá 😊
                 (mpTrialPurchase.order_id!=='Recuperando compra'&&data.order_id!==mpTrialPurchase.order_id)))
                 throw Error('La verificación no corresponde a esta compra.');
             if(data.paid){
+                setMpReturnMissing(false);
                 const files=(data.downloads||[]).map(x=>({name:x.name,url:MP_TRIAL_BASE+x.url}));
                 setMpTrialDownloads(files);
                 mpVerifiedCheckoutRef.current=mpTrialPurchase.checkout_id;
@@ -6867,6 +6935,7 @@ En breve te las preparo y te las envío por acá 😊
                 // exclusivamente luego de acreditar la orden y mediante una acción del usuario.
                 localStorage.setItem(live?'LA_MP_LIVE_PURCHASE':'LA_MP_TRIAL_PURCHASE',JSON.stringify(saved));
                 setMpTrialPurchase(saved);
+                rememberMpReceipt(saved);
                 if(live&&saved.order_data&&!saved.order_synced){
                     // La venta entra al historial existente después de verificar el pago.
                     // No se envía el token de descarga y la entrega/Club conserva su confirmación habitual.
@@ -6901,6 +6970,13 @@ En breve te las preparo y te las envío por acá 😊
             setMpTrialDownloads([]);setMpTrialMessage('Error: '+String(err&&err.message||err));
         }finally{mpStatusBusyRef.current=false;setMpTrialBusy(false)}
     };
+    useEffect(()=>{
+        if(mpReturnRequested&&!mpReceiptDismissed){
+            setMpReceiptView(true);
+            setCheckoutOpen(true);
+            if(!mpTrialPurchase)setMpReturnMissing(true);
+        }
+    },[]);
     useEffect(()=>{
         if(!mpTrialPurchase||!MP_PAYMENT_VISIBLE||(!mpReceiptView&&mpTrialPurchase.paid))return;
         if(mpReceiptView&&(new URLSearchParams(location.search).get('mp_return')==='1'||mpAccessFromLink))
@@ -8251,9 +8327,9 @@ React.createElement("div", { id: "order-search-panel", className: "bg-neutral-90
                     React.createElement("div", { className: "purchase-step" }, React.createElement("div", { className: "purchase-step-num" }, "4"), React.createElement("p", { className: "text-sm leading-relaxed" }, "Si preferís otro medio, tocá ‘Consultar otros medios de pago’. Se abre el WhatsApp personal de Lucas con tus fotos y el total para acordarlo allí.")),
                     React.createElement("div", { className: "purchase-step" }, React.createElement("div", { className: "purchase-step-num" }, "5"), React.createElement("p", { className: "text-sm leading-relaxed" }, "Luego recibirás las fotos en alta calidad con su link correspondiente. Descargalas apenas las recibas: duran 15 días en la nube desde la creación del álbum."))),
                 React.createElement("button", { onClick: () => setPurchaseHelpOpen(false), className: "mt-5 w-full final-buy-btn py-3.5 rounded-2xl font-black" }, "Entendido"))),
-        checkoutOpen && React.createElement(Modal, { onClose: () => {closeMpMobilePreview();setCheckoutOpen(false)}, max: "max-w-lg" },
+        checkoutOpen && React.createElement(Modal, { onClose:closeMpCheckout, max: "max-w-lg" },
             React.createElement("div", { className: "checkout-simple-shell rounded-3xl p-4 sm:p-5 -m-1" },
-                React.createElement("button", { type:"button", onClick:() => {closeMpMobilePreview();setCheckoutOpen(false)}, className:"checkout-close-btn", "aria-label":"Cerrar compra" }, React.createElement("i", { className:"fas fa-xmark" })),
+                React.createElement("button", { type:"button", onClick:closeMpCheckout, className:"checkout-close-btn", "aria-label":"Cerrar compra" }, React.createElement("i", { className:"fas fa-xmark" })),
                 React.createElement("div", { className: "mb-4 pr-10" },
                     React.createElement("p", { className: "inline-flex items-center gap-2 px-3 py-1 rounded-full bg-sky-400/15 border border-sky-300/30 text-sky-100 text-[11px] font-black uppercase tracking-[0.16em] mb-3" },
                         React.createElement("i", { className: "fas fa-bag-shopping" }),
@@ -8263,17 +8339,29 @@ React.createElement("div", { id: "order-search-panel", className: "bg-neutral-90
                     React.createElement("p", { className: "text-sky-100/75 text-sm leading-relaxed" },
                         mpVerifiedReceipt?"Pago acreditado y verificado. Descargá tus fotos desde acá.":mpReceiptView?"Estamos verificando con Mercado Pago. Las descargas no se habilitan hasta que se confirme el pago.":"Pagá con Mercado Pago o consultá otro medio de pago por WhatsApp.")),
                 mpReceiptView&&!mpVerifiedReceipt&&React.createElement("section",{className:"mb-4 bg-sky-950/70 border border-sky-300/30 rounded-2xl p-4"},
-                    React.createElement("p",{className:"text-sm text-white font-black"},"Fotografías bloqueadas hasta acreditar el pago"),
-                    React.createElement("p",{className:"text-xs text-sky-100/80 mt-2"},"No se habilitará ninguna descarga antes de la confirmación oficial."),
-                    React.createElement("button",{type:"button",onClick:checkMpTrial,disabled:mpTrialBusy,className:"mt-3 w-full py-3 rounded-xl bg-sky-600 text-white font-black"},
+                    React.createElement("p",{className:"text-sm text-white font-black"},
+                        mpReturnMissing?"No pudimos identificar la compra en este navegador":"Verificando el pago con Mercado Pago"),
+                    React.createElement("p",{className:"text-xs text-sky-100/80 mt-2"},
+                        mpReturnMissing?"El pago no se perdió. Escribinos con tu comprobante para recuperar el ticket, sin volver a pagar.":"Las descargas se habilitan únicamente al confirmar el pago desde el servidor."),
+                    mpTrialPurchase&&React.createElement("button",{type:"button",onClick:checkMpTrial,disabled:mpTrialBusy,className:"mt-3 w-full py-3 rounded-xl bg-sky-600 text-white font-black"},
                         mpTrialBusy?"Verificando…":"Verificar mi pago"),
+                    mpReturnMissing&&React.createElement("a",{href:'https://wa.me/'+SELLER_PHONE+'?text='+encodeURIComponent('Hola Lucas, pagué unas fotos con Mercado Pago pero no se abrió el ticket de descarga. Te paso el comprobante para recuperar mi compra.'),target:'_blank',rel:'noopener noreferrer',
+                        className:'block text-center rounded-xl bg-emerald-500 text-emerald-950 font-black px-3 py-3 mt-3'},"Recuperar compra por WhatsApp"),
                     mpTrialMessage&&React.createElement("p",{role:"status",className:"text-xs text-sky-200 mt-3"},mpTrialMessage)),
                 mpVerifiedReceipt&&React.createElement("section",{className:"mb-4 rounded-3xl border-2 border-emerald-400/60 bg-gradient-to-br from-emerald-950/90 to-sky-950/90 p-4 sm:p-5","aria-label":"Descargar fotografías compradas"},
                     React.createElement("div",{className:"flex items-center gap-3 mb-3"},
                         React.createElement("i",{className:"fas fa-circle-check text-emerald-300 text-2xl"}),
                         React.createElement("div",null,
                             React.createElement("b",{className:"block text-lg text-white"},"¡Pago aprobado!"),
-                            React.createElement("span",{className:"text-xs text-sky-100/80"},mpTrialDownloads.length+" fotos disponibles, sin volver a pagar"))),
+                            React.createElement("span",{className:"text-xs text-sky-100/80"},"Ticket de compra · "+mpTrialDownloads.length+" fotos disponibles"))),
+                    React.createElement("div",{className:"rounded-2xl border border-emerald-300/25 bg-black/35 px-4 py-3 mb-4","aria-label":"Ticket de compra"},
+                        React.createElement("div",{className:"flex flex-wrap gap-2 justify-between items-center mb-2"},
+                            React.createElement("b",{className:"text-sm text-white"},"Comprobante de compra"),
+                            React.createElement("span",{className:"text-xs font-black text-emerald-300"},"PAGO ACREDITADO")),
+                        React.createElement("p",{className:"text-xs text-sky-100/80 break-all"},"Orden: "+(mpTrialPurchase.order_id||mpTrialPurchase.checkout_id)),
+                        React.createElement("p",{className:"text-sm font-black text-white mt-2"},"Total pagado: "+formatPrice(mpTrialPurchase.amount||0)),
+                        mpTrialPurchase.created_at&&React.createElement("p",{className:"text-xs text-sky-100/70 mt-1"},"Fecha: "+new Date(mpTrialPurchase.created_at).toLocaleString('es-AR')),
+                        React.createElement("p",{className:"text-xs text-sky-100/80 mt-2"},"Cada foto está disponible abajo con sus botones de vista y descarga. Este comprobante no sustituye la factura fiscal.")),
                     mpMobileDelivery()?
                         React.createElement("p",{className:"text-sm text-emerald-100 mb-3"},"Descargá tus fotos una por una o abrí cada imagen para guardarla. No necesitás ZIP."):
                         mpTrialDownloads.length>1&&React.createElement("button",{type:"button",className:"w-full rounded-2xl bg-emerald-400 text-emerald-950 py-4 px-3 text-base font-black disabled:opacity-70",disabled:mpZipBusy||mpTrialBusy,onClick:()=>downloadMpZip()},
@@ -8415,10 +8503,26 @@ React.createElement("div", { id: "order-search-panel", className: "bg-neutral-90
                     couponMessage && React.createElement("p", { className: `text-xs mt-2 ${appliedCoupon ? 'text-sky-200' : 'text-amber-300'}` }, couponMessage)),
                 !mpReceiptView&&React.createElement("p", { className: "text-center text-[11px] text-sky-100/65 leading-relaxed mt-3" }, "Las fotos digitales se habilitan al aprobarse el pago en Mercado Pago. Otros medios se acuerdan con Lucas por WhatsApp."),
                 mpVerifiedReceipt&&React.createElement("a",{className:"inline-flex items-center justify-center gap-2 text-xs font-bold text-sky-200 border border-sky-400/25 rounded-xl px-3 py-3 mt-3",target:"_blank",rel:"noopener noreferrer",href:'https://wa.me/'+SELLER_PHONE+'?text='+encodeURIComponent('Hola Lucas, necesito la factura fiscal de mi compra '+mpTrialPurchase.order_id+' por '+formatPrice(mpTrialPurchase.amount)+'.')},React.createElement("i",{className:"fas fa-file-invoice"}),"Solicitar factura fiscal"))),
-        MP_PAYMENT_VISIBLE && mpTrialPurchase && !checkoutOpen && React.createElement("button", {
+        MP_PAYMENT_VISIBLE && mpTrialPurchase && !checkoutOpen && !mpReceiptDismissed && React.createElement("button", {
             type:"button", onClick:()=>{setMpReceiptView(true);setCheckoutOpen(true)},
             className:"fixed bottom-28 right-3 z-[81] bg-sky-700 text-white text-xs font-black px-4 py-3 rounded-2xl shadow-xl border border-sky-200/25"
         }, "Ver mi compra"),
+        mpReceipts.length>0&&!checkoutOpen&&route!=='#/admin'&&React.createElement("button",{
+            type:"button",onClick:()=>setMpHistoryOpen(true),className:"fixed bottom-44 right-3 z-[80] bg-neutral-900 border border-sky-300/30 text-sky-100 text-xs font-black px-4 py-3 rounded-2xl shadow-xl"},
+            React.createElement("i",{className:"fas fa-receipt mr-2"}),"Mis compras"),
+        mpHistoryOpen&&React.createElement(Modal,{onClose:()=>setMpHistoryOpen(false),max:"max-w-lg"},
+            React.createElement("section",{className:"bg-neutral-950 border border-sky-300/25 rounded-3xl p-5"},
+                React.createElement("div",{className:"flex justify-between items-center gap-3 mb-4"},
+                    React.createElement("div",null,React.createElement("h2",{className:"text-xl font-black text-white"},"Mis compras"),
+                        React.createElement("p",{className:"text-xs text-neutral-400"},"Tickets guardados en este dispositivo")),
+                    React.createElement("button",{onClick:()=>setMpHistoryOpen(false),type:"button",className:"px-3 py-2 rounded-xl border border-white/20"},"Cerrar")),
+                React.createElement("div",{className:"grid gap-3 max-h-[65vh] overflow-y-auto"},
+                    mpReceipts.map(p=>React.createElement("button",{key:p.checkout_id,type:"button",onClick:()=>openSavedMpReceipt(p),
+                        className:"text-left rounded-2xl border border-sky-300/20 bg-sky-950/30 px-4 py-3"},
+                        React.createElement("b",{className:"block text-white text-sm"},formatPrice(p.amount||0)+" · "+(p.quantity||p.order_data&&p.order_data.items&&p.order_data.items.length||0)+" fotos"),
+                        React.createElement("span",{className:"block text-xs text-sky-100/80 mt-1"},p.created_at?new Date(p.created_at).toLocaleString('es-AR'):"Comprobante guardado"),
+                        React.createElement("span",{className:"block text-xs text-sky-200 mt-1 break-all"},p.order_id),
+                        React.createElement("span",{className:"inline-block text-xs text-emerald-300 mt-2 font-black"},"Ver ticket y descargas →")))))),
         checkoutOpen && checkoutSaveError && React.createElement("div", { className:"checkout-save-error", role:"alert" }, checkoutSaveError, React.createElement("button", { type:"button", onClick:()=>navigator.clipboard.writeText(checkoutOrderCode||'').catch(()=>{}), className:"checkout-save-copy" }, "Copiar código")),
         iphoneInstallOpen && admin && React.createElement(IphoneInstallModal, { onClose: () => setIphoneInstallOpen(false), onDownload: downloadAppForIphone, onCopy: copyGalleryInstallUrl, onOpen: () => window.open(getGalleryInstallUrl(), '_blank') }),
         priceAdminOpen && admin && React.createElement(PriceAdminModal, { onClose: () => setPriceAdminOpen(false), priceSettings: priceSettings, setPriceSettings: setPriceSettings, setAdminMessage: setAdminMessage }),
