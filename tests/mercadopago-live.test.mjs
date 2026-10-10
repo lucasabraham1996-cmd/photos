@@ -482,6 +482,7 @@ function appHarness(f,config={mode:'validation',available:true,validation_amount
     MP_TRIAL_BASE:BASE,mpPaymentConfig:config,mpTrialPurchase:null,mpTrialDownloads:[],
     mpCreateBusyRef:{current:false},mpStatusBusyRef:{current:false},mpAutoDownloadRef:{current:''},
     mpCatalogueBusyRef:{current:false},mpCatalogueSetupKey:'admin-fixture',mpCatalogueSync:{status:'idle',message:''},
+    mpZipLoaderRef:{current:null},mpZipBusy:false,
     selectedPhotos:[{id:'photo-0',albumId:'album-01'}],checkoutTotal:2000,checkoutPrint:false,appliedCoupon:null,
     cart:['photo-0'],printedPhotoIds:[],
     printSelectedPhotos:[],displayAlbums:[],discountSettings:{},coupons:[],
@@ -496,6 +497,7 @@ function appHarness(f,config={mode:'validation',available:true,validation_amount
       options.body===undefined?undefined:JSON.parse(options.body),options.headers||{},options.method||'GET'),
     useEffect:fn=>effects.push(fn),setMpTrialBusy:v=>{context.mpTrialBusy=v},
     setMpTrialMessage:v=>{context.message=v},setMpTrialDownloads:v=>{context.mpTrialDownloads=v},
+    setMpZipBusy:v=>{context.mpZipBusy=v},
     setMpCatalogueSync:v=>{context.mpCatalogueSync=v},setMpCatalogueSetupKey:v=>{context.mpCatalogueSetupKey=v},
     setCheckoutOpen:v=>{context.checkoutOpen=v},setAdminMessage(){},
     setMpTrialPurchase:v=>{context.mpTrialPurchase=typeof v==='function'?v(context.mpTrialPurchase):v}
@@ -532,6 +534,31 @@ test('Aplicación conserva el intento para reintentar un POST fallido sin duplic
   assert.equal(f.state.posts[0].idempotency,f.state.posts[1].idempotency);
   assert.equal(f.state.orders.size,1);
 }));
+test('Compras de tres fotos generan un único ZIP automáticamente, con descarga reintentable',()=>withFixture(async f=>{
+  const validated=await f.create();await f.download(validated);f.paid(validated);await f.notify(validated);
+  await (await f.download(validated)).arrayBuffer();
+  f.env.MP_LIVE_MODE='public';
+  const purchase=await f.create(f.input(3));
+  const app=appHarness(f,{mode:'public',public_enabled:true,available:true});
+  const names=[];
+  app.context.window.JSZip=class {
+    file(name,bytes){names.push([name,bytes.size])}
+    async generateAsync(){return new Blob(['ZIP fixture'],{type:'application/zip'})}
+  };
+  app.context.mpTrialPurchase={...purchase,mode:'public'};
+  await app.actions.checkMpTrial();
+  assert.equal(app.downloads.length,0);
+  f.paid(purchase);await f.notify(purchase);
+  await app.actions.checkMpTrial();
+  assert.equal(app.downloads.length,1);
+  assert.equal(names.length,3);
+  assert.equal(names[0][0],'01-Foto 0.jpg');
+  assert.equal(app.context.mpTrialPurchase.auto_downloaded,true);
+  assert.equal(app.context.mpTrialDownloads.length,3);
+  await app.actions.checkMpTrial();assert.equal(app.downloads.length,1);
+  assert.equal(f.state.posts.length,2); // Una validación + una compra, no un segundo cobro.
+}));
+
 test('En modo público la aplicación no pide ni envía MP_SETUP_KEY',()=>withFixture(async f=>{
   const p=await f.create();await f.download(p);f.paid(p);await f.notify(p);await (await f.download(p)).arrayBuffer();f.env.MP_LIVE_MODE='public';
   const app=appHarness(f,{mode:'public',available:true,public_enabled:true,validation_amount:200});
