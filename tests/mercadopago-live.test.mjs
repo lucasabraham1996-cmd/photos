@@ -204,6 +204,19 @@ test('La foto de validación cobra $200, usa retorno propio y no envía payer fi
   assert.equal(payload.total_amount,'200.00');assert.equal(payload.payer,undefined);
   assert.equal(payload.config.online.success_url,BASE+'/validation?mp_return=1');
 }));
+test('Regreso público de Mercado Pago contiene ticket privado para el navegador móvil',()=>withFixture(async f=>{
+  const validated=await f.create();await f.download(validated);f.paid(validated);await f.notify(validated);
+  await (await f.download(validated)).arrayBuffer();
+  f.env.MP_LIVE_MODE='public';
+  const p=await f.create(f.input(3)),payload=f.state.posts.at(-1).payload;
+  const returnURL=new URL(payload.config.online.success_url);
+  assert.equal(returnURL.origin,ORIGIN);
+  assert.equal(returnURL.searchParams.get('mp_return'),'1');
+  assert.equal(returnURL.hash,'#/compra/'+p.checkout_id+'/'+p.receipt_token);
+  assert.equal(payload.config.online.failure_url,payload.config.online.success_url);
+  assert.equal(payload.config.online.pending_url,payload.config.online.success_url);
+}));
+
 test('Rechaza manipular el precio y fotos inexistentes antes de contactar MP',()=>withFixture(async f=>{
   const badPrice=f.input(1,{expected_total:1});
   assert.equal((await f.request('/api/live-checkout',badPrice,{'X-Setup-Key':'admin-fixture'})).status,409);
@@ -500,6 +513,10 @@ function appHarness(f,config={mode:'validation',available:true,validation_amount
   const storage=new Map(),effects=[],downloads=[],remoteOrders=[];
   const context={admin:true,CLUB_ENABLED:false,mpTrialBusy:false,MP_TRIAL_ENABLED:false,MP_PAYMENT_VISIBLE:true,
     MP_TRIAL_BASE:BASE,mpPaymentConfig:config,mpTrialPurchase:null,mpTrialDownloads:[],
+    MP_RECEIPTS_STORAGE_KEY:'LA_MP_PURCHASE_RECEIPTS_V1',
+    readMpReceipts:()=>{try{return JSON.parse(storage.get('LA_MP_PURCHASE_RECEIPTS_V1')||'[]')}catch(_){return []}},
+    mpReceipts:[],setMpReceipts:v=>{context.mpReceipts=v},
+    mpReturnMissing:false,setMpReturnMissing:v=>{context.mpReturnMissing=v},
     mpReceiptView:false,mpVerifiedReceipt:false,mpVerifiedCheckoutId:'',
     mpVerifiedCheckoutRef:{current:''},
     mpCreateBusyRef:{current:false},mpStatusBusyRef:{current:false},mpAutoDownloadRef:{current:''},
