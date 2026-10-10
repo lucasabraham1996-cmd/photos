@@ -48,7 +48,7 @@
   <meta name="twitter:description" content="Fotos deportivas protegidas · Compra directa por WhatsApp" />
   <meta name="twitter:image" content="https://lucasabraham1996-cmd.github.io/photos/social-preview-la.png?v=105" />
   <title>lucasabraham.ph - Galería de Clientes</title>
-  <meta name="app-version" content="v127-orders-and-checkout" /><style>html{color-scheme:dark}html,body{margin:0;min-height:100%;background:#050505;color:#fff}#root{min-height:100vh;background:#050505;color:#fff}
+  <meta name="app-version" content="v128-buyer-orders-biometric" /><style>html{color-scheme:dark}html,body{margin:0;min-height:100%;background:#050505;color:#fff}#root{min-height:100vh;background:#050505;color:#fff}
     /* v41: estilo versus moderno para portada y álbum */
     .team-album-reveal{background:linear-gradient(180deg,rgba(3,7,18,.12),rgba(2,6,23,.28))}
     .team-reveal-half{left:12px!important;right:12px!important;width:auto!important;height:33%!important;padding:12px 16px!important;box-shadow:0 16px 36px rgba(0,0,0,.28),inset 0 1px 0 rgba(255,255,255,.14)!important;border:1px solid rgba(255,255,255,.10)!important;overflow:hidden}
@@ -2285,7 +2285,7 @@ const LS_SHARED_STATE_KEY = "la_shared_admin_state_v2";
 const LS_BANNERS_KEY = "la_banner_settings_v1";
 const LS_INTRO_KEY = "la_purchase_intro_seen_v2";
 const PHOTOS_PER_PAGE = 70;
-const APP_VERSION = "v126-mercadopago-direct-checkout";
+const APP_VERSION = "v128-buyer-orders-biometric";
 const LS_ALBUM_CACHE_META_KEY = "la_album_cache_meta_v1";
 const ALBUM_CACHE_MAX_AGE_MS = 1000 * 60 * 60 * 12;
 const FIRESTORE_FREE_DAILY_LIMITS = {
@@ -2387,8 +2387,8 @@ async function registerAdminPasskey() {
             ],
             authenticatorSelection: {
                 authenticatorAttachment: "platform",
-                residentKey: "required",
-                requireResidentKey: true,
+                residentKey: "discouraged",
+                requireResidentKey: false,
                 userVerification: "required"
             },
             timeout: 60000,
@@ -2416,7 +2416,6 @@ async function authenticateAdminPasskey(ids) {
             challenge: adminRandomBytes(32),
             allowCredentials: candidates.map(id => ({ type: "public-key", id: adminBase64UrlToBytes(id), transports: ["internal"] })),
             userVerification: "required",
-            hints: ["client-device"],
             timeout: 30000
         }
     });
@@ -5467,7 +5466,7 @@ function App() {
             setPin("");
             const setupBioRequested = new URLSearchParams(location.search).get("setupbio") === "1";
             if (setupBioRequested && supportsAdminBiometrics()) {
-                setAdminMessage("PIN correcto. Ahora tocá “Activar Face ID en este iPhone” una sola vez para dejarlo vinculado.");
+                setAdminMessage("PIN correcto. Ahora tocá “Vincular biometría de este dispositivo” una sola vez para dejarlo vinculado.");
                 setTimeout(() => {
                     const el = document.getElementById("admin-security-access");
                     if (el) el.scrollIntoView({ behavior:"smooth", block:"center" });
@@ -5501,15 +5500,14 @@ function App() {
         catch (e) {
             if (!automatic) {
                 if (e && e.name === "NotAllowedError") {
-                    writeLocalAdminPasskeyId("");
                     setShowPinLogin(true);
-                    setAdminLoginError("Esta llave biométrica ya no está disponible en este dispositivo. Entrá con el PIN y volvé a activar Face ID una sola vez.");
+                    setAdminLoginError("El dispositivo no completó la verificación. Si te pide patrón, PIN o código del teléfono, es el método de respaldo del sistema. Podés completarlo, reintentar la biometría o entrar con tu PIN de administrador.");
                 } else {
                     setAdminLoginError((e && e.message) ? e.message : "No se pudo usar la biometría.");
                 }
             } else {
-                // Si el navegador no permite abrir Face ID automáticamente, dejamos el botón listo al instante.
-                setShowPinLogin(false);
+                // Si el navegador no permite abrir la biometría automáticamente, mostramos también el acceso por PIN.
+                setShowPinLogin(true);
             }
         }
         finally {
@@ -5547,11 +5545,11 @@ function App() {
                 url.searchParams.delete("pin");
                 history.replaceState(null, "", url.pathname + (url.search ? url.search : "") + "#/admin");
             } catch (e) {}
-            setAdminMessage("Face ID quedó vinculado correctamente a este dispositivo.");
+            setAdminMessage("La biometría / seguridad del dispositivo quedó vinculada correctamente.");
         }
         catch (e) {
             console.warn("No se pudo activar la biometría.", e);
-            setAdminMessage((e && e.name === "NotAllowedError") ? "La activación biométrica fue cancelada." : ((e && e.message) ? e.message : "No se pudo activar Face ID / huella."));
+            setAdminMessage((e && e.name === "NotAllowedError") ? "El dispositivo no completó la vinculación. En algunos equipos puede pedir patrón o PIN como respaldo del sistema. Reintentá o usá el PIN de administrador." : ((e && e.message) ? e.message : "No se pudo activar la biometría."));
         }
         finally {
             setSecurityBusy(false);
@@ -6510,11 +6508,34 @@ En breve te las preparo y te las envío por acá 😊
         const message = String((CLUB_ENABLED && orderLike && orderLike.confirmationMessage) || buildOrderConfirmationMessage(orderLike || {}));
         return `https://api.whatsapp.com/send?phone=549${phone}&text=${encodeURIComponent(message)}`;
     }
+    const checkoutBuyerName = cleanWhatsappPersonName(checkoutCustomerName);
+    const checkoutBuyerPhone = normalizeClubPhone(checkoutPhone);
+    const checkoutBuyerComplete = checkoutBuyerName.split(/\s+/).filter(Boolean).length >= 2 && checkoutBuyerPhone.length >= 10;
+    const validateCheckoutBuyer = () => {
+        const name = cleanWhatsappPersonName(checkoutCustomerName);
+        const phone = normalizeClubPhone(checkoutPhone);
+        if (name.split(/\s+/).filter(Boolean).length < 2) {
+            const msg = "Ingresá nombre y apellido del comprador.";
+            setCheckoutSaveError(msg);
+            alert(msg);
+            return false;
+        }
+        if (!phone || phone.length < 10) {
+            const msg = "Ingresá un número de teléfono válido del comprador.";
+            setCheckoutSaveError(msg);
+            alert(msg);
+            return false;
+        }
+        setCheckoutCustomerName(name);
+        setCheckoutPhone(phone);
+        setCheckoutSaveError("");
+        return true;
+    };
 
     const buildOrderPackage = (forcedOrder) => {
         const order = forcedOrder || checkoutOrderCode || ('LA-' + Math.floor(10000 + Math.random() * 90000));
-        const cleanPhone = CLUB_ENABLED && checkoutWantsPoints && customerDetailsSaved ? normalizeClubPhone(checkoutPhone) : '';
-        const cleanCustomerName = cleanPhone ? cleanWhatsappPersonName(checkoutCustomerName) : '';
+        const cleanPhone = normalizeClubPhone(checkoutPhone);
+        const cleanCustomerName = cleanWhatsappPersonName(checkoutCustomerName);
         const playerName = selectedOrderPlayerName(selectedPhotos);
 
         // Se genera en el momento de enviar usando exclusivamente la selección y el total actuales.
@@ -6537,7 +6558,7 @@ En breve te las preparo y te las envío por acá 😊
             customerName: cleanCustomerName,
             dni: '',
             phone: cleanPhone,
-            wantsPoints: Boolean(cleanPhone),
+            wantsPoints: Boolean(CLUB_ENABLED && checkoutWantsPoints && customerDetailsSaved && cleanPhone),
             confirmationMessage,
             messageVersion: 2,
             printRequested: printSelectedPhotos.length > 0,
@@ -6648,14 +6669,21 @@ En breve te las preparo y te las envío por acá 😊
                     }else{
                         const album=displayAlbums.find(a=>a.id===selection.album_id);
                         pending.order_data={id:code,date:new Date().toISOString(),total:expectedTotal,
-                            subtotal:expectedTotal,kind:'album',customerName:'',phone:'',wantsPoints:false,
-                            printRequested:false,printCount:0,delivered:false,status:'pendiente',
+                            subtotal:expectedTotal,kind:'album',customerName:checkoutBuyerName,phone:checkoutBuyerPhone,wantsPoints:false,
+                            printRequested:false,printCount:0,delivered:false,status:'pendiente_pago',paymentStatus:'pending',paymentProvider:'mercadopago',
                             items:(album&&album.photos||[]).map(p=>({id:p.id,name:p.name,albumName:album.name,
                                 code:p.code,url:p.url,driveLink:p.rawUrl||p.driveLink||p.fullUrl||p.url,price:p.price}))};
                     }
-                    localStorage.setItem('LA_MP_LIVE_REQUEST',JSON.stringify(pending));
                 }
-                requestData={...requestData,request_id:pending.request_id,receipt_token:pending.receipt_token};
+                pending.order_data={...pending.order_data,customerName:checkoutBuyerName,phone:checkoutBuyerPhone,
+                    status:'pendiente_pago',paymentStatus:'pending',paymentProvider:'mercadopago'};
+                localStorage.setItem('LA_MP_LIVE_REQUEST',JSON.stringify(pending));
+                setMpTrialMessage('Guardando el pedido antes de abrir Mercado Pago...');
+                const preSave=await saveOrderRemote(pending.order_data);
+                if(!preSave||(!preSave.firebase&&!preSave.script))
+                    throw Error('No se pudo guardar el pedido. Reintentá antes de pagar para que la compra quede registrada.');
+                requestData={...requestData,request_id:pending.request_id,receipt_token:pending.receipt_token,
+                    buyer:{name:checkoutBuyerName,phone:checkoutBuyerPhone}};
                 requestData.local_order=pending.order_data;
             }
             const {local_order:localOrder,...serverInput}=requestData;
@@ -6719,6 +6747,7 @@ En breve te las preparo y te las envío por acá 😊
     const mpResumeWithoutCart=Boolean(MP_PAYMENT_VISIBLE&&mpTrialPurchase&&!mpTrialPurchase.paid&&mpTrialPurchase.ready&&!selectedPhotos.length);
     const payWithMercadoPago=()=>{
         if(mpTrialBusy)return;
+        if(!mpResumeWithoutCart && !validateCheckoutBuyer())return;
         if(mpResumeWithoutCart){
             try{openMpCheckout(mpTrialPurchase);}catch(err){setMpTrialMessage(String(err&&err.message||err));}
             return;
@@ -6787,6 +6816,7 @@ En breve te las preparo y te las envío por acá 😊
     };
     const beginAlbumMpTrial=(album)=>{
         if(!album||!MP_PAYMENT_VISIBLE)return;
+        if(!validateCheckoutBuyer())return;
         if(!MP_TRIAL_ENABLED&&mpPaymentConfig.mode!=='public')return;
         return submitMpTrial({kind:'album',album_id:album.id},albumPriceWithDiscount(album),true);
     };
@@ -6947,7 +6977,7 @@ En breve te las preparo y te las envío por acá 😊
                     // La venta entra al historial existente después de verificar el pago.
                     // No se envía el token de descarga y la entrega/Club conserva su confirmación habitual.
                     try{
-                        const record={...saved.order_data,paid:true,paymentStatus:'accredited',...(!CLUB_ENABLED?{wantsPoints:false}:{})};
+                        const record={...saved.order_data,paid:true,status:'pagado',paymentStatus:'accredited',...(!CLUB_ENABLED?{wantsPoints:false}:{})};
                         const sync=await saveOrderRemote(record);
                         if(sync&&(sync.firebase||sync.script)){
                             saved={...saved,order_synced:true};
@@ -7002,6 +7032,7 @@ En breve te las preparo y te las envío por acá 😊
         if(e&&e.preventDefault)e.preventDefault();
         if(orderSavingRef.current)return;
         if(!cart.length||!selectedPhotos.length){alert('Seleccioná al menos una foto antes de comprar.');return}
+        if(!validateCheckoutBuyer())return;
         if(CLUB_ENABLED&&checkoutWantsPoints&&!customerDetailsSaved){setCustomerDetailsOpen(true);alert('Guardá los datos del Club o elegí continuar sin sumar puntos.');return}
         if(checkoutPrint&&!printSelectedPhotos.length){alert('Elegí al menos una foto para imprimir o desactivá la impresión.');return}
         const fixedCode=checkoutOrderCode||newOrderCode();
@@ -7439,10 +7470,10 @@ En breve te las preparo y te las envío por acá 😊
                 React.createElement("div", { className:"w-16 h-16 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center mb-5" },
                     React.createElement("img", { src:"./brand-logo.png?v=105", alt:BRAND, className:"w-11 h-11 object-contain" })),
                 React.createElement("h1", { className: "text-2xl font-black mb-2 pr-10" }, "Acceso admin"),
-                React.createElement("p", { className: "text-neutral-400 text-sm mb-5" }, adminBiometricConfigured ? (adminLoginBusy ? "Validando con la seguridad de este dispositivo..." : "Face ID / huella es tu acceso principal. El PIN queda como alternativa.") : (!sharedReady ? "Preparando acceso seguro..." : "Entrá con tu PIN o contraseña. Después podés activar Face ID o huella desde Seguridad.")),
+                React.createElement("p", { className: "text-neutral-400 text-sm mb-5" }, adminBiometricConfigured ? (adminLoginBusy ? "Validando con la seguridad de este dispositivo..." : "Biometría / seguridad del dispositivo es tu acceso principal. El PIN queda como alternativa.") : (!sharedReady ? "Preparando acceso seguro..." : "Entrá con tu PIN o contraseña. Después podés activar Face ID o huella desde Seguridad.")),
                 adminBiometricConfigured && React.createElement("button", { type:"button", onClick:()=>submitAdminBiometric(), disabled:adminLoginBusy, className:"w-full bg-gradient-to-r from-sky-400 to-blue-600 text-white py-4 rounded-2xl font-black shadow-[0_16px_40px_rgba(37,99,235,.22)] disabled:opacity-50" },
                     React.createElement("i", { className:"fas fa-fingerprint mr-2" }),
-                    adminLoginBusy ? "Abriendo Face ID / huella..." : "Entrar con Face ID / huella"),
+                    adminLoginBusy ? "Abriendo Face ID / huella..." : "Entrar con biometría / seguridad del dispositivo"),
                 adminBiometricConfigured && React.createElement("div", { className:"flex items-center gap-3 my-4 text-[10px] uppercase tracking-[.16em] text-neutral-600" },
                     React.createElement("span", { className:"h-px bg-neutral-800 flex-1" }),
                     React.createElement("span", null, "Opción 2"),
@@ -7478,10 +7509,10 @@ En breve te las preparo y te las envío por acá 😊
                             React.createElement("div", { className:"flex items-center gap-2 flex-wrap" },
                                 React.createElement("h2", { className:"font-black text-lg" }, "Seguridad de acceso"),
                                 React.createElement("span", { className:localAdminPasskeyId ? "text-[9px] uppercase tracking-wider font-black px-2 py-1 rounded-full bg-emerald-400/10 text-emerald-300 border border-emerald-400/20" : "text-[9px] uppercase tracking-wider font-black px-2 py-1 rounded-full bg-amber-400/10 text-amber-300 border border-amber-400/20" }, localAdminPasskeyId ? "Face ID vinculado" : "Face ID pendiente")),
-                            React.createElement("p", { className:"text-sm text-neutral-400 mt-1" }, "Usá Face ID, huella o Windows Hello como acceso principal y dejá el PIN / contraseña como respaldo."))),
+                            React.createElement("p", { className:"text-sm text-neutral-400 mt-1" }, "Usá la biometría o el desbloqueo seguro del dispositivo como acceso principal y dejá el PIN / contraseña como respaldo."))),
                     React.createElement("div", { className:"flex flex-col sm:flex-row gap-2" },
                         React.createElement("button", { type:"button", onClick:enableAdminBiometric, disabled:securityBusy || !supportsAdminBiometrics(), className:"bg-sky-500 hover:bg-sky-400 disabled:opacity-40 text-black px-4 py-3 rounded-xl font-black" },
-                            React.createElement("i", { className:"fas fa-fingerprint mr-2" }), localAdminPasskeyId ? "Renovar Face ID en este dispositivo" : "Activar Face ID en este iPhone"),
+                            React.createElement("i", { className:"fas fa-fingerprint mr-2" }), localAdminPasskeyId ? "Renovar biometría de este dispositivo" : "Vincular biometría de este dispositivo"),
                         React.createElement("button", { type:"button", onClick:()=>setSecurityOpen(v=>!v), className:"bg-neutral-800 px-4 py-3 rounded-xl font-bold" },
                             React.createElement("i", { className:"fas fa-key mr-2" }), "Cambiar contraseña"))),
                 securityOpen && React.createElement("form", { onSubmit:changeAdminPassword, className:"mt-5 pt-5 border-t border-neutral-800 grid gap-3 md:grid-cols-3" },
@@ -7878,6 +7909,7 @@ React.createElement("div", { id: "order-search-panel", className: "bg-neutral-90
                         React.createElement("div",{className:"flex flex-wrap gap-2 mt-3 text-sm items-center"},
                             React.createElement("b",{className:"text-white"},formatPrice(o.amount)),
                             React.createElement("span",{className:"text-neutral-400"},(o.photos||[]).length+" fotos"),
+                            React.createElement("span",{className:"text-neutral-300"},(o.customer_name||o.customerName||"Sin nombre")+" · "+(o.customer_phone||o.phone||"Sin teléfono")),
                             o.print_count>0&&React.createElement("span",{className:"print-order-badge"},"Impresiones: "+o.print_count),
                             o.paid&&React.createElement("span",{className:"text-[11px] text-amber-200"},"Factura C: pendiente de emitir en ARCA")),
                         React.createElement("div",{className:"admin-order-links"},(o.photos||[]).map((p,i)=>p.download_url&&React.createElement("a",{key:i,href:p.download_url,target:"_blank",rel:"noopener noreferrer"},
@@ -8137,6 +8169,12 @@ React.createElement("div", { id: "order-search-panel", className: "bg-neutral-90
                             React.createElement("p",{className:"text-[9px] text-sky-200 uppercase tracking-[0.18em] font-bold"},"Total"),
                             React.createElement("p",{className:"text-2xl font-black text-white leading-none"},formatPrice(albumPriceWithDiscount(currentAlbum))),
                             hasSiteDiscount(currentAlbum.id)&&React.createElement("p",{className:"text-xs line-through text-neutral-400 mt-1"},formatPrice(currentAlbum.fullPrice)))),
+                    React.createElement("div",{className:"checkout-simple-card mt-3 mb-1 text-left"},
+                        React.createElement("p",{className:"text-xs font-black text-white mb-2"},"Datos del comprador"),
+                        React.createElement("div",{className:"grid sm:grid-cols-2 gap-2"},
+                            React.createElement("input",{value:checkoutCustomerName,onChange:e=>{setCheckoutCustomerName(e.target.value);setCheckoutSaveError('')},placeholder:"Nombre y apellido",autoComplete:"name",className:"customer-compact-input"}),
+                            React.createElement("input",{value:checkoutPhone,inputMode:"tel",onChange:e=>{setCheckoutPhone(e.target.value);setCheckoutSaveError('')},placeholder:"Teléfono",autoComplete:"tel",className:"customer-compact-input"})),
+                        React.createElement("p",{className:"text-[10px] text-sky-100/60 mt-2"},"Obligatorios para registrar la compra y verla desde Administración.")),
                     React.createElement("div",{className:"album-payment-options",id:"album-payment-options"},
                         React.createElement("button",{type:"button",onClick:()=>beginAlbumMpTrial(currentAlbum),
                             disabled:mpTrialBusy||!MP_PAYMENT_VISIBLE||(!MP_TRIAL_ENABLED&&mpPaymentConfig.mode!=='public'),className:"mp-pay-button"},
@@ -8406,6 +8444,13 @@ React.createElement("div", { id: "order-search-panel", className: "bg-neutral-90
                 !mpReceiptView&&CLUB_ENABLED && React.createElement("div", { className:"checkout-guest-choice", role:"group", "aria-label":"Elegí cómo comprar" },
                     React.createElement("button", { type:"button", className:`checkout-guest-btn ${!checkoutWantsPoints ? 'active' : ''}`, onClick:()=>{setCheckoutWantsPoints(false);setCustomerDetailsSaved(false);setCustomerDetailsOpen(false);setCheckoutPriorClubAccount(null);setCheckoutCustomerName('');setCheckoutPhone('');setClubSessionPhone('');try{localStorage.removeItem('LA_CLUB_PHONE')}catch(e){}} }, "Continuar sin sumar puntos"),
                     React.createElement("p", null, "No necesitás registrarte. Elegí tus fotos y cómo querés pagar.")),
+                !mpReceiptView&&React.createElement("section",{className:"checkout-simple-card mb-3","aria-label":"Datos del comprador"},
+                    React.createElement("p",{className:"text-sm font-black text-white mb-2"},React.createElement("i",{className:"fas fa-user text-sky-300 mr-2"}),"Datos del comprador"),
+                    React.createElement("div",{className:"grid gap-2"},
+                        React.createElement("input",{value:checkoutCustomerName,onChange:e=>{setCheckoutCustomerName(e.target.value);setCheckoutSaveError('')},placeholder:"Nombre y apellido",autoComplete:"name",className:"customer-compact-input","aria-label":"Nombre y apellido del comprador"}),
+                        React.createElement("input",{value:checkoutPhone,inputMode:"tel",onChange:e=>{setCheckoutPhone(e.target.value);setCheckoutSaveError('')},placeholder:"Teléfono · ej. 351 5580770",autoComplete:"tel",className:"customer-compact-input","aria-label":"Teléfono del comprador"}),
+                        React.createElement("p",{className:"text-[11px] text-sky-100/65 leading-relaxed"},"Estos datos son obligatorios para identificar el pedido y para que Lucas pueda verlo desde Administración."),
+                        !checkoutBuyerComplete&&React.createElement("p",{className:"text-[11px] text-amber-300"},"Completá nombre, apellido y teléfono antes de continuar."))),
                 CLUB_ENABLED && React.createElement("div", { className: "mb-3" },
                     React.createElement("button", { type:"button", onClick:() => setCustomerDetailsOpen(v => !v), className:`benefits-glass-btn ${customerDetailsOpen || customerDetailsSaved ? 'active' : ''}` },
                         React.createElement("i", { className:"fas fa-gift" }),
