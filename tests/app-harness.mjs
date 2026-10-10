@@ -15,7 +15,7 @@ export function appHarness(overrides = {}) {
       openClub,saveCheckoutCustomer,addClubProduct,addManualClubPoints,transferClubPoints,
       registerClubUser,redeemClubProduct,lookupClubPoints,clubAccountFromOrders,
       syncMpCatalogue,syncMpCatalogueAndRetry,submitMpTrial,beginMpTrial,payWithMercadoPago,
-      otherPaymentWhatsappUrl,setOrderDecisionAndClose};
+      otherPaymentWhatsappUrl,setOrderDecisionAndClose,checkMpTrial,openSavedMpReceipt,closeMpCheckout};
 ` + script.slice(renderStart);
   const state = { ...overrides }, effects = [], storage = new Map(), requests = [];
   let cursor = 0, refCursor = 0;
