@@ -7740,6 +7740,14 @@ React.createElement("div", { id: "order-search-panel", className: "bg-neutral-90
                         React.createElement("div",{className:"admin-order-links"},(o.photos||[]).map((p,i)=>p.download_url&&React.createElement("a",{key:i,href:p.download_url,target:"_blank",rel:"noopener noreferrer"},
                             React.createElement("i",{className:"fas fa-download"}),p.name||("Foto "+(i+1))))),
                         o.paid&&React.createElement("div",{className:"flex flex-wrap gap-2 mt-3"},
+                            React.createElement("button",{type:"button",onClick:()=>{
+                                const links=(o.photos||[]).filter(p=>p.download_url);
+                                const message='📸 ¡Hola! Gracias por tu compra en lucasabraham.ph. Acá tenés tus '+links.length+' fotos en calidad original:\n\n'+
+                                    links.map((p,i)=>'📷 '+(p.name||('Foto '+(i+1)))+'\n'+p.download_url).join('\n\n')+
+                                    '\n\n¡Gracias por confiar en mi trabajo!';
+                                navigator.clipboard.writeText(message).then(()=>setAdminMessage('Mensaje con todas las fotos copiado. Pegalo en el WhatsApp del comprador.')).catch(()=>setMpAdminOrdersError('No se pudo copiar el mensaje al portapapeles.'));
+                            },className:"text-xs font-black rounded-xl bg-emerald-500 text-emerald-950 px-3 py-2"},
+                                React.createElement("i",{className:"fab fa-whatsapp mr-2"}),"Copiar mensaje con "+(o.photos||[]).length+" fotos"),
                             React.createElement("a",{href:"https://facturador.afip.gob.ar/",target:"_blank",rel:"noopener noreferrer",className:"text-xs font-black rounded-xl bg-sky-600 text-white px-3 py-2"},"Emitir factura C en ARCA"),
                             React.createElement("button",{type:"button",onClick:()=>navigator.clipboard.writeText('Pedido: '+(o.order_id||o.checkout_id)+' · Importe: '+formatPrice(o.amount)+' · Fecha: '+o.created_at),className:"text-xs font-black rounded-xl bg-neutral-800 text-white px-3 py-2"},"Copiar datos para facturar"))))),
                 mpAdminOrdersHasMore&&React.createElement("button",{type:"button",disabled:mpAdminOrdersBusy,onClick:()=>fetchMpAdminOrders(true),className:"mt-4 px-4 py-3 rounded-xl text-xs font-black bg-neutral-800"},"Cargar 50 órdenes más")),
