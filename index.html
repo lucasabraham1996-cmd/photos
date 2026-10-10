@@ -6928,7 +6928,10 @@ En breve te las preparo y te las envío por acá 😊
                 setMpTrialDownloads(files);
                 mpVerifiedCheckoutRef.current=mpTrialPurchase.checkout_id;
                 setMpVerifiedCheckoutId(mpTrialPurchase.checkout_id);
-                let saved={...mpTrialPurchase,order_id:data.order_id||mpTrialPurchase.order_id,paid:true};
+                let saved={...mpTrialPurchase,order_id:data.order_id||mpTrialPurchase.order_id,
+                    amount:Number.isFinite(Number(data.amount))?Number(data.amount):(mpTrialPurchase.amount||0),
+                    quantity:files.length,kind:data.kind||mpTrialPurchase.kind,
+                    created_at:data.created_at||mpTrialPurchase.created_at||'',paid:true};
                 setMpTrialMessage('¡Pago acreditado! '+files.length+' fotografías listas para descargar.'+
                     (data.print_requested?' Las impresiones físicas se coordinan por WhatsApp.':''));
                 // Nunca iniciar descargas por efecto de la verificación: se habilitan botones
