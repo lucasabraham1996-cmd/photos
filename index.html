@@ -6863,20 +6863,8 @@ En breve te las preparo y te las envío por acá 😊
                 let saved={...mpTrialPurchase,order_id:data.order_id||mpTrialPurchase.order_id,paid:true};
                 setMpTrialMessage('¡Pago acreditado! '+files.length+' fotografías listas para descargar.'+
                     (data.print_requested?' Las impresiones físicas se coordinan por WhatsApp.':''));
-                // Los móviles muestran descargas individuales; no iniciar ZIP automático.
-                if(live&&!mpMobileDelivery()&&files.length>0&&files.length<=12&&!saved.auto_downloaded&&mpAutoDownloadRef.current!==saved.checkout_id){
-                    mpAutoDownloadRef.current=saved.checkout_id;
-                    try{
-                        const success=files.length===1
-                            ?(await downloadMpFile(files[0],saved),true)
-                            :await downloadMpZip(files,saved);
-                        if(success)saved={...saved,auto_downloaded:true};
-                        else mpAutoDownloadRef.current='';
-                    }catch(err){
-                        mpAutoDownloadRef.current='';
-                        setMpTrialMessage('Pago acreditado. '+String(err&&err.message||err));
-                    }
-                }
+                // Nunca iniciar descargas por efecto de la verificación: se habilitan botones
+                // exclusivamente luego de acreditar la orden y mediante una acción del usuario.
                 localStorage.setItem(live?'LA_MP_LIVE_PURCHASE':'LA_MP_TRIAL_PURCHASE',JSON.stringify(saved));
                 setMpTrialPurchase(saved);
                 if(live&&saved.order_data&&!saved.order_synced){
