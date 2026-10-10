@@ -234,6 +234,9 @@ test('Pendiente: no muestra enlaces, devuelve 403 y no consulta Drive',()=>withF
   assert.ok(row.before_payment_blocked_at);assert.equal(row.paid_verified_at,null);
 }));
 test('Enlaces móviles con token tampoco entregan nada antes del pago',()=>withFixture(async f=>{
+  const validated=await f.create();await f.download(validated);f.paid(validated);await f.notify(validated);
+  await (await f.download(validated)).arrayBuffer();
+  f.env.MP_LIVE_MODE='public';
   const p=await f.create(f.input(3));
   for(const i of [0,1,2]){
     const path='/api/live-download/'+p.checkout_id+'/'+i+'?token='+p.receipt_token;
