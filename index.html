@@ -5382,7 +5382,7 @@ function App() {
         }catch(_){return null}
     });
     const [mpReturnMissing,setMpReturnMissing]=useState(Boolean(mpReturnRequested&&!mpAccessFromLink&&
-        !mpReturnedCheckout));
+        !mpTrialPurchase));
     const [mpReceiptDismissed,setMpReceiptDismissed]=useState(false);
     // Cada ingreso al carrito empieza en modo compra. El recibo es una vista separada.
     const [mpReceiptView,setMpReceiptView]=useState(Boolean(mpReturnRequested));
@@ -6978,7 +6978,7 @@ En breve te las preparo y te las envío por acá 😊
         }
     },[]);
     useEffect(()=>{
-        if(!mpTrialPurchase||!MP_PAYMENT_VISIBLE||(!mpReceiptView&&mpTrialPurchase.paid))return;
+        if(!mpTrialPurchase||(!MP_PAYMENT_VISIBLE&&!mpReceiptView)||(!mpReceiptView&&mpTrialPurchase.paid))return;
         if(mpReceiptView&&(new URLSearchParams(location.search).get('mp_return')==='1'||mpAccessFromLink))
             setCheckoutOpen(true);
         checkMpTrial();
