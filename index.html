@@ -5349,13 +5349,20 @@ function App() {
     const [checkoutPriorClubAccount, setCheckoutPriorClubAccount] = useState(null);
     const [checkoutPointsLoading, setCheckoutPointsLoading] = useState(false);
     // El backend decide la apertura pública. ?mp_live=1 solo muestra la validación privada.
+    const mpAccessFromLink=useMemo(()=>{
+        const match=String(location.hash||'').match(/^#\/compra\/([a-f\d-]{36})\/([a-f\d]{64})$/i);
+        if(!match||!/^[a-f\d]{8}-[a-f\d]{4}-4[a-f\d]{3}-[89ab][a-f\d]{3}-[a-f\d]{12}$/i.test(match[1]))return null;
+        return {checkout_id:match[1],receipt_token:match[2].toLowerCase(),order_id:'Recuperando compra',mode:'public',ready:true,paid:false};
+    },[]);
     const MP_TRIAL_ENABLED = admin && new URLSearchParams(location.search).get('mp_trial') === '1';
     const MP_LIVE_PREVIEW = new URLSearchParams(location.search).get('mp_live') === '1';
     const MP_TRIAL_BASE = 'https://lucasabraham-ph-api.lucasantonioabraham.workers.dev';
     const [mpPaymentConfig,setMpPaymentConfig] = useState({mode:'disabled',public_enabled:false,available:false,validation_amount:200,loading:true});
     // La validación privada se hace en el Worker: no corresponde solicitar credenciales en el carrito público.
-    const MP_PAYMENT_VISIBLE = MP_TRIAL_ENABLED || mpPaymentConfig.public_enabled;
+    const MP_PAYMENT_VISIBLE = MP_TRIAL_ENABLED || mpPaymentConfig.public_enabled ||
+        Boolean(mpAccessFromLink) || Boolean((()=>{try{return localStorage.getItem('LA_MP_LIVE_PURCHASE')}catch(_){return false}})());
     const [mpTrialPurchase, setMpTrialPurchase] = useState(() => {
+        if(mpAccessFromLink)return mpAccessFromLink;
         try {
             const stored = JSON.parse(localStorage.getItem(MP_TRIAL_ENABLED?'LA_MP_TRIAL_PURCHASE':'LA_MP_LIVE_PURCHASE') || 'null');
             return stored && stored.order_id && stored.receipt_token ? stored : null;
@@ -5364,6 +5371,8 @@ function App() {
     const [mpTrialBusy, setMpTrialBusy] = useState(false);
     const [mpTrialMessage, setMpTrialMessage] = useState('');
     const [mpTrialDownloads, setMpTrialDownloads] = useState([]);
+    const [mpZipBusy,setMpZipBusy] = useState(false);
+    const mpZipLoaderRef=useRef(null);
     const [mpCatalogueSetupKey,setMpCatalogueSetupKey] = useState('');
     const [mpCatalogueSync,setMpCatalogueSync] = useState({status:'idle',message:''});
     const [mpAdminOrders,setMpAdminOrders] = useState([]);
@@ -6706,6 +6715,68 @@ En breve te las preparo y te las envío por acá 😊
         link.href=href;link.download=file.name||'foto.jpg';document.body.appendChild(link);
         link.click();link.remove();setTimeout(()=>URL.revokeObjectURL(href),60000);
     };
+    const loadMpZipLibrary=()=>{
+        if(window.JSZip)return Promise.resolve(window.JSZip);
+        if(mpZipLoaderRef.current)return mpZipLoaderRef.current;
+        mpZipLoaderRef.current=new Promise((resolve,reject)=>{
+            const script=document.createElement('script');
+            script.src='https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js';
+            script.async=true;
+            let timer=null;
+            const fail=()=>{
+                clearTimeout(timer);script.remove();mpZipLoaderRef.current=null;
+                reject(Error('No se pudo preparar el ZIP. Podés descargar las fotos una por una.'));
+            };
+            script.onload=()=>{clearTimeout(timer);window.JSZip?resolve(window.JSZip):fail()};
+            script.onerror=fail;
+            document.head.appendChild(script);
+            timer=setTimeout(fail,12000);
+        });
+        return mpZipLoaderRef.current;
+    };
+    const downloadMpZip=async(files=mpTrialDownloads,purchase=mpTrialPurchase)=>{
+        if(!purchase||!files.length||mpZipBusy)return false;
+        setMpZipBusy(true);
+        try{
+            const Zip=await loadMpZipLibrary(),zip=new Zip();
+            for(let i=0;i<files.length;i++){
+                const file=files[i];
+                setMpTrialMessage('Preparando las fotos '+(i+1)+' de '+files.length+' para descargar…');
+                const response=await fetch(file.url,{headers:{'X-Receipt-Token':purchase.receipt_token}});
+                if(!response.ok){
+                    const body=await response.json().catch(()=>({}));
+                    throw Error(body.error||'No se pudo obtener la foto '+(i+1)+'.');
+                }
+                const blob=await response.blob();
+                const safe=String(file.name||('foto-'+(i+1)+'.jpg')).replace(/[\\/:*?"<>|]/g,'_').slice(0,130);
+                zip.file(String(i+1).padStart(2,'0')+'-'+safe,blob);
+            }
+            setMpTrialMessage('Creando archivo ZIP con '+files.length+' fotos…');
+            const archive=await zip.generateAsync({type:'blob',compression:'STORE'});
+            const link=document.createElement('a'),href=URL.createObjectURL(archive);
+            link.href=href;link.download='Lucas-Abraham-'+files.length+'-fotos.zip';
+            document.body.appendChild(link);link.click();link.remove();
+            setTimeout(()=>URL.revokeObjectURL(href),60000);
+            setMpTrialMessage('¡Tus '+files.length+' fotos están listas! Si la descarga no empezó, tocá «Descargar todas» nuevamente.');
+            return true;
+        }catch(err){
+            setMpTrialMessage('Pago confirmado. '+String(err&&err.message||err)+' Usá los botones individuales o reintentá.');
+            return false;
+        }finally{setMpZipBusy(false)}
+    };
+    const mpPrivateReceiptLink=(purchase=mpTrialPurchase)=>{
+        if(!purchase||!purchase.checkout_id||!/^[a-f\\d]{64}$/i.test(purchase.receipt_token||''))return '';
+        const url=new URL(location.pathname,location.origin);
+        url.hash='#/compra/'+purchase.checkout_id+'/'+purchase.receipt_token;
+        return url.href;
+    };
+    const copyMpReceiptLink=async()=>{
+        const url=mpPrivateReceiptLink();
+        if(!url)return;
+        try{await navigator.clipboard.writeText(url);
+            setMpTrialMessage('Enlace privado copiado. Guardalo o enviáselo al comprador para recuperar sus fotos sin volver a pagar.');
+        }catch(_){setMpTrialMessage('No se pudo copiar automáticamente. Usá los botones de descarga para guardar las fotos.')}
+    };
     const checkMpTrial=async()=>{
         if(!mpTrialPurchase||mpCreateBusyRef.current||mpStatusBusyRef.current)return;
         mpStatusBusyRef.current=true;
@@ -6722,14 +6793,18 @@ En breve te las preparo y te las envío por acá 😊
             if(data.paid){
                 const files=(data.downloads||[]).map(x=>({name:x.name,url:MP_TRIAL_BASE+x.url}));
                 setMpTrialDownloads(files);
-                let saved={...mpTrialPurchase,paid:true};
+                let saved={...mpTrialPurchase,order_id:data.order_id||mpTrialPurchase.order_id,paid:true};
                 setMpTrialMessage('¡Pago acreditado! '+files.length+' fotografías listas para descargar.'+
                     (data.print_requested?' Las impresiones físicas se coordinan por WhatsApp.':''));
-                if(live&&files.length===1&&!saved.auto_downloaded&&mpAutoDownloadRef.current!==saved.checkout_id){
+                // Una sola descarga ZIP evita el bloqueo del navegador a múltiples archivos.
+                if(live&&files.length>0&&files.length<=12&&!saved.auto_downloaded&&mpAutoDownloadRef.current!==saved.checkout_id){
                     mpAutoDownloadRef.current=saved.checkout_id;
                     try{
-                        await downloadMpFile(files[0],saved);
-                        saved={...saved,auto_downloaded:true};
+                        const success=files.length===1
+                            ?(await downloadMpFile(files[0],saved),true)
+                            :await downloadMpZip(files,saved);
+                        if(success)saved={...saved,auto_downloaded:true};
+                        else mpAutoDownloadRef.current='';
                     }catch(err){
                         mpAutoDownloadRef.current='';
                         setMpTrialMessage('Pago acreditado. '+String(err&&err.message||err));
@@ -6769,7 +6844,7 @@ En breve te las preparo y te las envío por acá 😊
     };
     useEffect(()=>{
         if(!mpTrialPurchase||!MP_PAYMENT_VISIBLE)return;
-        if(new URLSearchParams(location.search).get('mp_return')==='1')setCheckoutOpen(true);
+        if(new URLSearchParams(location.search).get('mp_return')==='1'||mpAccessFromLink)setCheckoutOpen(true);
         checkMpTrial();
         if(mpTrialPurchase.paid)return;
         const started=Date.now();
@@ -8115,8 +8190,28 @@ React.createElement("div", { id: "order-search-panel", className: "bg-neutral-90
                     React.createElement("p", { className: "inline-flex items-center gap-2 px-3 py-1 rounded-full bg-sky-400/15 border border-sky-300/30 text-sky-100 text-[11px] font-black uppercase tracking-[0.16em] mb-3" },
                         React.createElement("i", { className: "fas fa-bag-shopping" }),
                         " Revisar compra"),
-                    React.createElement("h2", { className: "text-2xl sm:text-3xl font-black mb-1 text-white" }, "Confirmá tu compra"),
-                    React.createElement("p", { className: "text-sky-100/75 text-sm leading-relaxed" }, "Pagá con Mercado Pago o consultá otro medio de pago por WhatsApp.")),
+                    React.createElement("h2", { className: "text-2xl sm:text-3xl font-black mb-1 text-white" },
+                        mpTrialPurchase&&mpTrialPurchase.paid?"¡Gracias por tu compra!":"Confirmá tu compra"),
+                    React.createElement("p", { className: "text-sky-100/75 text-sm leading-relaxed" },
+                        mpTrialPurchase&&mpTrialPurchase.paid?"El pago está acreditado. Descargá tus fotos desde acá, sin volver a pagar.":"Pagá con Mercado Pago o consultá otro medio de pago por WhatsApp.")),
+                mpTrialPurchase&&mpTrialPurchase.paid&&React.createElement("section",{className:"mb-4 rounded-3xl border-2 border-emerald-400/60 bg-gradient-to-br from-emerald-950/90 to-sky-950/90 p-4 sm:p-5","aria-label":"Entrega de fotografías"},
+                    React.createElement("div",{className:"flex items-center gap-3 mb-3"},
+                        React.createElement("i",{className:"fas fa-circle-check text-emerald-300 text-2xl"}),
+                        React.createElement("div",null,
+                            React.createElement("b",{className:"block text-lg text-white"},"Pago aprobado"),
+                            React.createElement("span",{className:"text-xs text-sky-100/80"},mpTrialDownloads.length+" fotos disponibles"))),
+                    mpTrialDownloads.length>1&&React.createElement("button",{type:"button",className:"w-full rounded-2xl bg-emerald-400 text-emerald-950 py-4 px-3 text-base font-black disabled:opacity-70",disabled:mpZipBusy||mpTrialBusy,onClick:()=>downloadMpZip()},
+                        React.createElement("i",{className:"fas fa-file-zipper mr-2"}),mpZipBusy?"Preparando tu ZIP…":"Descargar todas las fotos (ZIP)"),
+                    mpTrialDownloads.length===1&&React.createElement("button",{type:"button",className:"w-full rounded-2xl bg-emerald-400 text-emerald-950 py-4 px-3 text-base font-black",onClick:()=>downloadMpFile(mpTrialDownloads[0]).catch(e=>setMpTrialMessage(String(e&&e.message||e)))},
+                        React.createElement("i",{className:"fas fa-download mr-2"}),"Descargar fotografía"),
+                    mpTrialDownloads.length>1&&React.createElement("div",{className:"grid gap-2 mt-3"},mpTrialDownloads.map((file,i)=>
+                        React.createElement("button",{key:i,type:"button",className:"text-left text-sky-100 border border-white/15 rounded-xl px-3 py-2 text-xs font-bold",onClick:()=>downloadMpFile(file).catch(e=>setMpTrialMessage(String(e&&e.message||e)))},
+                            React.createElement("i",{className:"fas fa-download mr-2"}),file.name||("Foto "+(i+1))))),
+                    mpTrialDownloads.length===0&&React.createElement("button",{type:"button",className:"w-full px-4 py-3 rounded-2xl bg-sky-500 text-white font-black",onClick:checkMpTrial,disabled:mpTrialBusy},
+                        mpTrialBusy?"Verificando pago…":"Recuperar mis fotografías"),
+                    mpPrivateReceiptLink()&&React.createElement("button",{type:"button",className:"w-full mt-3 text-sky-200 text-xs font-bold border border-sky-300/30 rounded-xl p-3",onClick:copyMpReceiptLink},
+                        React.createElement("i",{className:"fas fa-link mr-2"}),"Copiar enlace privado para recuperar la compra"),
+                    React.createElement("p",{className:"text-[11px] text-sky-100/70 mt-2"},"No compartas públicamente tu enlace privado: permite acceder a tus fotos.")),
                 CLUB_ENABLED && React.createElement("div", { className:"checkout-guest-choice", role:"group", "aria-label":"Elegí cómo comprar" },
                     React.createElement("button", { type:"button", className:`checkout-guest-btn ${!checkoutWantsPoints ? 'active' : ''}`, onClick:()=>{setCheckoutWantsPoints(false);setCustomerDetailsSaved(false);setCustomerDetailsOpen(false);setCheckoutPriorClubAccount(null);setCheckoutCustomerName('');setCheckoutPhone('');setClubSessionPhone('');try{localStorage.removeItem('LA_CLUB_PHONE')}catch(e){}} }, "Continuar sin sumar puntos"),
                     React.createElement("p", null, "No necesitás registrarte. Elegí tus fotos y cómo querés pagar.")),
