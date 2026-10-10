@@ -24,6 +24,32 @@ test('El carrito ofrece pago directo y consulta al WhatsApp personal sin registr
   assert.equal(nodes(tree).some(n=>/checkout-floating-cta|checkout-simple-cta/.test(n.props.className||'')),false);
   assert.equal(h.ctx.requests.length,0);assert.equal(h.storage.size,0);
 });
+test('No ofrece descargas sin verificación ni filtra una compra anterior en otro carrito',()=>{
+  const oldOrder={checkout_id:'old-order',order_id:'MP-OLD',receipt_token:'a'.repeat(64),
+    mode:'public',paid:true,amount:2000,selection_signature:'old-signature'};
+  const sampleFiles=[{name:'Foto original.jpg',url:'https://lucasabraham-ph-api.lucasantonioabraham.workers.dev/api/live-download/old-order/0'}];
+  for(const overrides of [
+    {mpTrialPurchase:oldOrder,mpTrialDownloads:sampleFiles,mpReceiptView:false,
+     mpVerifiedCheckoutId:'old-order'},
+    {mpTrialPurchase:oldOrder,mpTrialDownloads:sampleFiles,mpReceiptView:true,
+     mpVerifiedCheckoutId:''},
+    {mpTrialPurchase:{...oldOrder,paid:false},mpTrialDownloads:sampleFiles,mpReceiptView:true,
+     mpVerifiedCheckoutId:''}
+  ]){
+    const h=appHarness({...base,...overrides});
+    const tree=h.render();
+    assert.equal(nodes(tree).some(n=>n.props['aria-label']==='Descargar fotografías compradas'),false,
+      'Nunca enseñar controles de descarga para un carrito nuevo ni pago no verificado');
+    assert.equal(nodes(tree).some(n=>n.props.href&&/live-download/.test(n.props.href)),false,
+      'Nunca exponer enlace de descarga hasta validar en servidor');
+    if(!overrides.mpReceiptView)
+      assert.ok(nodes(tree).some(n=>n.props.id==='checkout-mercadopago'),
+        'El nuevo carrito conserva su botón de pago, no el recibo viejo');
+    else
+      assert.equal(nodes(tree).some(n=>n.props.id==='checkout-mercadopago'),false,
+        'La pantalla de verificación nunca ofrece otro pago accidental');
+  }
+});
 test('Sin clave, la sincronización explica el problema junto al botón sin usar diálogos',async()=>{
   const h=appHarness({...base,admin:true,route:'#/admin',checkoutOpen:false});
   h.ctx.window.prompt=()=>{throw Error('No se debe abrir un diálogo')};h.render();
@@ -87,7 +113,8 @@ test('Un clic abre Mercado Pago después de guardar el recibo y reusa el pago pe
   await paymentButton(h.render()).props.onClick();
   assert.equal(requests,1);assert.equal(navigations.length,2);
   h.state.mpTrialPurchase={...h.state.mpTrialPurchase,paid:true};
-  assert.equal(paymentButton(h.render()).props.disabled,true);
+  assert.equal(paymentButton(h.render()).props.disabled,false,
+    'Una compra antigua no bloquea un carrito nuevo');
 });
 test('Volver de Mercado Pago restaura selección, impresión y cupón; nunca abre un enlace ajeno',async()=>{
   const {cart:_,...rest}=base;
