@@ -5368,6 +5368,13 @@ function App() {
             return stored && stored.order_id && stored.receipt_token ? stored : null;
         } catch (_) { return null; }
     });
+    // Cada ingreso al carrito empieza en modo compra. El recibo es una vista separada.
+    const [mpReceiptView,setMpReceiptView]=useState(Boolean(mpReturnedCheckout||mpAccessFromLink));
+    // Se restablece en cada carga; un valor localStorage.paid NO autoriza el acceso visual a descargas.
+    const [mpVerifiedCheckoutId,setMpVerifiedCheckoutId]=useState('');
+    const mpVerifiedCheckoutRef=useRef('');
+    const mpVerifiedReceipt=Boolean(mpReceiptView&&mpTrialPurchase&&mpTrialPurchase.paid&&
+        mpVerifiedCheckoutId===mpTrialPurchase.checkout_id&&mpVerifiedCheckoutRef.current===mpTrialPurchase.checkout_id);
     const [mpTrialBusy, setMpTrialBusy] = useState(false);
     const [mpTrialMessage, setMpTrialMessage] = useState('');
     const [mpTrialDownloads, setMpTrialDownloads] = useState([]);
@@ -6310,6 +6317,10 @@ ${clone.outerHTML}`;
         return; const end = ((_b = (_a = e.changedTouches) === null || _a === void 0 ? void 0 : _a[0]) === null || _b === void 0 ? void 0 : _b.clientX) || 0; const diff = end - touchStartX.current; touchStartX.current = null; if (Math.abs(diff) > 45)
         cb(diff < 0 ? 1 : -1); };
     const openCheckout = () => {
+        // Nunca enseñar una compra anterior en el checkout de una selección nueva.
+        setMpReceiptView(false);
+        setMpTrialMessage('');
+        setMpTrialDownloads([]);
         setAppliedCoupon(null);
         setCheckoutCoupon("");
         setCouponMessage("");
@@ -6600,6 +6611,9 @@ En breve te las preparo y te las envío por acá 😊
             localStorage.setItem(mode==='test'?'LA_MP_TRIAL_PURCHASE':'LA_MP_LIVE_PURCHASE',JSON.stringify(purchase));
             if(mode!=='test')localStorage.removeItem('LA_MP_LIVE_REQUEST');
             setMpTrialPurchase(purchase);
+            setMpVerifiedCheckoutId('');
+            mpVerifiedCheckoutRef.current='';
+            setMpReceiptView(false);
             setCheckoutOpen(true);
             if(mode==='validation'){
                 const blocked=await fetch(MP_TRIAL_BASE+'/api/live-download/'+purchase.checkout_id+'/0',{
@@ -6714,7 +6728,8 @@ En breve te las preparo y te las envío por acá 😊
         }catch(_){return false}
     };
     const mpOriginalPhotoLink=(file,purchase=mpTrialPurchase)=>{
-        if(!file||!purchase||!file.url)return '';
+        if(!file||!purchase||!file.url||!mpVerifiedReceipt)return '';
+        if(mpVerifiedCheckoutRef.current!==purchase.checkout_id)return '';
         if(purchase.mode==='test')return file.url;
         try{
             const url=new URL(file.url);
@@ -6726,7 +6741,7 @@ En breve te las preparo y te las envío por acá 😊
         }catch(_){return ''}
     };
     const showMpMobilePreview=async(file,index)=>{
-        if(!mpTrialPurchase||mpMobilePreviewBusy)return;
+        if(!mpVerifiedReceipt||!mpTrialPurchase||mpMobilePreviewBusy)return;
         setMpMobilePreviewBusy(true);
         try{
             const response=await fetch(file.url,{headers:mpTrialPurchase.mode==='test'?{}:
@@ -6747,7 +6762,7 @@ En breve te las preparo y te las envío por acá 😊
         mpPreviewBlobRef.current='';setMpMobilePreview(null);
     };
     const downloadMpFile=async(file,purchase=mpTrialPurchase)=>{
-        if(!purchase)return;
+        if(!purchase||!mpVerifiedReceipt||mpVerifiedCheckoutRef.current!==purchase.checkout_id)return;
         if((purchase.mode||'test')==='test'){window.open(file.url,'_blank','noopener');return;}
         const response=await fetch(file.url,{headers:{'X-Receipt-Token':purchase.receipt_token}});
         if(!response.ok){
@@ -6779,7 +6794,8 @@ En breve te las preparo y te las envío por acá 😊
         return mpZipLoaderRef.current;
     };
     const downloadMpZip=async(files=mpTrialDownloads,purchase=mpTrialPurchase)=>{
-        if(!purchase||!files.length||mpZipBusy)return false;
+        if(!purchase||!mpVerifiedReceipt||mpVerifiedCheckoutRef.current!==purchase.checkout_id||
+            !files.length||mpZipBusy)return false;
         setMpZipBusy(true);
         try{
             const Zip=await loadMpZipLibrary(),zip=new Zip();
@@ -6809,7 +6825,9 @@ En breve te las preparo y te las envío por acá 😊
         }finally{setMpZipBusy(false)}
     };
     const mpPrivateReceiptLink=(purchase=mpTrialPurchase)=>{
-        if(!purchase||!purchase.checkout_id||!/^[a-f\d]{64}$/i.test(purchase.receipt_token||''))return '';
+        if(!mpVerifiedReceipt||!purchase||!purchase.checkout_id||
+            mpVerifiedCheckoutRef.current!==purchase.checkout_id||
+            !/^[a-f\d]{64}$/i.test(purchase.receipt_token||''))return '';
         const url=new URL(location.pathname,location.origin);
         url.hash='#/compra/'+purchase.checkout_id+'/'+purchase.receipt_token;
         return url.href;
@@ -6834,9 +6852,14 @@ En breve te las preparo y te las envío por acá 😊
             });
             const data=await response.json();
             if(!response.ok||!data.ok)throw Error(data.error||'No se pudo consultar el pago');
+            if(live&&(data.checkout_id!==mpTrialPurchase.checkout_id||
+                (mpTrialPurchase.order_id!=='Recuperando compra'&&data.order_id!==mpTrialPurchase.order_id)))
+                throw Error('La verificación no corresponde a esta compra.');
             if(data.paid){
                 const files=(data.downloads||[]).map(x=>({name:x.name,url:MP_TRIAL_BASE+x.url}));
                 setMpTrialDownloads(files);
+                mpVerifiedCheckoutRef.current=mpTrialPurchase.checkout_id;
+                setMpVerifiedCheckoutId(mpTrialPurchase.checkout_id);
                 let saved={...mpTrialPurchase,order_id:data.order_id||mpTrialPurchase.order_id,paid:true};
                 setMpTrialMessage('¡Pago acreditado! '+files.length+' fotografías listas para descargar.'+
                     (data.print_requested?' Las impresiones físicas se coordinan por WhatsApp.':''));
@@ -6870,6 +6893,8 @@ En breve te las preparo y te las envío por acá 😊
                     }catch(_){}
                 }
             }else{
+                mpVerifiedCheckoutRef.current='';
+                setMpVerifiedCheckoutId('');
                 setMpTrialDownloads([]);
                 let ready=mpTrialPurchase.ready;
                 if(live&&mpTrialPurchase.mode==='validation'&&!ready&&data.status==='created'){
@@ -6883,12 +6908,15 @@ En breve te las preparo y te las envío por acá 😊
                 setMpTrialPurchase(saved);
                 setMpTrialMessage('Pago no acreditado todavía: '+String(data.status||'pendiente'));
             }
-        }catch(err){setMpTrialDownloads([]);setMpTrialMessage('Error: '+String(err&&err.message||err));}
-        finally{mpStatusBusyRef.current=false;setMpTrialBusy(false)}
+        }catch(err){
+            mpVerifiedCheckoutRef.current='';setMpVerifiedCheckoutId('');
+            setMpTrialDownloads([]);setMpTrialMessage('Error: '+String(err&&err.message||err));
+        }finally{mpStatusBusyRef.current=false;setMpTrialBusy(false)}
     };
     useEffect(()=>{
-        if(!mpTrialPurchase||!MP_PAYMENT_VISIBLE)return;
-        if(new URLSearchParams(location.search).get('mp_return')==='1'||mpAccessFromLink)setCheckoutOpen(true);
+        if(!mpTrialPurchase||!MP_PAYMENT_VISIBLE||(!mpReceiptView&&mpTrialPurchase.paid))return;
+        if(mpReceiptView&&(new URLSearchParams(location.search).get('mp_return')==='1'||mpAccessFromLink))
+            setCheckoutOpen(true);
         checkMpTrial();
         if(mpTrialPurchase.paid)return;
         const started=Date.now();
@@ -6897,7 +6925,7 @@ En breve te las preparo y te las envío por acá 😊
         window.addEventListener('focus',refresh);
         document.addEventListener('visibilitychange',refresh);
         return ()=>{clearInterval(timer);window.removeEventListener('focus',refresh);document.removeEventListener('visibilitychange',refresh)};
-    },[mpTrialPurchase&&mpTrialPurchase.order_id,mpTrialPurchase&&mpTrialPurchase.paid,MP_PAYMENT_VISIBLE]);
+    },[mpTrialPurchase&&mpTrialPurchase.order_id,mpTrialPurchase&&mpTrialPurchase.paid,MP_PAYMENT_VISIBLE,mpReceiptView]);
 
     const sendOrder=async(e)=>{
         if(e&&e.preventDefault)e.preventDefault();
@@ -8243,10 +8271,16 @@ React.createElement("div", { id: "order-search-panel", className: "bg-neutral-90
                         React.createElement("i", { className: "fas fa-bag-shopping" }),
                         " Revisar compra"),
                     React.createElement("h2", { className: "text-2xl sm:text-3xl font-black mb-1 text-white" },
-                        mpTrialPurchase&&mpTrialPurchase.paid?"¡Gracias por tu compra!":"Confirmá tu compra"),
+                        mpVerifiedReceipt?"¡Gracias por tu compra!":mpReceiptView?"Estado de tu compra":"Confirmá tu compra"),
                     React.createElement("p", { className: "text-sky-100/75 text-sm leading-relaxed" },
-                        mpTrialPurchase&&mpTrialPurchase.paid?"El pago está acreditado. Descargá tus fotos desde acá, sin volver a pagar.":"Pagá con Mercado Pago o consultá otro medio de pago por WhatsApp.")),
-                mpTrialPurchase&&mpTrialPurchase.paid&&React.createElement("section",{className:"mb-4 rounded-3xl border-2 border-emerald-400/60 bg-gradient-to-br from-emerald-950/90 to-sky-950/90 p-4 sm:p-5","aria-label":"Descargar fotografías compradas"},
+                        mpVerifiedReceipt?"Pago acreditado y verificado. Descargá tus fotos desde acá.":mpReceiptView?"Estamos verificando con Mercado Pago. Las descargas no se habilitan hasta que se confirme el pago.":"Pagá con Mercado Pago o consultá otro medio de pago por WhatsApp.")),
+                mpReceiptView&&!mpVerifiedReceipt&&React.createElement("section",{className:"mb-4 bg-sky-950/70 border border-sky-300/30 rounded-2xl p-4"},
+                    React.createElement("p",{className:"text-sm text-white font-black"},"Fotografías bloqueadas hasta acreditar el pago"),
+                    React.createElement("p",{className:"text-xs text-sky-100/80 mt-2"},"No se habilitará ninguna descarga antes de la confirmación oficial."),
+                    React.createElement("button",{type:"button",onClick:checkMpTrial,disabled:mpTrialBusy,className:"mt-3 w-full py-3 rounded-xl bg-sky-600 text-white font-black"},
+                        mpTrialBusy?"Verificando…":"Verificar mi pago"),
+                    mpTrialMessage&&React.createElement("p",{role:"status",className:"text-xs text-sky-200 mt-3"},mpTrialMessage)),
+                mpVerifiedReceipt&&React.createElement("section",{className:"mb-4 rounded-3xl border-2 border-emerald-400/60 bg-gradient-to-br from-emerald-950/90 to-sky-950/90 p-4 sm:p-5","aria-label":"Descargar fotografías compradas"},
                     React.createElement("div",{className:"flex items-center gap-3 mb-3"},
                         React.createElement("i",{className:"fas fa-circle-check text-emerald-300 text-2xl"}),
                         React.createElement("div",null,
@@ -8286,7 +8320,7 @@ React.createElement("div", { id: "order-search-panel", className: "bg-neutral-90
                         React.createElement("i",{className:"fas fa-link mr-2"}),"Copiar enlace privado para recuperar la compra"),
                     mpTrialMessage&&React.createElement("p",{className:"text-xs text-sky-100/90 mt-3",role:"status"},mpTrialMessage),
                     React.createElement("p",{className:"text-[11px] text-sky-100/70 mt-2"},"Este enlace es privado: no lo publiques, porque permite descargar tus fotos.")),
-                CLUB_ENABLED && React.createElement("div", { className:"checkout-guest-choice", role:"group", "aria-label":"Elegí cómo comprar" },
+                !mpReceiptView&&CLUB_ENABLED && React.createElement("div", { className:"checkout-guest-choice", role:"group", "aria-label":"Elegí cómo comprar" },
                     React.createElement("button", { type:"button", className:`checkout-guest-btn ${!checkoutWantsPoints ? 'active' : ''}`, onClick:()=>{setCheckoutWantsPoints(false);setCustomerDetailsSaved(false);setCustomerDetailsOpen(false);setCheckoutPriorClubAccount(null);setCheckoutCustomerName('');setCheckoutPhone('');setClubSessionPhone('');try{localStorage.removeItem('LA_CLUB_PHONE')}catch(e){}} }, "Continuar sin sumar puntos"),
                     React.createElement("p", null, "No necesitás registrarte. Elegí tus fotos y cómo querés pagar.")),
                 CLUB_ENABLED && React.createElement("div", { className: "mb-3" },
@@ -8309,20 +8343,20 @@ React.createElement("div", { id: "order-search-panel", className: "bg-neutral-90
                                 React.createElement("div", { className:"checkout-point-box" }, React.createElement("b", null, checkoutPriorClubAccount.points), React.createElement("span", null, "puntos disponibles de antes")),
                                 React.createElement("div", { className:"checkout-point-box" }, React.createElement("b", null, `+${projectedPointsForPurchase(checkoutPriorClubAccount, checkoutTotal)}`), React.createElement("span", null, "puntos que suma esta compra"))),
                             React.createElement("p", { className:"text-[10px] text-neutral-400 mt-2 leading-relaxed" }, "Los puntos se acreditan únicamente cuando Lucas confirma el pedido como entregado. Los pedidos pendientes o rechazados no suman.")) : React.createElement("p", { className:"text-xs text-neutral-500" }, "No pudimos consultar el saldo anterior ahora."))),
-                React.createElement("section",{className:"checkout-simple-card checkout-simple-coupon mb-3","aria-label":"Cupón de descuento"},
+                !mpReceiptView&&React.createElement("section",{className:"checkout-simple-card checkout-simple-coupon mb-3","aria-label":"Cupón de descuento"},
                     React.createElement("p",{className:"text-sm font-black text-white mb-2"},React.createElement("i",{className:"fas fa-ticket text-sky-300 mr-2"}),"¿Tenés un cupón de descuento?"),
                     React.createElement("div",{className:"coupon-actions"},
                         React.createElement("input",{value:checkoutCoupon,onChange:e=>setCheckoutCoupon(e.target.value),placeholder:"Ingresá tu cupón","aria-label":"Ingresar cupón",autoComplete:"off",className:"bg-black/55 border border-sky-300/40 rounded-xl px-3 py-3 outline-none uppercase text-white"}),
                         React.createElement("button",{type:"button",onClick:applyCoupon,className:"buy-btn px-4 py-3 rounded-xl font-black text-sm transition-all"},"Aplicar")),
                     couponMessage&&React.createElement("p",{role:"status",className:`text-xs mt-2 ${appliedCoupon?'text-sky-200':'text-amber-300'}`},couponMessage)),
-                React.createElement("div", { className: "checkout-simple-total mb-3" },
+                !mpReceiptView&&React.createElement("div", { className: "checkout-simple-total mb-3" },
                     React.createElement("div", null,
                         React.createElement("p", { className: "text-[11px] uppercase tracking-[0.16em] text-sky-100/70 font-black" }, "Total a pagar"),
                         React.createElement("p", { className: "text-xs text-sky-100/65 mt-1" },
                             cart.length,
                             " fotos seleccionadas")),
                     React.createElement("b", { className: "text-3xl sm:text-4xl text-white leading-none" }, formatPrice(checkoutTotal))),
-                React.createElement("section", { className:"checkout-payment-options",id:"checkout-mercadopago","aria-label":"Cómo querés pagar" },
+                !mpReceiptView&&React.createElement("section", { className:"checkout-payment-options",id:"checkout-mercadopago","aria-label":"Cómo querés pagar" },
                     React.createElement("p",{className:"payment-options-label"},"Elegí cómo pagar"),
                     React.createElement("button", {type:"button",onClick:payWithMercadoPago,
                         disabled:!MP_PAYMENT_VISIBLE||mpTrialBusy||mpCurrentCartPaid||(!selectedPhotos.length&&!mpResumeWithoutCart),
@@ -8349,7 +8383,7 @@ React.createElement("div", { id: "order-search-panel", className: "bg-neutral-90
                                 key:i,type:"button",onClick:()=>downloadMpFile(file).catch(err=>setMpTrialMessage(String(err&&err.message||err))),className:"mp-download-button"
                             },React.createElement("i",{className:"fas fa-download","aria-hidden":true}),file.name||("Foto "+(i+1)))))),
                     mpTrialMessage&&React.createElement("p",{role:"status",className:"mp-payment-message"},mpTrialMessage)),
-                React.createElement("div", { className: "checkout-simple-card mb-3" },
+                !mpReceiptView&&React.createElement("div", { className: "checkout-simple-card mb-3" },
                     React.createElement("div", { className: "checkout-simple-row" },
                         React.createElement("span", { className: "text-sky-100/70" }, "Subtotal"),
                         React.createElement("b", { className: "text-white" }, formatPrice(regular))),
@@ -8367,11 +8401,11 @@ React.createElement("div", { id: "order-search-panel", className: "bg-neutral-90
                     React.createElement("div", { className: "checkout-simple-row" },
                         React.createElement("span", { className: "text-sky-100/70" }, "Entrega"),
                         React.createElement("b", { className: "text-white" }, MP_PAYMENT_VISIBLE?"Descarga automática o WhatsApp":"WhatsApp"))),
-                React.createElement("button", { type:"button", onClick:() => setCheckoutPrint(v => { const next=!v; if(!next) setPrintedPhotoIds([]); return next; }), className:`print-order-btn mb-3 ${checkoutPrint ? 'active' : ''}` },
+                !mpReceiptView&&React.createElement("button", { type:"button", onClick:() => setCheckoutPrint(v => { const next=!v; if(!next) setPrintedPhotoIds([]); return next; }), className:`print-order-btn mb-3 ${checkoutPrint ? 'active' : ''}` },
                     React.createElement("i", { className:"fas fa-print" }),
                     React.createElement("span", null, React.createElement("b", null, "Quiero impresión de fotos 10x15"), React.createElement("small", null, `+$3.000 por cada foto que elijas${checkoutPrint ? ` · ${printSelectedPhotos.length} seleccionada${printSelectedPhotos.length === 1 ? '' : 's'} · +${formatPrice(printSurcharge)}` : ''}`)),
                     React.createElement("i", { className:`fas ${checkoutPrint ? 'fa-circle-check' : 'fa-circle-plus'}` })),
-                checkoutPrint && React.createElement("div", { className:"print-photo-picker" },
+                !mpReceiptView&&checkoutPrint && React.createElement("div", { className:"print-photo-picker" },
                     React.createElement("div", { className:"flex items-center justify-between gap-2 mb-2" },
                         React.createElement("div", null,
                             React.createElement("p", { className:"text-xs font-black text-blue-100" }, "Elegí cuáles querés impresas"),
@@ -8391,10 +8425,10 @@ React.createElement("div", { id: "order-search-panel", className: "bg-neutral-90
                         React.createElement("input", { value: checkoutCoupon, onChange: e => setCheckoutCoupon(e.target.value), placeholder: "Código de descuento", "aria-label":"Código de cupón", className: "bg-black/55 border border-sky-300/40 rounded-xl px-3 py-3 outline-none uppercase text-white" }),
                         React.createElement("button", { onClick: applyCoupon, className: "buy-btn px-4 py-3 rounded-xl font-black text-sm transition-all" }, "Aplicar")),
                     couponMessage && React.createElement("p", { className: `text-xs mt-2 ${appliedCoupon ? 'text-sky-200' : 'text-amber-300'}` }, couponMessage)),
-                React.createElement("p", { className: "text-center text-[11px] text-sky-100/65 leading-relaxed mt-3" }, "Las fotos digitales se habilitan al aprobarse el pago en Mercado Pago. Otros medios se acuerdan con Lucas por WhatsApp."),
-                mpTrialPurchase&&mpTrialPurchase.paid&&React.createElement("a",{className:"inline-flex items-center justify-center gap-2 text-xs font-bold text-sky-200 border border-sky-400/25 rounded-xl px-3 py-3 mt-3",target:"_blank",rel:"noopener noreferrer",href:'https://wa.me/'+SELLER_PHONE+'?text='+encodeURIComponent('Hola Lucas, necesito la factura fiscal de mi compra '+mpTrialPurchase.order_id+' por '+formatPrice(mpTrialPurchase.amount)+'.')},React.createElement("i",{className:"fas fa-file-invoice"}),"Solicitar factura fiscal"))),
+                !mpReceiptView&&React.createElement("p", { className: "text-center text-[11px] text-sky-100/65 leading-relaxed mt-3" }, "Las fotos digitales se habilitan al aprobarse el pago en Mercado Pago. Otros medios se acuerdan con Lucas por WhatsApp."),
+                mpVerifiedReceipt&&React.createElement("a",{className:"inline-flex items-center justify-center gap-2 text-xs font-bold text-sky-200 border border-sky-400/25 rounded-xl px-3 py-3 mt-3",target:"_blank",rel:"noopener noreferrer",href:'https://wa.me/'+SELLER_PHONE+'?text='+encodeURIComponent('Hola Lucas, necesito la factura fiscal de mi compra '+mpTrialPurchase.order_id+' por '+formatPrice(mpTrialPurchase.amount)+'.')},React.createElement("i",{className:"fas fa-file-invoice"}),"Solicitar factura fiscal"))),
         MP_PAYMENT_VISIBLE && mpTrialPurchase && !checkoutOpen && React.createElement("button", {
-            type:"button", onClick:()=>setCheckoutOpen(true),
+            type:"button", onClick:()=>{setMpReceiptView(true);setCheckoutOpen(true)},
             className:"fixed bottom-28 right-3 z-[81] bg-sky-700 text-white text-xs font-black px-4 py-3 rounded-2xl shadow-xl border border-sky-200/25"
         }, "Ver mi compra"),
         checkoutOpen && checkoutSaveError && React.createElement("div", { className:"checkout-save-error", role:"alert" }, checkoutSaveError, React.createElement("button", { type:"button", onClick:()=>navigator.clipboard.writeText(checkoutOrderCode||'').catch(()=>{}), className:"checkout-save-copy" }, "Copiar código")),
