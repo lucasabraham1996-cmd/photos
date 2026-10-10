@@ -157,7 +157,9 @@ function returnURL(input, request, env, mode) {
   if (url.origin !== APP_ORIGIN || !url.pathname.startsWith('/photos/'))
     throw new HttpError(503, 'La URL de la aplicación no está configurada');
   url.search = '?mp_live=1&mp_return=1';
-  url.hash = '';
+  // El fragmento contiene un comprobante de alta entropía, no se envía en la petición HTTP.
+  // Permite recuperar el ticket cuando Mercado Pago vuelve a otro navegador del celular.
+  url.hash = '#/compra/' + input.request_id + '/' + input.receipt_token;
   return url.href;
 }
 async function createCheckout(request, env) {
