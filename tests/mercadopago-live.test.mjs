@@ -92,6 +92,7 @@ function fixture() {
     },
     input(n=1,extra={}){
       return {request_id:crypto.randomUUID(),receipt_token:'a'.repeat(64),
+        buyer:{name:'Lucas Abraham',phone:'3515580770'},
         selection:{kind:'photos',items:Array.from({length:n},(_,i)=>({album_id:'album-01',photo_id:'photo-'+i}))},
         expected_total:n===1?2000:n===3?5400:n*2000,...extra};
     },
@@ -526,6 +527,7 @@ function appHarness(f,config={mode:'validation',available:true,validation_amount
     mpZipLoaderRef:{current:null},mpZipBusy:false,
     mpMobilePreview:null,mpMobilePreviewBusy:false,mpPreviewBlobRef:{current:''},
     selectedPhotos:[{id:'photo-0',albumId:'album-01'}],checkoutTotal:2000,checkoutPrint:false,appliedCoupon:null,
+    checkoutBuyerName:'Lucas Abraham',checkoutBuyerPhone:'3515580770',
     cart:['photo-0'],printedPhotoIds:[],
     printSelectedPhotos:[],displayAlbums:[],discountSettings:{},coupons:[],
     formatPrice:v=>'$'+v,albumPriceWithDiscount:()=>60000,location:{search:'?mp_live=1',pathname:'/photos/',origin:ORIGIN},
@@ -559,17 +561,18 @@ test('Aplicación → Worker → SQLite: no descarga automática; solo habilita 
   await app.actions.submitMpTrial({kind:'photos',items:[{album_id:'album-01',photo_id:'photo-0'}]},2000);
   assert.ok(app.context.mpTrialPurchase.ready);assert.equal(app.context.mpTrialPurchase.amount,200);
   await app.actions.checkMpTrial();assert.equal(app.downloads.length,0);assert.equal(app.context.mpTrialDownloads.length,0);
-  assert.equal(app.remoteOrders.length,0);
+  assert.equal(app.remoteOrders.length,1);assert.equal(app.remoteOrders[0].status,'pendiente_pago');
   f.paid(app.context.mpTrialPurchase);
   await app.actions.checkMpTrial();
   assert.equal(app.downloads.length,0);assert.equal(app.context.mpTrialDownloads.length,1);
   assert.equal(app.context.mpTrialPurchase.auto_downloaded,undefined);
   assert.equal(app.context.mpVerifiedCheckoutId,app.context.mpTrialPurchase.checkout_id);
   await app.actions.checkMpTrial();assert.equal(app.downloads.length,0);
-  assert.equal(app.remoteOrders.length,1);
-  assert.equal(app.remoteOrders[0].paid,true);
-  assert.equal(app.remoteOrders[0].total,200);
-  assert.equal(app.remoteOrders[0].receipt_token,undefined);
+  assert.equal(app.remoteOrders.length,2);
+  assert.equal(app.remoteOrders[1].paid,true);
+  assert.equal(app.remoteOrders[1].status,'pagado');
+  assert.equal(app.remoteOrders[1].total,200);
+  assert.equal(app.remoteOrders[1].receipt_token,undefined);
   assert.equal(app.storage.has('LA_MP_LIVE_REQUEST'),false);
 }));
 test('Aplicación conserva el intento para reintentar un POST fallido sin duplicar la orden',()=>withFixture(async f=>{
