@@ -483,6 +483,7 @@ function appHarness(f,config={mode:'validation',available:true,validation_amount
     mpCreateBusyRef:{current:false},mpStatusBusyRef:{current:false},mpAutoDownloadRef:{current:''},
     mpCatalogueBusyRef:{current:false},mpCatalogueSetupKey:'admin-fixture',mpCatalogueSync:{status:'idle',message:''},
     mpZipLoaderRef:{current:null},mpZipBusy:false,
+    mpMobilePreview:null,mpMobilePreviewBusy:false,mpPreviewBlobRef:{current:''},
     selectedPhotos:[{id:'photo-0',albumId:'album-01'}],checkoutTotal:2000,checkoutPrint:false,appliedCoupon:null,
     cart:['photo-0'],printedPhotoIds:[],
     printSelectedPhotos:[],displayAlbums:[],discountSettings:{},coupons:[],
@@ -498,6 +499,8 @@ function appHarness(f,config={mode:'validation',available:true,validation_amount
     useEffect:fn=>effects.push(fn),setMpTrialBusy:v=>{context.mpTrialBusy=v},
     setMpTrialMessage:v=>{context.message=v},setMpTrialDownloads:v=>{context.mpTrialDownloads=v},
     setMpZipBusy:v=>{context.mpZipBusy=v},
+    setMpMobilePreview:v=>{context.mpMobilePreview=v},
+    setMpMobilePreviewBusy:v=>{context.mpMobilePreviewBusy=v},
     setMpCatalogueSync:v=>{context.mpCatalogueSync=v},setMpCatalogueSetupKey:v=>{context.mpCatalogueSetupKey=v},
     setCheckoutOpen:v=>{context.checkoutOpen=v},setAdminMessage(){},
     setMpTrialPurchase:v=>{context.mpTrialPurchase=typeof v==='function'?v(context.mpTrialPurchase):v}
@@ -505,7 +508,7 @@ function appHarness(f,config={mode:'validation',available:true,validation_amount
   const start=appSource.indexOf('    const syncMpCatalogue='),end=appSource.indexOf('    const sendOrder=',start);
   assert.ok(start>0&&end>start);
   const actions=new Function('ctx','with(ctx){'+appSource.slice(start,end)+
-    ';return {syncMpCatalogue,syncMpCatalogueAndRetry,submitMpTrial,beginMpTrial,checkMpTrial,downloadMpFile,mpPrivateReceiptLink};}')(context);
+    ';return {syncMpCatalogue,syncMpCatalogueAndRetry,submitMpTrial,beginMpTrial,checkMpTrial,downloadMpFile,mpPrivateReceiptLink,mpMobileDelivery,mpOriginalPhotoLink,showMpMobilePreview};}')(context);
   return {context,actions,storage,effects,downloads,remoteOrders};
 }
 test('Aplicación → Worker → SQLite: no descarga antes de pagar; descarga una vez al acreditarse',()=>withFixture(async f=>{
@@ -557,6 +560,35 @@ test('Compras de tres fotos generan un único ZIP automáticamente, con descarga
   assert.equal(app.context.mpTrialDownloads.length,3);
   await app.actions.checkMpTrial();assert.equal(app.downloads.length,1);
   assert.equal(f.state.posts.length,2); // Una validación + una compra, no un segundo cobro.
+}));
+
+test('En celular no hay ZIP automático: cada foto tiene descarga nativa autenticada',()=>withFixture(async f=>{
+  const validated=await f.create();await f.download(validated);f.paid(validated);await f.notify(validated);
+  await (await f.download(validated)).arrayBuffer();
+  f.env.MP_LIVE_MODE='public';
+  const purchase=await f.create(f.input(3));
+  const app=appHarness(f,{mode:'public',public_enabled:true,available:true});
+  app.context.window.matchMedia=()=>({matches:true});
+  app.context.mpTrialPurchase={...purchase,mode:'public'};
+  assert.equal(app.actions.mpMobileDelivery(),true);
+  await app.actions.checkMpTrial();
+  assert.equal(app.downloads.length,0);
+  f.paid(purchase);await f.notify(purchase);
+  await app.actions.checkMpTrial();
+  assert.equal(app.downloads.length,0,'El móvil no inicia ZIP ni varias descargas sin tocar nada');
+  assert.equal(app.context.mpTrialDownloads.length,3);
+  assert.equal(app.context.mpTrialPurchase.auto_downloaded,undefined);
+  const links=app.context.mpTrialDownloads.map(file=>app.actions.mpOriginalPhotoLink(file));
+  assert.equal(new Set(links).size,3);
+  for(let i=0;i<links.length;i++){
+    const url=new URL(links[i]);
+    assert.equal(url.origin,BASE);
+    assert.equal(url.searchParams.get('token'),purchase.receipt_token);
+    const download=await f.request(url.pathname+url.search,undefined,{},'GET');
+    assert.equal(download.status,200);
+    assert.match(download.headers.get('Content-Disposition'),/attachment/);
+  }
+  assert.equal(f.state.posts.length,2,'No hubo un segundo cobro');
 }));
 
 test('Enlace privado permite recuperar fotos con el UUID y comprobante, sin volver a pagar',()=>withFixture(async f=>{
