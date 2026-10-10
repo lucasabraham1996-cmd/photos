@@ -132,6 +132,65 @@ test('Volver de Mercado Pago abre ticket sin restaurar un carrito viejo ni enlac
   await paymentButton(bad.render()).props.onClick();assert.equal(navigated,false);
   assert.match(bad.state.mpTrialMessage,/enlace de pago válido/);
 });
+test('El regreso en otro navegador recupera ticket, tres fotos y cierre sin carrito viejo',async()=>{
+  const checkout=crypto.randomUUID(),token='f'.repeat(64);
+  const h=appHarness({...base,checkoutOpen:false,cart:[]});
+  h.ctx.location.search='?mp_return=1&mp_live=1';
+  h.ctx.location.hash='#/compra/'+checkout+'/'+token;
+  h.ctx.location.href=h.ctx.location.origin+h.ctx.location.pathname+h.ctx.location.search+h.ctx.location.hash;
+  h.render();
+  assert.equal(h.state.mpReceiptView,true);
+  assert.equal(h.state.mpReturnMissing,false);
+  assert.equal(h.state.mpTrialPurchase.checkout_id,checkout);
+  const resume=h.effects.find(fn=>String(fn).includes('mpReturnRequested&&!mpReceiptDismissed'));
+  assert.ok(resume,'El retorno tiene un efecto que abre la compra');
+  resume();
+  assert.equal(h.state.checkoutOpen,true);
+  assert.equal(h.state.cart.length,0);
+  h.ctx.fetch=async url=>{
+    assert.match(String(url),/\/api\/live-status$/);
+    return reply({ok:true,paid:true,checkout_id:checkout,order_id:'MP-ORD-NEW',amount:5400,
+      downloads:[0,1,2].map(i=>({name:'Foto-'+(i+1)+'.jpg',url:'/api/live-download/'+checkout+'/'+i}))});
+  };
+  await h.actions().checkMpTrial();
+  const tree=h.render(),ticket=nodes(tree).find(n=>n.props['aria-label']==='Ticket de compra');
+  assert.ok(ticket,'Aparece ticket luego de verificar el pago');
+  assert.match(textContent(ticket),/MP-ORD-NEW/);
+  assert.match(textContent(ticket),/5\.400/);
+  assert.equal(nodes(tree).filter(n=>n.props['aria-label']==='Descargar fotografías compradas').length,1);
+  assert.equal(nodes(tree).filter(n=>n.props.href&&n.props.href.includes('/api/live-download/')).length,3);
+  assert.equal(h.state.mpReceipts.length,1);
+  h.actions().closeMpCheckout();
+  assert.equal(h.state.checkoutOpen,false);
+  assert.equal(h.state.mpReceiptView,false);
+  assert.equal(h.state.mpTrialPurchase,null);
+  assert.equal(h.state.cart.length,0);
+  let after=h.render();
+  assert.equal(nodes(after).some(n=>textContent(n)==='Ver mi compra'),false);
+  assert.ok(nodes(after).some(n=>textContent(n).includes('Mis compras')));
+  h.state.cart=[photo.id];
+  h.state.checkoutOpen=true;
+  after=h.render();
+  assert.ok(nodes(after).some(n=>n.props.id==='checkout-mercadopago'));
+  assert.equal(nodes(after).some(n=>n.props['aria-label']==='Descargar fotografías compradas'),false);
+});
+test('Tickets anteriores se abren voluntariamente sin regalar enlaces antes de reverificar',()=>{
+  const older={checkout_id:crypto.randomUUID(),receipt_token:'a'.repeat(64),order_id:'OLD-123',paid:true,
+    mode:'public',amount:2000,created_at:new Date().toISOString()};
+  const h=appHarness({...base,checkoutOpen:false,cart:[]});
+  h.storage.set('LA_MP_PURCHASE_RECEIPTS_V1',JSON.stringify([older]));
+  h.render();
+  const t=h.render();
+  assert.ok(nodes(t).some(n=>textContent(n).includes('Mis compras')),'Acceso al historial');
+  assert.equal(nodes(t).some(n=>textContent(n)==='Ver mi compra'),false,'No reaparece la compra antigua');
+  h.actions().openSavedMpReceipt(older);
+  assert.equal(h.state.checkoutOpen,true);
+  assert.equal(h.state.mpTrialPurchase.paid,false,'Historial exige verificación nueva');
+  assert.equal(h.state.mpReceiptView,true);
+  const pending=h.render();
+  assert.equal(nodes(pending).some(n=>n.props['aria-label']==='Descargar fotografías compradas'),false);
+  assert.equal(nodes(pending).some(n=>n.props.href&&/live-download/.test(n.props.href)),false);
+});
 test('El álbum completo ofrece las mismas dos opciones y su botón paga el álbum correcto',async()=>{
   const h=appHarness({...base,activeAlbum:'album-01',route:'#/album/album-01',checkoutOpen:false,purchaseHelpOpen:true});
   let tree=h.render(),card=nodes(tree).find(n=>n.props.id==='album-payment-options');
