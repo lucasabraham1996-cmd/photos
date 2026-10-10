@@ -238,16 +238,17 @@ test('Enlaces móviles con token tampoco entregan nada antes del pago',()=>withF
   await (await f.download(validated)).arrayBuffer();
   f.env.MP_LIVE_MODE='public';
   const p=await f.create(f.input(3));
+  const baselineDriveReads=f.state.driveReads;
   for(const i of [0,1,2]){
     const path='/api/live-download/'+p.checkout_id+'/'+i+'?token='+p.receipt_token;
     const res=await f.request(path,undefined,{},'GET');
     assert.equal(res.status,403,'Fotografía '+i+' protegida antes del pago');
   }
-  assert.equal(f.state.driveReads,0);
+  assert.equal(f.state.driveReads,baselineDriveReads);
   f.paid(p);await f.notify(p);
   const file=await f.request('/api/live-download/'+p.checkout_id+'/1?token='+p.receipt_token,undefined,{},'GET');
   assert.equal(file.status,200);await file.arrayBuffer();
-  assert.equal(f.state.driveReads,1);
+  assert.equal(f.state.driveReads,baselineDriveReads+1);
   const wrong=await f.request('/api/live-download/'+p.checkout_id+'/1?token='+'b'.repeat(64),undefined,{},'GET');
   assert.equal(wrong.status,403);
 }));
