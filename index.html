@@ -5375,7 +5375,7 @@ function App() {
     const [mpTrialPurchase, setMpTrialPurchase] = useState(() => {
         if(mpAccessFromLink)return mpAccessFromLink;
         // Una compra anterior guardada no debe reaparecer sola al visitar la galería.
-        if(!mpReturnRequested)return null;
+        if(!mpReturnRequested||!mpReturnedCheckout)return null;
         try {
             const saved=JSON.parse(localStorage.getItem(MP_TRIAL_ENABLED?'LA_MP_TRIAL_PURCHASE':'LA_MP_LIVE_PURCHASE')||'null');
             return saved&&saved.order_id&&saved.receipt_token&&saved.checkout_id?saved:null;
