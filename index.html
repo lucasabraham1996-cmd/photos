@@ -6678,10 +6678,13 @@ En breve te las preparo y te las envío por acá 😊
                 pending.order_data={...pending.order_data,customerName:checkoutBuyerName,phone:checkoutBuyerPhone,
                     status:'pendiente_pago',paymentStatus:'pending',paymentProvider:'mercadopago'};
                 localStorage.setItem('LA_MP_LIVE_REQUEST',JSON.stringify(pending));
-                setMpTrialMessage('Guardando el pedido antes de abrir Mercado Pago...');
-                const preSave=await saveOrderRemote(pending.order_data);
-                if(!preSave||(!preSave.firebase&&!preSave.script))
-                    throw Error('No se pudo guardar el pedido. Reintentá antes de pagar para que la compra quede registrada.');
+                setMpTrialMessage('Registrando el pedido y preparando Mercado Pago...');
+                // El Worker guarda la orden en D1 antes de crear el cobro. Además intentamos
+                // mantener el historial tradicional sincronizado sin frenar ni duplicar el checkout.
+                saveOrderRemote(pending.order_data).then(status=>{
+                    if(!status||(!status.firebase&&!status.script))
+                        console.warn('El pedido quedó registrado en Mercado Pago/D1 y pendiente de sincronizar con el historial general.');
+                }).catch(err=>console.warn('Sincronización paralela del pedido:',err));
                 requestData={...requestData,request_id:pending.request_id,receipt_token:pending.receipt_token,
                     buyer:{name:checkoutBuyerName,phone:checkoutBuyerPhone}};
                 requestData.local_order=pending.order_data;
