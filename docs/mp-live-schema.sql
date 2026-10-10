@@ -17,6 +17,8 @@ CREATE TABLE IF NOT EXISTS la_mp_live_orders (
   print_ids_json TEXT NOT NULL DEFAULT '[]',
   checkout_url TEXT NOT NULL DEFAULT '',
   return_url TEXT NOT NULL,
+  customer_name TEXT NOT NULL DEFAULT '',
+  customer_phone TEXT NOT NULL DEFAULT '',
   mp_status TEXT NOT NULL DEFAULT 'creating',
   status_detail TEXT NOT NULL DEFAULT '',
   payment_valid INTEGER NOT NULL DEFAULT 0 CHECK(payment_valid IN (0,1)),
