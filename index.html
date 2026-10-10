@@ -6765,7 +6765,7 @@ En breve te las preparo y te las envío por acá 😊
         }finally{setMpZipBusy(false)}
     };
     const mpPrivateReceiptLink=(purchase=mpTrialPurchase)=>{
-        if(!purchase||!purchase.checkout_id||!/^[a-f\\d]{64}$/i.test(purchase.receipt_token||''))return '';
+        if(!purchase||!purchase.checkout_id||!/^[a-f\d]{64}$/i.test(purchase.receipt_token||''))return '';
         const url=new URL(location.pathname,location.origin);
         url.hash='#/compra/'+purchase.checkout_id+'/'+purchase.receipt_token;
         return url.href;
