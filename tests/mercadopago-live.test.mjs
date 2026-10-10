@@ -516,6 +516,8 @@ function appHarness(f,config={mode:'validation',available:true,validation_amount
     MP_RECEIPTS_STORAGE_KEY:'LA_MP_PURCHASE_RECEIPTS_V1',
     readMpReceipts:()=>{try{return JSON.parse(storage.get('LA_MP_PURCHASE_RECEIPTS_V1')||'[]')}catch(_){return []}},
     mpReceipts:[],setMpReceipts:v=>{context.mpReceipts=v},
+    rememberMpReceipt:p=>{context.mpReceipts=[p,...context.mpReceipts.filter(q=>q.checkout_id!==p.checkout_id)];
+        storage.set('LA_MP_PURCHASE_RECEIPTS_V1',JSON.stringify(context.mpReceipts));},
     mpReturnMissing:false,setMpReturnMissing:v=>{context.mpReturnMissing=v},
     mpReceiptView:false,mpVerifiedReceipt:false,mpVerifiedCheckoutId:'',
     mpVerifiedCheckoutRef:{current:''},
