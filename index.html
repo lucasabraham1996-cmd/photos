@@ -6343,7 +6343,11 @@ ${clone.outerHTML}`;
         try{
             const current=new URL(location.href);
             current.searchParams.delete('mp_return');current.searchParams.delete('mp_live');
-            if(/^#\/compra\//.test(current.hash))current.hash='#/galeria';
+            if(/^#\/compra\//.test(current.hash)){
+                current.hash='#/galeria';
+                setRoute('#/galeria');
+                setActiveAlbum(null);
+            }
             history.replaceState(history.state||null,'',current.pathname+current.search+current.hash);
         }catch(_){}
     };
