@@ -5420,6 +5420,7 @@ function App() {
         return ()=>{active=false};
     },[checkoutOpen]);
     const [checkoutSaving, setCheckoutSaving] = useState(false);
+    const [albumWhatsappBusy,setAlbumWhatsappBusy] = useState(false);
     const [checkoutSaveError, setCheckoutSaveError] = useState("");
     const orderSavingRef = useRef(false);
     const [adminNotificationsOpen, setAdminNotificationsOpen] = useState(false);
@@ -5517,17 +5518,8 @@ function App() {
         }
     }
 
-    useEffect(() => {
-        if (route !== "#/admin" || admin || adminAutoBiometricAttemptedRef.current)
-            return;
-        if (!supportsAdminBiometrics() || !readLocalAdminPasskeyId())
-            return;
-        adminAutoBiometricAttemptedRef.current = true;
-        const timer = setTimeout(() => {
-            submitAdminBiometric({ automatic: true });
-        }, 80);
-        return () => clearTimeout(timer);
-    }, [route, admin]);
+    // Safari/iOS puede bloquear solicitudes biométricas automáticas sin gesto del usuario.
+    // Face ID se inicia únicamente al tocar el botón; el PIN sigue disponible.
     function resetLocalAdminBiometric() {
         writeLocalAdminPasskeyId("");
         adminAutoBiometricAttemptedRef.current = true;
@@ -6845,6 +6837,11 @@ En breve te las preparo y te las envío por acá 😊
             setMpAdminOrdersError(String(err&&err.message||err));
         }finally{setMpAdminOrdersBusy(false)}
     };
+    // Si la clave se ingresó para sincronizar el catálogo, la misma sesión puede
+    // consultar también el historial D1, sin guardarla en el dispositivo.
+    useEffect(()=>{
+        if(admin&&route==='#/admin'&&mpCatalogueSetupKey)fetchMpAdminOrders(false);
+    },[admin,route,mpCatalogueSetupKey]);
     const renderMpCatalogueSyncControls=(retry=false)=>React.createElement("div",{className:"mp-catalogue-controls"},
         React.createElement("label",{htmlFor:retry?'mp-catalogue-key-checkout':'mp-catalogue-key-admin'},"Clave MP_SETUP_KEY"),
         React.createElement("input",{id:retry?'mp-catalogue-key-checkout':'mp-catalogue-key-admin',type:"password",
@@ -6873,6 +6870,37 @@ En breve te las preparo y te las envío por acá 😊
             (printCount?'\nCon impresión 10x15 de '+printCount+' fotos.':'')+
             '\n¿Cómo podemos acordar el pago?';
         return 'https://wa.me/'+SELLER_PHONE+'?text='+encodeURIComponent(message);
+    };
+    // Las consultas de álbumes completos no pasan por Mercado Pago. Primero
+    // registramos un pedido resumido para no perder solicitudes grandes en Firebase.
+    const requestFullAlbumWhatsapp=async(album)=>{
+        if(!album||albumWhatsappBusy||!validateCheckoutBuyer())return;
+        setAlbumWhatsappBusy(true);
+        setCheckoutSaveError('');
+        const total=albumPriceWithDiscount(album);
+        const id=newOrderCode();
+        const order={
+            id,date:new Date().toISOString(),kind:'album',albumId:album.id,
+            albumName:album.name,albumPhotoCount:(album.photos||[]).length,
+            total,subtotal:total,customerName:checkoutBuyerName,phone:checkoutBuyerPhone,
+            paymentProvider:'whatsapp',paymentStatus:'pending',status:'pendiente_acuerdo',
+            paid:false,delivered:false,printRequested:false,printCount:0,wantsPoints:false,
+            items:[{id:'album-'+album.id,name:'Álbum completo',albumName:album.name,
+                albumUrl:albumUrl(album.id),price:total}]
+        };
+        try{
+            const result=await saveOrderRemote(order);
+            if(!result.firebase&&!result.script){
+                setCheckoutSaveError('El pedido quedó pendiente de sincronización. Enviá el mensaje de WhatsApp para que Lucas pueda registrarlo.');
+            }
+            const link=new URL(otherPaymentWhatsappUrl(album));
+            link.searchParams.set('text',link.searchParams.get('text')+
+                '\nCódigo de pedido: '+id+'\nSolicito '+order.albumPhotoCount+' fotos del álbum.');
+            window.location.assign(link.href);
+        }catch(err){
+            setCheckoutSaveError('No se pudo guardar el pedido. Podés contactar a Lucas por WhatsApp para acordarlo.');
+            console.warn('Solicitud de álbum:',err);
+        }finally{setAlbumWhatsappBusy(false)}
     };
     // En un celular la entrega debe ser individual, sin ZIP ni descargas programáticas.
     const mpMobileDelivery=()=>{
@@ -7532,12 +7560,9 @@ En breve te las preparo y te las envío por acá 😊
                     React.createElement("span", { className:"h-px bg-neutral-800 flex-1" }),
                     React.createElement("span", null, "Opción 2"),
                     React.createElement("span", { className:"h-px bg-neutral-800 flex-1" })),
-                (!adminBiometricConfigured || showPinLogin) ? React.createElement("form", { onSubmit:submitAdminSecret },
+                React.createElement("form", { onSubmit:submitAdminSecret },
                     React.createElement("input", { value:pin, onChange:e=>setPin(e.target.value), type:"password", autoComplete:"current-password", placeholder:"PIN / contraseña", disabled:!sharedReady, className:"w-full bg-black border border-neutral-700 rounded-xl p-4 mb-3 text-center text-lg tracking-wider outline-none focus:border-sky-500 disabled:opacity-50" }),
-                    React.createElement("button", { disabled:adminLoginBusy || !sharedReady || !pin, className:"w-full bg-neutral-100 text-black py-4 rounded-xl font-black disabled:opacity-40" }, !sharedReady ? "Cargando seguridad..." : (adminLoginBusy ? "Validando..." : "Entrar con PIN / contraseña")),
-                    adminBiometricConfigured && React.createElement("button", { type:"button", onClick:()=>setShowPinLogin(false), className:"w-full mt-2 text-xs text-neutral-500 py-2" }, "Ocultar PIN")) :
-                    React.createElement("button", { type:"button", onClick:()=>setShowPinLogin(true), className:"w-full border border-neutral-700 bg-black/30 py-3 rounded-xl text-sm font-bold text-neutral-300" },
-                        React.createElement("i", { className:"fas fa-key mr-2" }), "Usar PIN / contraseña"),
+                    React.createElement("button", { disabled:adminLoginBusy || !sharedReady || !pin, className:"w-full bg-neutral-100 text-black py-4 rounded-xl font-black disabled:opacity-40" }, !sharedReady ? "Cargando seguridad..." : (adminLoginBusy ? "Validando..." : "Entrar con PIN / contraseña"))),
                 adminBiometricConfigured && React.createElement("button", {
                     type:"button", onClick:resetLocalAdminBiometric,
                     className:"w-full mt-3 border border-amber-400/25 bg-amber-500/10 text-amber-200 py-3 rounded-xl text-xs font-black"
@@ -8266,9 +8291,10 @@ React.createElement("div", { id: "order-search-panel", className: "bg-neutral-90
                         React.createElement("p",{className:"text-sm font-black text-white mb-1"},"Coordiná la compra por WhatsApp"),
                         React.createElement("p",{className:"text-xs text-sky-100/75"},"El álbum completo se acuerda directamente con Lucas. Al tocar el botón se abre WhatsApp con el nombre del álbum y su precio publicado. No se realiza ningún cobro automático.")),
                     React.createElement("div",{className:"album-payment-options",id:"album-payment-options"},
-                        React.createElement("a",{href:otherPaymentWhatsappUrl(currentAlbum),target:"_blank",rel:"noopener noreferrer",className:"other-payment-button",style:{display:"flex",alignItems:"center",justifyContent:"center",minHeight:"62px",fontSize:"15px"}},
+                        React.createElement("button",{type:"button",onClick:()=>requestFullAlbumWhatsapp(currentAlbum),disabled:albumWhatsappBusy,className:"other-payment-button",style:{display:"flex",alignItems:"center",justifyContent:"center",minHeight:"62px",fontSize:"15px",width:"100%"}},
                             React.createElement("i",{className:"fab fa-whatsapp text-xl","aria-hidden":true}),
-                            React.createElement("span",null,"Hablar con Lucas por WhatsApp para acordar el álbum completo")))),
+                            React.createElement("span",null,albumWhatsappBusy?"Registrando solicitud…":"Hablar con Lucas por WhatsApp para acordar el álbum completo"))),
+                    checkoutSaveError&&React.createElement("p",{className:"mt-2 text-xs text-amber-200",role:"alert"},checkoutSaveError)),
                 React.createElement("div", { id:"bulk-quote-selector-start", className:"bulk-quote-entry" + (bulkQuoteMode ? " active" : "") },
                     React.createElement("div", { className:"bulk-quote-entry-icon" }, React.createElement("i", { className:"fas fa-images" })),
                     React.createElement("div", { className:"bulk-quote-entry-copy" },
