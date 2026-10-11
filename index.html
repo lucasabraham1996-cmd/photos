@@ -7947,7 +7947,36 @@ React.createElement("div", { id: "order-search-panel", className: "bg-neutral-90
                                 React.createElement("i", { className: "fas fa-trash-can mr-2" }),
                                 "Quitar car\u00E1tula personalizada"))));
             })),
-            admin && React.createElement("div", {
+            admin && React.createElement("section",{className:"rounded-3xl border border-emerald-400/25 bg-neutral-900 p-4 sm:p-5 mb-6","aria-label":"Historial unificado de pedidos"},
+                React.createElement("h3",{className:"font-black text-lg text-white"},"Historial unificado de todas las órdenes"),
+                React.createElement("p",{className:"text-xs text-neutral-400 mt-1 mb-3"},
+                    "Pedidos registrados y recuperados de Firebase, Apps Script y Cloudflare (pagados, pendientes y entregados)."),
+                React.createElement("button",{type:"button",onClick:()=>fetchMpAdminOrders(false),disabled:mpAdminOrdersBusy,
+                    className:"px-5 py-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-black text-sm mb-3"},
+                    React.createElement("i",{className:"fas fa-arrows-rotate mr-2"}),
+                    mpAdminOrdersBusy?"Recuperando pedidos…":"Recuperar pedidos de hoy y todas las ventas MP"),
+                React.createElement("p",{className:"text-xs text-neutral-400 mb-3"},
+                    mpAdminOrders.length+" órdenes de Cloudflare consultadas · "+adminOrderLedger.length+" registros visibles."),
+                mpAdminOrdersError&&React.createElement("p",{className:"text-xs text-amber-200 mb-3",role:"alert"},mpAdminOrdersError),
+                mpAdminOrdersHasMore&&React.createElement("button",{type:"button",onClick:()=>fetchMpAdminOrders(true),
+                    className:"mb-3 px-4 py-2 rounded-lg bg-neutral-700 text-white text-xs font-bold"},"Cargar más órdenes"),
+                React.createElement("div",{className:"grid gap-2 max-h-[550px] overflow-auto"},
+                    adminOrderLedger.map(o=>React.createElement("article",{key:o.id,className:"p-3 bg-black/40 border border-white/10 rounded-xl"},
+                        React.createElement("div",{className:"flex flex-wrap items-center justify-between gap-2"},
+                            React.createElement("b",{className:"text-sm text-white break-all"},"#"+o.id),
+                            React.createElement("span",{className:o.paid||o.paymentStatus==='accredited'?"text-emerald-300 text-xs font-bold":"text-amber-200 text-xs font-bold"},
+                                o.paid||o.paymentStatus==='accredited'?"Pago acreditado":o.delivered?"Entregado":o.paymentStatus||"Pendiente")),
+                        React.createElement("p",{className:"text-xs text-neutral-300 mt-1"},
+                            (o.customerName||"Sin nombre")+" · "+(o.phone||"Sin teléfono")+" · "+formatPrice(o.total)),
+                        React.createElement("p",{className:"text-xs text-neutral-500 mt-1"},
+                            o.date?new Date(o.date).toLocaleString('es-AR'):"Sin fecha", " · ",(o.items||[]).length," fotos"),
+                        React.createElement("div",{className:"admin-order-links"},
+                            (o.items||[]).map((p,i)=>{
+                                const link=orderDriveLink(p);
+                                return link&&React.createElement("a",{key:i,href:link,target:"_blank",rel:"noopener noreferrer"},
+                                    React.createElement("i",{className:"fas fa-download"})," ",p.name||"Foto "+(i+1));
+                            })))))),
+                        admin && React.createElement("div", {
                 className:"rounded-2xl border border-sky-400/30 bg-sky-500/10 px-5 py-4 mt-6 mb-6"
             },
                 React.createElement("h3", { className:"text-sky-200 font-black" }, "Mercado Pago · Sincronizar precios y galerías"),
