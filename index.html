@@ -6149,6 +6149,7 @@ ${clone.outerHTML}`;
             (CLUB_ENABLED || !isClubRecord(o)) && normalizeOrderCode(o && o.id)
         ).sort((a,b) => new Date(b.date || 0) - new Date(a.date || 0));
     }, [orders, mpAdminOrders]);
+    const adminTodayOrders = adminOrderLedger.filter(o=>isSameLocalDate(o.date||o.createdAt));
     const ADMIN_NOTIFICATION_START = Date.parse('2026-08-14T23:22:00Z');
     const unseenAdminOrders = useMemo(() => adminOrderLedger.filter(o => {
         const id = normalizeOrderCode(o && o.id);
@@ -6837,6 +6838,17 @@ En breve te las preparo y te las envío por acá 😊
             setMpAdminOrdersError(String(err&&err.message||err));
         }finally{setMpAdminOrdersBusy(false)}
     };
+    const refreshAllAdminOrders=async()=>{
+        if(ordersLoading||mpAdminOrdersBusy)return;
+        setOrdersLoading(true);
+        try{
+            const list=await loadOrdersRemote();
+            setOrders(list);
+            saveLocalOrders(list);
+        }catch(err){console.warn('Revisión del historial general:',err)}
+        finally{setOrdersLoading(false)}
+        await fetchMpAdminOrders(false);
+    };
     // Si la clave se ingresó para sincronizar el catálogo, la misma sesión puede
     // consultar también el historial D1, sin guardarla en el dispositivo.
     useEffect(()=>{
@@ -6898,8 +6910,12 @@ En breve te las preparo y te las envío por acá 😊
                 '\nCódigo de pedido: '+id+'\nSolicito '+order.albumPhotoCount+' fotos del álbum.');
             window.location.assign(link.href);
         }catch(err){
-            setCheckoutSaveError('No se pudo guardar el pedido. Podés contactar a Lucas por WhatsApp para acordarlo.');
             console.warn('Solicitud de álbum:',err);
+            setCheckoutSaveError('El registro automático falló. Enviá el mensaje de WhatsApp para que Lucas reciba la solicitud.');
+            window.alert('No se pudo guardar la solicitud en el sistema. Enviá el mensaje de WhatsApp para que Lucas la reciba.');
+            const link=new URL(otherPaymentWhatsappUrl(album));
+            link.searchParams.set('text',link.searchParams.get('text')+'\nCódigo de solicitud: '+id);
+            window.location.assign(link.href);
         }finally{setAlbumWhatsappBusy(false)}
     };
     // En un celular la entrega debe ser individual, sin ZIP ni descargas programáticas.
@@ -7583,6 +7599,17 @@ En breve te las preparo y te las envío por acá 😊
                     React.createElement("button", { onClick: () => setPriceAdminOpen(true), className: "bg-emerald-500 text-black px-4 py-3 rounded-xl font-black" }, React.createElement("i", { className: "fas fa-tags mr-2" }), "Precios"),
                     React.createElement("button", { onClick: async () => { const link='https://lucasabraham1996-cmd.github.io/photos/contrataciones.html#/solicitar'; try { await navigator.clipboard.writeText(link); setAdminMessage('Link público de solicitudes copiado.'); } catch(e) { window.prompt('Copiá el link público de solicitudes:', link); } }, className: "bg-sky-600 px-4 py-3 rounded-xl font-bold" }, React.createElement("i", { className: "fas fa-link mr-2" }), "Copiar link solicitudes"),
                     React.createElement("button", { onClick: goToGallery, className: "bg-indigo-600 px-4 py-3 rounded-xl font-bold" }, "Ver galer\u00EDa"))),
+            React.createElement("section",{className:"mb-5 rounded-3xl border border-emerald-400/25 bg-neutral-900 p-4 sm:p-5"},
+                React.createElement("h2",{className:"text-lg font-black text-white"},"Pedidos de hoy"),
+                React.createElement("p",{className:"text-sm text-neutral-300 mt-1"},
+                    adminTodayOrders.length+" pedidos encontrados en las fuentes consultadas · "+adminTodayOrders.filter(o=>o.paid||o.paymentStatus==='accredited').length+" acreditados · "+
+                    adminTodayOrders.filter(o=>!(o.paid||o.paymentStatus==='accredited')).length+" pendientes o por verificar."),
+                React.createElement("p",{className:"text-xs text-amber-200/90 mt-2"},
+                    "Si falta una compra, tocá recuperar: también se consultan las órdenes de Cloudflare que no llegaron a Firebase. Los resultados dependen de que el Worker esté actualizado."),
+                React.createElement("button",{type:"button",disabled:ordersLoading||mpAdminOrdersBusy,onClick:refreshAllAdminOrders,
+                    className:"mt-3 bg-emerald-500 text-black px-4 py-3 rounded-xl font-black"},
+                    ordersLoading||mpAdminOrdersBusy?"Consultando pedidos…":"Actualizar y recuperar todos los pedidos"),
+                mpAdminOrdersError&&React.createElement("p",{role:"alert",className:"mt-2 text-xs text-amber-200"},mpAdminOrdersError)),
             adminMessage && React.createElement("div", { className: "mb-4 bg-emerald-600/15 border border-emerald-500/30 text-emerald-300 rounded-2xl px-4 py-3 text-sm" }, adminMessage),
             React.createElement("section", { id:"admin-security-access", className:"mb-5 rounded-3xl border border-sky-400/20 bg-gradient-to-br from-sky-500/10 via-neutral-900 to-neutral-900 p-5" },
                 React.createElement("div", { className:"flex flex-col md:flex-row md:items-center md:justify-between gap-4" },
