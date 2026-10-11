@@ -292,7 +292,7 @@ async function adminOrders(request,env) {
     throw new HttpError(400,'Página inválida');
   const limit=50;
   const rows=await env.LA_ORDERS_DB.prepare(
-    'SELECT checkout_id,mp_order_id,mode,kind,amount,items_json,print_ids_json,mp_status,status_detail,payment_valid,created_at,paid_verified_at,download_verified_at,customer_name,customer_phone FROM la_mp_live_orders ORDER BY created_at DESC LIMIT ? OFFSET ?'
+    'SELECT checkout_id,mp_order_id,external_reference,mode,kind,amount,currency,seller_id,application_id,items_json,print_ids_json,mp_status,status_detail,payment_valid,created_at,paid_verified_at,download_verified_at,customer_name,customer_phone FROM la_mp_live_orders ORDER BY created_at DESC LIMIT ? OFFSET ?'
   ).bind(limit+1,offset).all();
   const records=rows.results||[];
   // La vuelta del comprador a la web y el webhook no son condiciones para que el
