@@ -159,6 +159,24 @@ test('Solo el administrador consulta las órdenes de MP y los links originales, 
   assert.equal((await f.request('/api/admin-orders',{offset:-1},{'X-Setup-Key':'admin-fixture'})).status,400);
 }));
 
+test('El panel recupera pagos reales sin retorno del comprador ni webhook',()=>withFixture(async f=>{
+  const order=await f.create();
+  f.paid(order);
+  // Simula un comprador que cerró Mercado Pago: nadie consultó el ticket.
+  const stale=f.db.prepare('SELECT payment_valid,mp_status FROM la_mp_live_orders WHERE checkout_id=?').get(order.checkout_id);
+  assert.equal(stale.payment_valid,0);
+  const response=await f.request('/api/admin-orders',{offset:0},{'X-Setup-Key':'admin-fixture'});
+  assert.equal(response.status,200);
+  const report=await response.json();
+  assert.equal(report.orders.length,1);
+  assert.equal(report.orders[0].paid,true);
+  assert.equal(report.orders[0].payment_status,'processed');
+  assert.equal(report.refreshed,1);
+  const synced=f.db.prepare('SELECT payment_valid,mp_status FROM la_mp_live_orders WHERE checkout_id=?').get(order.checkout_id);
+  assert.equal(synced.payment_valid,1);
+  assert.equal(synced.mp_status,'processed');
+}));
+
 test('Recuperar una validación exige clave y se rechaza fuera del modo privado',()=>withFixture(async f=>{
   const p=await f.create();f.paid(p);await f.status(p);
   const original=f.db.prepare('SELECT receipt_hash FROM la_mp_live_orders').get().receipt_hash;
