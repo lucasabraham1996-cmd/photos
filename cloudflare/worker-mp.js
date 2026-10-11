@@ -295,7 +295,31 @@ async function adminOrders(request,env) {
     'SELECT checkout_id,mp_order_id,mode,kind,amount,items_json,print_ids_json,mp_status,status_detail,payment_valid,created_at,paid_verified_at,download_verified_at,customer_name,customer_phone FROM la_mp_live_orders ORDER BY created_at DESC LIMIT ? OFFSET ?'
   ).bind(limit+1,offset).all();
   const records=rows.results||[];
-  return {ok:true,offset,has_more:records.length>limit,orders:records.slice(0,limit).map(r=>{
+  // La vuelta del comprador a la web y el webhook no son condiciones para que el
+  // administrador pueda reconocer un pago. Reconsultamos Mercado Pago con el
+  // token de producción para las órdenes recientes, de manera acotada.
+  const newest=records.slice(0,limit).filter(r=>r.mp_order_id &&
+    Number.isFinite(Date.parse(r.created_at)) &&
+    Date.parse(r.created_at)>=Date.now()-7*24*60*60*1000).slice(0,12);
+  let refreshed=0,refreshFailures=0;
+  await Promise.all(Array.from({length:Math.min(3,newest.length)},async(_,worker)=>{
+    for(let i=worker;i<newest.length;i+=3){
+      const row=newest[i];
+      try {
+        const live=await refreshOrder(env,row);
+        row.mp_status=live.status;
+        row.status_detail=live.status_detail;
+        row.payment_valid=live.paid?1:0;
+        if(live.paid&&!row.paid_verified_at)row.paid_verified_at=now();
+        refreshed++;
+      } catch (_) {
+        // No inventamos una acreditación ni descartamos el pedido por fallos de red.
+        refreshFailures++;
+      }
+    }
+  }));
+  return {ok:true,offset,has_more:records.length>limit,refreshed,refresh_failures:refreshFailures,
+    orders:records.slice(0,limit).map(r=>{
     const photos=JSON.parse(r.items_json||'[]');
     return {
       checkout_id:r.checkout_id,order_id:r.mp_order_id||'',mode:r.mode,kind:r.kind,
