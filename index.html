@@ -6849,11 +6849,8 @@ En breve te las preparo y te las envío por acá 😊
         finally{setOrdersLoading(false)}
         await fetchMpAdminOrders(false);
     };
-    // Si la clave se ingresó para sincronizar el catálogo, la misma sesión puede
-    // consultar también el historial D1, sin guardarla en el dispositivo.
-    useEffect(()=>{
-        if(admin&&route==='#/admin'&&mpCatalogueSetupKey)fetchMpAdminOrders(false);
-    },[admin,route,mpCatalogueSetupKey]);
+    // La consulta administrativa requiere clic explícito: no enviar una clave
+    // incompleta a Cloudflare cada vez que el administrador escribe una letra.
     const renderMpCatalogueSyncControls=(retry=false)=>React.createElement("div",{className:"mp-catalogue-controls"},
         React.createElement("label",{htmlFor:retry?'mp-catalogue-key-checkout':'mp-catalogue-key-admin'},"Clave MP_SETUP_KEY"),
         React.createElement("input",{id:retry?'mp-catalogue-key-checkout':'mp-catalogue-key-admin',type:"password",
