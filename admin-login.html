@@ -69,7 +69,7 @@
     const PASSKEY_KEY = "la_admin_passkey_id_v2";
     const OLD_PASSKEY_KEY = "la_admin_passkey_id_v1";
     const SESSION_KEY = "LA_ADMIN_UNLOCKED_AT";
-    const VERSION = "v125-passkey-rebind";
+    const VERSION = "v130-biometric-recovery";
     try { localStorage.removeItem(OLD_PASSKEY_KEY); } catch(e) {}
     const status = document.getElementById("status");
     const bioBtn = document.getElementById("bioBtn");
@@ -132,9 +132,8 @@
         const assertion = await navigator.credentials.get({
           publicKey: {
             challenge: randomBytes(32),
-            allowCredentials: [{ type:"public-key", id:b64ToBytes(id), transports:["internal"] }],
+            allowCredentials: [{ type:"public-key", id:b64ToBytes(id) }],
             userVerification: "required",
-            hints: ["client-device"],
             timeout: 30000
           }
         });
@@ -145,13 +144,13 @@
         status.textContent = "Acceso correcto.";
         goAdmin();
       } catch(e) {
-        saveLocalId("");
+        // Cancelar Face ID no invalida una credencial válida.
         status.className = "status error";
-        status.textContent = "Esta vinculación de Face ID ya no está disponible. Entrá con el PIN para renovarla una sola vez.";
+        status.textContent = e && e.name === "NotAllowedError"
+          ? "La validación se canceló o el dispositivo no la completó. Reintentá o usá tu PIN."
+          : "No se pudo validar Face ID. Reintentá o ingresá con PIN para volver a vincularlo.";
         bioBtn.disabled = false;
-        bioText.textContent = "Vincular Face ID nuevamente";
-        bioBtn.removeEventListener("click", loginWithBiometrics);
-        bioBtn.addEventListener("click", goPinAndSetup, { once:true });
+        bioText.textContent = "Reintentar Face ID";
       }
     }
 
