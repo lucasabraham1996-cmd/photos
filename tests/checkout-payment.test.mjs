@@ -207,3 +207,23 @@ test('El álbum completo se acuerda únicamente por WhatsApp y no abre Mercado P
   assert.match(consultation.searchParams.get('text'),/60\.000/);
   assert.doesNotMatch(textContent(card),/Pagar con Mercado Pago/i);
 });
+
+test('El historial principal muestra órdenes D1 pagadas y pendientes aunque Firebase no las tenga',()=>{
+  const paid='11111111-1111-4111-8111-111111111111';
+  const pending='22222222-2222-4222-8222-222222222222';
+  const h=appHarness({...base,admin:true,route:'#/admin',checkoutOpen:false,orders:[],mpAdminOrders:[
+    {checkout_id:paid,order_id:'ORDPAID',amount:2000,created_at:'2026-10-10T12:00:00Z',
+      paid:true,payment_status:'processed',customer_name:'Cliente Uno',customer_phone:'3511234567',
+      photos:[{photo_id:'p1',name:'Una foto.jpg',download_url:'https://drive.google.com/uc?export=download&id=validDriveId12345'}]},
+    {checkout_id:pending,order_id:'ORDPENDING',amount:4000,created_at:'2026-10-10T12:01:00Z',
+      paid:false,payment_status:'created',customer_name:'Cliente Dos',
+      photos:[{photo_id:'p2',name:'Dos.jpg',download_url:'https://drive.google.com/uc?export=download&id=validDriveId12346'}]}
+  ]});
+  const tree=h.render(),body=textContent(tree);
+  assert.match(body,/Historial unificado de todas las órdenes/);
+  assert.match(body,/Recuperar pedidos de hoy y todas las ventas MP/);
+  assert.match(body,/Cliente Uno/);
+  assert.match(body,/Cliente Dos/);
+  assert.match(body,/Pago acreditado/);
+  assert.match(body,/Pendiente/);
+});
