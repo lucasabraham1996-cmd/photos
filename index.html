@@ -6,16 +6,19 @@
   <meta charset="UTF-8" />
   <script>
   (() => {
+    // Acceso admin unificado: misma pantalla y misma lógica en PC, iPhone y Android.
     try {
       const params = new URLSearchParams(location.search);
       const standalone = (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches) || navigator.standalone === true;
       const savedAdminRoute = localStorage.getItem('LA_INSTALL_START_ROUTE') === '#/admin';
       const requestedAdmin = location.hash === '#/admin' || params.get('admin') === '1' || (standalone && savedAdminRoute);
-      const forcePin = params.get('pin') === '1';
-      const unlockedAt = Number(sessionStorage.getItem('LA_ADMIN_UNLOCKED_AT') || 0);
-      const sessionValid = unlockedAt > 0 && (Date.now() - unlockedAt) < 30 * 60 * 1000;
-      if (requestedAdmin && !forcePin && !sessionValid) {
-        location.replace('./admin-login.html?build=20260922-1617');
+      if (requestedAdmin) {
+        if (standalone && savedAdminRoute && location.hash !== '#/admin') location.hash = '#/admin';
+        if (params.get('build') !== 'v131-universal-admin-mobile') {
+          params.set('admin','1');
+          params.set('build','v131-universal-admin-mobile');
+          location.replace(location.pathname + '?' + params.toString() + '#/admin');
+        }
       }
     } catch (e) {}
   })();
@@ -48,7 +51,7 @@
   <meta name="twitter:description" content="Fotos deportivas protegidas · Compra directa por WhatsApp" />
   <meta name="twitter:image" content="https://lucasabraham1996-cmd.github.io/photos/social-preview-la.png?v=105" />
   <title>lucasabraham.ph - Galería de Clientes</title>
-  <meta name="app-version" content="v129-biometric-recovery-orders" /><style>html{color-scheme:dark}html,body{margin:0;min-height:100%;background:#050505;color:#fff}#root{min-height:100vh;background:#050505;color:#fff}
+  <meta name="app-version" content="v131-universal-admin-mobile" /><style>html{color-scheme:dark}html,body{margin:0;min-height:100%;background:#050505;color:#fff}#root{min-height:100vh;background:#050505;color:#fff}
     /* v41: estilo versus moderno para portada y álbum */
     .team-album-reveal{background:linear-gradient(180deg,rgba(3,7,18,.12),rgba(2,6,23,.28))}
     .team-reveal-half{left:12px!important;right:12px!important;width:auto!important;height:33%!important;padding:12px 16px!important;box-shadow:0 16px 36px rgba(0,0,0,.28),inset 0 1px 0 rgba(255,255,255,.14)!important;border:1px solid rgba(255,255,255,.10)!important;overflow:hidden}
@@ -2285,7 +2288,7 @@ const LS_SHARED_STATE_KEY = "la_shared_admin_state_v2";
 const LS_BANNERS_KEY = "la_banner_settings_v1";
 const LS_INTRO_KEY = "la_purchase_intro_seen_v2";
 const PHOTOS_PER_PAGE = 70;
-const APP_VERSION = "v130-recover-all-orders";
+const APP_VERSION = "v131-universal-admin-mobile";
 const LS_ALBUM_CACHE_META_KEY = "la_album_cache_meta_v1";
 const ALBUM_CACHE_MAX_AGE_MS = 1000 * 60 * 60 * 12;
 const FIRESTORE_FREE_DAILY_LIMITS = {
@@ -2594,7 +2597,7 @@ function applyIphoneHeadAssets(iconUrl) {
         const manifest = {
             name: launchAdmin ? `${BRAND} · Admin` : BRAND,
             short_name: launchAdmin ? 'LA Admin' : 'Lucas Abraham',
-            start_url: launchAdmin ? new URL('admin-login.html?build=20260922-1617', baseScope).href : `${baseScope}#/galeria`,
+            start_url: launchAdmin ? new URL('?admin=1&build=v131-universal-admin-mobile#/admin', baseScope).href : `${baseScope}#/galeria`,
             scope: baseScope,
             display: 'standalone',
             background_color: '#000000',
@@ -7507,9 +7510,35 @@ En breve te las preparo y te las envío por acá 😊
                 ]));
             }
         };
-        loadOrdersRemote().then(list => resetOldQueue(list, true)).finally(() => setOrdersLoading(false));
-        const unsub = subscribeOrders(list => { resetOldQueue(list, false); });
-        return () => { unsub && unsub(); };
+        let alive = true;
+        let refreshBusy = false;
+        const refreshOrdersAcrossDevices = async (persist = false) => {
+            if (!alive || refreshBusy) return;
+            refreshBusy = true;
+            try {
+                const list = await loadOrdersRemote();
+                if (alive) await resetOldQueue(list, persist);
+            } catch (e) {
+                console.warn('No se pudieron refrescar los pedidos compartidos.', e);
+            } finally {
+                refreshBusy = false;
+                if (alive) setOrdersLoading(false);
+            }
+        };
+        refreshOrdersAcrossDevices(true);
+        const unsub = subscribeOrders(list => { if (alive) resetOldQueue(list, false); });
+        const onFocus = () => refreshOrdersAcrossDevices(false);
+        const onVisibility = () => { if (document.visibilityState !== 'hidden') refreshOrdersAcrossDevices(false); };
+        window.addEventListener('focus', onFocus);
+        document.addEventListener('visibilitychange', onVisibility);
+        const timer = setInterval(() => refreshOrdersAcrossDevices(false), 30000);
+        return () => {
+            alive = false;
+            unsub && unsub();
+            window.removeEventListener('focus', onFocus);
+            document.removeEventListener('visibilitychange', onVisibility);
+            clearInterval(timer);
+        };
     }, [route, admin]);
     useEffect(() => {
         if (route !== "#/admin" || !admin)
@@ -7765,7 +7794,9 @@ React.createElement("div", { id: "order-search-panel", className: "bg-neutral-90
                                         React.createElement("p", { className:"text-lg font-black text-white" }, o.customerName || 'Sin nombre'),
                                         React.createElement("p", { className:"text-xs text-neutral-400" }, `${o.phone || o.celular || 'Sin teléfono'} · ${o.rewardName || 'Beneficio'}`)),
                                     React.createElement(OrderPreviewStrip, { items: o.items || [], limit: 4 }),
-                                    React.createElement("p", { className: "text-xs text-neutral-400 mt-2" },
+                                    React.createElement("p", { className: "text-xs text-neutral-200 font-bold mt-2" },
+                                        (o.customerName || o.nombreCliente || 'Sin nombre'), " · ", (o.phone || o.celular || 'Sin teléfono')),
+                                    React.createElement("p", { className: "text-xs text-neutral-400 mt-1" },
                                         new Date(o.date || Date.now()).toLocaleString('es-AR'),
                                         " \u00B7 ",
                                         ((_a = o.items) === null || _a === void 0 ? void 0 : _a.length) || 0,
