@@ -7965,7 +7965,7 @@ React.createElement("div", { id: "order-search-panel", className: "bg-neutral-90
                         React.createElement("div",{className:"flex flex-wrap items-center justify-between gap-2"},
                             React.createElement("b",{className:"text-sm text-white break-all"},"#"+o.id),
                             React.createElement("span",{className:o.paid||o.paymentStatus==='accredited'?"text-emerald-300 text-xs font-bold":"text-amber-200 text-xs font-bold"},
-                                o.paid||o.paymentStatus==='accredited'?"Pago acreditado":o.delivered?"Entregado":o.paymentStatus||"Pendiente")),
+                                o.paid||o.paymentStatus==='accredited'?"Pago acreditado":o.delivered?"Entregado":['created','pending','action_required','processing'].includes(String(o.paymentStatus||'').toLowerCase())?"Pendiente de pago":o.paymentStatus||"Pendiente")),
                         React.createElement("p",{className:"text-xs text-neutral-300 mt-1"},
                             (o.customerName||"Sin nombre")+" · "+(o.phone||"Sin teléfono")+" · "+formatPrice(o.total)),
                         React.createElement("p",{className:"text-xs text-neutral-500 mt-1"},
