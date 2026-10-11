@@ -199,12 +199,9 @@ test('El álbum completo se acuerda únicamente por WhatsApp y no abre Mercado P
   assert.ok(card,'La oferta del álbum está visible');
   const options=nodes(card).filter(n=>n.type==='a'||n.type==='button');
   assert.equal(options.length,1,'Solo hay un medio de contacto para álbum completo');
-  assert.equal(options[0].type,'a');
+  assert.equal(options[0].type,'button');
+  assert.equal(typeof options[0].props.onClick,'function','La consulta primero registra un pedido antes de abrir WhatsApp');
   assert.match(textContent(options[0]),/Hablar con Lucas por WhatsApp/i);
-  const consultation=new URL(options[0].props.href);
-  assert.match(consultation.hostname,/wa\.me$/);
-  assert.match(consultation.searchParams.get('text'),/comprar el álbum completo de All Boys/);
-  assert.match(consultation.searchParams.get('text'),/60\.000/);
   assert.doesNotMatch(textContent(card),/Pagar con Mercado Pago/i);
 });
 
