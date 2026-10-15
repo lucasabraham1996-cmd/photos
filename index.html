@@ -2240,7 +2240,7 @@ img{-webkit-user-drag:none;}
 .mp-catalogue-result.error{background:#431d22;color:#ffd3d3!important;border:1px solid #98545c}.mp-catalogue-result.success{background:#0d3b25;color:#c7ffdd!important;border:1px solid #258859}
 @media(max-width:380px){.checkout-payment-options{padding:12px}.mp-pay-button{padding:12px;gap:9px}.mp-pay-button strong{font-size:18px}.mp-pay-button>img{width:44px;height:44px;flex-basis:44px}.other-payment-button{padding:11px;font-size:14px;gap:9px}}
 </style>
-  <link rel="stylesheet" href="./premium-ux-v132.css?v=135" />
+  <link rel="stylesheet" href="./premium-ux-v132.css?v=136" />
   <script defer src="./premium-ux-v132.js?v=135"></script>
 </head>
 <body style="background:#050505;color:#fff;">
@@ -6712,9 +6712,9 @@ En breve te las preparo y te las envío por acá 😊
     }
     // Contacto de gestión: nunca afirma que se cobró o entregó el pedido.
     function orderContactWhatsappUrl(o){
-        const phone=normalizeClubPhone(o&&(o.phone||o.customerPhone||o.celular));
+        const phone=normalizeClubPhone(o&&(o.phone||o.customerPhone||o.customer_phone||o.celular));
         if(!phone||phone.length<10)return '';
-        const name=cleanWhatsappPersonName(o.customerName||'');
+        const name=cleanWhatsappPersonName(o.customerName||o.customer_name||'');
         const greeting=name?', '+name.split(' ')[0]:'';
         const msg='¡Hola'+greeting+'! Soy Lucas Abraham de lucasabraham.ph. Te escribo por tu pedido '+
             String(o.id||o.order_id||o.checkout_id||'')+
@@ -8373,8 +8373,17 @@ React.createElement("div", { id: "order-search-panel", hidden:adminPanelTab!=='p
                         React.createElement("div",{className:"flex flex-wrap gap-2 mt-3 text-sm items-center"},
                             React.createElement("b",{className:"text-white"},formatPrice(o.amount)),
                             React.createElement("span",{className:"text-neutral-400"},(o.photos||[]).length+" fotos"),
-                            React.createElement("span",{className:"text-neutral-300"},(o.customer_name||o.customerName||"Sin nombre")+" · "+(o.customer_phone||o.phone||"Sin teléfono")),
-                            o.print_count>0&&React.createElement("span",{className:"print-order-badge"},"Impresiones: "+o.print_count),
+                            React.createElement("div",{className:"la-mp-buyer-highlight"},
+                                React.createElement("strong",null,o.customer_name||o.customerName||"Cliente sin nombre"),
+                                React.createElement("span",null,o.customer_phone||o.phone||"Teléfono no informado")),
+                            (o.print_count>0||o.print_requested===true)&&React.createElement("span",{className:"print-order-badge la-mp-print-highlight"},
+                                React.createElement("i",{className:"fas fa-print","aria-hidden":true}),
+                                " IMPRESIÓN SOLICITADA",o.print_count>0?" · "+o.print_count+" foto(s)":""),
+                            orderContactWhatsappUrl(o)&&React.createElement("a",{
+                                className:"la-ledger-whatsapp",href:orderContactWhatsappUrl(o),
+                                target:"_blank",rel:"noopener noreferrer",
+                                "aria-label":"Hablar por WhatsApp con "+(o.customer_name||o.customerName||"cliente")},
+                                React.createElement("i",{className:"fab fa-whatsapp","aria-hidden":true})," Hablar por WhatsApp"),
                             o.paid&&React.createElement("span",{className:"text-[11px] text-amber-200"},"Factura C: pendiente de emitir en ARCA")),
                         React.createElement("div",{className:"admin-order-links"},(o.photos||[]).map((p,i)=>p.download_url&&React.createElement("a",{key:i,href:p.download_url,target:"_blank",rel:"noopener noreferrer"},
                             React.createElement("i",{className:"fas fa-download"}),p.name||("Foto "+(i+1))))),
