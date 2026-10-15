@@ -2240,6 +2240,8 @@ img{-webkit-user-drag:none;}
 .mp-catalogue-result.error{background:#431d22;color:#ffd3d3!important;border:1px solid #98545c}.mp-catalogue-result.success{background:#0d3b25;color:#c7ffdd!important;border:1px solid #258859}
 @media(max-width:380px){.checkout-payment-options{padding:12px}.mp-pay-button{padding:12px;gap:9px}.mp-pay-button strong{font-size:18px}.mp-pay-button>img{width:44px;height:44px;flex-basis:44px}.other-payment-button{padding:11px;font-size:14px;gap:9px}}
 </style>
+  <link rel="stylesheet" href="./premium-ux-v132.css?v=132" />
+  <script defer src="./premium-ux-v132.js?v=132"></script>
 </head>
 <body style="background:#050505;color:#fff;">
   <div id="boot-overlay" style="position:fixed;inset:0;z-index:99999;background:#050505;color:#fff;display:flex;align-items:center;justify-content:center;padding:24px;">
@@ -6153,6 +6155,19 @@ ${clone.outerHTML}`;
         ).sort((a,b) => new Date(b.date || 0) - new Date(a.date || 0));
     }, [orders, mpAdminOrders]);
     const adminTodayOrders = adminOrderLedger.filter(o=>isSameLocalDate(o.date||o.createdAt));
+    // KPIs derivados exclusivamente de pedidos ya cargados y consolidados (no estimaciones).
+    const adminOverview = useMemo(() => {
+        const real = adminOrderLedger.filter(o => o && !isClubRecord(o) && !o.rejected && !o.cancelled);
+        const paid = real.filter(o => Boolean(o.paid) || String(o.paymentStatus || '').toLowerCase() === 'accredited');
+        const pending = real.filter(o => !(o.paid || String(o.paymentStatus || '').toLowerCase() === 'accredited') && !o.delivered);
+        return {
+            orders: real.length,
+            paid: paid.length,
+            pending: pending.length,
+            gross: paid.reduce((sum, o) => sum + (Number(o.total) || 0), 0),
+            photos: paid.reduce((sum, o) => sum + (Array.isArray(o.items) ? o.items.length : 0), 0)
+        };
+    }, [adminOrderLedger]);
     const ADMIN_NOTIFICATION_START = Date.parse('2026-08-14T23:22:00Z');
     const unseenAdminOrders = useMemo(() => adminOrderLedger.filter(o => {
         const id = normalizeOrderCode(o && o.id);
@@ -7588,7 +7603,7 @@ En breve te las preparo y te las envío por acá 😊
                                 "Recargar la página"))),
                     React.createElement("p", { className: "text-center text-xs text-neutral-500 mt-4" }, "Tip: si fue un bloqueo momentáneo de Google Sheets, el primer botón suele alcanzar para solucionarlo."))));
     if (route === "#/admin" && !admin)
-        return React.createElement("div", { className: "min-h-screen flex items-center justify-center p-4 bg-[#050505]" },
+        return React.createElement("div", { className: "la-admin-login-screen min-h-screen flex items-center justify-center p-4 bg-[#050505]" },
             React.createElement("div", { className: "relative bg-neutral-900 border border-neutral-800 p-7 rounded-3xl w-full max-w-sm shadow-2xl" },
                 React.createElement("button", { type:"button", onClick:goToGallery, className:"absolute top-4 right-4 w-9 h-9 rounded-full bg-black/40 border border-white/10 text-neutral-400 hover:text-white flex items-center justify-center", title:"Cerrar", "aria-label":"Cerrar acceso administrador" }, React.createElement("i", { className:"fas fa-xmark" })),
                 React.createElement("div", { className:"w-16 h-16 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center mb-5" },
@@ -7611,8 +7626,8 @@ En breve te las preparo y te las envío por acá 😊
                 }, React.createElement("i", { className:"fas fa-rotate mr-2" }), "Restablecer Face ID / biometría"),
                 adminLoginError && React.createElement("div", { className:"mt-4 rounded-xl border border-red-500/25 bg-red-500/10 px-3 py-3 text-sm text-red-200" }, adminLoginError)));
     if (route === "#/admin")
-        return React.createElement("div", { className: "min-h-screen p-5 md:p-8 max-w-7xl mx-auto" },
-            React.createElement("header", { className: "flex flex-col sm:flex-row gap-3 sm:items-end sm:justify-between border-b border-neutral-800 pb-5 mb-6" },
+        return React.createElement("div", { className: "la-admin-workspace min-h-screen p-5 md:p-8 max-w-7xl mx-auto" },
+            React.createElement("header", { className: "la-admin-main-header flex flex-col sm:flex-row gap-3 sm:items-end sm:justify-between border-b border-neutral-800 pb-5 mb-6" },
                 React.createElement("div", null,
                     React.createElement("h1", { className: "text-3xl font-black" },
                         "Panel ",
@@ -7625,7 +7640,45 @@ En breve te las preparo y te las envío por acá 😊
                     React.createElement("button", { onClick: () => setPriceAdminOpen(true), className: "bg-emerald-500 text-black px-4 py-3 rounded-xl font-black" }, React.createElement("i", { className: "fas fa-tags mr-2" }), "Precios"),
                     React.createElement("button", { onClick: async () => { const link='https://lucasabraham1996-cmd.github.io/photos/contrataciones.html#/solicitar'; try { await navigator.clipboard.writeText(link); setAdminMessage('Link público de solicitudes copiado.'); } catch(e) { window.prompt('Copiá el link público de solicitudes:', link); } }, className: "bg-sky-600 px-4 py-3 rounded-xl font-bold" }, React.createElement("i", { className: "fas fa-link mr-2" }), "Copiar link solicitudes"),
                     React.createElement("button", { onClick: goToGallery, className: "bg-indigo-600 px-4 py-3 rounded-xl font-bold" }, "Ver galer\u00EDa"))),
-            React.createElement("section",{className:"mb-5 rounded-3xl border border-emerald-400/25 bg-neutral-900 p-4 sm:p-5"},
+
+            React.createElement("div", { className: "la-admin-control-hub" },
+                React.createElement("nav", { className: "la-admin-nav", "aria-label": "Navegación del administrador" },
+                    [
+                        ["la-admin-overview", "fa-chart-line", "Inicio"],
+                        ["la-admin-orders-today", "fa-receipt", "Pedidos"],
+                        ["la-admin-payments", "fa-credit-card", "Pagos"],
+                        ["la-admin-gallery", "fa-images", "Galerías"],
+                        ["la-admin-promos", "fa-tags", "Promociones"],
+                        ["admin-security-access", "fa-shield-halved", "Seguridad"]
+                    ].map(([id,icon,label]) => React.createElement("button", {
+                        key:id, type:"button", className:"la-admin-nav-link",
+                        onClick: () => {
+                            const section=document.getElementById(id);
+                            if(section) section.scrollIntoView({behavior:window.matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth',block:'start'});
+                        }
+                    }, React.createElement("i",{className:"fas "+icon,"aria-hidden":true}),label))),
+                React.createElement("section", { className: "la-admin-overview", id:"la-admin-overview", "aria-label":"Resumen de gestión" },
+                    React.createElement("div",{className:"la-admin-overview-head"},
+                        React.createElement("h2",null,"Resumen de tu negocio"),
+                        React.createElement("p",null,ordersLoading||mpAdminOrdersBusy?"Actualizando operaciones…":"Datos recuperados hasta la última actualización")),
+                    React.createElement("div",{className:"la-admin-kpi-grid"},
+                        [
+                            ["fa-receipt","Órdenes registradas",String(adminOverview.orders),"Sin pedidos del Club de puntos"],
+                            ["fa-circle-check","Ventas acreditadas",String(adminOverview.paid),"Según estado registrado"],
+                            ["fa-wallet","Ingresos acreditados",formatPrice(adminOverview.gross),"Total bruto registrado"],
+                            ["fa-image","Fotos vendidas",String(adminOverview.photos),"De órdenes acreditadas"],
+                            ["fa-hourglass-half","Pedidos sin acreditar",String(adminOverview.pending),"Excluye entregados y anulados"],
+                            ["fa-layer-group","Galerías publicadas",String(activeAlbums.length),"Álbumes activos"]
+                        ].map(([icon,label,value,note]) =>
+                            React.createElement("article",{key:label,className:"la-admin-kpi"},
+                                React.createElement("span",{className:"la-admin-kpi-icon"},React.createElement("i",{className:"fas "+icon,"aria-hidden":true})),
+                                React.createElement("div",null,
+                                    React.createElement("span",{className:"la-admin-kpi-label"},label),
+                                    React.createElement("strong",{className:"la-admin-kpi-value"},value)),
+                                React.createElement("small",{className:"la-admin-kpi-note"},note))))),
+                React.createElement("p",{className:"la-admin-hub-note"},
+                    "Indicadores calculados sobre las órdenes disponibles de Firebase, Apps Script y Cloudflare. Actualizá y recuperá pedidos para consultar la información más reciente; no reemplazan una conciliación contable.")),
+            React.createElement("section",{id:"la-admin-orders-today",className:"mb-5 rounded-3xl border border-emerald-400/25 bg-neutral-900 p-4 sm:p-5"},
                 React.createElement("h2",{className:"text-lg font-black text-white"},"Pedidos de hoy"),
                 React.createElement("p",{className:"text-sm text-neutral-300 mt-1"},
                     adminTodayOrders.length+" pedidos encontrados en las fuentes consultadas · "+adminTodayOrders.filter(o=>o.paid||o.paymentStatus==='accredited').length+" acreditados · "+
@@ -7899,7 +7952,7 @@ React.createElement("div", { id: "order-search-panel", className: "bg-neutral-90
             React.createElement("div", { className: "bg-neutral-900 border border-neutral-800 rounded-3xl p-5 mb-6" },
                 React.createElement("div", { className: "flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4" },
                     React.createElement("div", null,
-                        React.createElement("h2", { className: "text-xl font-black mb-1" }, "Descuento general de la web"),
+                        React.createElement("h2", { id:"la-admin-promos", className: "text-xl font-black mb-1" }, "Descuento general de la web"),
                         React.createElement("p", { className: "text-neutral-400 text-sm" }, "Defin\u00ED un porcentaje promocional para toda la galer\u00EDa. Queda sincronizado para m\u00F3vil y PC; pod\u00E9s exceptuar \u00E1lbumes puntuales desde cada tarjeta.")),
                     React.createElement("div", { className: "flex flex-col sm:flex-row gap-3 w-full lg:w-auto" },
                         React.createElement("label", { className: "text-sm text-neutral-300 flex-1 sm:w-56" },
@@ -7958,7 +8011,7 @@ React.createElement("div", { id: "order-search-panel", className: "bg-neutral-90
                 React.createElement("div", { className: "flex flex-col sm:flex-row gap-2 mt-4" },
                     React.createElement("button", { onClick: () => setBannerSettings({ visible: false, items: [] }), className: "bg-neutral-800 px-4 py-3 rounded-xl font-bold" }, "Ocultar y borrar banners"),
                     React.createElement("button", { onClick: () => setBannerSettings(bs => ({ ...bs, items: [...(bs.items || []), { src: '', title: 'Nuevo banner', text: 'Descripción del banner', msg: 'Hola Lucas! Quiero consultar por este servicio.' }] })), className: "bg-indigo-600 px-4 py-3 rounded-xl font-bold" }, "Agregar banner"))),
-            React.createElement("div", { className: "mb-5" },
+            React.createElement("div", { id:"la-admin-gallery", className: "mb-5" },
                 React.createElement("div", { className: "relative" },
                     React.createElement("i", { className: "fas fa-search absolute left-4 top-1/2 -translate-y-1/2 text-neutral-500 text-sm" }),
                     React.createElement("input", { value: albumSearch, onChange: e => setAlbumSearch(e.target.value), placeholder: "Buscar \u00E1lbum...", className: "w-full bg-neutral-900 border border-neutral-800 rounded-2xl pl-11 pr-4 py-3 text-sm outline-none focus:border-indigo-500" }))),
@@ -8063,7 +8116,7 @@ React.createElement("div", { id: "order-search-panel", className: "bg-neutral-90
                 React.createElement("p", { className:"text-xs text-sky-100/75 mt-1 mb-3" },
                     "Actualiza en Cloudflare las fotos originales, el precio de cada álbum, descuentos web y cupones. Repetir cuando cambies los precios o las promociones."),
                 renderMpCatalogueSyncControls()),
-            admin && React.createElement("section",{className:"rounded-3xl border border-sky-400/25 bg-neutral-900 p-4 sm:p-5 mb-6","aria-label":"Historial Mercado Pago"},
+            admin && React.createElement("section",{id:"la-admin-payments",className:"rounded-3xl border border-sky-400/25 bg-neutral-900 p-4 sm:p-5 mb-6","aria-label":"Historial Mercado Pago"},
                 React.createElement("div",{className:"flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3"},
                     React.createElement("div",null,
                         React.createElement("h3",{className:"font-black text-lg text-white"},React.createElement("i",{className:"fas fa-file-invoice-dollar text-sky-300 mr-2"}),"Ventas Mercado Pago · todas las órdenes"),
@@ -8476,9 +8529,6 @@ React.createElement("div", { id: "order-search-panel", className: "bg-neutral-90
                             "Siguiente",
                             React.createElement("i", { className: "fas fa-chevron-right ml-2" })))),
                 React.createElement(PromoBanners, { bannerSettings: bannerSettings }))),
-        route !== "#/admin" && route !== "#/club" && !currentAlbum && React.createElement("div", { className:"admin-footer-access-v85" },
-            React.createElement("button", { type:"button", onClick:()=>{ try { localStorage.setItem('LA_INSTALL_START_ROUTE','#/admin'); } catch(e) {} window.location.href=new URL('admin-login.html?build=20260922-1617', location.href).href; }, title:"Administración", "aria-label":"Administración" },
-                React.createElement("i", { className:"fas fa-lock" }))),
         introOpen && !loading && allPhotos.length > 0 && route !== "#/admin" && React.createElement(PurchaseIntro, { photos: allPhotos, onClose: () => setIntroOpen(false) }),
         currentAlbum && React.createElement("button", { onClick: () => setIntroOpen(true), className: "purchase-help-floating" },
             React.createElement("i", { className: "fas fa-circle-question" }),
