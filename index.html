@@ -6170,7 +6170,8 @@ ${clone.outerHTML}`;
     const adminOrderChannel=o=>{
         const provider=String(o&&((o.channel||o.paymentProvider))||'').toLowerCase();
         return provider.includes('whatsapp')?'whatsapp':
-            (provider.includes('mercadopago')||o&&o.mpCheckoutId)?'mercadopago':'sin_dato';
+            (provider.includes('mercadopago')||o&&o.mpCheckoutId)?'mercadopago':
+            (o&&o.messageVersion===2&&o.confirmationMessage?'whatsapp':'sin_dato');
     };
     const adminOrderState=o=>{
         if(!o)return 'pending';
@@ -6196,7 +6197,8 @@ ${clone.outerHTML}`;
             orders:real.length,paid:paid.length,
             pending:real.filter(o=>['pending','agreed'].includes(adminOrderState(o))).length,
             whatsapp:real.filter(o=>adminOrderChannel(o)==='whatsapp').length,
-            gross:paid.reduce((sum,o)=>sum+(Number(o.total)||0),0),
+            gross:paid.reduce((sum,o)=>sum+(Number(adminOrderState(o)==='manual_paid'?
+                (o.manualPaymentAmount??o.total):o.total)||0),0),
             photos:paid.reduce((sum,o)=>sum+(Array.isArray(o.items)?o.items.length:0),0)
         };
     },[adminOrderLedger]);
@@ -6222,6 +6224,14 @@ ${clone.outerHTML}`;
         if(!['agreed','manual_paid'].includes(next))return;
         const method=next==='manual_paid'?window.prompt('Medio de pago recibido (transferencia, efectivo u otro):','transferencia'):null;
         if(next==='manual_paid'&&(!method||!String(method).trim()))return;
+        const amountInput=next==='manual_paid'?
+            window.prompt('Importe efectivamente recibido (ARS):',String(o.total||0)):null;
+        if(next==='manual_paid'&&amountInput===null)return;
+        const manualAmount=next==='manual_paid'?
+            Number(String(amountInput).trim().replace(/\$/g,'').replace(/\s/g,'').replace(/\./g,'').replace(',','.')):null;
+        if(next==='manual_paid'&&(!Number.isFinite(manualAmount)||manualAmount<0)){
+            window.alert('Ingresá un importe válido.');return;
+        }
         if(!window.confirm(next==='manual_paid'?
             '¿Confirmás que el dinero ya fue recibido? No se habilitarán descargas automáticamente.':
             '¿Confirmás que acordaste un pago que todavía NO recibiste?'))return;
@@ -6231,9 +6241,11 @@ ${clone.outerHTML}`;
             channel:'whatsapp',paymentProvider:'whatsapp',paid:false,
             manualPaymentMethod:next==='manual_paid'?String(method).trim():'',
             manualPaymentConfirmedAt:next==='manual_paid'?at:'',
+            manualPaymentAmount:next==='manual_paid'?manualAmount:null,
             status:next==='manual_paid'?'pagado_por_otro_medio':'pago_acordado',
             statusHistory:[...(Array.isArray(o.statusHistory)?o.statusHistory:[]),
-                {at,action:next,method:next==='manual_paid'?String(method).trim():''}]
+                {at,action:next,method:next==='manual_paid'?String(method).trim():'',
+                    amount:next==='manual_paid'?manualAmount:null}]
         };
         try{
             const saved=await updateOrderFirebase(o.id,partial);
@@ -8051,7 +8063,8 @@ React.createElement("div", { id: "order-search-panel", className: "bg-neutral-90
                             React.createElement("div", { className:"flex flex-wrap items-center gap-2" }, React.createElement("b", null, "#", o.id), isRedemption && React.createElement("span", { className:"club-order-badge" }, "CANJE CLUB"), printCount > 0 && React.createElement("span", { className:"print-order-badge" }, `IMPRESIÓN 10x15 × ${printCount}`),
                                 React.createElement("span",{className:"la-ledger-badge "+adminOrderState(o)},adminOrderStateLabel(o)),
                                 React.createElement("span",{className:"la-ledger-channel"},adminOrderChannel(o)==='whatsapp'?"WhatsApp":adminOrderChannel(o)==='mercadopago'?"Mercado Pago":"Sin canal")),
-                            React.createElement("p", { className:"text-xs text-neutral-400 mt-1" }, (o.customerName || 'Sin nombre'), " · ", (o.phone || '—'), isRedemption ? ` · ${o.rewardName || 'Beneficio'} · -${o.redeemedPoints || 0} pts` : ` · ${formatPrice(o.total)}`),
+                            React.createElement("p", { className:"text-xs text-neutral-400 mt-1" }, (o.customerName || 'Sin nombre'), " · ", (o.phone || '—'), isRedemption ? ` · ${o.rewardName || 'Beneficio'} · -${o.redeemedPoints || 0} pts` :
+                                ` · ${formatPrice(adminOrderState(o)==='manual_paid'?(o.manualPaymentAmount??o.total):o.total)}`),
                             React.createElement("div",{className:"la-ledger-summary"},
                                 (o.items||[]).length+" fotos · "+(o.albumName||o.items&&o.items[0]&&o.items[0].albumName||"Sin galería"))),
                         React.createElement("details",{className:"la-ledger-details"},
