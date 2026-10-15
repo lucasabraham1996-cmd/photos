@@ -2240,6 +2240,8 @@ img{-webkit-user-drag:none;}
 .mp-catalogue-result.error{background:#431d22;color:#ffd3d3!important;border:1px solid #98545c}.mp-catalogue-result.success{background:#0d3b25;color:#c7ffdd!important;border:1px solid #258859}
 @media(max-width:380px){.checkout-payment-options{padding:12px}.mp-pay-button{padding:12px;gap:9px}.mp-pay-button strong{font-size:18px}.mp-pay-button>img{width:44px;height:44px;flex-basis:44px}.other-payment-button{padding:11px;font-size:14px;gap:9px}}
 </style>
+  <link rel="stylesheet" href="./premium-ux-v132.css?v=134" />
+  <script defer src="./premium-ux-v132.js?v=134"></script>
 </head>
 <body style="background:#050505;color:#fff;">
   <div id="boot-overlay" style="position:fixed;inset:0;z-index:99999;background:#050505;color:#fff;display:flex;align-items:center;justify-content:center;padding:24px;">
@@ -3031,15 +3033,17 @@ async function updateOrderFirebase(orderId, partial) {
     const db = await getFirebaseDb();
     if (!db)
         return false;
+    let wrote=false;
     for (const path of orderCollections()) {
         try {
             await db.collection(path).doc(firebaseDocId(orderId)).set({ id: orderId, ...partial, updatedAt: new Date().toISOString() }, { merge: true });
+            wrote=true;
         }
         catch (e) {
             console.warn('No se pudo actualizar estado en Firebase:', path, e);
         }
     }
-    return true;
+    return wrote;
 }
 function readLocalOrders() { try {
     return JSON.parse(localStorage.getItem(LS_ORDERS_KEY) || "[]");
@@ -5331,6 +5335,10 @@ function App() {
     const [orders, setOrders] = useState([]);
     const [ordersLoading, setOrdersLoading] = useState(false);
     const [orderSearch, setOrderSearch] = useState("");
+    const [adminPanelTab,setAdminPanelTab] = useState('inicio');
+    const [adminLedgerFilter,setAdminLedgerFilter] = useState('all');
+    const [adminLedgerSearch,setAdminLedgerSearch] = useState('');
+    const [adminLedgerDate,setAdminLedgerDate] = useState('');
     const [directOrder, setDirectOrder] = useState(null);
     const [orderSearchTouched, setOrderSearchTouched] = useState(false);
     const [albumSearch, setAlbumSearch] = useState("");
@@ -5660,7 +5668,14 @@ function App() {
     const handleAlbumCardTap = (event, album) => {
         if (!album)
             return;
-        // La carátula ya se revela al rozar/deslizar el dedo; el toque queda para entrar al álbum.
+        // En móvil: primer toque muestra los escudos; el segundo abre el álbum.
+        // La portada principal continúa abriendo la última galería directamente.
+        const isCover=Boolean(event&&event.currentTarget&&event.currentTarget.querySelector('.modern-album-card'));
+        const isTouch=Boolean(window.matchMedia&&window.matchMedia('(hover: none), (pointer: coarse)').matches);
+        if(isCover&&isTouch&&mobileRevealedAlbumId!==album.id){
+            setMobileRevealedAlbumId(album.id);
+            return;
+        }
         const firstSubAlbumId = (((album.subalbums || [])[0] || {}).id) || '';
         setMobileRevealedAlbumId('');
         location.hash = albumHash(album.id, firstSubAlbumId);
@@ -6171,8 +6186,13 @@ ${clone.outerHTML}`;
         for (const mp of mpAdminOrders) {
             if (!mp || !mp.checkout_id) continue;
             const id = 'LA-MP-' + String(mp.checkout_id).replace(/-/g, '').slice(0,16).toUpperCase();
-            const key = normalizeOrderCode(id);
-            const previous = byId.get(key) || {};
+            // Priorizar identificadores del proveedor para unificar duplicados
+            // Firebase/Apps Script + D1 incluso cuando sus códigos locales difieren.
+            const linked=[...byId.entries()].find(([_,o])=>o&&(
+                (o.mpCheckoutId&&String(o.mpCheckoutId)===String(mp.checkout_id))||
+                (o.mpOrderId&&mp.order_id&&String(o.mpOrderId)===String(mp.order_id))));
+            const key=linked?linked[0]:normalizeOrderCode(id);
+            const previous=byId.get(key)||{};
             const photos = (mp.photos || []).map(p => ({
                 id:p.photo_id || p.name, name:p.name, albumId:p.album_id,
                 albumName:p.album_name || '', driveLink:p.download_url || '',
@@ -6180,7 +6200,7 @@ ${clone.outerHTML}`;
             }));
             const paid = mp.paid === true;
             byId.set(key, {
-                ...previous, id, date:mp.created_at || previous.date || '',
+                ...previous, id:previous.id||id, date:mp.created_at || previous.date || '',
                 total:Number(mp.amount) || 0,
                 customerName:mp.customer_name || previous.customerName || '',
                 phone:mp.customer_phone || previous.phone || '',
@@ -6195,7 +6215,97 @@ ${clone.outerHTML}`;
             (CLUB_ENABLED || !isClubRecord(o)) && normalizeOrderCode(o && o.id)
         ).sort((a,b) => new Date(b.date || 0) - new Date(a.date || 0));
     }, [orders, mpAdminOrders]);
+    // Canal de contacto y estado de pago son diferentes: abrir WhatsApp NO significa pago.
+    const adminOrderChannel=o=>{
+        const provider=String(o&&((o.channel||o.paymentProvider))||'').toLowerCase();
+        return provider.includes('whatsapp')?'whatsapp':
+            (provider.includes('mercadopago')||o&&o.mpCheckoutId)?'mercadopago':
+            (o&&o.messageVersion===2&&o.confirmationMessage?'whatsapp':'sin_dato');
+    };
+    const adminOrderState=o=>{
+        if(!o)return 'pending';
+        const status=String(o.status||'').toLowerCase();
+        if(o.cancelled||o.rejected||['cancelado','anulado','rechazado'].includes(status))return 'cancelled';
+        if(o.manualPaymentConfirmedAt&&adminOrderChannel(o)==='whatsapp')return 'manual_paid';
+        if(o.paymentStatus==='agreed'&&adminOrderChannel(o)==='whatsapp')return 'agreed';
+        if(adminOrderChannel(o)==='mercadopago'&&(o.paid===true||String(o.paymentStatus||'').toLowerCase()==='accredited'))return 'paid';
+        if(adminOrderChannel(o)==='whatsapp')return 'whatsapp';
+        return 'pending';
+    };
+    const adminOrderStateLabel=o=>({
+        paid:'Pago acreditado',manual_paid:'Pagado por otro medio',
+        agreed:'Pago acordado, pendiente',
+        whatsapp:'Consulta por WhatsApp iniciada',
+        cancelled:'Cancelado / anulado',pending:'Pendiente de pago'
+    })[adminOrderState(o)]||'Pendiente';
     const adminTodayOrders = adminOrderLedger.filter(o=>isSameLocalDate(o.date||o.createdAt));
+    const adminOverview=useMemo(()=>{
+        const real=adminOrderLedger.filter(o=>o&&!isClubRecord(o));
+        const paid=real.filter(o=>['paid','manual_paid'].includes(adminOrderState(o)));
+        return {
+            orders:real.length,paid:paid.length,
+            pending:real.filter(o=>['pending','agreed'].includes(adminOrderState(o))).length,
+            whatsapp:real.filter(o=>adminOrderChannel(o)==='whatsapp').length,
+            gross:paid.reduce((sum,o)=>sum+(Number(adminOrderState(o)==='manual_paid'?
+                (o.manualPaymentAmount??o.total):o.total)||0),0),
+            photos:paid.reduce((sum,o)=>sum+(Array.isArray(o.items)?o.items.length:0),0)
+        };
+    },[adminOrderLedger]);
+    const adminFilteredLedger=useMemo(()=>{
+        const needle=norm(adminLedgerSearch);
+        return adminOrderLedger.filter(o=>{
+            const state=adminOrderState(o),channel=adminOrderChannel(o);
+            const filterOk=adminLedgerFilter==='all'||
+                (adminLedgerFilter==='paid'&&['paid','manual_paid'].includes(state))||
+                (adminLedgerFilter==='whatsapp'&&channel==='whatsapp')||
+                state===adminLedgerFilter;
+            const dateOk=!adminLedgerDate||String(o.date||o.createdAt||'').slice(0,10)===adminLedgerDate;
+            const items=Array.isArray(o.items)?o.items:[];
+            const haystack=[o.id,o.customerName,o.phone,o.albumName,o.mpOrderId,
+                ...items.flatMap(p=>[p&&p.name,p&&p.albumName,p&&p.code])].filter(Boolean).join(' ');
+            return filterOk&&dateOk&&(!needle||norm(haystack).includes(needle));
+        });
+    },[adminOrderLedger,adminLedgerFilter,adminLedgerSearch,adminLedgerDate]);
+    // El admin puede registrar una confirmación manual para seguimiento comercial.
+    // NO se marca paid=true ni se otorgan tokens de descarga del Worker.
+    const updateManualWhatsappStatus=async(o,next)=>{
+        if(!admin||adminOrderChannel(o)!=='whatsapp'||adminOrderState(o)==='cancelled')return;
+        if(!['agreed','manual_paid'].includes(next))return;
+        const method=next==='manual_paid'?window.prompt('Medio de pago recibido (transferencia, efectivo u otro):','transferencia'):null;
+        if(next==='manual_paid'&&(!method||!String(method).trim()))return;
+        const amountInput=next==='manual_paid'?
+            window.prompt('Importe efectivamente recibido (ARS):',String(o.total||0)):null;
+        if(next==='manual_paid'&&amountInput===null)return;
+        const manualAmount=next==='manual_paid'?
+            Number(String(amountInput).trim().replace(/\$/g,'').replace(/\s/g,'').replace(/\./g,'').replace(',','.')):null;
+        if(next==='manual_paid'&&(!Number.isFinite(manualAmount)||manualAmount<0)){
+            window.alert('Ingresá un importe válido.');return;
+        }
+        if(!window.confirm(next==='manual_paid'?
+            '¿Confirmás que el dinero ya fue recibido? No se habilitarán descargas automáticamente.':
+            '¿Confirmás que acordaste un pago que todavía NO recibiste?'))return;
+        const at=new Date().toISOString();
+        const partial={
+            paymentStatus:next==='manual_paid'?'manual_confirmed':'agreed',
+            channel:'whatsapp',paymentProvider:'whatsapp',paid:false,
+            manualPaymentMethod:next==='manual_paid'?String(method).trim():'',
+            manualPaymentConfirmedAt:next==='manual_paid'?at:'',
+            manualPaymentAmount:next==='manual_paid'?manualAmount:null,
+            status:next==='manual_paid'?'pagado_por_otro_medio':'pago_acordado',
+            statusHistory:[...(Array.isArray(o.statusHistory)?o.statusHistory:[]),
+                {at,action:next,method:next==='manual_paid'?String(method).trim():'',
+                    amount:next==='manual_paid'?manualAmount:null}]
+        };
+        try{
+            const saved=await updateOrderFirebase(o.id,partial);
+            if(!saved)throw Error('Firebase no confirmó la actualización.');
+            const nextOrders=mergeOrders(readLocalOrders(),orders,[{...o,...partial}]);
+            saveLocalOrders(nextOrders);setOrders(nextOrders);
+            setAdminMessage('Estado actualizado. Las descargas siguen protegidas por Cloudflare.');
+        }catch(err){
+            setAdminMessage('No se guardó el estado: '+String(err&&err.message||err));
+        }
+    };
     const ADMIN_NOTIFICATION_START = Date.parse('2026-08-14T23:22:00Z');
     const unseenAdminOrders = useMemo(() => adminOrderLedger.filter(o => {
         const id = normalizeOrderCode(o && o.id);
@@ -6389,9 +6499,23 @@ ${clone.outerHTML}`;
             alert('Para negociar un precio por cantidad tenés que seleccionar al menos ' + BULK_QUOTE_MIN_PHOTOS + ' fotos.');
             return;
         }
-        const url = 'https://wa.me/' + SELLER_PHONE + '?text=' + encodeURIComponent(buildBulkQuoteWhatsappMessage());
-        const opened = window.open(url, '_blank');
-        if (!opened) window.location.href = url;
+        const url='https://wa.me/'+SELLER_PHONE+'?text='+encodeURIComponent(buildBulkQuoteWhatsappMessage());
+        const now=new Date().toISOString();
+        const order={id:newOrderCode(),date:now,kind:'bulk_quote',quoteOnly:true,
+            albumName:currentAlbum&&currentAlbum.name||'',total:0,quotedTotal:null,
+            channel:'whatsapp',paymentProvider:'whatsapp',paymentStatus:'pending',
+            status:'consulta_whatsapp_iniciada',whatsappOpenedAt:now,
+            paid:false,delivered:false,wantsPoints:false,
+            items:bulkQuotePhotos.map(p=>({id:p.id,name:p.name,code:p.code,
+                albumName:p.albumName,subAlbumName:p.subAlbumName||'',price:Number(p.price)||0,
+                driveLink:p.rawUrl||p.fullUrl||p.url||''}))};
+        try{
+            saveLocalOrders(mergeOrders(readLocalOrders(),[order]));
+            savePendingOrders(mergeOrders(readPendingOrders(),[compactOrderForScript(order)]));
+        }catch(err){console.warn('Respaldo de consulta por cantidad:',err)}
+        const opened=window.open(url,'_blank');
+        if(!opened)window.location.href=url;
+        saveOrderRemote(order).catch(err=>console.warn('Consulta por cantidad pendiente:',err));
     };
     const togglePrintedPhoto = (id) => setPrintedPhotoIds(ids => ids.includes(id) ? ids.filter(x => x !== id) : [...ids, id]);
     const wmVisible = (albumId) => { var _a; return !((_a = watermarkSettings.disabledAlbums) === null || _a === void 0 ? void 0 : _a[albumId]); };
@@ -6645,7 +6769,9 @@ En breve te las preparo y te las envío por acá 😊
             printSurcharge,
             items: selectedPhotos.map(p => ({ id: p.id, albumName: p.albumName, subAlbumName: p.subAlbumName || '', name: p.name, code: p.code, url: p.url, driveLink: p.rawUrl || p.fullUrl || p.url, price: p.price, printRequested: printedPhotoIds.includes(p.id) })),
             delivered: false,
-            status: 'pendiente'
+            status: 'consulta_whatsapp_iniciada',
+            channel:'whatsapp',paymentProvider:'whatsapp',paymentStatus:'pending',
+            paid:false,whatsappOpenedAt:new Date().toISOString()
         };
         const whatsappUrl = `https://api.whatsapp.com/send?phone=${SELLER_PHONE}&text=${encodeURIComponent(msg)}`;
         return { order, msg, confirmationMessage, orderData, whatsappUrl };
@@ -6926,6 +7052,27 @@ En breve te las preparo y te las envío por acá 😊
             '\n¿Cómo podemos acordar el pago?';
         return 'https://wa.me/'+SELLER_PHONE+'?text='+encodeURIComponent(message);
     };
+    // Registrar cada consulta con su canal real, sin dar el mensaje por enviado.
+    const startOtherPaymentWhatsapp=()=>{
+        // Registrar como observador: NO cancelar el enlace original ni abrir otra pestaña.
+        // El navegador conserva exactamente el flujo original de WhatsApp.
+        if(!selectedPhotos.length)return;
+        const id=newOrderCode(),now=new Date().toISOString();
+        const order={id,date:now,kind:'photos',total:checkoutTotal,subtotal:regular,
+            customerName:checkoutBuyerName||'',phone:checkoutBuyerPhone||'',
+            albumName:[...new Set(selectedPhotos.map(p=>p.albumName).filter(Boolean))].join(' · '),
+            channel:'whatsapp',paymentProvider:'whatsapp',paymentStatus:'pending',
+            status:'consulta_whatsapp_iniciada',paid:false,delivered:false,
+            whatsappOpenedAt:now,wantsPoints:false,
+            items:selectedPhotos.map(p=>({id:p.id,name:p.name,code:p.code,
+                albumName:p.albumName,subAlbumName:p.subAlbumName||'',price:Number(p.price)||0,
+                driveLink:p.rawUrl||p.fullUrl||p.url||''}))};
+        try{
+            saveLocalOrders(mergeOrders(readLocalOrders(),[order]));
+            savePendingOrders(mergeOrders(readPendingOrders(),[compactOrderForScript(order)]));
+        }catch(err){console.warn('Respaldo de consulta WhatsApp:',err)}
+        saveOrderRemote(order).catch(err=>console.warn('Consulta WhatsApp pendiente de reintento:',err));
+    };
     // Las consultas de álbumes completos no pasan por Mercado Pago. Primero
     // registramos un pedido resumido para no perder solicitudes grandes en Firebase.
     const requestFullAlbumWhatsapp=async(album)=>{
@@ -6938,7 +7085,7 @@ En breve te las preparo y te las envío por acá 😊
             id,date:new Date().toISOString(),kind:'album',albumId:album.id,
             albumName:album.name,albumPhotoCount:(album.photos||[]).length,
             total,subtotal:total,customerName:checkoutBuyerName,phone:checkoutBuyerPhone,
-            paymentProvider:'whatsapp',paymentStatus:'pending',status:'pendiente_acuerdo',
+            paymentProvider:'whatsapp',paymentStatus:'pending',status:'consulta_whatsapp_iniciada',channel:'whatsapp',whatsappOpenedAt:new Date().toISOString(),
             paid:false,delivered:false,printRequested:false,printCount:0,wantsPoints:false,
             items:[{id:'album-'+album.id,name:'Álbum completo',albumName:album.name,
                 albumUrl:albumUrl(album.id),price:total}]
@@ -7514,6 +7661,7 @@ En breve te las preparo y te las envío por acá 😊
             return;
         markAdminReviewed(order.id);
         setAdminNotificationsOpen(false);
+        setAdminPanelTab('pedidos');
         setOrderSearch('#' + order.id);
         setDirectOrder(order);
         setOrderSearchTouched(true);
@@ -7631,7 +7779,7 @@ En breve te las preparo y te las envío por acá 😊
                                 "Recargar la página"))),
                     React.createElement("p", { className: "text-center text-xs text-neutral-500 mt-4" }, "Tip: si fue un bloqueo momentáneo de Google Sheets, el primer botón suele alcanzar para solucionarlo."))));
     if (route === "#/admin" && !admin)
-        return React.createElement("div", { className: "min-h-screen flex items-center justify-center p-4 bg-[#050505]" },
+        return React.createElement("div", { className: "la-admin-login-screen min-h-screen flex items-center justify-center p-4 bg-[#050505]" },
             React.createElement("div", { className: "relative bg-neutral-900 border border-neutral-800 p-7 rounded-3xl w-full max-w-sm shadow-2xl" },
                 React.createElement("button", { type:"button", onClick:goToGallery, className:"absolute top-4 right-4 w-9 h-9 rounded-full bg-black/40 border border-white/10 text-neutral-400 hover:text-white flex items-center justify-center", title:"Cerrar", "aria-label":"Cerrar acceso administrador" }, React.createElement("i", { className:"fas fa-xmark" })),
                 React.createElement("div", { className:"w-16 h-16 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center mb-5" },
@@ -7654,8 +7802,8 @@ En breve te las preparo y te las envío por acá 😊
                 }, React.createElement("i", { className:"fas fa-rotate mr-2" }), "Restablecer Face ID / biometría"),
                 adminLoginError && React.createElement("div", { className:"mt-4 rounded-xl border border-red-500/25 bg-red-500/10 px-3 py-3 text-sm text-red-200" }, adminLoginError)));
     if (route === "#/admin")
-        return React.createElement("div", { className: "min-h-screen p-5 md:p-8 max-w-7xl mx-auto" },
-            React.createElement("header", { className: "flex flex-col sm:flex-row gap-3 sm:items-end sm:justify-between border-b border-neutral-800 pb-5 mb-6" },
+        return React.createElement("div", { className: "la-admin-workspace min-h-screen p-5 md:p-8 max-w-7xl mx-auto", "data-la-admin-tab":adminPanelTab },
+            React.createElement("header", { className: "la-admin-main-header flex flex-col sm:flex-row gap-3 sm:items-end sm:justify-between border-b border-neutral-800 pb-5 mb-6" },
                 React.createElement("div", null,
                     React.createElement("h1", { className: "text-3xl font-black" },
                         "Panel ",
@@ -7668,11 +7816,50 @@ En breve te las preparo y te las envío por acá 😊
                     React.createElement("button", { onClick: () => setPriceAdminOpen(true), className: "bg-emerald-500 text-black px-4 py-3 rounded-xl font-black" }, React.createElement("i", { className: "fas fa-tags mr-2" }), "Precios"),
                     React.createElement("button", { onClick: async () => { const link='https://lucasabraham1996-cmd.github.io/photos/contrataciones.html#/solicitar'; try { await navigator.clipboard.writeText(link); setAdminMessage('Link público de solicitudes copiado.'); } catch(e) { window.prompt('Copiá el link público de solicitudes:', link); } }, className: "bg-sky-600 px-4 py-3 rounded-xl font-bold" }, React.createElement("i", { className: "fas fa-link mr-2" }), "Copiar link solicitudes"),
                     React.createElement("button", { onClick: goToGallery, className: "bg-indigo-600 px-4 py-3 rounded-xl font-bold" }, "Ver galer\u00EDa"))),
-            React.createElement("section",{className:"mb-5 rounded-3xl border border-emerald-400/25 bg-neutral-900 p-4 sm:p-5"},
+
+            React.createElement("div", { className: "la-admin-control-hub" },
+                React.createElement("nav", { className: "la-admin-nav la-admin-tabs", "aria-label": "Pestañas del administrador" },
+                    [
+                        ["inicio", "fa-chart-line", "Inicio"],
+                        ["pedidos", "fa-receipt", "Pedidos"],
+                        ["pagos", "fa-credit-card", "Pagos"],
+                        ["galerias", "fa-images", "Galerías"],
+                        ["promociones", "fa-tags", "Promociones"],
+                        ["configuracion", "fa-shield-halved", "Configuración"],
+                        ["herramientas", "fa-screwdriver-wrench", "Herramientas"]
+                    ].map(([id,icon,label])=>React.createElement("button",{
+                        key:id,type:"button",className:"la-admin-nav-link"+(adminPanelTab===id?" active":""),
+                        "aria-current":adminPanelTab===id?"page":undefined,
+                        "aria-pressed":adminPanelTab===id,
+                        onClick:()=>{setAdminPanelTab(id);window.scrollTo({top:0,behavior:"smooth"});}
+                    },React.createElement("i",{className:"fas "+icon,"aria-hidden":true}),label))),
+                React.createElement("section", { className: "la-admin-overview", id:"la-admin-overview", hidden:adminPanelTab!=='inicio', "aria-label":"Resumen de gestión" },
+                    React.createElement("div",{className:"la-admin-overview-head"},
+                        React.createElement("h2",null,"Resumen de tu negocio"),
+                        React.createElement("p",null,ordersLoading||mpAdminOrdersBusy?"Actualizando operaciones…":"Datos recuperados hasta la última actualización")),
+                    React.createElement("div",{className:"la-admin-kpi-grid"},
+                        [
+                            ["fa-receipt","Órdenes registradas",String(adminOverview.orders),"Sin pedidos del Club de puntos"],
+                            ["fa-circle-check","Ventas acreditadas",String(adminOverview.paid),"Según estado registrado"],
+                            ["fa-wallet","Ingresos acreditados",formatPrice(adminOverview.gross),"Total bruto registrado"],
+                            ["fa-image","Fotos vendidas",String(adminOverview.photos),"De órdenes acreditadas"],
+                            ["fa-hourglass-half","Pedidos sin acreditar",String(adminOverview.pending),"Excluye entregados y anulados"],
+                            ["fa-layer-group","Galerías publicadas",String(activeAlbums.length),"Álbumes activos"],
+                            ["fa-comments","Consultas WhatsApp",String(adminOverview.whatsapp),"No se asumen enviadas ni pagadas"]
+                        ].map(([icon,label,value,note]) =>
+                            React.createElement("article",{key:label,className:"la-admin-kpi"},
+                                React.createElement("span",{className:"la-admin-kpi-icon"},React.createElement("i",{className:"fas "+icon,"aria-hidden":true})),
+                                React.createElement("div",null,
+                                    React.createElement("span",{className:"la-admin-kpi-label"},label),
+                                    React.createElement("strong",{className:"la-admin-kpi-value"},value)),
+                                React.createElement("small",{className:"la-admin-kpi-note"},note))))),
+                React.createElement("p",{className:"la-admin-hub-note"},
+                    "Indicadores calculados sobre las órdenes disponibles de Firebase, Apps Script y Cloudflare. Actualizá y recuperá pedidos para consultar la información más reciente; no reemplazan una conciliación contable.")),
+            React.createElement("section",{id:"la-admin-orders-today",hidden:adminPanelTab!=='inicio',className:"mb-5 rounded-3xl border border-emerald-400/25 bg-neutral-900 p-4 sm:p-5"},
                 React.createElement("h2",{className:"text-lg font-black text-white"},"Pedidos de hoy"),
                 React.createElement("p",{className:"text-sm text-neutral-300 mt-1"},
-                    adminTodayOrders.length+" pedidos encontrados en las fuentes consultadas · "+adminTodayOrders.filter(o=>o.paid||o.paymentStatus==='accredited').length+" acreditados · "+
-                    adminTodayOrders.filter(o=>!(o.paid||o.paymentStatus==='accredited')).length+" pendientes o por verificar."),
+                    adminTodayOrders.length+" pedidos encontrados en las fuentes consultadas · "+adminTodayOrders.filter(o=>['paid','manual_paid'].includes(adminOrderState(o))).length+" pagados · "+
+                    adminTodayOrders.filter(o=>!['paid','manual_paid'].includes(adminOrderState(o))).length+" pendientes, consultas o anulados."),
                 React.createElement("p",{className:"text-xs text-amber-200/90 mt-2"},
                     "Si falta una compra, tocá recuperar: también se consultan las órdenes de Cloudflare que no llegaron a Firebase. Los resultados dependen de que el Worker esté actualizado."),
                 React.createElement("button",{type:"button",disabled:ordersLoading||mpAdminOrdersBusy,onClick:refreshAllAdminOrders,
@@ -7680,7 +7867,7 @@ En breve te las preparo y te las envío por acá 😊
                     ordersLoading||mpAdminOrdersBusy?"Consultando pedidos…":"Actualizar y recuperar todos los pedidos"),
                 mpAdminOrdersError&&React.createElement("p",{role:"alert",className:"mt-2 text-xs text-amber-200"},mpAdminOrdersError)),
             adminMessage && React.createElement("div", { className: "mb-4 bg-emerald-600/15 border border-emerald-500/30 text-emerald-300 rounded-2xl px-4 py-3 text-sm" }, adminMessage),
-            React.createElement("section", { id:"admin-security-access", className:"mb-5 rounded-3xl border border-sky-400/20 bg-gradient-to-br from-sky-500/10 via-neutral-900 to-neutral-900 p-5" },
+            React.createElement("section", { id:"admin-security-access", hidden:adminPanelTab!=='configuracion', className:"mb-5 rounded-3xl border border-sky-400/20 bg-gradient-to-br from-sky-500/10 via-neutral-900 to-neutral-900 p-5" },
                 React.createElement("div", { className:"flex flex-col md:flex-row md:items-center md:justify-between gap-4" },
                     React.createElement("div", { className:"flex items-start gap-3" },
                         React.createElement("div", { className:"w-11 h-11 rounded-2xl bg-sky-400/15 border border-sky-300/20 flex items-center justify-center shrink-0" }, React.createElement("i", { className:"fas fa-shield-halved text-sky-300" })),
@@ -7702,7 +7889,7 @@ En breve te las preparo y te las envío por acá 😊
                         React.createElement("p", { className:"text-[11px] text-neutral-500" }, "Mínimo 6 caracteres. La nueva clave se guarda como verificador derivado; no queda escrita en el código."),
                         React.createElement("button", { disabled:securityBusy || !currentAdminSecret || !newAdminSecret || !confirmAdminSecret, className:"bg-white text-black px-5 py-3 rounded-xl font-black disabled:opacity-40" }, securityBusy ? "Guardando..." : "Guardar nueva contraseña")))),
             window.LA_ORDER_LOAD_WARNING && React.createElement("div", { className:"order-storage-warning", role:"alert" }, window.LA_ORDER_LOAD_WARNING),
-            React.createElement("div", { className:"admin-notif-shell" },
+            React.createElement("div", { className:"admin-notif-shell", hidden:adminPanelTab!=='inicio' },
                 React.createElement("button", { type:"button", onClick:() => setAdminNotificationsOpen(v => !v), className:"admin-notif-btn" },
                     React.createElement("div", { className:"admin-notif-left" },
                         React.createElement("div", { className:"admin-notif-icon" }, React.createElement("i", { className:"fas fa-bell" }), unseenAdminTotal > 0 && React.createElement("span", { className:"admin-notif-count" }, unseenAdminTotal > 99 ? '99+' : unseenAdminTotal)),
@@ -7713,7 +7900,7 @@ En breve te las preparo y te las envío por acá 😊
                     unseenAdminTotal === 0 && React.createElement("p", { className:"text-xs text-neutral-500 p-2" }, "Cuando llegue un pedido, un canje o una solicitud de partido, aparecerá acá."),
                     unseenAdminBookingRequests.slice(0,8).map(b => React.createElement("button", { key:`booking-${b.id}`, onClick:() => openBookingRequestFromNotification(b), className:"admin-notif-item" }, React.createElement("div", { className:"min-w-0" }, React.createElement("div", { className:"flex items-center gap-2" }, React.createElement("span", { className:"admin-notif-kind request" }, "PARTIDO"), React.createElement("b", { className:"text-xs truncate" }, `${b.home||'Local'} vs ${b.away||'Visitante'}`)), React.createElement("p", { className:"text-[10px] text-neutral-500 mt-1 truncate" }, `${b.date||'Sin fecha'} · ${b.category||'Sin categoría'} · ${b.clientName||'Sin nombre'}`)), React.createElement("i", { className:"fas fa-calendar-days text-emerald-400 text-xs" }))),
                     unseenAdminOrders.slice(0,12).map(o => { const isClub=o.type==='benefit_redemption'||o.benefitRedemption===true; return React.createElement("button", { key:o.id, onClick:() => openOrderFromQueue(o), className:"admin-notif-item" }, React.createElement("div", { className:"min-w-0" }, React.createElement("div", { className:"flex items-center gap-2" }, React.createElement("span", { className:`admin-notif-kind ${isClub?'club':'order'}` }, isClub?'CANJE CLUB':'PEDIDO'), React.createElement("b", { className:"text-xs truncate" }, `#${o.id}`)), React.createElement("p", { className:"text-[10px] text-neutral-500 mt-1 truncate" }, `${o.customerName||'Sin nombre'} · ${isClub ? (o.rewardName||'Beneficio') : formatPrice(o.total)}`)), React.createElement("i", { className:"fas fa-chevron-right text-neutral-600 text-xs" })); })) ),
-            React.createElement("section", { className: "relative overflow-hidden bg-gradient-to-br from-sky-500/15 via-blue-600/10 to-neutral-900 border border-sky-400/20 rounded-3xl p-5 sm:p-6 mb-6" },
+            React.createElement("section", { hidden:adminPanelTab!=='herramientas', className: "relative overflow-hidden bg-gradient-to-br from-sky-500/15 via-blue-600/10 to-neutral-900 border border-sky-400/20 rounded-3xl p-5 sm:p-6 mb-6" },
     React.createElement("div", { className: "absolute -right-10 -top-12 w-40 h-40 bg-sky-400/10 blur-3xl rounded-full pointer-events-none" }),
     React.createElement("div", { className: "relative flex flex-col md:flex-row md:items-center justify-between gap-5" },
         React.createElement("div", { className: "flex items-start gap-4" },
@@ -7727,7 +7914,7 @@ En breve te las preparo y te las envío por acá 😊
         React.createElement("button", { onClick: () => { try { sessionStorage.setItem('la_booking_admin', '1'); } catch (e) {} location.href = 'contrataciones.html#/admin'; }, className: "w-full md:w-auto bg-gradient-to-r from-sky-400 to-blue-600 text-white px-5 py-3.5 rounded-2xl font-black shadow-[0_16px_40px_rgba(37,99,235,.25)] hover:brightness-110 transition" },
             React.createElement("i", { className: "fas fa-calendar-days mr-2" }),
             "Abrir contrataciones"))),
-React.createElement("div", { id: "order-search-panel", className: "bg-neutral-900 border border-neutral-800 rounded-3xl p-5 mb-6" },
+React.createElement("div", { id: "order-search-panel", hidden:adminPanelTab!=='pedidos', className: "bg-neutral-900 border border-neutral-800 rounded-3xl p-5 mb-6" },
                 React.createElement("div", { className: "flex flex-col lg:flex-row lg:items-end gap-4 lg:justify-between" },
                     React.createElement("div", null,
                         React.createElement("h2", { className: "text-xl font-black mb-1" }, "Buscar operaci\u00F3n y obtener links de Drive"),
@@ -7851,7 +8038,7 @@ React.createElement("div", { id: "order-search-panel", className: "bg-neutral-90
                                         o.rejected ? 'Rechazado' : o.delivered ? 'Cargado y entregado' : 'Pendiente'),
                                     React.createElement("button", { onClick: () => openOrderFromQueue(o), className: "bg-neutral-800 hover:bg-neutral-700 px-3 py-2 rounded-xl text-xs font-black" }, "Abrir")));
                         })))),
-            React.createElement("div", { className: "bg-neutral-900 border border-neutral-800 rounded-3xl p-5 mb-6" },
+            React.createElement("div", { hidden:adminPanelTab!=='pedidos', className: "bg-neutral-900 border border-neutral-800 rounded-3xl p-5 mb-6" },
                 CLUB_ENABLED && React.createElement("div", { className:"flex flex-col lg:flex-row lg:items-start lg:justify-between gap-3 mb-4" },
                     React.createElement("div", null,
                         React.createElement("h2", { className: "text-xl font-black" }, React.createElement("i", { className:"fas fa-gift mr-2 text-orange-300" }), "Club de beneficios"),
@@ -7896,32 +8083,64 @@ React.createElement("div", { id: "order-search-panel", className: "bg-neutral-90
                             React.createElement("div", { className:"club-ranking-activity" }, React.createElement("b", null, `${r.purchases} compra${r.purchases===1?'':'s'}`), React.createElement("span", null, `${formatPrice(r.spent)} · ${r.redeemedPoints} canjeados`)),
                             React.createElement("div", { className:"club-ranking-points" }, r.points, React.createElement("small", null,"pts"))))),
                     clubRankingStats.length>10 && React.createElement("button", { type:"button", onClick:()=>setClubRankingAllOpen(v=>!v), className:"club-ranking-more" }, clubRankingAllOpen ? React.createElement(React.Fragment,null,"Ver sólo top 10 ",React.createElement("i",{className:"fas fa-chevron-up"})) : React.createElement(React.Fragment,null,`Ver ${clubRankingStats.length-10} más `,React.createElement("i",{className:"fas fa-chevron-down"})))),
-                React.createElement("h3", { className:"font-black text-lg mt-5 mb-1" }, "Historial unificado de todas las órdenes"),
-                React.createElement("p", { className:"text-xs text-neutral-400 mb-3" }, "Incluye pedidos de Firebase, Apps Script, respaldos pendientes y ventas de Mercado Pago recuperadas desde Cloudflare, pagadas o no."),
+                React.createElement("h3", { id:"la-admin-orders-history",className:"font-black text-lg mt-5 mb-1" }, "Todos los pedidos · historial unificado"),
+                React.createElement("p", { className:"text-xs text-neutral-400 mb-3" }, "Pedidos de Firebase, Apps Script y Cloudflare, con estado de pago y canal separados. Abrir WhatsApp no confirma que el mensaje fue enviado."),
                 React.createElement("button",{type:"button",onClick:()=>fetchMpAdminOrders(false),disabled:mpAdminOrdersBusy,className:"mb-3 w-full sm:w-auto px-5 py-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-black text-sm"},
                     React.createElement("i",{className:"fas fa-arrows-rotate mr-2"}),mpAdminOrdersBusy?"Recuperando órdenes…":"Recuperar pedidos de hoy y todas las ventas MP"),
-                React.createElement("p",{className:"text-xs text-neutral-400 mb-3"},mpAdminOrders.length+" órdenes de Cloudflare consultadas · "+adminOrderLedger.length+" registros visibles.",
+                React.createElement("p",{className:"text-xs text-neutral-400 mb-3"},mpAdminOrders.length+" órdenes recuperadas de Cloudflare · "+adminOrderLedger.length+" pedidos registrados · "+adminFilteredLedger.length+" coincidencias.",
                     mpAdminOrdersHasMore?" Quedan más páginas para recuperar.":""),
                 mpAdminOrdersError&&React.createElement("p",{role:"alert",className:"text-xs text-amber-200 mb-3"},mpAdminOrdersError),
                 mpAdminOrdersHasMore&&React.createElement("button",{type:"button",onClick:()=>fetchMpAdminOrders(true),className:"mb-3 px-4 py-2 rounded-xl bg-neutral-700 text-white text-xs font-bold"},"Recuperar más órdenes"),
-                React.createElement("div", { className:"grid gap-2 max-h-[540px] overflow-auto" }, adminOrderLedger.map(o => {
+                React.createElement("div",{className:"la-ledger-filterbar"},
+                    React.createElement("input",{type:"search",className:"la-ledger-search",value:adminLedgerSearch,
+                        onChange:e=>setAdminLedgerSearch(e.target.value),placeholder:"Buscar cliente, equipo, foto o pedido","aria-label":"Buscar pedidos"}),
+                    React.createElement("select",{className:"la-ledger-select",value:adminLedgerFilter,
+                        onChange:e=>setAdminLedgerFilter(e.target.value),"aria-label":"Filtrar por estado"},
+                        [["all","Todos"],["paid","Pagados"],["pending","Pendiente de pago"],
+                         ["whatsapp","Consultas WhatsApp"],["agreed","Pago acordado"],
+                         ["manual_paid","Pagado otro medio"],["cancelled","Cancelados"]].map(([value,label])=>
+                            React.createElement("option",{key:value,value},label))),
+                    React.createElement("input",{type:"date",className:"la-ledger-date",value:adminLedgerDate,
+                        onChange:e=>setAdminLedgerDate(e.target.value),"aria-label":"Filtrar fecha"}),
+                    React.createElement("button",{type:"button",className:"la-ledger-clear",
+                        onClick:()=>{setAdminLedgerSearch('');setAdminLedgerFilter('all');setAdminLedgerDate('')}},"Limpiar")),
+                React.createElement("div", { className:"la-ledger-rows" }, adminFilteredLedger.map(o => {
                     const isRedemption = o.type === 'benefit_redemption' || o.benefitRedemption === true;
                     const printCount = orderPrintInfo(o).count;
-                    return React.createElement("div", { key:o.id, className:"bg-neutral-950 border border-neutral-800 rounded-2xl p-3 flex flex-col sm:flex-row sm:items-center gap-3" },
+                    return React.createElement("div", { key:o.id, className:"la-ledger-entry" },
                         React.createElement("button", { onClick:() => openOrderFromQueue(o), className:"text-left min-w-0 flex-1" },
                             React.createElement("div", { className:"flex flex-wrap items-center gap-2" }, React.createElement("b", null, "#", o.id), isRedemption && React.createElement("span", { className:"club-order-badge" }, "CANJE CLUB"), printCount > 0 && React.createElement("span", { className:"print-order-badge" }, `IMPRESIÓN 10x15 × ${printCount}`),
-                                React.createElement("span",{className:`text-[10px] font-black px-2 py-1 rounded-full ${o.rejected||o.cancelled?'bg-red-500/20 text-red-200':o.paid||o.paymentStatus==='accredited'?'bg-sky-500/20 text-sky-200':o.delivered?'bg-emerald-500/20 text-emerald-200':'bg-amber-500/15 text-amber-200'}`},
-                                    o.rejected||o.cancelled?'Anulada':o.paid||o.paymentStatus==='accredited'?'Pago acreditado':o.delivered?'Entregada':'Pendiente')),
-                            React.createElement("p", { className:"text-xs text-neutral-400 mt-1" }, (o.customerName || 'Sin nombre'), " · ", (o.phone || '—'), isRedemption ? ` · ${o.rewardName || 'Beneficio'} · -${o.redeemedPoints || 0} pts` : ` · ${formatPrice(o.total)}`),
-                            React.createElement("div",{className:"admin-order-links"},(o.items||[]).slice(0,5).map((item,i)=>{
-                                const link=orderDriveLink(item);
-                                return link&&React.createElement("a",{key:i,href:link,target:"_blank",rel:"noopener noreferrer",onClick:e=>e.stopPropagation()},
-                                    React.createElement("i",{className:"fas fa-download"}),item.name||item.code||`Foto ${i+1}`);
-                            }))),
-                        React.createElement("button", { onClick:() => openOrderFromQueue(o), className:"bg-neutral-800 px-3 py-2 rounded-xl text-xs font-bold" }, "Abrir"),
+                                React.createElement("span",{className:"la-ledger-badge "+adminOrderState(o)},adminOrderStateLabel(o)),
+                                React.createElement("span",{className:"la-ledger-channel"},adminOrderChannel(o)==='whatsapp'?"WhatsApp":adminOrderChannel(o)==='mercadopago'?"Mercado Pago":"Sin canal")),
+                            React.createElement("p", { className:"text-xs text-neutral-400 mt-1" }, (o.customerName || 'Sin nombre'), " · ", (o.phone || '—'), isRedemption ? ` · ${o.rewardName || 'Beneficio'} · -${o.redeemedPoints || 0} pts` :
+                                ` · ${formatPrice(adminOrderState(o)==='manual_paid'?(o.manualPaymentAmount??o.total):o.total)}`),
+                            React.createElement("div",{className:"la-ledger-summary"},
+                                (o.items||[]).length+" fotos · "+(o.albumName||o.items&&o.items[0]&&o.items[0].albumName||"Sin galería"))),
+                        React.createElement("details",{className:"la-ledger-details"},
+                            React.createElement("summary",null,"Ver fotos y movimientos"),
+                            React.createElement("div",{className:"la-ledger-expanded"},
+                                React.createElement("p",null,"Fecha: ",o.date?new Date(o.date).toLocaleString('es-AR'):"No informada"),
+                                React.createElement("p",null,"Código: ",o.id),
+                                !((o.items||[]).length)&&React.createElement("p",null,"Esta fuente no conservó las fotografías."),
+                                (o.items||[]).map((p,i)=>React.createElement("div",{key:i,className:"la-ledger-photo"},
+                                    React.createElement("span",null,p.name||p.code||"Foto "+(i+1),p.albumName?" · "+p.albumName:""),
+                                    adminOrderState(o)==='manual_paid'&&orderDriveLink(p)&&
+                                      React.createElement("a",{href:orderDriveLink(p),target:"_blank",rel:"noopener noreferrer"},"Abrir enlace (admin)"))),
+                                (Array.isArray(o.statusHistory)?o.statusHistory:[]).map((evt,i)=>
+                                    React.createElement("p",{key:i,className:"la-ledger-event"},evt.at||"Sin fecha"," · ",evt.action||"Cambio",evt.method?" · "+evt.method:"")),
+                                !['paid','manual_paid'].includes(adminOrderState(o))&&React.createElement("p",{className:"la-ledger-warning"},"Sin pago confirmado: originales bloqueados."),
+                                adminOrderState(o)==='paid'&&React.createElement("p",{className:"la-ledger-warning"},"La entrega de Mercado Pago exige recibo verificado por el Worker."))),
+                        React.createElement("button", { onClick:() => openOrderFromQueue(o), className:"la-ledger-open" }, "Abrir ficha"),
+                        adminOrderChannel(o)==='whatsapp'&&
+                            ['whatsapp','agreed'].includes(adminOrderState(o))&&
+                            React.createElement("div",{className:"la-ledger-manual"},
+                                adminOrderState(o)!=='agreed'&&React.createElement("button",{type:"button",
+                                    onClick:()=>updateManualWhatsappStatus(o,'agreed')},"Pago acordado"),
+                                React.createElement("button",{type:"button",
+                                    onClick:()=>updateManualWhatsappStatus(o,'manual_paid')},"Confirmar otro medio")),
                         !isResolvedOrder(o)&&!(o.paid||o.paymentStatus==='accredited') && React.createElement("button", { onClick:() => { if (confirm(isRedemption ? '¿Anular este canje y devolver los puntos?' : '¿Marcar este pedido como cancelado/no pagado?')) setOrderDecisionAndClose(o,'rejected'); }, className:"bg-red-500/15 border border-red-500/30 text-red-200 px-3 py-2 rounded-xl text-xs font-black" }, isRedemption ? "Anular canje" : "Anular / no pagado"));
                 })))),
-            React.createElement("div", { className: "bg-neutral-900 border border-neutral-800 rounded-3xl p-5 mb-6" },
+            React.createElement("div", { hidden:adminPanelTab!=='configuracion', className: "bg-neutral-900 border border-neutral-800 rounded-3xl p-5 mb-6" },
                 React.createElement("div", { className: "flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4" },
                     React.createElement("div", null,
                         React.createElement("h2", { className: "text-xl font-black mb-1" }, "Configuraci\u00F3n de marca de agua"),
@@ -7939,10 +8158,10 @@ React.createElement("div", { id: "order-search-panel", className: "bg-neutral-90
                                 Math.round((watermarkSettings.darkness || 0) * 100),
                                 "%"),
                             React.createElement("input", { type: "range", min: "0.02", max: "0.12", step: "0.01", value: watermarkSettings.darkness, onChange: e => setWatermarkSettings(w => ({ ...w, darkness: Number(e.target.value) })), className: "w-full mt-2" }))))),
-            React.createElement("div", { className: "bg-neutral-900 border border-neutral-800 rounded-3xl p-5 mb-6" },
+            React.createElement("div", { hidden:adminPanelTab!=='promociones', className: "bg-neutral-900 border border-neutral-800 rounded-3xl p-5 mb-6" },
                 React.createElement("div", { className: "flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4" },
                     React.createElement("div", null,
-                        React.createElement("h2", { className: "text-xl font-black mb-1" }, "Descuento general de la web"),
+                        React.createElement("h2", { id:"la-admin-promos", className: "text-xl font-black mb-1" }, "Descuento general de la web"),
                         React.createElement("p", { className: "text-neutral-400 text-sm" }, "Defin\u00ED un porcentaje promocional para toda la galer\u00EDa. Queda sincronizado para m\u00F3vil y PC; pod\u00E9s exceptuar \u00E1lbumes puntuales desde cada tarjeta.")),
                     React.createElement("div", { className: "flex flex-col sm:flex-row gap-3 w-full lg:w-auto" },
                         React.createElement("label", { className: "text-sm text-neutral-300 flex-1 sm:w-56" },
@@ -7958,7 +8177,7 @@ React.createElement("div", { id: "order-search-panel", className: "bg-neutral-90
                         siteDiscountPercent,
                         "%"),
                     ". Se muestra como burbuja en los \u00E1lbumes no exceptuados.")),
-            React.createElement("div", { className: "bg-neutral-900 border border-neutral-800 rounded-3xl p-5 mb-6" },
+            React.createElement("div", { hidden:adminPanelTab!=='promociones', className: "bg-neutral-900 border border-neutral-800 rounded-3xl p-5 mb-6" },
                 React.createElement("div", { className: "flex flex-col lg:flex-row lg:items-end lg:justify-between gap-4 mb-4" },
                     React.createElement("div", null,
                         React.createElement("h2", { className: "text-xl font-black mb-1" }, "Cupones de descuento"),
@@ -7981,7 +8200,7 @@ React.createElement("div", { id: "order-search-panel", className: "bg-neutral-90
                         React.createElement("div", { className: "flex gap-2" },
                             React.createElement("button", { onClick: () => toggleCoupon(c.code), className: `${c.active === false ? 'bg-emerald-600' : 'bg-neutral-800'} px-3 py-2 rounded-xl text-xs font-black` }, c.active === false ? 'Activar' : 'Pausar'),
                             React.createElement("button", { onClick: () => deleteCoupon(c.code), className: "bg-red-600/20 border border-red-500/30 text-red-200 px-3 py-2 rounded-xl text-xs font-black" }, "Borrar")))))),
-            React.createElement("div", { className: "bg-neutral-900 border border-neutral-800 rounded-3xl p-5 mb-6" },
+            React.createElement("div", { hidden:adminPanelTab!=='promociones', className: "bg-neutral-900 border border-neutral-800 rounded-3xl p-5 mb-6" },
                 React.createElement("div", { className: "flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 mb-4" },
                     React.createElement("div", null,
                         React.createElement("h2", { className: "text-xl font-black mb-1" },
@@ -8001,11 +8220,11 @@ React.createElement("div", { id: "order-search-panel", className: "bg-neutral-90
                 React.createElement("div", { className: "flex flex-col sm:flex-row gap-2 mt-4" },
                     React.createElement("button", { onClick: () => setBannerSettings({ visible: false, items: [] }), className: "bg-neutral-800 px-4 py-3 rounded-xl font-bold" }, "Ocultar y borrar banners"),
                     React.createElement("button", { onClick: () => setBannerSettings(bs => ({ ...bs, items: [...(bs.items || []), { src: '', title: 'Nuevo banner', text: 'Descripción del banner', msg: 'Hola Lucas! Quiero consultar por este servicio.' }] })), className: "bg-indigo-600 px-4 py-3 rounded-xl font-bold" }, "Agregar banner"))),
-            React.createElement("div", { className: "mb-5" },
-                React.createElement("div", { className: "relative" },
+            React.createElement("div", { id:"la-admin-gallery", hidden:!['galerias','pagos','pedidos'].includes(adminPanelTab), className: "mb-5" },
+                React.createElement("div", { hidden:adminPanelTab!=='galerias', className: "relative" },
                     React.createElement("i", { className: "fas fa-search absolute left-4 top-1/2 -translate-y-1/2 text-neutral-500 text-sm" }),
                     React.createElement("input", { value: albumSearch, onChange: e => setAlbumSearch(e.target.value), placeholder: "Buscar \u00E1lbum...", className: "w-full bg-neutral-900 border border-neutral-800 rounded-2xl pl-11 pr-4 py-3 text-sm outline-none focus:border-indigo-500" }))),
-            React.createElement("div", { className: "grid md:grid-cols-2 xl:grid-cols-3 gap-5" }, displayAlbums.filter(album => { const q = norm(albumSearch); return !q || norm(album.name).includes(q) || norm(album.dateLabel).includes(q); }).map(album => {
+            React.createElement("div", { hidden:adminPanelTab!=='galerias', className: "grid md:grid-cols-2 xl:grid-cols-3 gap-5" }, displayAlbums.filter(album => { const q = norm(albumSearch); return !q || norm(album.name).includes(q) || norm(album.dateLabel).includes(q); }).map(album => {
                 var _a, _b;
                 const currentLogoSource = album.logoSource || getAlbumLogoSource(album, albumLogoSources);
                 return React.createElement("div", { key: album.id, className: "bg-neutral-900 border border-neutral-800 rounded-3xl overflow-hidden transition-all duration-500 hover:-translate-y-1 hover:border-indigo-400/50 hover:shadow-[0_18px_45px_rgba(99,102,241,.18)]" },
@@ -8070,7 +8289,7 @@ React.createElement("div", { id: "order-search-panel", className: "bg-neutral-90
                                 React.createElement("i", { className: "fas fa-trash-can mr-2" }),
                                 "Quitar car\u00E1tula personalizada"))));
             })),
-            admin && React.createElement("section",{className:"rounded-3xl border border-emerald-400/25 bg-neutral-900 p-4 sm:p-5 mb-6","aria-label":"Historial unificado de pedidos"},
+            admin && React.createElement("section",{hidden:adminPanelTab!=='pedidos',className:"rounded-3xl border border-emerald-400/25 bg-neutral-900 p-4 sm:p-5 mb-6","aria-label":"Historial unificado de pedidos"},
                 React.createElement("h3",{className:"font-black text-lg text-white"},"Historial unificado de todas las órdenes"),
                 React.createElement("p",{className:"text-xs text-neutral-400 mt-1 mb-3"},
                     "Pedidos registrados y recuperados de Firebase, Apps Script y Cloudflare (pagados, pendientes y entregados)."),
@@ -8100,13 +8319,14 @@ React.createElement("div", { id: "order-search-panel", className: "bg-neutral-90
                                     React.createElement("i",{className:"fas fa-download"})," ",p.name||"Foto "+(i+1));
                             })))))),
                         admin && React.createElement("div", {
+                hidden:adminPanelTab!=='galerias',
                 className:"rounded-2xl border border-sky-400/30 bg-sky-500/10 px-5 py-4 mt-6 mb-6"
             },
                 React.createElement("h3", { className:"text-sky-200 font-black" }, "Mercado Pago · Sincronizar precios y galerías"),
                 React.createElement("p", { className:"text-xs text-sky-100/75 mt-1 mb-3" },
                     "Actualiza en Cloudflare las fotos originales, el precio de cada álbum, descuentos web y cupones. Repetir cuando cambies los precios o las promociones."),
                 renderMpCatalogueSyncControls()),
-            admin && React.createElement("section",{className:"rounded-3xl border border-sky-400/25 bg-neutral-900 p-4 sm:p-5 mb-6","aria-label":"Historial Mercado Pago"},
+            admin && React.createElement("section",{id:"la-admin-payments",hidden:adminPanelTab!=='pagos',className:"rounded-3xl border border-sky-400/25 bg-neutral-900 p-4 sm:p-5 mb-6","aria-label":"Historial Mercado Pago"},
                 React.createElement("div",{className:"flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3"},
                     React.createElement("div",null,
                         React.createElement("h3",{className:"font-black text-lg text-white"},React.createElement("i",{className:"fas fa-file-invoice-dollar text-sky-300 mr-2"}),"Ventas Mercado Pago · todas las órdenes"),
@@ -8142,16 +8362,16 @@ React.createElement("div", { id: "order-search-panel", className: "bg-neutral-90
                             React.createElement("a",{href:"https://facturador.afip.gob.ar/",target:"_blank",rel:"noopener noreferrer",className:"text-xs font-black rounded-xl bg-sky-600 text-white px-3 py-2"},"Emitir factura C en ARCA"),
                             React.createElement("button",{type:"button",onClick:()=>navigator.clipboard.writeText('Pedido: '+(o.order_id||o.checkout_id)+' · Importe: '+formatPrice(o.amount)+' · Fecha: '+o.created_at),className:"text-xs font-black rounded-xl bg-neutral-800 text-white px-3 py-2"},"Copiar datos para facturar"))))),
                 mpAdminOrdersHasMore&&React.createElement("button",{type:"button",disabled:mpAdminOrdersBusy,onClick:()=>fetchMpAdminOrders(true),className:"mt-4 px-4 py-3 rounded-xl text-xs font-black bg-neutral-800"},"Cargar 50 órdenes más")),
-            React.createElement("div", { className:"mt-8 mb-6" },
+            React.createElement("div", { hidden:adminPanelTab!=='configuracion', className:"mt-8 mb-6" },
                 React.createElement("p", { className:"text-[10px] uppercase tracking-[.18em] text-neutral-600 font-black mb-2" }, "Información técnica")),
-            React.createElement("div", { className: "mb-4 bg-blue-500/10 border border-blue-500/25 text-blue-100 rounded-2xl px-4 py-3 text-xs leading-relaxed" },
+            React.createElement("div", { hidden:adminPanelTab!=='configuracion', className: "mb-4 bg-blue-500/10 border border-blue-500/25 text-blue-100 rounded-2xl px-4 py-3 text-xs leading-relaxed" },
                 React.createElement("b", null, "Firebase:"),
                 " proyecto lucasabraham-b84aa \u00B7 ruta principal ",
                 React.createElement("b", null, "artifacts/lucasabraham-ph-db/orders"),
                 " \u00B7 versi\u00F3n ",
                 React.createElement("b", null, APP_VERSION),
                 ". Si al comprar aparece un aviso rojo, el pedido qued\u00F3 local pero Firestore rechaz\u00F3 la escritura."),
-            React.createElement("div", { className: "mb-6 bg-neutral-900 border border-neutral-800 rounded-3xl p-5" },
+            React.createElement("div", { hidden:adminPanelTab!=='configuracion', className: "mb-6 bg-neutral-900 border border-neutral-800 rounded-3xl p-5" },
                 React.createElement("div", { className: "flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4 mb-4" },
                     React.createElement("div", null,
                         React.createElement("h2", { className: "text-xl font-black mb-1" },
@@ -8373,8 +8593,12 @@ React.createElement("div", { id: "order-search-panel", className: "bg-neutral-90
                 React.createElement("button", { onClick: () => { location.hash = "#/galeria"; setActiveAlbum(null); }, className: "inline-flex items-center gap-2 bg-neutral-900/90 border border-neutral-800 hover:border-neutral-700 px-4 py-2.5 rounded-full mb-4 text-sm font-semibold shadow-[0_8px_22px_rgba(0,0,0,.2)]" },
                     React.createElement("i", { className: "fas fa-arrow-left text-xs" }),
                     "Volver"),
-                React.createElement("div", { className: "match-versus-hero mb-4" },
-                    renderVersusScene(albumTeamSide(currentAlbum, 0, true), albumTeamSide(currentAlbum, 1, true), {})),
+                React.createElement("div", { className: "match-versus-hero la-match-duel-v133 mb-4" },
+                    React.createElement("div",{className:"la-match-duel-bar"},
+                        React.createElement("span",null,React.createElement("i",{className:"fas fa-calendar-days","aria-hidden":true})," ",currentAlbum.dateLabel||"Fecha no informada"),
+                        React.createElement("span",null,React.createElement("i",{className:"fas fa-layer-group","aria-hidden":true})," ",currentSubAlbum&&currentSubAlbum.name||((currentAlbum.subalbums||[]).length+" categorías"))),
+                    renderVersusScene(albumTeamSide(currentAlbum, 0, true), albumTeamSide(currentAlbum, 1, true), {}),
+                    React.createElement("div",{className:"la-match-duel-footer"},currentAlbum.name)),
                 React.createElement("div", { className: "buy-gradient rounded-2xl p-3 sm:p-4 mb-4" },
                     React.createElement("div", { className:"flex items-center justify-between gap-3" },
                         React.createElement("div", {className:"min-w-0"},
@@ -8418,7 +8642,7 @@ React.createElement("div", { id: "order-search-panel", className: "bg-neutral-90
                         React.createElement("p", { className: "text-neutral-400 text-sm" }, "Elegí una cobertura dentro del álbum con una vista más visual y profesional. Cada categoría conserva su propio link."),
                         currentSubAlbums.length > 0 && React.createElement("div", { className: "subalbum-panel mt-3" },
                             React.createElement("p", { className: "text-[11px] uppercase tracking-[0.18em] text-sky-200/70 font-black mb-3" }, "Categorías del álbum"),
-                            React.createElement("div", { className: "subalbum-showcase" }, currentSubAlbums.map(sa => React.createElement("button", { key: sa.id, onClick: () => { location.hash = albumHash(currentAlbum.id, sa.id); setActiveSubAlbum(sa.id); }, className: `subalbum-visual-card ${activeSubAlbum === sa.id ? 'active' : ''}` },
+                            React.createElement("div", { className: "subalbum-showcase la-category-tabs-v134", role:"tablist", "aria-label":"Categorías del partido" }, currentSubAlbums.map(sa => React.createElement("button", { key: sa.id,type:"button",role:"tab", "aria-selected":activeSubAlbum === sa.id, "aria-label":sa.name+" · "+(sa.photos||[]).length+" fotografías", onClick: () => { location.hash = albumHash(currentAlbum.id, sa.id); setActiveSubAlbum(sa.id); }, className: `subalbum-visual-card la-category-tab-v134 ${activeSubAlbum === sa.id ? 'active' : ''}` },
                                 React.createElement("div", { className: "subalbum-thumb-wrap" },
                                     React.createElement("img", { src: sa.cover || (((sa.photos || [])[0] || {}).url) || currentAlbum.cover, loading: "lazy", decoding: "async", alt: sa.name }),
                                     React.createElement("div", { className: "subalbum-thumb-overlay" }),
@@ -8427,7 +8651,9 @@ React.createElement("div", { id: "order-search-panel", className: "bg-neutral-90
                                         sa.photos.length,
                                         " fotos")),
                                 React.createElement("div", { className: "subalbum-copy-wrap" },
+                                    React.createElement("i",{className:"fas fa-futbol la-category-tab-icon","aria-hidden":true}),
                                     React.createElement("p", { className: "subalbum-copy-title" }, sa.name),
+                                    React.createElement("span",{className:"la-category-tab-count"},(sa.photos||[]).length+" fotos"),
                                     React.createElement("p", { className: "subalbum-copy-meta" },
                                         sa.dateLabel || currentAlbum.dateLabel || 'sin fecha',
                                         " · abrir cobertura"))))))),
@@ -8519,9 +8745,6 @@ React.createElement("div", { id: "order-search-panel", className: "bg-neutral-90
                             "Siguiente",
                             React.createElement("i", { className: "fas fa-chevron-right ml-2" })))),
                 React.createElement(PromoBanners, { bannerSettings: bannerSettings }))),
-        route !== "#/admin" && route !== "#/club" && !currentAlbum && React.createElement("div", { className:"admin-footer-access-v85" },
-            React.createElement("button", { type:"button", onClick:()=>{ try { localStorage.setItem('LA_INSTALL_START_ROUTE','#/admin'); } catch(e) {} window.location.href=new URL('admin-login.html?build=20260922-1617', location.href).href; }, title:"Administración", "aria-label":"Administración" },
-                React.createElement("i", { className:"fas fa-lock" }))),
         introOpen && !loading && allPhotos.length > 0 && route !== "#/admin" && React.createElement(PurchaseIntro, { photos: allPhotos, onClose: () => setIntroOpen(false) }),
         currentAlbum && React.createElement("button", { onClick: () => setIntroOpen(true), className: "purchase-help-floating" },
             React.createElement("i", { className: "fas fa-circle-question" }),
@@ -8706,7 +8929,7 @@ React.createElement("div", { id: "order-search-panel", className: "bg-neutral-90
                     React.createElement("p",{className:"mp-payment-hint",role:"status"},
                         !MP_PAYMENT_VISIBLE?(mpPaymentConfig.loading?"Comprobando disponibilidad de Mercado Pago…":"Mercado Pago no está disponible ahora. Podés consultar por WhatsApp."):
                         MP_TRIAL_ENABLED?"Compra ficticia con la cuenta de prueba.":"Pago seguro. Tus fotos se habilitan al aprobarse el pago."),
-                    React.createElement("a",{href:otherPaymentWhatsappUrl(),target:"_blank",rel:"noopener noreferrer",className:"other-payment-button"},
+                    React.createElement("a",{href:otherPaymentWhatsappUrl(),onClick:startOtherPaymentWhatsapp,target:"_blank",rel:"noopener noreferrer",className:"other-payment-button"},
                         React.createElement("i",{className:"fab fa-whatsapp","aria-hidden":true}),
                         React.createElement("span",null,"Consultar otros medios de pago"),
                         React.createElement("i",{className:"fas fa-arrow-up-right-from-square","aria-hidden":true})),
