@@ -6142,8 +6142,13 @@ ${clone.outerHTML}`;
         for (const mp of mpAdminOrders) {
             if (!mp || !mp.checkout_id) continue;
             const id = 'LA-MP-' + String(mp.checkout_id).replace(/-/g, '').slice(0,16).toUpperCase();
-            const key = normalizeOrderCode(id);
-            const previous = byId.get(key) || {};
+            // Priorizar identificadores del proveedor para unificar duplicados
+            // Firebase/Apps Script + D1 incluso cuando sus códigos locales difieren.
+            const linked=[...byId.entries()].find(([_,o])=>o&&(
+                (o.mpCheckoutId&&String(o.mpCheckoutId)===String(mp.checkout_id))||
+                (o.mpOrderId&&mp.order_id&&String(o.mpOrderId)===String(mp.order_id))));
+            const key=linked?linked[0]:normalizeOrderCode(id);
+            const previous=byId.get(key)||{};
             const photos = (mp.photos || []).map(p => ({
                 id:p.photo_id || p.name, name:p.name, albumId:p.album_id,
                 albumName:p.album_name || '', driveLink:p.download_url || '',
@@ -6151,7 +6156,7 @@ ${clone.outerHTML}`;
             }));
             const paid = mp.paid === true;
             byId.set(key, {
-                ...previous, id, date:mp.created_at || previous.date || '',
+                ...previous, id:previous.id||id, date:mp.created_at || previous.date || '',
                 total:Number(mp.amount) || 0,
                 customerName:mp.customer_name || previous.customerName || '',
                 phone:mp.customer_phone || previous.phone || '',
