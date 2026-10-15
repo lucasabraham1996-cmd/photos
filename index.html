@@ -6219,6 +6219,37 @@ ${clone.outerHTML}`;
         ).sort((a,b) => new Date(b.date || 0) - new Date(a.date || 0));
     }, [orders, mpAdminOrders]);
     // Canal de contacto y estado de pago son diferentes: abrir WhatsApp NO significa pago.
+    // La ficha de Cloudflare puede omitir campos que sí están registrados
+    // en Firebase / Apps Script. Combinar solo en la vista del administrador.
+    // No cambia importes acreditados, webhooks ni permisos de descarga.
+    const adminMpLinkedOrder=o=>{
+        if(!o)return null;
+        const checkout=String(o.checkout_id||o.mpCheckoutId||'');
+        const orderId=String(o.order_id||o.mpOrderId||'');
+        if(!checkout&&!orderId)return null;
+        return adminOrderLedger.find(row=>row&&(
+            (checkout&&String(row.mpCheckoutId||'')===checkout)||
+            (orderId&&String(row.mpOrderId||'')===orderId)))||null;
+    };
+    const adminMpBuyer=o=>{
+        const linked=adminMpLinkedOrder(o)||{};
+        return {
+            name:o.customer_name||o.customerName||linked.customerName||'Cliente sin nombre',
+            phone:o.customer_phone||o.phone||linked.phone||''
+        };
+    };
+    const adminMpPrintInfo=o=>{
+        const linked=adminMpLinkedOrder(o)||{};
+        const declared=Math.max(0,Number(o.print_count)||0,Number(linked.printCount)||0);
+        return orderPrintInfo({
+            ...linked,printCount:declared,
+            printRequested:declared>0||Boolean(o.print_requested||linked.printRequested),
+            printedPhotoIds:linked.printedPhotoIds||[],
+            printedItems:linked.printedItems||[],
+            items:Array.isArray(linked.items)&&linked.items.length?linked.items:
+                (Array.isArray(o.photos)?o.photos:[])
+        });
+    };
     const adminOrderChannel=o=>{
         const provider=String(o&&((o.channel||o.paymentProvider))||'').toLowerCase();
         return provider.includes('whatsapp')?'whatsapp':
@@ -6712,9 +6743,9 @@ En breve te las preparo y te las envío por acá 😊
     }
     // Contacto de gestión: nunca afirma que se cobró o entregó el pedido.
     function orderContactWhatsappUrl(o){
-        const phone=normalizeClubPhone(o&&(o.phone||o.customerPhone||o.celular));
+        const phone=normalizeClubPhone(o&&(o.phone||o.customerPhone||o.customer_phone||o.celular));
         if(!phone||phone.length<10)return '';
-        const name=cleanWhatsappPersonName(o.customerName||'');
+        const name=cleanWhatsappPersonName(o.customerName||o.customer_name||'');
         const greeting=name?', '+name.split(' ')[0]:'';
         const msg='¡Hola'+greeting+'! Soy Lucas Abraham de lucasabraham.ph. Te escribo por tu pedido '+
             String(o.id||o.order_id||o.checkout_id||'')+
@@ -8373,8 +8404,22 @@ React.createElement("div", { id: "order-search-panel", hidden:adminPanelTab!=='p
                         React.createElement("div",{className:"flex flex-wrap gap-2 mt-3 text-sm items-center"},
                             React.createElement("b",{className:"text-white"},formatPrice(o.amount)),
                             React.createElement("span",{className:"text-neutral-400"},(o.photos||[]).length+" fotos"),
-                            React.createElement("span",{className:"text-neutral-300"},(o.customer_name||o.customerName||"Sin nombre")+" · "+(o.customer_phone||o.phone||"Sin teléfono")),
-                            o.print_count>0&&React.createElement("span",{className:"print-order-badge"},"Impresiones: "+o.print_count),
+                            React.createElement("div",{className:"la-mp-buyer-highlight"},
+                                React.createElement("strong",null,adminMpBuyer(o).name),
+                                React.createElement("span",null,adminMpBuyer(o).phone||"Teléfono no informado")),
+                            adminMpPrintInfo(o).has&&React.createElement("span",{className:"print-order-badge la-mp-print-highlight"},
+                                React.createElement("i",{className:"fas fa-print","aria-hidden":true}),
+                                " IMPRESIÓN SOLICITADA · ",adminMpPrintInfo(o).count," foto(s)"),
+                            orderContactWhatsappUrl({
+                                ...o,phone:adminMpBuyer(o).phone,customerName:adminMpBuyer(o).name,
+                                printCount:adminMpPrintInfo(o).count
+                            })&&React.createElement("a",{
+                                className:"la-ledger-whatsapp",href:orderContactWhatsappUrl({
+                                    ...o,phone:adminMpBuyer(o).phone,customerName:adminMpBuyer(o).name,
+                                    printCount:adminMpPrintInfo(o).count
+                                }),target:"_blank",rel:"noopener noreferrer",
+                                "aria-label":"Hablar por WhatsApp con "+adminMpBuyer(o).name},
+                                React.createElement("i",{className:"fab fa-whatsapp","aria-hidden":true})," Hablar por WhatsApp"),
                             o.paid&&React.createElement("span",{className:"text-[11px] text-amber-200"},"Factura C: pendiente de emitir en ARCA")),
                         React.createElement("div",{className:"admin-order-links"},(o.photos||[]).map((p,i)=>p.download_url&&React.createElement("a",{key:i,href:p.download_url,target:"_blank",rel:"noopener noreferrer"},
                             React.createElement("i",{className:"fas fa-download"}),p.name||("Foto "+(i+1))))),

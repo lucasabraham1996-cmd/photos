@@ -623,3 +623,32 @@ html[data-la-route="public"] #root > .min-h-screen{
 @media(prefers-reduced-motion:reduce){
  .la-album-consult-trigger{transition:none!important}
 }
+
+/* v135 — Panel de órdenes Mercado Pago: identificación y gestiones directas.
+   Solo presentación: no modifica API, webhooks, checkout ni permisos de descarga. */
+.la-admin-workspace #la-admin-payments .la-mp-buyer-highlight{
+  display:flex;flex:1 1 180px;min-width:0;flex-direction:column;gap:4px;
+  padding:11px 13px;border-radius:13px;
+  border:1px solid rgba(102,208,253,.32);
+  background:linear-gradient(135deg,rgba(13,57,84,.70),rgba(7,26,46,.91))
+}
+.la-admin-workspace #la-admin-payments .la-mp-buyer-highlight strong{
+  color:#fff;font-size:15px;font-weight:950;line-height:1.2;overflow-wrap:anywhere
+}
+.la-admin-workspace #la-admin-payments .la-mp-buyer-highlight span{
+  color:#c4e1f1;font-size:12px;overflow-wrap:anywhere
+}
+.la-admin-workspace #la-admin-payments .la-mp-print-highlight{
+  display:inline-flex;align-items:center;gap:7px;max-width:100%;
+  font-weight:950!important;font-size:11px!important;padding:10px 12px!important;
+  background:rgba(2,114,173,.32)!important;
+  border:2px solid rgba(104,221,255,.83)!important;color:#fff!important;
+  box-shadow:0 0 0 3px rgba(48,187,249,.07),0 10px 22px rgba(0,68,122,.18)
+}
+.la-admin-workspace #la-admin-payments .la-ledger-whatsapp{
+  flex:0 0 auto;min-height:43px
+}
+@media(max-width:560px){
+ .la-admin-workspace #la-admin-payments .la-mp-buyer-highlight{flex-basis:100%}
+ .la-admin-workspace #la-admin-payments .la-ledger-whatsapp{width:100%}
+}
