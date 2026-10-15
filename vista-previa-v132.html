@@ -31,20 +31,80 @@ a{color:inherit}button,input{font:inherit}button{cursor:pointer;transition:trans
 @media(max-width:780px){.gallery-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.photo-grid{grid-template-columns:repeat(3,minmax(0,1fr))}.kpi-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.wrap{padding:23px 13px 85px}.hero{min-height:290px}.hero-content{padding:22px}}
 @media(max-width:520px){.demo-bar{padding:9px 10px;gap:7px}.demo-id{font-size:9px;gap:7px}.demo-id b{font-size:10px}.tabs button{font-size:10px;padding:9px}.site-head{align-items:flex-start}.brand-mark{width:40px;height:40px}.brand h1{font-size:18px}.brand p{font-size:10px}.site-head .actions .btn:not(.primary){display:none}.site-head .btn{padding:10px;min-height:40px}.hero{min-height:325px;align-items:flex-end}.hero h2{font-size:33px}.hero p{font-size:12px}.hero-content{padding:18px}.gallery-grid{gap:10px}.album-photo{height:135px;padding:9px}.album-body{padding:12px}.album-body h3{font-size:14px}.album-body p{font-size:10px}.album-meta{display:block}.album-meta .btn{width:100%;margin-top:10px}.photo-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}.section-head h2{font-size:22px}.card{padding:14px}.kpi-grid{gap:9px}.kpi strong{font-size:23px}.admin-head{flex-direction:column;align-items:flex-start}.admin-nav{top:61px}.order{padding:13px 11px}.order strong{font-size:11px}.order p{font-size:10px}.state{font-size:9px;padding:6px}.cart{gap:8px;padding:10px}.cart .btn{padding:10px;font-size:11px}}
 @media(prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;scroll-behavior:auto!important;transition:none!important}}
+
+
+/* v132 — revisión del propietario: portada de última galería y escudos interactivos */
+.preview-disclaimer{color:#88a6ba;font-size:10px;font-weight:750;white-space:nowrap}
+.brand-mark{cursor:pointer;user-select:none}
+.hero{min-height:435px;align-items:flex-end;border-radius:30px;background:linear-gradient(0deg,#040b15 2%,rgba(4,12,24,.68) 39%,rgba(3,12,22,.10) 100%),url('https://images.unsplash.com/photo-1522778119026-d647f0596c20?w=1400&auto=format&fit=crop&q=85') center 50%/cover}
+.hero-content{max-width:760px;padding:36px 40px}
+.hero h2{font-size:clamp(32px,5vw,55px);margin:12px 0}
+.hero p{max-width:600px;font-size:12px;color:#c1d7e5}
+.hero-crests{display:inline-flex;align-items:center;gap:15px;padding:8px 12px;margin-top:20px;border:1px solid rgba(255,255,255,.22);border-radius:16px;background:rgba(2,9,20,.67);backdrop-filter:blur(12px);box-shadow:0 10px 35px #0006}
+.hero-crests>span{font-size:12px;font-weight:950;letter-spacing:.15em}
+.hero-club{display:grid;place-items:center;background:rgba(255,255,255,.09);border-radius:12px;height:55px;width:55px}
+.hero-club img{height:44px;width:44px;object-fit:contain}
+.hero-meta{display:flex;gap:15px;color:#d8e8f5;font-weight:700;font-size:12px;flex-wrap:wrap}
+.album-cover-control{display:block;padding:0;border:0;background:transparent;width:100%;text-align:left}
+.album-cover-control .album-photo{height:230px}
+.album-duel{position:absolute;inset:0;z-index:5;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:12px;background:linear-gradient(125deg,rgba(3,14,27,.96),rgba(4,24,41,.85) 52%,rgba(2,14,24,.96));transform:translateY(22px);opacity:0;pointer-events:none;transition:opacity .3s ease,transform .3s ease}
+.album:hover .album-duel,.album:focus-within .album-duel,.album.is-revealed .album-duel{opacity:1;transform:translateY(0)}
+.album .album-duel .duel-row{width:100%;display:flex;align-items:center;justify-content:space-evenly;gap:8px;padding:0 12px}
+.duel-club{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;min-width:0;flex:1}
+.duel-club img{width:65px;height:65px;object-fit:contain;filter:drop-shadow(0 8px 15px #0009)}
+.duel-club strong{font-size:11px;color:#f4faff;text-align:center;letter-spacing:.02em}
+.duel-vs{font-size:15px;font-weight:1000;color:#77d7ff}
+.duel-hint{color:#9cddf6;font-size:10px;font-weight:800;letter-spacing:.12em;text-transform:uppercase}
+.album-photo .pill{z-index:6}
+@media(max-width:640px){.preview-disclaimer{font-size:9px}.hero{min-height:57vh;border-radius:18px}.hero-content{padding:21px}.hero h2{font-size:34px}.hero-club{width:45px;height:45px}.hero-club img{width:38px;height:38px}.hero p{font-size:11px}.album-cover-control .album-photo{height:170px}.duel-club img{width:47px;height:47px}.duel-club strong{font-size:8px}.duel-vs{font-size:12px}.duel-hint{font-size:8px}.album-duel{gap:7px}}
+@media(hover:none){.album:not(.is-revealed) .album-duel{opacity:0;transform:translateY(22px)}}
+@media(prefers-reduced-motion:reduce){.album-duel{transition:none}}
 </style>
 </head>
 <body>
-<div class="demo-bar"><div class="demo-id"><i class="live"></i><span><b>lucasabraham.ph</b> · Diseño v132 <span style="opacity:.65">/ DEMO</span></span></div><div class="tabs"><button id="publicTab" class="active" onclick="switchMode('public')">📸 Cliente</button><button id="adminTab" onclick="switchMode('admin')">⚙️ Administrador</button></div></div>
+<div class="demo-bar"><div class="demo-id"><i class="live"></i><span><b>lucasabraham.ph</b> · Vista previa v132 <span style="opacity:.65">/ DEMO</span></span></div><span class="preview-disclaimer">Diseño experimental · Sin compras</span></div>
 <main id="publicPage" class="wrap">
- <div class="site-head"><div class="brand"><div class="brand-mark"><img src="https://lucasabraham1996-cmd.github.io/photos/brand-logo.png?v=105" alt="Logo original" onerror="this.style.display='none';this.parentNode.insertAdjacentHTML('beforeend','<span>LA</span>')"></div><div><h1>lucasabraham.ph</h1><p>Lucas Abraham · Fotografía deportiva</p></div></div><div class="actions"><button class="btn" onclick="openInfo()">Consultar precios</button><button class="btn primary" onclick="showAlbum()">Ver galerías ↗</button></div></div>
+ <div class="site-head"><div class="brand"><div class="brand-mark" id="secretBrand" role="button" tabindex="0" aria-label="Logo de lucasabraham.ph"><img src="https://lucasabraham1996-cmd.github.io/photos/brand-logo.png?v=105" alt="Logo original" onerror="this.style.display='none';this.parentNode.insertAdjacentHTML('beforeend','<span>LA</span>')"></div><div><h1>lucasabraham.ph</h1><p>Lucas Abraham · Fotografía deportiva</p></div></div><div class="actions"><button class="btn" onclick="openInfo()">Consultar precios</button><button class="btn primary" onclick="showAlbum()">Ver galerías ↗</button></div></div>
  <div class="note">Esta es una <b>demostración visual interactiva</b> del nuevo diseño. Las fotos y los importes son ilustrativos. No realiza pagos ni consulta datos reales.</div>
- <section id="publicHome"><div class="hero"><div class="hero-fade"></div><div class="hero-content"><span class="pill">✦ GALERÍA DESTACADA</span><h2>Los mejores momentos<br>se viven otra vez.</h2><p>Encontrá tus fotos de cada partido, elegí tus favoritas y disfrutá de una experiencia más simple y moderna.</p><div class="actions"><button class="btn primary" onclick="showAlbum()">Explorar fotos →</button><button class="btn" onclick="document.getElementById('albumList').scrollIntoView({behavior:'smooth'})">Ver partidos recientes</button></div></div></div>
+ <section id="publicHome">
+  <div class="hero"><div class="hero-fade"></div>
+    <div class="hero-content"><span class="pill">⚡ ÚLTIMA GALERÍA</span>
+      <div class="hero-crests"><div class="hero-club"><img src="https://lucasabraham1996-cmd.github.io/photos/assets/lcf-v2/all-boys.png?v=108" alt="Escudo All Boys"></div><span>VS</span><div class="hero-club"><img src="https://lucasabraham1996-cmd.github.io/photos/assets/lcf-v2/medea.png?v=108" alt="Escudo Medea"></div></div>
+      <h2>All Boys vs. Medea</h2>
+      <div class="hero-meta"><span>⚽ Cebollitas</span><span>📅 Octubre de 2026</span></div>
+      <p>La última galería publicada ocupa siempre la portada. La portada real utilizará automáticamente la foto, los escudos y la información del álbum más reciente.</p>
+      <div class="actions"><button class="btn primary" onclick="showAlbum()">Ver galería →</button></div>
+    </div></div>
   <div class="section-head" id="albumList"><div><div class="eyebrow">Galerías · Temporada 2026</div><h2>Partidos recientes</h2></div><span class="pill">✦ Novedades</span></div>
   <input class="search" id="albumSearch" placeholder="⌕  Buscar por equipo, partido o categoría..." oninput="filterAlbums(this.value)" aria-label="Buscar álbumes">
   <div class="gallery-grid" style="margin-top:18px" id="albumCards">
-    <article class="album" data-name="all boys medea cebollitas"><div class="album-photo" style="background-image:url('https://images.unsplash.com/photo-1522778119026-d647f0596c20?w=750&auto=format&fit=crop&q=80')"><span class="pill">● NOVEDAD</span></div><div class="album-body"><h3>All Boys vs. Medea</h3><p>Cebollitas · Octubre de 2026</p><div class="album-meta"><span>⚽ Partido completo</span><button class="btn primary" onclick="showAlbum()">Ver fotos →</button></div></div></article>
-    <article class="album" data-name="all boys futbol reserva"><div class="album-photo" style="background-image:url('https://images.unsplash.com/photo-1431324155629-1a6deb1dec8d?w=750&auto=format&fit=crop&q=80')"><span class="pill">DESTACADA</span></div><div class="album-body"><h3>All Boys · Reserva</h3><p>Fútbol · Octubre de 2026</p><div class="album-meta"><span>⚽ Partido completo</span><button class="btn primary" onclick="showAlbum()">Ver fotos →</button></div></div></article>
-    <article class="album" data-name="all boys medea primera"><div class="album-photo" style="background-image:url('https://images.unsplash.com/photo-1574629810360-7efbbe195018?w=750&auto=format&fit=crop&q=80')"><span class="pill">RECIENTE</span></div><div class="album-body"><h3>All Boys vs. Medea</h3><p>Primera · Octubre de 2026</p><div class="album-meta"><span>⚽ Partido completo</span><button class="btn primary" onclick="showAlbum()">Ver fotos →</button></div></div></article>
+    <article class="album" data-name="all boys vs. el carmen reserva">
+       <button class="album-cover-control" aria-label="Ver partido All Boys vs. El Carmen" onclick="handleAlbumCoverClick(event,this)">
+         <div class="album-photo" style="background-image:url('https://images.unsplash.com/photo-1522778119026-d647f0596c20?w=800&auto=format&fit=crop&q=85')">
+           <span class="pill">NUEVA</span>
+           <div class="album-duel" aria-hidden="true"><div class="duel-row"><div class="duel-club"><img src="https://lucasabraham1996-cmd.github.io/photos/assets/lcf-v2/all-boys.png?v=108" alt=""><strong>ALL BOYS</strong></div><span class="duel-vs">VS</span><div class="duel-club"><img src="https://lucasabraham1996-cmd.github.io/photos/assets/lcf-v2/el-carmen.png?v=108" alt=""><strong>EL CARMEN</strong></div></div><span class="duel-hint">Ver partido ↗</span></div>
+         </div>
+       </button>
+       <div class="album-body"><h3>All Boys vs. El Carmen</h3><p>Reserva · Octubre de 2026</p><div class="album-meta"><span>⚽ Partido completo</span><button class="btn primary" onclick="showAlbum()">Ver fotos →</button></div></div>
+    </article>
+    <article class="album" data-name="all boys vs. medea primera">
+       <button class="album-cover-control" aria-label="Ver partido All Boys vs. Medea" onclick="handleAlbumCoverClick(event,this)">
+         <div class="album-photo" style="background-image:url('https://images.unsplash.com/photo-1431324155629-1a6deb1dec8d?w=800&auto=format&fit=crop&q=85')">
+           <span class="pill">RECIENTE</span>
+           <div class="album-duel" aria-hidden="true"><div class="duel-row"><div class="duel-club"><img src="https://lucasabraham1996-cmd.github.io/photos/assets/lcf-v2/all-boys.png?v=108" alt=""><strong>ALL BOYS</strong></div><span class="duel-vs">VS</span><div class="duel-club"><img src="https://lucasabraham1996-cmd.github.io/photos/assets/lcf-v2/medea.png?v=108" alt=""><strong>MEDEA</strong></div></div><span class="duel-hint">Ver partido ↗</span></div>
+         </div>
+       </button>
+       <div class="album-body"><h3>All Boys vs. Medea</h3><p>Primera · Octubre de 2026</p><div class="album-meta"><span>⚽ Partido completo</span><button class="btn primary" onclick="showAlbum()">Ver fotos →</button></div></div>
+    </article>
+    <article class="album" data-name="all boys vs. talleres cebollitas">
+       <button class="album-cover-control" aria-label="Ver partido All Boys vs. Talleres" onclick="handleAlbumCoverClick(event,this)">
+         <div class="album-photo" style="background-image:url('https://images.unsplash.com/photo-1574629810360-7efbbe195018?w=800&auto=format&fit=crop&q=85')">
+           <span class="pill">RECIENTE</span>
+           <div class="album-duel" aria-hidden="true"><div class="duel-row"><div class="duel-club"><img src="https://lucasabraham1996-cmd.github.io/photos/assets/lcf-v2/all-boys.png?v=108" alt=""><strong>ALL BOYS</strong></div><span class="duel-vs">VS</span><div class="duel-club"><img src="https://lucasabraham1996-cmd.github.io/photos/assets/lcf-v2/talleres.png?v=108" alt=""><strong>TALLERES</strong></div></div><span class="duel-hint">Ver partido ↗</span></div>
+         </div>
+       </button>
+       <div class="album-body"><h3>All Boys vs. Talleres</h3><p>Cebollitas · Octubre de 2026</p><div class="album-meta"><span>⚽ Partido completo</span><button class="btn primary" onclick="showAlbum()">Ver fotos →</button></div></div>
+    </article>
   </div>
  </section>
  <section id="albumPage" style="display:none"><button class="btn" onclick="showHome()">← Volver a las galerías</button><div class="section-head"><div><div class="eyebrow">Partido · Cebollitas</div><h2>All Boys vs. Medea</h2></div><span class="pill">Fotografías con marca de agua</span></div><p class="muted" style="font-size:13px;margin:0 0 17px">Elegí una o varias fotos para visualizar el carrito. Es una demostración, no se compran fotografías reales.</p><div class="photo-grid" id="photoGrid"></div><div class="cart"><div><strong id="cartCount">0 fotos seleccionadas</strong><div class="mini muted" id="cartTotal">Total estimado: $0</div></div><button class="btn primary" onclick="openCheckout()">Ver compra →</button></div></section>
@@ -80,7 +140,12 @@ const pics=[
 const orders=[['LA-1028','Martín González', '$6.000',true],['LA-1027','Sofía Rodríguez','$4.000',false],['LA-1026','Agustín López','$10.200',true],['LA-1025','Camila Pérez','$2.000',false],['LA-1024','Tomás Díaz','$8.500',true]];
 const selected=new Set();
 const price=n=>new Intl.NumberFormat('es-AR',{style:'currency',currency:'ARS',maximumFractionDigits:0}).format(n);
-function switchMode(which){const pub=which==='public';document.getElementById('publicPage').style.display=pub?'block':'none';document.getElementById('adminPage').style.display=pub?'none':'block';document.getElementById('publicTab').classList.toggle('active',pub);document.getElementById('adminTab').classList.toggle('active',!pub);scrollTo({top:0,behavior:'smooth'});}
+function switchMode(which){const pub=which==='public';document.getElementById('publicPage').style.display=pub?'block':'none';document.getElementById('adminPage').style.display=pub?'none':'block';scrollTo({top:0,behavior:'smooth'});}
+let secretLogoTaps=0,secretLastTap=0;
+function secretLogoTap(){const now=Date.now();secretLogoTaps=(now-secretLastTap<3000)?secretLogoTaps+1:1;secretLastTap=now;if(secretLogoTaps>=5){secretLogoTaps=0;switchMode('admin');}}
+document.getElementById('secretBrand').addEventListener('click',secretLogoTap);
+document.getElementById('secretBrand').addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();secretLogoTap();}});
+function handleAlbumCoverClick(event,button){if(window.matchMedia('(hover: none), (pointer: coarse)').matches&&!button.closest('.album').classList.contains('is-revealed')){document.querySelectorAll('.album').forEach(x=>x.classList.remove('is-revealed'));button.closest('.album').classList.add('is-revealed');return;}showAlbum();}
 function showAlbum(){document.getElementById('publicHome').style.display='none';document.getElementById('albumPage').style.display='block';scrollTo({top:0,behavior:'smooth'});}
 function showHome(){document.getElementById('publicHome').style.display='block';document.getElementById('albumPage').style.display='none';scrollTo({top:0,behavior:'smooth'});}
 function filterAlbums(q){document.querySelectorAll('[data-name]').forEach(e=>e.style.display=e.dataset.name.includes(q.toLowerCase())?'':'none');}
