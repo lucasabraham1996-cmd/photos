@@ -197,8 +197,6 @@ html[data-la-route="public"] #root > .min-h-screen{
   html,body{overflow-x:clip}
   .la-profile-card{border-radius:19px!important;padding:13px!important}
   .home-gallery-grid{gap:10px!important}
-  .modern-album-card{border-radius:17px!important}
-  .new-gallery-hero,.match-versus-hero{border-radius:18px!important}
   .la-insta-topbar{padding-left:max(9px,env(safe-area-inset-left));padding-right:max(9px,env(safe-area-inset-right))}
   .checkout-simple-shell{border-radius:21px!important}
   .checkout-payment-options{padding:13px!important}
