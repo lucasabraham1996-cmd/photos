@@ -6206,6 +6206,8 @@ ${clone.outerHTML}`;
                 customerName:mp.customer_name || previous.customerName || '',
                 phone:mp.customer_phone || previous.phone || '',
                 items:previous.items && previous.items.length ? previous.items : photos,
+                printRequested:previous.printRequested===true||mp.print_requested===true,
+                printCount:Math.max(Number(previous.printCount)||0,Number(mp.print_count)||0),
                 paymentProvider:'mercadopago', paymentMode:mp.mode || 'public',
                 paymentStatus:paid ? 'accredited' : (mp.payment_status || 'pending'),
                 paid, mpOrderId:mp.order_id || '', mpCheckoutId:mp.checkout_id,
@@ -6707,6 +6709,17 @@ En breve te las preparo y te las envío por acá 😊
         if (!phone) return '';
         const message = String((CLUB_ENABLED && orderLike && orderLike.confirmationMessage) || buildOrderConfirmationMessage(orderLike || {}));
         return `https://api.whatsapp.com/send?phone=549${phone}&text=${encodeURIComponent(message)}`;
+    }
+    // Contacto de gestión: nunca afirma que se cobró o entregó el pedido.
+    function orderContactWhatsappUrl(o){
+        const phone=normalizeClubPhone(o&&(o.phone||o.customerPhone||o.celular));
+        if(!phone||phone.length<10)return '';
+        const name=cleanWhatsappPersonName(o.customerName||'');
+        const greeting=name?', '+name.split(' ')[0]:'';
+        const msg='¡Hola'+greeting+'! Soy Lucas Abraham de lucasabraham.ph. Te escribo por tu pedido '+
+            String(o.id||o.order_id||o.checkout_id||'')+
+            (orderPrintInfo(o).has?' y las fotografías impresas que solicitaste.':'.');
+        return 'https://wa.me/549'+phone+'?text='+encodeURIComponent(msg);
     }
     const checkoutBuyerName = cleanWhatsappPersonName(checkoutCustomerName);
     const checkoutBuyerPhone = normalizeClubPhone(checkoutPhone);
@@ -7940,6 +7953,13 @@ React.createElement("div", { id: "order-search-panel", hidden:adminPanelTab!=='p
                             React.createElement("div", { className: `inline-flex items-center gap-2 mt-2 px-3 py-1 rounded-full text-xs font-black ${matchedOrder.rejected ? 'bg-red-500/20 text-red-300 border border-red-500/35' : matchedOrder.delivered ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/35' : 'bg-amber-500/15 text-amber-300 border border-amber-500/30'}` },
                                 React.createElement("i", { className: `fas ${matchedOrder.rejected ? 'fa-circle-xmark' : matchedOrder.delivered ? 'fa-circle-check' : 'fa-clock'}` }),
                                 matchedOrder.rejected ? 'Pedido rechazado' : matchedOrder.delivered ? 'Pedido ya cargado y entregado' : 'Pendiente de cargar/entregar'),
+                                                        React.createElement("div",{className:"la-order-buyer-focus"},
+                                React.createElement("strong",null,matchedOrder.customerName||"Cliente sin nombre"),
+                                React.createElement("span",null,matchedOrder.phone||"Sin número de WhatsApp"),
+                                orderContactWhatsappUrl(matchedOrder)&&React.createElement("a",{
+                                    className:"la-ledger-whatsapp",target:"_blank",rel:"noopener noreferrer",
+                                    href:orderContactWhatsappUrl(matchedOrder)},
+                                    React.createElement("i",{className:"fab fa-whatsapp"})," Hablar por WhatsApp")),
                             React.createElement("p", { className: "text-neutral-400 text-sm mt-2" },
                                 "Total: ",
                                 formatPrice(matchedOrder.total),
@@ -7972,7 +7992,7 @@ React.createElement("div", { id: "order-search-panel", hidden:adminPanelTab!=='p
                             orderConfirmationWhatsappUrl(matchedOrder) && React.createElement("button", { onClick: () => window.open(orderConfirmationWhatsappUrl(matchedOrder), '_blank'), className: "bg-[#25D366] text-black px-4 py-3 rounded-xl font-black text-sm" },
                                 React.createElement("i", { className: "fab fa-whatsapp mr-2" }),
                                 "Enviar confirmación"))),
-                    orderPrintInfo(matchedOrder).has && React.createElement("div", { className:"mb-4 rounded-3xl border border-sky-400/40 bg-sky-500/10 p-4" },
+                    orderPrintInfo(matchedOrder).has && React.createElement("div", { className:"la-admin-print-alert mb-4 rounded-3xl border border-sky-400/40 bg-sky-500/10 p-4" },
                         React.createElement("div", { className:"flex items-center justify-between gap-3 mb-3" },
                             React.createElement("div", null,
                                 React.createElement("p", { className:"text-[10px] uppercase tracking-[.18em] text-sky-300 font-black" }, "PEDIDO CON IMPRESIONES"),
@@ -8108,12 +8128,15 @@ React.createElement("div", { id: "order-search-panel", hidden:adminPanelTab!=='p
                 React.createElement("div", { className:"la-ledger-rows" }, adminFilteredLedger.map(o => {
                     const isRedemption = o.type === 'benefit_redemption' || o.benefitRedemption === true;
                     const printCount = orderPrintInfo(o).count;
-                    return React.createElement("div", { key:o.id, className:"la-ledger-entry" },
+                    return React.createElement("div", { key:o.id, className:"la-ledger-entry"+(printCount>0?" la-ledger-with-print":"") },
                         React.createElement("button", { onClick:() => openOrderFromQueue(o), className:"text-left min-w-0 flex-1" },
                             React.createElement("div", { className:"flex flex-wrap items-center gap-2" }, React.createElement("b", null, "#", o.id), isRedemption && React.createElement("span", { className:"club-order-badge" }, "CANJE CLUB"), printCount > 0 && React.createElement("span", { className:"print-order-badge" }, `IMPRESIÓN 10x15 × ${printCount}`),
                                 React.createElement("span",{className:"la-ledger-badge "+adminOrderState(o)},adminOrderStateLabel(o)),
                                 React.createElement("span",{className:"la-ledger-channel"},adminOrderChannel(o)==='whatsapp'?"WhatsApp":adminOrderChannel(o)==='mercadopago'?"Mercado Pago":"Sin canal")),
-                            React.createElement("p", { className:"text-xs text-neutral-400 mt-1" }, (o.customerName || 'Sin nombre'), " · ", (o.phone || '—'), isRedemption ? ` · ${o.rewardName || 'Beneficio'} · -${o.redeemedPoints || 0} pts` :
+                            React.createElement("div",{className:"la-ledger-customer"},
+                                React.createElement("strong",null,o.customerName||"Cliente sin nombre"),
+                                React.createElement("span",null,o.phone||"Teléfono no informado")),
+                            React.createElement("p", { className:"text-xs text-neutral-400 mt-1" }, isRedemption ? ` · ${o.rewardName || 'Beneficio'} · -${o.redeemedPoints || 0} pts` :
                                 ` · ${formatPrice(adminOrderState(o)==='manual_paid'?(o.manualPaymentAmount??o.total):o.total)}`),
                             React.createElement("div",{className:"la-ledger-summary"},
                                 (o.items||[]).length+" fotos · "+(o.albumName||o.items&&o.items[0]&&o.items[0].albumName||"Sin galería"))),
@@ -8132,6 +8155,10 @@ React.createElement("div", { id: "order-search-panel", hidden:adminPanelTab!=='p
                                 !['paid','manual_paid'].includes(adminOrderState(o))&&React.createElement("p",{className:"la-ledger-warning"},"Sin pago confirmado: originales bloqueados."),
                                 adminOrderState(o)==='paid'&&React.createElement("p",{className:"la-ledger-warning"},"La entrega de Mercado Pago exige recibo verificado por el Worker."))),
                         React.createElement("button", { onClick:() => openOrderFromQueue(o), className:"la-ledger-open" }, "Abrir ficha"),
+                        orderContactWhatsappUrl(o)&&React.createElement("a",{
+                            href:orderContactWhatsappUrl(o),target:"_blank",rel:"noopener noreferrer",
+                            className:"la-ledger-whatsapp","aria-label":"Hablar por WhatsApp con "+(o.customerName||"comprador")},
+                            React.createElement("i",{className:"fab fa-whatsapp"})," Hablar con ",o.customerName||"comprador"),
                         adminOrderChannel(o)==='whatsapp'&&
                             ['whatsapp','agreed'].includes(adminOrderState(o))&&
                             React.createElement("div",{className:"la-ledger-manual"},
