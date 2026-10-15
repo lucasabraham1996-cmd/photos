@@ -221,3 +221,132 @@ html[data-la-route="public"] #root > .min-h-screen{
   html{scroll-behavior:auto!important}
   *,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}
 }
+
+/* v133 — mejoras puntuales sin reemplazar las portadas existentes.
+   Reutiliza los escudos existentes del repositorio y los componentes originales. */
+.team-album-reveal .versus-universal.compact{position:relative;isolation:isolate}
+.team-album-reveal .versus-universal.compact::after{
+  content:"VS";position:absolute;z-index:9;left:50%;top:47%;transform:translate(-50%,-50%);
+  display:grid;place-items:center;min-width:44px;height:44px;padding:0 7px;
+  border:1px solid rgba(152,224,255,.5);border-radius:14px;
+  background:rgba(2,12,25,.86);backdrop-filter:blur(14px);color:#8de2ff;
+  font-family:Inter,system-ui,sans-serif;font-size:14px;font-weight:1000;letter-spacing:.02em;
+  box-shadow:0 12px 32px rgba(0,0,0,.36)
+}
+.team-album-reveal .versus-side .versus-mark{
+  border-radius:18px!important;background:rgba(1,11,24,.35);
+  border:1px solid rgba(160,222,255,.16);
+  box-shadow:0 10px 35px rgba(0,0,0,.24)
+}
+.team-album-reveal .versus-side .versus-logo{max-width:96%;max-height:96%;object-fit:contain}
+.team-album-reveal .versus-side .versus-name{
+  position:relative;z-index:10;line-height:1.1!important;max-width:100%;
+  text-align:center;color:#effaff!important;text-shadow:0 3px 10px #000c
+}
+.team-album-reveal .versus-view-photos{z-index:12}
+.la-match-duel-v133{
+  padding:10px 13px!important;border-radius:22px!important;overflow:hidden;
+  background:linear-gradient(145deg,rgba(11,28,45,.9),rgba(4,12,22,.96))!important;
+  border:1px solid rgba(75,202,255,.26)!important;
+  box-shadow:0 16px 45px rgba(0,0,0,.29)!important
+}
+.la-match-duel-v133 .versus-universal.hero{
+  border-radius:17px!important;min-height:130px!important;
+  overflow:hidden;position:relative
+}
+.la-match-duel-v133 .versus-universal.hero:after{
+  content:"VS";position:absolute;z-index:10;left:50%;top:50%;
+  transform:translate(-50%,-50%);display:grid;place-items:center;
+  width:48px;height:48px;border-radius:16px;color:#9de7ff;
+  font-size:15px;font-weight:1000;letter-spacing:.02em;
+  border:1px solid rgba(75,202,255,.32);
+  background:rgba(2,14,27,.87);backdrop-filter:blur(12px)
+}
+.la-match-duel-v133 .versus-name{color:#fff!important;text-align:center;text-shadow:0 2px 10px #000a}
+.la-match-duel-v133 .versus-logo{object-fit:contain}
+.la-match-duel-bar{display:flex;flex-wrap:wrap;align-items:center;gap:9px;padding:0 4px 9px}
+.la-match-duel-bar span{display:inline-flex;align-items:center;gap:7px;
+  background:rgba(1,15,29,.7);border:1px solid rgba(163,220,246,.18);
+  border-radius:999px;padding:6px 10px;color:#c8e7f7;font-size:11px;font-weight:800}
+.la-match-duel-bar i{color:#78d4f8}
+.la-match-duel-footer{font-size:12px;font-weight:850;text-align:center;
+  color:#d0edfc;padding:9px 4px 2px;letter-spacing:.02em}
+
+/* Gestión de pedidos: lista adaptable sin scroll horizontal en celulares. */
+#la-admin-orders-history{scroll-margin-top:115px;color:#e9f7ff!important}
+.la-ledger-filterbar{display:grid;grid-template-columns:minmax(170px,2fr) minmax(145px,1fr) minmax(140px,1fr) auto;
+  gap:9px;margin:17px 0 15px}
+.la-ledger-search,.la-ledger-select,.la-ledger-date{
+  width:100%;max-width:100%;min-width:0;min-height:45px;padding:11px 13px;
+  font:inherit;font-size:12px;font-weight:650;color:#e9f9ff;
+  border:1px solid rgba(131,193,226,.29);border-radius:13px;
+  background:rgba(3,15,28,.87);outline:none;color-scheme:dark}
+.la-ledger-search:focus,.la-ledger-select:focus,.la-ledger-date:focus{
+  border-color:#66cfff;box-shadow:0 0 0 3px rgba(0,158,227,.18)}
+.la-ledger-search::placeholder{color:#90aec3}
+.la-ledger-select option{background:#102035;color:#eefaff}
+.la-ledger-clear{border:1px solid rgba(147,197,226,.25);
+  background:rgba(31,49,69,.7);color:#c3eaff;font-weight:800;
+  border-radius:13px;padding:12px 14px;font-size:12px}
+.la-ledger-clear:hover{background:rgba(0,158,227,.17)}
+.la-ledger-rows{display:grid;gap:10px;max-height:680px;overflow:auto;overscroll-behavior:contain;padding:3px 2px 8px}
+.la-ledger-entry{min-width:0;display:grid;grid-template-columns:minmax(0,2.5fr) minmax(120px,1fr) minmax(90px,.8fr);
+  gap:10px;align-items:center;padding:14px;border:1px solid rgba(136,198,228,.17);
+  background:linear-gradient(135deg,rgba(19,32,47,.91),rgba(6,13,23,.97));
+  border-radius:18px;box-shadow:0 10px 25px rgba(0,0,0,.19)}
+.la-ledger-entry>button:first-child{min-width:0;color:#fff}
+.la-ledger-entry>button:first-child b{font-size:12px;overflow-wrap:anywhere}
+.la-ledger-entry>button:first-child p{line-height:1.45}
+.la-ledger-badge{display:inline-flex;align-items:center;max-width:100%;white-space:normal;text-align:center;
+  font-size:10px;font-weight:950;padding:6px 9px;border-radius:999px;border:1px solid rgba(255,255,255,.13)}
+.la-ledger-badge.paid,.la-ledger-badge.manual_paid{color:#9ff5d5;background:rgba(12,124,86,.2);border-color:rgba(70,214,160,.32)}
+.la-ledger-badge.pending,.la-ledger-badge.agreed{color:#ffdb9d;background:rgba(161,102,13,.15);border-color:rgba(251,191,78,.3)}
+.la-ledger-badge.whatsapp{color:#a3dcff;background:rgba(1,132,214,.16);border-color:rgba(64,184,245,.32)}
+.la-ledger-badge.cancelled{color:#ffb3b9;background:rgba(175,37,52,.19);border-color:rgba(255,95,110,.3)}
+.la-ledger-channel{display:inline-flex;font-size:10px;color:#96dfff;font-weight:850;
+  border:1px solid rgba(92,189,236,.17);border-radius:999px;padding:6px 9px;background:rgba(1,68,113,.14)}
+.la-ledger-summary{font-size:10px;color:#88afc7;margin-top:9px;line-height:1.5}
+.la-ledger-entry .la-ledger-open{border:1px solid rgba(148,211,242,.19);
+  border-radius:12px;background:rgba(16,36,57,.8);color:#d7f1fe;
+  padding:10px 12px;font-weight:800;font-size:11px}
+.la-ledger-details{grid-column:1/-1;min-width:0;border-top:1px solid rgba(140,195,223,.13);padding-top:10px}
+.la-ledger-details summary{cursor:pointer;color:#9adfff;font-size:12px;font-weight:800;
+  list-style-position:inside;padding:5px 0}
+.la-ledger-expanded{padding:12px;border-radius:13px;background:rgba(4,13,24,.7);
+  display:grid;gap:8px;margin-top:7px}
+.la-ledger-expanded>p{color:#a7cadf;font-size:11px;margin:0;overflow-wrap:anywhere}
+.la-ledger-photo{display:flex;justify-content:space-between;align-items:center;gap:9px;
+  border:1px solid rgba(147,196,227,.13);background:#101d2c;
+  border-radius:10px;padding:10px;font-size:11px;color:#e0f4ff;overflow-wrap:anywhere}
+.la-ledger-photo a{color:#7bd8ff;font-weight:850;text-decoration:underline}
+.la-ledger-warning{color:#f6c887!important}
+.la-ledger-event{border-left:2px solid #009ee3;padding:5px 9px!important}
+.la-ledger-manual{grid-column:1/-1;display:flex;flex-wrap:wrap;gap:8px}
+.la-ledger-manual button{border:1px solid rgba(83,197,250,.3);background:rgba(0,158,227,.15);
+  border-radius:11px;color:#b7e9ff;padding:10px 12px;font-size:11px;font-weight:800}
+.la-ledger-manual button:last-child{background:rgba(20,141,90,.16);
+  border-color:rgba(83,227,177,.34);color:#b4f6da}
+@media(max-width:900px){
+ .la-ledger-filterbar{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}
+ .la-ledger-search{grid-column:1/-1}
+ .la-ledger-entry{grid-template-columns:minmax(0,1fr) auto}
+ .la-ledger-details,.la-ledger-manual{grid-column:1/-1}
+}
+@media(max-width:560px){
+ .la-match-duel-v133{padding:8px!important;border-radius:16px!important}
+ .la-match-duel-v133 .versus-universal.hero{min-height:115px!important}
+ .la-match-duel-v133 .versus-universal.hero:after{width:36px;height:36px;font-size:11px;border-radius:11px}
+ .la-match-duel-bar{gap:5px}.la-match-duel-bar span{font-size:10px;padding:6px 8px}
+ .team-album-reveal .versus-universal.compact:after{min-width:32px;height:32px;font-size:10px;border-radius:10px}
+ .la-ledger-filterbar{gap:7px}
+ .la-ledger-search,.la-ledger-select,.la-ledger-date{min-height:43px;font-size:11px;padding:10px 9px}
+ .la-ledger-clear{font-size:11px;padding:10px}
+ .la-ledger-rows{max-height:unset;overflow:visible}
+ .la-ledger-entry{grid-template-columns:minmax(0,1fr);gap:9px;padding:12px}
+ .la-ledger-entry>button:first-child,.la-ledger-open,.la-ledger-details,.la-ledger-manual{grid-column:1/-1}
+ .la-ledger-badge,.la-ledger-channel{font-size:9px}
+ .la-ledger-photo{align-items:flex-start;flex-direction:column}
+}
+@media(prefers-reduced-motion:reduce){
+ .team-album-reveal .versus-universal.compact:after{transition:none!important}
+}
