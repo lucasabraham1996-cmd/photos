@@ -5620,7 +5620,14 @@ function App() {
     const handleAlbumCardTap = (event, album) => {
         if (!album)
             return;
-        // La carátula ya se revela al rozar/deslizar el dedo; el toque queda para entrar al álbum.
+        // En móvil: primer toque muestra los escudos; el segundo abre el álbum.
+        // La portada principal continúa abriendo la última galería directamente.
+        const isCover=Boolean(event&&event.currentTarget&&event.currentTarget.querySelector('.modern-album-card'));
+        const isTouch=Boolean(window.matchMedia&&window.matchMedia('(hover: none), (pointer: coarse)').matches);
+        if(isCover&&isTouch&&mobileRevealedAlbumId!==album.id){
+            setMobileRevealedAlbumId(album.id);
+            return;
+        }
         const firstSubAlbumId = (((album.subalbums || [])[0] || {}).id) || '';
         setMobileRevealedAlbumId('');
         location.hash = albumHash(album.id, firstSubAlbumId);
@@ -6361,9 +6368,23 @@ ${clone.outerHTML}`;
             alert('Para negociar un precio por cantidad tenés que seleccionar al menos ' + BULK_QUOTE_MIN_PHOTOS + ' fotos.');
             return;
         }
-        const url = 'https://wa.me/' + SELLER_PHONE + '?text=' + encodeURIComponent(buildBulkQuoteWhatsappMessage());
-        const opened = window.open(url, '_blank');
-        if (!opened) window.location.href = url;
+        const url='https://wa.me/'+SELLER_PHONE+'?text='+encodeURIComponent(buildBulkQuoteWhatsappMessage());
+        const now=new Date().toISOString();
+        const order={id:newOrderCode(),date:now,kind:'bulk_quote',quoteOnly:true,
+            albumName:currentAlbum&&currentAlbum.name||'',total:0,quotedTotal:null,
+            channel:'whatsapp',paymentProvider:'whatsapp',paymentStatus:'pending',
+            status:'consulta_whatsapp_iniciada',whatsappOpenedAt:now,
+            paid:false,delivered:false,wantsPoints:false,
+            items:bulkQuotePhotos.map(p=>({id:p.id,name:p.name,code:p.code,
+                albumName:p.albumName,subAlbumName:p.subAlbumName||'',price:Number(p.price)||0,
+                driveLink:p.rawUrl||p.fullUrl||p.url||''}))};
+        try{
+            saveLocalOrders(mergeOrders(readLocalOrders(),[order]));
+            savePendingOrders(mergeOrders(readPendingOrders(),[compactOrderForScript(order)]));
+        }catch(err){console.warn('Respaldo de consulta por cantidad:',err)}
+        const opened=window.open(url,'_blank');
+        if(!opened)window.location.href=url;
+        saveOrderRemote(order).catch(err=>console.warn('Consulta por cantidad pendiente:',err));
     };
     const togglePrintedPhoto = (id) => setPrintedPhotoIds(ids => ids.includes(id) ? ids.filter(x => x !== id) : [...ids, id]);
     const wmVisible = (albumId) => { var _a; return !((_a = watermarkSettings.disabledAlbums) === null || _a === void 0 ? void 0 : _a[albumId]); };
@@ -6617,7 +6638,9 @@ En breve te las preparo y te las envío por acá 😊
             printSurcharge,
             items: selectedPhotos.map(p => ({ id: p.id, albumName: p.albumName, subAlbumName: p.subAlbumName || '', name: p.name, code: p.code, url: p.url, driveLink: p.rawUrl || p.fullUrl || p.url, price: p.price, printRequested: printedPhotoIds.includes(p.id) })),
             delivered: false,
-            status: 'pendiente'
+            status: 'consulta_whatsapp_iniciada',
+            channel:'whatsapp',paymentProvider:'whatsapp',paymentStatus:'pending',
+            paid:false,whatsappOpenedAt:new Date().toISOString()
         };
         const whatsappUrl = `https://api.whatsapp.com/send?phone=${SELLER_PHONE}&text=${encodeURIComponent(msg)}`;
         return { order, msg, confirmationMessage, orderData, whatsappUrl };
@@ -6898,6 +6921,28 @@ En breve te las preparo y te las envío por acá 😊
             '\n¿Cómo podemos acordar el pago?';
         return 'https://wa.me/'+SELLER_PHONE+'?text='+encodeURIComponent(message);
     };
+    // Registrar cada consulta con su canal real, sin dar el mensaje por enviado.
+    const startOtherPaymentWhatsapp=(event)=>{
+        if(event&&event.preventDefault)event.preventDefault();
+        if(!selectedPhotos.length)return;
+        const id=newOrderCode(),url=otherPaymentWhatsappUrl(),now=new Date().toISOString();
+        const order={id,date:now,kind:'photos',total:checkoutTotal,subtotal:regular,
+            customerName:checkoutBuyerName||'',phone:checkoutBuyerPhone||'',
+            albumName:[...new Set(selectedPhotos.map(p=>p.albumName).filter(Boolean))].join(' · '),
+            channel:'whatsapp',paymentProvider:'whatsapp',paymentStatus:'pending',
+            status:'consulta_whatsapp_iniciada',paid:false,delivered:false,
+            whatsappOpenedAt:now,wantsPoints:false,
+            items:selectedPhotos.map(p=>({id:p.id,name:p.name,code:p.code,
+                albumName:p.albumName,subAlbumName:p.subAlbumName||'',price:Number(p.price)||0,
+                driveLink:p.rawUrl||p.fullUrl||p.url||''}))};
+        try{
+            saveLocalOrders(mergeOrders(readLocalOrders(),[order]));
+            savePendingOrders(mergeOrders(readPendingOrders(),[compactOrderForScript(order)]));
+        }catch(err){console.warn('Respaldo de consulta WhatsApp:',err)}
+        const opened=window.open(url,'_blank');
+        if(!opened)window.location.href=url;
+        saveOrderRemote(order).catch(err=>console.warn('Consulta WhatsApp pendiente de reintento:',err));
+    };
     // Las consultas de álbumes completos no pasan por Mercado Pago. Primero
     // registramos un pedido resumido para no perder solicitudes grandes en Firebase.
     const requestFullAlbumWhatsapp=async(album)=>{
@@ -6910,7 +6955,7 @@ En breve te las preparo y te las envío por acá 😊
             id,date:new Date().toISOString(),kind:'album',albumId:album.id,
             albumName:album.name,albumPhotoCount:(album.photos||[]).length,
             total,subtotal:total,customerName:checkoutBuyerName,phone:checkoutBuyerPhone,
-            paymentProvider:'whatsapp',paymentStatus:'pending',status:'pendiente_acuerdo',
+            paymentProvider:'whatsapp',paymentStatus:'pending',status:'consulta_whatsapp_iniciada',channel:'whatsapp',whatsappOpenedAt:new Date().toISOString(),
             paid:false,delivered:false,printRequested:false,printCount:0,wantsPoints:false,
             items:[{id:'album-'+album.id,name:'Álbum completo',albumName:album.name,
                 albumUrl:albumUrl(album.id),price:total}]
@@ -8383,8 +8428,12 @@ React.createElement("div", { id: "order-search-panel", className: "bg-neutral-90
                 React.createElement("button", { onClick: () => { location.hash = "#/galeria"; setActiveAlbum(null); }, className: "inline-flex items-center gap-2 bg-neutral-900/90 border border-neutral-800 hover:border-neutral-700 px-4 py-2.5 rounded-full mb-4 text-sm font-semibold shadow-[0_8px_22px_rgba(0,0,0,.2)]" },
                     React.createElement("i", { className: "fas fa-arrow-left text-xs" }),
                     "Volver"),
-                React.createElement("div", { className: "match-versus-hero mb-4" },
-                    renderVersusScene(albumTeamSide(currentAlbum, 0, true), albumTeamSide(currentAlbum, 1, true), {})),
+                React.createElement("div", { className: "match-versus-hero la-match-duel-v133 mb-4" },
+                    React.createElement("div",{className:"la-match-duel-bar"},
+                        React.createElement("span",null,React.createElement("i",{className:"fas fa-calendar-days","aria-hidden":true})," ",currentAlbum.dateLabel||"Fecha no informada"),
+                        React.createElement("span",null,React.createElement("i",{className:"fas fa-layer-group","aria-hidden":true})," ",currentSubAlbum&&currentSubAlbum.name||((currentAlbum.subalbums||[]).length+" categorías"))),
+                    renderVersusScene(albumTeamSide(currentAlbum, 0, true), albumTeamSide(currentAlbum, 1, true), {}),
+                    React.createElement("div",{className:"la-match-duel-footer"},currentAlbum.name)),
                 React.createElement("div", { className: "buy-gradient rounded-2xl p-3 sm:p-4 mb-4" },
                     React.createElement("div", { className:"flex items-center justify-between gap-3" },
                         React.createElement("div", {className:"min-w-0"},
@@ -8713,7 +8762,7 @@ React.createElement("div", { id: "order-search-panel", className: "bg-neutral-90
                     React.createElement("p",{className:"mp-payment-hint",role:"status"},
                         !MP_PAYMENT_VISIBLE?(mpPaymentConfig.loading?"Comprobando disponibilidad de Mercado Pago…":"Mercado Pago no está disponible ahora. Podés consultar por WhatsApp."):
                         MP_TRIAL_ENABLED?"Compra ficticia con la cuenta de prueba.":"Pago seguro. Tus fotos se habilitan al aprobarse el pago."),
-                    React.createElement("a",{href:otherPaymentWhatsappUrl(),target:"_blank",rel:"noopener noreferrer",className:"other-payment-button"},
+                    React.createElement("a",{href:otherPaymentWhatsappUrl(),onClick:startOtherPaymentWhatsapp,target:"_blank",rel:"noopener noreferrer",className:"other-payment-button"},
                         React.createElement("i",{className:"fab fa-whatsapp","aria-hidden":true}),
                         React.createElement("span",null,"Consultar otros medios de pago"),
                         React.createElement("i",{className:"fas fa-arrow-up-right-from-square","aria-hidden":true})),
