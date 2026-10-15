@@ -162,7 +162,7 @@ html[data-la-route="public"] #root > .min-h-screen{
 .la-admin-workspace h2,.la-admin-workspace h3{letter-spacing:-.022em}
 .la-admin-workspace .admin-order-links a{border-radius:11px!important}
 .la-admin-workspace [id],.la-admin-workspace [aria-label="Historial Mercado Pago"]{scroll-margin-top:104px}
-.la-admin-control-hub{margin:0 0 24px}
+.la-admin-control-hub{display:contents}
 .la-admin-nav{
   display:flex;gap:8px;align-items:center;
   position:sticky;top:8px;z-index:35;
@@ -190,7 +190,7 @@ html[data-la-route="public"] #root > .min-h-screen{
 .la-admin-overview-head{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:12px}
 .la-admin-overview-head h2{font-size:19px;font-weight:900;letter-spacing:-.03em;margin:0}
 .la-admin-overview-head p{font-size:11px;color:var(--la-premium-muted);margin:0}
-.la-admin-kpi-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
+.la-admin-kpi-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
 .la-admin-kpi{
   min-width:0;display:flex;flex-direction:column;gap:10px;
   padding:19px;border-radius:20px;border:1px solid var(--la-premium-line);
