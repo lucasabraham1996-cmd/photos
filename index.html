@@ -8054,7 +8054,28 @@ React.createElement("div", { id: "order-search-panel", className: "bg-neutral-90
                             React.createElement("p", { className:"text-xs text-neutral-400 mt-1" }, (o.customerName || 'Sin nombre'), " · ", (o.phone || '—'), isRedemption ? ` · ${o.rewardName || 'Beneficio'} · -${o.redeemedPoints || 0} pts` : ` · ${formatPrice(o.total)}`),
                             React.createElement("div",{className:"la-ledger-summary"},
                                 (o.items||[]).length+" fotos · "+(o.albumName||o.items&&o.items[0]&&o.items[0].albumName||"Sin galería"))),
-                        React.createElement("button", { onClick:() => openOrderFromQueue(o), className:"bg-neutral-800 px-3 py-2 rounded-xl text-xs font-bold" }, "Abrir"),
+                        React.createElement("details",{className:"la-ledger-details"},
+                            React.createElement("summary",null,"Ver fotos y movimientos"),
+                            React.createElement("div",{className:"la-ledger-expanded"},
+                                React.createElement("p",null,"Fecha: ",o.date?new Date(o.date).toLocaleString('es-AR'):"No informada"),
+                                React.createElement("p",null,"Código: ",o.id),
+                                !((o.items||[]).length)&&React.createElement("p",null,"Esta fuente no conservó las fotografías."),
+                                (o.items||[]).map((p,i)=>React.createElement("div",{key:i,className:"la-ledger-photo"},
+                                    React.createElement("span",null,p.name||p.code||"Foto "+(i+1),p.albumName?" · "+p.albumName:""),
+                                    adminOrderState(o)==='manual_paid'&&orderDriveLink(p)&&
+                                      React.createElement("a",{href:orderDriveLink(p),target:"_blank",rel:"noopener noreferrer"},"Abrir enlace (admin)"))),
+                                (Array.isArray(o.statusHistory)?o.statusHistory:[]).map((evt,i)=>
+                                    React.createElement("p",{key:i,className:"la-ledger-event"},evt.at||"Sin fecha"," · ",evt.action||"Cambio",evt.method?" · "+evt.method:"")),
+                                !['paid','manual_paid'].includes(adminOrderState(o))&&React.createElement("p",{className:"la-ledger-warning"},"Sin pago confirmado: originales bloqueados."),
+                                adminOrderState(o)==='paid'&&React.createElement("p",{className:"la-ledger-warning"},"La entrega de Mercado Pago exige recibo verificado por el Worker."))),
+                        React.createElement("button", { onClick:() => openOrderFromQueue(o), className:"la-ledger-open" }, "Abrir ficha"),
+                        adminOrderChannel(o)==='whatsapp'&&
+                            ['whatsapp','agreed'].includes(adminOrderState(o))&&
+                            React.createElement("div",{className:"la-ledger-manual"},
+                                adminOrderState(o)!=='agreed'&&React.createElement("button",{type:"button",
+                                    onClick:()=>updateManualWhatsappStatus(o,'agreed')},"Pago acordado"),
+                                React.createElement("button",{type:"button",
+                                    onClick:()=>updateManualWhatsappStatus(o,'manual_paid')},"Confirmar otro medio")),
                         !isResolvedOrder(o)&&!(o.paid||o.paymentStatus==='accredited') && React.createElement("button", { onClick:() => { if (confirm(isRedemption ? '¿Anular este canje y devolver los puntos?' : '¿Marcar este pedido como cancelado/no pagado?')) setOrderDecisionAndClose(o,'rejected'); }, className:"bg-red-500/15 border border-red-500/30 text-red-200 px-3 py-2 rounded-xl text-xs font-black" }, isRedemption ? "Anular canje" : "Anular / no pagado"));
                 })))),
             React.createElement("div", { className: "bg-neutral-900 border border-neutral-800 rounded-3xl p-5 mb-6" },
