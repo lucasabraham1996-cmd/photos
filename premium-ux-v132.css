@@ -492,3 +492,134 @@ html[data-la-route="public"] #root > .min-h-screen{
 @media(prefers-reduced-motion:reduce){
  .subalbum-showcase.la-category-tabs-v134 .la-category-tab-v134{transition:none!important}
 }
+
+
+/* v135 · Ajustes de compra, consulta de álbum completo, impresión y contacto admin.
+   Puramente visual: no altera pagos, tokens ni sincronización de galerías. */
+.la-album-consult-entry{margin:0 0 19px}
+.la-album-consult-trigger{display:flex;align-items:center;justify-content:center;gap:13px;
+  width:100%;min-height:59px;padding:14px 20px;border:1px solid rgba(75,202,255,.42);
+  border-radius:17px;background:linear-gradient(135deg,rgba(2,38,67,.95),rgba(5,21,39,.94));
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.07),0 13px 28px rgba(0,0,0,.18);
+  color:#f1fbff;font-size:15px;font-weight:900;letter-spacing:-.015em;
+  transition:transform .2s,border-color .2s,background .2s}
+.la-album-consult-trigger>i:first-child{color:#65d1ff;font-size:21px}
+.la-album-consult-trigger>i:last-child{color:#9fc9dc;font-size:12px}
+.la-album-consult-trigger:hover{transform:translateY(-2px);border-color:#60d3ff;
+  background:linear-gradient(135deg,rgba(0,98,147,.74),rgba(5,24,47,.96))}
+.la-album-consult-modal{position:relative;padding:23px 20px 19px;
+  border:1px solid rgba(103,210,255,.27);border-radius:24px;
+  background:linear-gradient(145deg,#112338,#06101e);text-align:center;color:#ecfaff}
+.la-album-consult-modal h2{font-size:22px;font-weight:950;letter-spacing:-.03em;
+  margin:8px 0 13px}
+.la-album-consult-modal>p{font-size:13px;line-height:1.7;color:#b6ccdc;margin:0 auto 17px;max-width:420px}
+.la-album-consult-modal>p strong{color:#fff}
+.la-album-consult-icon{width:64px;height:64px;margin:0 auto 9px;
+  display:grid;place-items:center;border-radius:21px;
+  background:rgba(0,158,227,.13);border:1px solid rgba(71,198,248,.29);
+  color:#66d2ff;font-size:29px}
+.la-album-consult-close{position:absolute;top:13px;right:13px;
+  width:35px;height:35px;border:1px solid rgba(170,217,239,.21);
+  border-radius:11px;color:#c0d4e5;background:rgba(0,0,0,.22)}
+.la-album-consult-summary{display:flex;gap:10px;align-items:center;justify-content:space-between;
+  background:rgba(1,13,26,.8);border:1px solid rgba(101,185,229,.21);
+  border-radius:13px;padding:13px;text-align:left;font-size:12px;color:#d9edfa}
+.la-album-consult-summary>strong{font-size:16px;color:#fff;white-space:nowrap}
+.la-album-consult-buyer{display:grid;grid-template-columns:1fr;gap:8px;margin:12px 0}
+.la-album-consult-buyer>input{width:100%;min-width:0;padding:12px 13px;border-radius:12px;
+  border:1px solid rgba(141,206,238,.24);background:rgba(4,13,25,.85);
+  color:#fff;font-size:13px;outline:none}
+.la-album-consult-buyer>input:focus{border-color:#79d8ff;box-shadow:0 0 0 3px rgba(0,158,227,.15)}
+.la-album-consult-whatsapp{display:flex;align-items:center;justify-content:center;gap:10px;
+  width:100%;min-height:49px;border:1px solid rgba(52,218,117,.62);
+  border-radius:13px;background:rgba(4,74,37,.52);
+  color:#ccffdb;font-size:13px;font-weight:900;padding:13px 12px}
+.la-album-consult-whatsapp>i{font-size:18px}
+.la-album-consult-whatsapp:hover{background:rgba(17,124,61,.65)}
+.la-album-consult-whatsapp:disabled{opacity:.5}
+
+/* Impresión accesoria, delgada y discreta antes del cupón. */
+.checkout-simple-shell .print-order-btn{
+  display:grid!important;grid-template-columns:22px minmax(0,1fr) 18px!important;
+  gap:11px!important;align-items:center!important;
+  padding:10px 13px!important;min-height:53px!important;
+  margin-bottom:8px!important;border-radius:13px!important;
+  background:linear-gradient(135deg,rgba(15,32,49,.92),rgba(8,21,38,.93))!important;
+  color:#e6f7ff!important;border:1px solid rgba(120,204,248,.24)!important;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.04)!important}
+.checkout-simple-shell .print-order-btn:hover{border-color:rgba(120,218,255,.64)!important;
+  background:linear-gradient(135deg,rgba(19,52,75,.92),rgba(8,25,45,.94))!important}
+.checkout-simple-shell .print-order-btn.active{
+  background:linear-gradient(135deg,rgba(0,88,134,.28),rgba(7,29,48,.94))!important;
+  border-color:rgba(79,203,255,.7)!important;
+  box-shadow:0 0 0 2px rgba(0,158,227,.07)!important}
+.checkout-simple-shell .print-order-btn>i:first-child{font-size:17px!important;color:#86dfff!important}
+.checkout-simple-shell .print-order-btn>i:last-child{font-size:17px!important;color:#87cdeb!important}
+.checkout-simple-shell .print-order-btn span{display:flex;flex-direction:column;min-width:0}
+.checkout-simple-shell .print-order-btn b{font-size:12px!important;line-height:1.35;
+  font-weight:850!important;white-space:normal}
+.checkout-simple-shell .print-order-btn small{font-size:10px!important;
+  font-weight:650;opacity:.8;margin-top:3px;color:#9ec7da!important}
+.checkout-simple-shell .print-photo-picker{margin:0 0 13px!important;
+  border-radius:13px!important;border:1px solid rgba(93,195,243,.23)!important;
+  padding:11px!important;background:rgba(8,20,38,.83)!important}
+.la-print-delivery-banner{display:grid;gap:12px;margin:0 0 17px;
+  border:1px solid rgba(124,203,254,.55);border-radius:17px;
+  background:linear-gradient(135deg,rgba(20,49,81,.8),rgba(7,26,46,.82));
+  padding:14px 16px;box-shadow:0 10px 28px rgba(0,0,0,.13)}
+.la-print-delivery-title{display:flex;align-items:center;gap:12px}
+.la-print-delivery-title>i{display:grid;place-items:center;flex:0 0 39px;
+  height:39px;border-radius:12px;background:rgba(45,182,244,.18);
+  color:#85ddff;font-size:20px}
+.la-print-delivery-title>div{display:flex;flex-direction:column;gap:4px;min-width:0}
+.la-print-delivery-title b{font-size:13px;color:#fff;line-height:1.3}
+.la-print-delivery-title span{font-size:11px;color:#bfd8ed;line-height:1.5}
+.la-print-delivery-cta{display:inline-flex;align-items:center;justify-content:center;
+  gap:9px;min-height:46px;border-radius:12px;text-decoration:none;
+  background:#12a755;color:#f0fff6!important;font-size:13px;font-weight:900;
+  padding:12px}
+.la-print-delivery-cta:hover{background:#0d8e49}
+
+/* Administrador: identificar comprador y contacto antes de abrir cualquier ficha. */
+.la-admin-workspace .la-ledger-entry.la-ledger-with-print{
+  border:2px solid rgba(83,204,255,.78)!important;
+  background:linear-gradient(135deg,rgba(15,59,84,.66),rgba(4,20,36,.97))!important;
+  box-shadow:0 0 0 2px rgba(44,178,248,.06),0 15px 35px rgba(1,31,62,.27)!important}
+.la-admin-workspace .la-ledger-with-print .print-order-badge{display:inline-flex;
+  background:#075fa2!important;color:#fff!important;border:1px solid #5dd2ff!important;
+  box-shadow:0 5px 16px rgba(0,113,210,.21);font-size:11px!important;
+  font-weight:950!important;padding:8px 10px!important}
+.la-ledger-customer{display:flex;flex-direction:column;align-items:flex-start;gap:3px;margin-top:11px}
+.la-ledger-customer strong{display:block;color:#fff;font-size:17px;font-weight:950;
+  line-height:1.2;overflow-wrap:anywhere;text-shadow:0 2px 10px rgba(0,0,0,.2)}
+.la-ledger-customer span{display:block;font-size:12px;color:#acd1e8;font-weight:700}
+.la-ledger-whatsapp{display:inline-flex;align-items:center;justify-content:center;
+  gap:8px;border-radius:12px;background:rgba(15,147,70,.85)!important;
+  border:1px solid rgba(93,238,148,.62)!important;color:#fff!important;
+  font-size:12px;font-weight:950!important;min-height:42px;
+  text-decoration:none;padding:10px 12px;text-align:center}
+.la-ledger-whatsapp i{font-size:16px}
+.la-ledger-whatsapp:hover{background:#159b52!important}
+.la-order-buyer-focus{display:flex;align-items:flex-start;flex-direction:column;gap:6px;
+  background:linear-gradient(140deg,rgba(7,60,90,.57),rgba(8,28,49,.78));
+  border:1px solid rgba(106,210,255,.37);border-radius:14px;
+  padding:13px;margin:13px 0}
+.la-order-buyer-focus>strong{font-size:20px;line-height:1.2;
+  color:#fff;font-weight:950;overflow-wrap:anywhere}
+.la-order-buyer-focus>span{font-size:12px;color:#c3e0f1}
+.la-order-buyer-focus>.la-ledger-whatsapp{margin-top:5px}
+.la-admin-print-alert{border:2px solid #5fcaff!important;
+  background:linear-gradient(120deg,rgba(7,67,107,.44),rgba(4,31,56,.85))!important;
+  box-shadow:0 0 0 3px rgba(40,180,246,.07),0 16px 30px rgba(0,0,0,.16)}
+@media(max-width:560px){
+ .la-album-consult-trigger{min-height:53px;font-size:13px;padding:12px 14px}
+ .la-album-consult-modal{padding:19px 12px 13px}
+ .la-album-consult-modal h2{font-size:19px}
+ .la-album-consult-modal>p{font-size:12px}
+ .checkout-simple-shell .print-order-btn{padding:10px!important;gap:9px!important}
+ .la-ledger-customer strong{font-size:15px}
+ .la-print-delivery-title b{font-size:12px}
+}
+@media(prefers-reduced-motion:reduce){
+ .la-album-consult-trigger{transition:none!important}
+}

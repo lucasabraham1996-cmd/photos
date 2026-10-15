@@ -2240,8 +2240,8 @@ img{-webkit-user-drag:none;}
 .mp-catalogue-result.error{background:#431d22;color:#ffd3d3!important;border:1px solid #98545c}.mp-catalogue-result.success{background:#0d3b25;color:#c7ffdd!important;border:1px solid #258859}
 @media(max-width:380px){.checkout-payment-options{padding:12px}.mp-pay-button{padding:12px;gap:9px}.mp-pay-button strong{font-size:18px}.mp-pay-button>img{width:44px;height:44px;flex-basis:44px}.other-payment-button{padding:11px;font-size:14px;gap:9px}}
 </style>
-  <link rel="stylesheet" href="./premium-ux-v132.css?v=134" />
-  <script defer src="./premium-ux-v132.js?v=134"></script>
+  <link rel="stylesheet" href="./premium-ux-v132.css?v=135" />
+  <script defer src="./premium-ux-v132.js?v=135"></script>
 </head>
 <body style="background:#050505;color:#fff;">
   <div id="boot-overlay" style="position:fixed;inset:0;z-index:99999;background:#050505;color:#fff;display:flex;align-items:center;justify-content:center;padding:24px;">
@@ -5474,6 +5474,7 @@ function App() {
     },[checkoutOpen]);
     const [checkoutSaving, setCheckoutSaving] = useState(false);
     const [albumWhatsappBusy,setAlbumWhatsappBusy] = useState(false);
+    const [albumConsultOpen,setAlbumConsultOpen] = useState(false);
     const [checkoutSaveError, setCheckoutSaveError] = useState("");
     const orderSavingRef = useRef(false);
     const [adminNotificationsOpen, setAdminNotificationsOpen] = useState(false);
@@ -6205,6 +6206,8 @@ ${clone.outerHTML}`;
                 customerName:mp.customer_name || previous.customerName || '',
                 phone:mp.customer_phone || previous.phone || '',
                 items:previous.items && previous.items.length ? previous.items : photos,
+                printRequested:previous.printRequested===true||mp.print_requested===true,
+                printCount:Math.max(Number(previous.printCount)||0,Number(mp.print_count)||0),
                 paymentProvider:'mercadopago', paymentMode:mp.mode || 'public',
                 paymentStatus:paid ? 'accredited' : (mp.payment_status || 'pending'),
                 paid, mpOrderId:mp.order_id || '', mpCheckoutId:mp.checkout_id,
@@ -6707,6 +6710,17 @@ En breve te las preparo y te las envío por acá 😊
         const message = String((CLUB_ENABLED && orderLike && orderLike.confirmationMessage) || buildOrderConfirmationMessage(orderLike || {}));
         return `https://api.whatsapp.com/send?phone=549${phone}&text=${encodeURIComponent(message)}`;
     }
+    // Contacto de gestión: nunca afirma que se cobró o entregó el pedido.
+    function orderContactWhatsappUrl(o){
+        const phone=normalizeClubPhone(o&&(o.phone||o.customerPhone||o.celular));
+        if(!phone||phone.length<10)return '';
+        const name=cleanWhatsappPersonName(o.customerName||'');
+        const greeting=name?', '+name.split(' ')[0]:'';
+        const msg='¡Hola'+greeting+'! Soy Lucas Abraham de lucasabraham.ph. Te escribo por tu pedido '+
+            String(o.id||o.order_id||o.checkout_id||'')+
+            (orderPrintInfo(o).has?' y las fotografías impresas que solicitaste.':'.');
+        return 'https://wa.me/549'+phone+'?text='+encodeURIComponent(msg);
+    }
     const checkoutBuyerName = cleanWhatsappPersonName(checkoutCustomerName);
     const checkoutBuyerPhone = normalizeClubPhone(checkoutPhone);
     const checkoutBuyerComplete = checkoutBuyerName.split(/\s+/).filter(Boolean).length >= 2 && checkoutBuyerPhone.length >= 10;
@@ -7075,38 +7089,34 @@ En breve te las preparo y te las envío por acá 😊
     };
     // Las consultas de álbumes completos no pasan por Mercado Pago. Primero
     // registramos un pedido resumido para no perder solicitudes grandes en Firebase.
-    const requestFullAlbumWhatsapp=async(album)=>{
-        if(!album||albumWhatsappBusy||!validateCheckoutBuyer())return;
+    const requestFullAlbumWhatsapp=(album)=>{
+        if(!album||albumWhatsappBusy)return;
         setAlbumWhatsappBusy(true);
         setCheckoutSaveError('');
-        const total=albumPriceWithDiscount(album);
-        const id=newOrderCode();
+        const total=albumPriceWithDiscount(album),id=newOrderCode(),now=new Date().toISOString();
         const order={
-            id,date:new Date().toISOString(),kind:'album',albumId:album.id,
-            albumName:album.name,albumPhotoCount:(album.photos||[]).length,
-            total,subtotal:total,customerName:checkoutBuyerName,phone:checkoutBuyerPhone,
-            paymentProvider:'whatsapp',paymentStatus:'pending',status:'consulta_whatsapp_iniciada',channel:'whatsapp',whatsappOpenedAt:new Date().toISOString(),
+            id,date:now,kind:'album',albumId:album.id,albumName:album.name,
+            albumPhotoCount:(album.photos||[]).length,total,subtotal:total,
+            customerName:checkoutBuyerName||'',phone:checkoutBuyerPhone||'',
+            paymentProvider:'whatsapp',paymentStatus:'pending',
+            status:'consulta_whatsapp_iniciada',channel:'whatsapp',whatsappOpenedAt:now,
             paid:false,delivered:false,printRequested:false,printCount:0,wantsPoints:false,
             items:[{id:'album-'+album.id,name:'Álbum completo',albumName:album.name,
                 albumUrl:albumUrl(album.id),price:total}]
         };
+        const link=new URL(otherPaymentWhatsappUrl(album));
+        link.searchParams.set('text',link.searchParams.get('text')+
+            '\nCódigo de consulta: '+id+'\nSolicito '+order.albumPhotoCount+' fotos del álbum.');
         try{
-            const result=await saveOrderRemote(order);
-            if(!result.firebase&&!result.script){
-                setCheckoutSaveError('El pedido quedó pendiente de sincronización. Enviá el mensaje de WhatsApp para que Lucas pueda registrarlo.');
-            }
-            const link=new URL(otherPaymentWhatsappUrl(album));
-            link.searchParams.set('text',link.searchParams.get('text')+
-                '\nCódigo de pedido: '+id+'\nSolicito '+order.albumPhotoCount+' fotos del álbum.');
-            window.location.assign(link.href);
-        }catch(err){
-            console.warn('Solicitud de álbum:',err);
-            setCheckoutSaveError('El registro automático falló. Enviá el mensaje de WhatsApp para que Lucas reciba la solicitud.');
-            window.alert('No se pudo guardar la solicitud en el sistema. Enviá el mensaje de WhatsApp para que Lucas la reciba.');
-            const link=new URL(otherPaymentWhatsappUrl(album));
-            link.searchParams.set('text',link.searchParams.get('text')+'\nCódigo de solicitud: '+id);
-            window.location.assign(link.href);
-        }finally{setAlbumWhatsappBusy(false)}
+            saveLocalOrders(mergeOrders(readLocalOrders(),[order]));
+            savePendingOrders(mergeOrders(readPendingOrders(),[compactOrderForScript(order)]));
+        }catch(err){console.warn('Respaldo de consulta por álbum completo:',err)}
+        // Abrir WhatsApp directamente en el clic: la sincronización no bloquea el chat.
+        const opened=window.open(link.href,'_blank');
+        if(!opened)window.location.href=link.href;
+        setAlbumConsultOpen(false);
+        saveOrderRemote(order).catch(err=>console.warn('Consulta pendiente de sincronizar:',err))
+            .finally(()=>setAlbumWhatsappBusy(false));
     };
     // En un celular la entrega debe ser individual, sin ZIP ni descargas programáticas.
     const mpMobileDelivery=()=>{
@@ -7253,7 +7263,11 @@ En breve te las preparo y te las envío por acá 😊
                 let saved={...mpTrialPurchase,order_id:data.order_id||mpTrialPurchase.order_id,
                     amount:Number.isFinite(Number(data.amount))?Number(data.amount):(mpTrialPurchase.amount||0),
                     quantity:files.length,kind:data.kind||mpTrialPurchase.kind,
-                    created_at:data.created_at||mpTrialPurchase.created_at||'',paid:true};
+                    created_at:data.created_at||mpTrialPurchase.created_at||'',paid:true,
+                    printRequested:Boolean(data.print_requested||
+                        mpTrialPurchase.printRequested||mpTrialPurchase.order_data&&mpTrialPurchase.order_data.printRequested),
+                    printCount:Number(data.print_count)||Number(mpTrialPurchase.printCount)||
+                        Number(mpTrialPurchase.order_data&&mpTrialPurchase.order_data.printCount)||0};
                 setMpTrialMessage('¡Pago acreditado! '+files.length+' fotografías listas para descargar.'+
                     (data.print_requested?' Las impresiones físicas se coordinan por WhatsApp.':''));
                 // Nunca iniciar descargas por efecto de la verificación: se habilitan botones
@@ -7939,6 +7953,13 @@ React.createElement("div", { id: "order-search-panel", hidden:adminPanelTab!=='p
                             React.createElement("div", { className: `inline-flex items-center gap-2 mt-2 px-3 py-1 rounded-full text-xs font-black ${matchedOrder.rejected ? 'bg-red-500/20 text-red-300 border border-red-500/35' : matchedOrder.delivered ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/35' : 'bg-amber-500/15 text-amber-300 border border-amber-500/30'}` },
                                 React.createElement("i", { className: `fas ${matchedOrder.rejected ? 'fa-circle-xmark' : matchedOrder.delivered ? 'fa-circle-check' : 'fa-clock'}` }),
                                 matchedOrder.rejected ? 'Pedido rechazado' : matchedOrder.delivered ? 'Pedido ya cargado y entregado' : 'Pendiente de cargar/entregar'),
+                                                        React.createElement("div",{className:"la-order-buyer-focus"},
+                                React.createElement("strong",null,matchedOrder.customerName||"Cliente sin nombre"),
+                                React.createElement("span",null,matchedOrder.phone||"Sin número de WhatsApp"),
+                                orderContactWhatsappUrl(matchedOrder)&&React.createElement("a",{
+                                    className:"la-ledger-whatsapp",target:"_blank",rel:"noopener noreferrer",
+                                    href:orderContactWhatsappUrl(matchedOrder)},
+                                    React.createElement("i",{className:"fab fa-whatsapp"})," Hablar por WhatsApp")),
                             React.createElement("p", { className: "text-neutral-400 text-sm mt-2" },
                                 "Total: ",
                                 formatPrice(matchedOrder.total),
@@ -7971,7 +7992,7 @@ React.createElement("div", { id: "order-search-panel", hidden:adminPanelTab!=='p
                             orderConfirmationWhatsappUrl(matchedOrder) && React.createElement("button", { onClick: () => window.open(orderConfirmationWhatsappUrl(matchedOrder), '_blank'), className: "bg-[#25D366] text-black px-4 py-3 rounded-xl font-black text-sm" },
                                 React.createElement("i", { className: "fab fa-whatsapp mr-2" }),
                                 "Enviar confirmación"))),
-                    orderPrintInfo(matchedOrder).has && React.createElement("div", { className:"mb-4 rounded-3xl border border-sky-400/40 bg-sky-500/10 p-4" },
+                    orderPrintInfo(matchedOrder).has && React.createElement("div", { className:"la-admin-print-alert mb-4 rounded-3xl border border-sky-400/40 bg-sky-500/10 p-4" },
                         React.createElement("div", { className:"flex items-center justify-between gap-3 mb-3" },
                             React.createElement("div", null,
                                 React.createElement("p", { className:"text-[10px] uppercase tracking-[.18em] text-sky-300 font-black" }, "PEDIDO CON IMPRESIONES"),
@@ -8107,12 +8128,15 @@ React.createElement("div", { id: "order-search-panel", hidden:adminPanelTab!=='p
                 React.createElement("div", { className:"la-ledger-rows" }, adminFilteredLedger.map(o => {
                     const isRedemption = o.type === 'benefit_redemption' || o.benefitRedemption === true;
                     const printCount = orderPrintInfo(o).count;
-                    return React.createElement("div", { key:o.id, className:"la-ledger-entry" },
+                    return React.createElement("div", { key:o.id, className:"la-ledger-entry"+(printCount>0?" la-ledger-with-print":"") },
                         React.createElement("button", { onClick:() => openOrderFromQueue(o), className:"text-left min-w-0 flex-1" },
                             React.createElement("div", { className:"flex flex-wrap items-center gap-2" }, React.createElement("b", null, "#", o.id), isRedemption && React.createElement("span", { className:"club-order-badge" }, "CANJE CLUB"), printCount > 0 && React.createElement("span", { className:"print-order-badge" }, `IMPRESIÓN 10x15 × ${printCount}`),
                                 React.createElement("span",{className:"la-ledger-badge "+adminOrderState(o)},adminOrderStateLabel(o)),
                                 React.createElement("span",{className:"la-ledger-channel"},adminOrderChannel(o)==='whatsapp'?"WhatsApp":adminOrderChannel(o)==='mercadopago'?"Mercado Pago":"Sin canal")),
-                            React.createElement("p", { className:"text-xs text-neutral-400 mt-1" }, (o.customerName || 'Sin nombre'), " · ", (o.phone || '—'), isRedemption ? ` · ${o.rewardName || 'Beneficio'} · -${o.redeemedPoints || 0} pts` :
+                            React.createElement("div",{className:"la-ledger-customer"},
+                                React.createElement("strong",null,o.customerName||"Cliente sin nombre"),
+                                React.createElement("span",null,o.phone||"Teléfono no informado")),
+                            React.createElement("p", { className:"text-xs text-neutral-400 mt-1" }, isRedemption ? ` · ${o.rewardName || 'Beneficio'} · -${o.redeemedPoints || 0} pts` :
                                 ` · ${formatPrice(adminOrderState(o)==='manual_paid'?(o.manualPaymentAmount??o.total):o.total)}`),
                             React.createElement("div",{className:"la-ledger-summary"},
                                 (o.items||[]).length+" fotos · "+(o.albumName||o.items&&o.items[0]&&o.items[0].albumName||"Sin galería"))),
@@ -8131,6 +8155,10 @@ React.createElement("div", { id: "order-search-panel", hidden:adminPanelTab!=='p
                                 !['paid','manual_paid'].includes(adminOrderState(o))&&React.createElement("p",{className:"la-ledger-warning"},"Sin pago confirmado: originales bloqueados."),
                                 adminOrderState(o)==='paid'&&React.createElement("p",{className:"la-ledger-warning"},"La entrega de Mercado Pago exige recibo verificado por el Worker."))),
                         React.createElement("button", { onClick:() => openOrderFromQueue(o), className:"la-ledger-open" }, "Abrir ficha"),
+                        orderContactWhatsappUrl(o)&&React.createElement("a",{
+                            href:orderContactWhatsappUrl(o),target:"_blank",rel:"noopener noreferrer",
+                            className:"la-ledger-whatsapp","aria-label":"Hablar por WhatsApp con "+(o.customerName||"comprador")},
+                            React.createElement("i",{className:"fab fa-whatsapp"})," Hablar con ",o.customerName||"comprador"),
                         adminOrderChannel(o)==='whatsapp'&&
                             ['whatsapp','agreed'].includes(adminOrderState(o))&&
                             React.createElement("div",{className:"la-ledger-manual"},
@@ -8599,35 +8627,32 @@ React.createElement("div", { id: "order-search-panel", hidden:adminPanelTab!=='p
                         React.createElement("span",null,React.createElement("i",{className:"fas fa-layer-group","aria-hidden":true})," ",currentSubAlbum&&currentSubAlbum.name||((currentAlbum.subalbums||[]).length+" categorías"))),
                     renderVersusScene(albumTeamSide(currentAlbum, 0, true), albumTeamSide(currentAlbum, 1, true), {}),
                     React.createElement("div",{className:"la-match-duel-footer"},currentAlbum.name)),
-                React.createElement("div", { className: "buy-gradient rounded-2xl p-3 sm:p-4 mb-4" },
-                    React.createElement("div", { className:"flex items-center justify-between gap-3" },
-                        React.createElement("div", {className:"min-w-0"},
-                            React.createElement("h3",{className:"text-lg sm:text-xl font-black text-white leading-tight"},"Colección completa"),
-                            React.createElement("p",{className:"text-sky-100/70 text-xs sm:text-sm leading-relaxed"},"Todas las fotos del álbum en alta calidad y sin marca de agua."),
-                            hasSiteDiscount(currentAlbum.id)&&React.createElement("div",{className:"promo-pill mt-2"},"Descuento web aplicado: "+albumSiteDiscount(currentAlbum.id)+"%")),
-                        React.createElement("div",{className:"text-right shrink-0"},
-                            React.createElement("p",{className:"text-[9px] text-sky-200 uppercase tracking-[0.18em] font-bold"},"Total"),
-                            React.createElement("p",{className:"text-2xl font-black text-white leading-none"},formatPrice(albumPriceWithDiscount(currentAlbum))),
-                            hasSiteDiscount(currentAlbum.id)&&React.createElement("p",{className:"text-xs line-through text-neutral-400 mt-1"},formatPrice(currentAlbum.fullPrice)))),
-                    React.createElement("div",{className:"checkout-simple-card mt-3 mb-1 text-left"},
-                        React.createElement("p",{className:"text-sm font-black text-white mb-1"},"Coordiná la compra por WhatsApp"),
-                        React.createElement("p",{className:"text-xs text-sky-100/75"},"El álbum completo se acuerda directamente con Lucas. Al tocar el botón se abre WhatsApp con el nombre del álbum y su precio publicado. No se realiza ningún cobro automático.")),
-                    React.createElement("div",{className:"album-payment-options",id:"album-payment-options"},
-                        React.createElement("button",{type:"button",onClick:()=>requestFullAlbumWhatsapp(currentAlbum),disabled:albumWhatsappBusy,className:"other-payment-button",style:{display:"flex",alignItems:"center",justifyContent:"center",minHeight:"62px",fontSize:"15px",width:"100%"}},
-                            React.createElement("i",{className:"fab fa-whatsapp text-xl","aria-hidden":true}),
-                            React.createElement("span",null,albumWhatsappBusy?"Registrando solicitud…":"Hablar con Lucas por WhatsApp para acordar el álbum completo"))),
-                    checkoutSaveError&&React.createElement("p",{className:"mt-2 text-xs text-amber-200",role:"alert"},checkoutSaveError)),
-                React.createElement("div", { id:"bulk-quote-selector-start", className:"bulk-quote-entry" + (bulkQuoteMode ? " active" : "") },
-                    React.createElement("div", { className:"bulk-quote-entry-icon" }, React.createElement("i", { className:"fas fa-images" })),
-                    React.createElement("div", { className:"bulk-quote-entry-copy" },
-                        React.createElement("span", { className:"bulk-quote-eyebrow" }, bulkQuoteMode ? "Selección especial activa" : "¿Saliste en muchas fotos?"),
-                        React.createElement("h3", null, "Tengo varias fotos mías"),
-                        React.createElement("p", null, bulkQuoteMode
-                            ? ("Elegí tus fotos con el botón +. Necesitás al menos " + BULK_QUOTE_MIN_PHOTOS + " para consultar un precio por cantidad.")
-                            : "Seleccioná más de 10 fotos tuyas y hablá con Lucas para negociar un precio especial por todas.")),
-                    bulkQuoteMode
-                        ? React.createElement("button", { type:"button", onClick:cancelBulkQuote, className:"bulk-quote-cancel" }, React.createElement("i", { className:"fas fa-xmark" }), " Cancelar")
-                        : React.createElement("button", { type:"button", onClick:startBulkQuote, className:"bulk-quote-start" }, React.createElement("i", { className:"fab fa-whatsapp" }), " Elegir fotos y negociar")),
+                React.createElement("div",{className:"la-album-consult-entry"},
+                    React.createElement("button",{type:"button",className:"la-album-consult-trigger",
+                        onClick:()=>setAlbumConsultOpen(true)},
+                        React.createElement("i",{className:"fas fa-images","aria-hidden":true}),
+                        React.createElement("span",null,"Consultar por álbum completo"),
+                        React.createElement("i",{className:"fas fa-chevron-right","aria-hidden":true}))),
+                albumConsultOpen&&React.createElement(Modal,{onClose:()=>setAlbumConsultOpen(false),max:"max-w-md"},
+                    React.createElement("div",{className:"la-album-consult-modal"},
+                        React.createElement("button",{type:"button",className:"la-album-consult-close",onClick:()=>setAlbumConsultOpen(false),"aria-label":"Cerrar"},
+                            React.createElement("i",{className:"fas fa-xmark"})),
+                        React.createElement("div",{className:"la-album-consult-icon"},
+                            React.createElement("i",{className:"fas fa-images"})),
+                        React.createElement("h2",null,"Consultar por álbum completo"),
+                        React.createElement("p",null,"La compra y entrega del álbum completo se coordinan directamente con ",React.createElement("strong",null,"Lucas Abraham")," por WhatsApp. No se realiza ningún cobro automático."),
+                        React.createElement("div",{className:"la-album-consult-summary"},
+                            React.createElement("span",null,currentAlbum.name),
+                            React.createElement("strong",null,formatPrice(albumPriceWithDiscount(currentAlbum)))),
+                        React.createElement("div",{className:"la-album-consult-buyer"},
+                            React.createElement("input",{value:checkoutCustomerName,onChange:e=>setCheckoutCustomerName(e.target.value),
+                                placeholder:"Tu nombre y apellido (opcional)",autoComplete:"name","aria-label":"Nombre y apellido"}),
+                            React.createElement("input",{value:checkoutPhone,onChange:e=>setCheckoutPhone(e.target.value),
+                                placeholder:"Tu WhatsApp (opcional)",type:"tel",autoComplete:"tel","aria-label":"Teléfono de contacto"})),
+                        React.createElement("button",{type:"button",className:"la-album-consult-whatsapp",
+                            onClick:()=>requestFullAlbumWhatsapp(currentAlbum),disabled:albumWhatsappBusy},
+                            React.createElement("i",{className:"fab fa-whatsapp"})," Consultar con Lucas por WhatsApp"),
+                        checkoutSaveError&&React.createElement("p",{role:"alert"},checkoutSaveError))),
                 React.createElement("div", { className: "mb-5 flex flex-col lg:flex-row lg:items-end lg:justify-between gap-3" },
                     React.createElement("div", { className: "min-w-0" },
                         React.createElement("h2", { className: "text-2xl font-black whitespace-normal break-words leading-tight" },
@@ -8838,6 +8863,21 @@ React.createElement("div", { id: "order-search-panel", hidden:adminPanelTab!=='p
                         React.createElement("p",{className:"text-sm font-black text-white mt-2"},"Total pagado: "+formatPrice(mpTrialPurchase.amount||0)),
                         mpTrialPurchase.created_at&&React.createElement("p",{className:"text-xs text-sky-100/70 mt-1"},"Fecha: "+new Date(mpTrialPurchase.created_at).toLocaleString('es-AR')),
                         React.createElement("p",{className:"text-xs text-sky-100/80 mt-2"},"Cada foto está disponible abajo con sus botones de vista y descarga. Este comprobante no sustituye la factura fiscal.")),
+                    (orderPrintInfo(mpTrialPurchase&&mpTrialPurchase.order_data||mpTrialPurchase).has||
+                        Boolean(mpTrialPurchase&&mpTrialPurchase.printRequested))&&
+                        React.createElement("div",{className:"la-print-delivery-banner"},
+                            React.createElement("div",{className:"la-print-delivery-title"},
+                                React.createElement("i",{className:"fas fa-print"}),
+                                React.createElement("div",null,
+                                    React.createElement("b",null,"También pediste fotografías impresas"),
+                                    React.createElement("span",null,
+                                        "Coordiná la entrega de tus impresiones 10×15 directamente con Lucas Abraham."))),
+                            React.createElement("a",{className:"la-print-delivery-cta",target:"_blank",rel:"noopener noreferrer",
+                                href:'https://wa.me/'+SELLER_PHONE+'?text='+encodeURIComponent(
+                                    'Hola Lucas Abraham! Ya tengo acreditado mi pedido '+(mpTrialPurchase.order_id||mpTrialPurchase.checkout_id)+
+                                    ' y solicité '+(orderPrintInfo(mpTrialPurchase.order_data||mpTrialPurchase).count||'algunas')+
+                                    ' fotos impresas 10x15. Quiero acordar la entrega de las impresiones. Muchas gracias!')},
+                                React.createElement("i",{className:"fab fa-whatsapp"})," Acordar entrega de impresión")),
                     mpMobileDelivery()?
                         React.createElement("p",{className:"text-sm text-emerald-100 mb-3"},"Descargá tus fotos una por una o abrí cada imagen para guardarla. No necesitás ZIP."):
                         mpTrialDownloads.length>1&&React.createElement("button",{type:"button",className:"w-full rounded-2xl bg-emerald-400 text-emerald-950 py-4 px-3 text-base font-black disabled:opacity-70",disabled:mpZipBusy||mpTrialBusy,onClick:()=>downloadMpZip()},
@@ -8902,6 +8942,22 @@ React.createElement("div", { id: "order-search-panel", hidden:adminPanelTab!=='p
                                 React.createElement("div", { className:"checkout-point-box" }, React.createElement("b", null, checkoutPriorClubAccount.points), React.createElement("span", null, "puntos disponibles de antes")),
                                 React.createElement("div", { className:"checkout-point-box" }, React.createElement("b", null, `+${projectedPointsForPurchase(checkoutPriorClubAccount, checkoutTotal)}`), React.createElement("span", null, "puntos que suma esta compra"))),
                             React.createElement("p", { className:"text-[10px] text-neutral-400 mt-2 leading-relaxed" }, "Los puntos se acreditan únicamente cuando Lucas confirma el pedido como entregado. Los pedidos pendientes o rechazados no suman.")) : React.createElement("p", { className:"text-xs text-neutral-500" }, "No pudimos consultar el saldo anterior ahora."))),
+                !mpReceiptView&&React.createElement("button", { type:"button", onClick:() => setCheckoutPrint(v => { const next=!v; if(!next) setPrintedPhotoIds([]); return next; }), className:`print-order-btn mb-3 ${checkoutPrint ? 'active' : ''}` },
+                    React.createElement("i", { className:"fas fa-print" }),
+                    React.createElement("span", null, React.createElement("b", null, "Quiero impresión de fotos 10x15"), React.createElement("small", null, `+$3.000 por cada foto que elijas${checkoutPrint ? ` · ${printSelectedPhotos.length} seleccionada${printSelectedPhotos.length === 1 ? '' : 's'} · +${formatPrice(printSurcharge)}` : ''}`)),
+                    React.createElement("i", { className:`fas ${checkoutPrint ? 'fa-circle-check' : 'fa-circle-plus'}` })),
+                !mpReceiptView&&checkoutPrint && React.createElement("div", { className:"print-photo-picker" },
+                    React.createElement("div", { className:"flex items-center justify-between gap-2 mb-2" },
+                        React.createElement("div", null,
+                            React.createElement("p", { className:"text-xs font-black text-blue-100" }, "Elegí cuáles querés impresas"),
+                            React.createElement("p", { className:"text-[10px] text-blue-200/65" }, "Formato 10x15 cm · $3.000 por unidad")),
+                        React.createElement("span", { className:"print-order-badge" }, `${printSelectedPhotos.length} elegida${printSelectedPhotos.length === 1 ? '' : 's'}`)),
+                    React.createElement("div", { className:"print-photo-grid" }, selectedPhotos.map(p => React.createElement("button", { key:p.id, type:"button", onClick:() => togglePrintedPhoto(p.id), className:`print-photo-option ${printedPhotoIds.includes(p.id) ? 'active' : ''}` },
+                        React.createElement("img", { src:toImgUrl(p.rawUrl || p.fullUrl || p.url, 180), loading:"lazy", alt:p.name || p.code }),
+                        React.createElement("span", { className:"min-w-0" },
+                            React.createElement("b", { className:"block text-[10px] text-white truncate" }, p.name || p.code),
+                            React.createElement("small", { className:"block text-[9px] text-blue-200/65 truncate" }, `Código ${p.code}`)),
+                        React.createElement("i", { className:`fas ${printedPhotoIds.includes(p.id) ? 'fa-circle-check text-blue-300' : 'fa-circle text-white/25'}` }))))),
                 !mpReceiptView&&React.createElement("section",{className:"checkout-simple-card checkout-simple-coupon mb-3","aria-label":"Cupón de descuento"},
                     React.createElement("p",{className:"text-sm font-black text-white mb-2"},React.createElement("i",{className:"fas fa-ticket text-sky-300 mr-2"}),"¿Tenés un cupón de descuento?"),
                     React.createElement("div",{className:"coupon-actions"},
@@ -8931,9 +8987,9 @@ React.createElement("div", { id: "order-search-panel", hidden:adminPanelTab!=='p
                         MP_TRIAL_ENABLED?"Compra ficticia con la cuenta de prueba.":"Pago seguro. Tus fotos se habilitan al aprobarse el pago."),
                     React.createElement("a",{href:otherPaymentWhatsappUrl(),onClick:startOtherPaymentWhatsapp,target:"_blank",rel:"noopener noreferrer",className:"other-payment-button"},
                         React.createElement("i",{className:"fab fa-whatsapp","aria-hidden":true}),
-                        React.createElement("span",null,"Consultar otros medios de pago"),
+                        React.createElement("span",null,"Hablar con Lucas para abonar por transferencia"),
                         React.createElement("i",{className:"fas fa-arrow-up-right-from-square","aria-hidden":true})),
-                    React.createElement("p",{className:"other-payment-hint"},"Hablá directamente con Lucas por WhatsApp para acordar el pago."),
+                    React.createElement("p",{className:"other-payment-hint"},"Coordiná una transferencia directamente con Lucas Abraham por WhatsApp."),
                     mpTrialPurchase&&!mpTrialPurchase.paid&&React.createElement("div",{className:"mp-purchase-status"},
                         React.createElement("p",{className:"mp-purchase-reference"},"Tu compra: "+formatPrice(mpTrialPurchase.amount||0)+" · "+mpTrialPurchase.order_id),
                         React.createElement("button",{type:"button",onClick:checkMpTrial,disabled:mpTrialBusy,className:"mp-status-button"},"Actualizar estado del pago"),
@@ -8960,22 +9016,6 @@ React.createElement("div", { id: "order-search-panel", hidden:adminPanelTab!=='p
                     React.createElement("div", { className: "checkout-simple-row" },
                         React.createElement("span", { className: "text-sky-100/70" }, "Entrega"),
                         React.createElement("b", { className: "text-white" }, MP_PAYMENT_VISIBLE?"Descarga automática o WhatsApp":"WhatsApp"))),
-                !mpReceiptView&&React.createElement("button", { type:"button", onClick:() => setCheckoutPrint(v => { const next=!v; if(!next) setPrintedPhotoIds([]); return next; }), className:`print-order-btn mb-3 ${checkoutPrint ? 'active' : ''}` },
-                    React.createElement("i", { className:"fas fa-print" }),
-                    React.createElement("span", null, React.createElement("b", null, "Quiero impresión de fotos 10x15"), React.createElement("small", null, `+$3.000 por cada foto que elijas${checkoutPrint ? ` · ${printSelectedPhotos.length} seleccionada${printSelectedPhotos.length === 1 ? '' : 's'} · +${formatPrice(printSurcharge)}` : ''}`)),
-                    React.createElement("i", { className:`fas ${checkoutPrint ? 'fa-circle-check' : 'fa-circle-plus'}` })),
-                !mpReceiptView&&checkoutPrint && React.createElement("div", { className:"print-photo-picker" },
-                    React.createElement("div", { className:"flex items-center justify-between gap-2 mb-2" },
-                        React.createElement("div", null,
-                            React.createElement("p", { className:"text-xs font-black text-blue-100" }, "Elegí cuáles querés impresas"),
-                            React.createElement("p", { className:"text-[10px] text-blue-200/65" }, "Formato 10x15 cm · $3.000 por unidad")),
-                        React.createElement("span", { className:"print-order-badge" }, `${printSelectedPhotos.length} elegida${printSelectedPhotos.length === 1 ? '' : 's'}`)),
-                    React.createElement("div", { className:"print-photo-grid" }, selectedPhotos.map(p => React.createElement("button", { key:p.id, type:"button", onClick:() => togglePrintedPhoto(p.id), className:`print-photo-option ${printedPhotoIds.includes(p.id) ? 'active' : ''}` },
-                        React.createElement("img", { src:toImgUrl(p.rawUrl || p.fullUrl || p.url, 180), loading:"lazy", alt:p.name || p.code }),
-                        React.createElement("span", { className:"min-w-0" },
-                            React.createElement("b", { className:"block text-[10px] text-white truncate" }, p.name || p.code),
-                            React.createElement("small", { className:"block text-[9px] text-blue-200/65 truncate" }, `Código ${p.code}`)),
-                        React.createElement("i", { className:`fas ${printedPhotoIds.includes(p.id) ? 'fa-circle-check text-blue-300' : 'fa-circle text-white/25'}` }))))),
                 false && React.createElement("details", { open:true, className: "checkout-simple-card checkout-simple-coupon mb-3" },
                     React.createElement("summary", { className: "flex items-center justify-between gap-3 text-sm font-black text-white" },
                         React.createElement("span", null, "Tengo cupón de descuento"),
