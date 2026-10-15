@@ -8022,15 +8022,28 @@ React.createElement("div", { id: "order-search-panel", className: "bg-neutral-90
                             React.createElement("div", { className:"club-ranking-activity" }, React.createElement("b", null, `${r.purchases} compra${r.purchases===1?'':'s'}`), React.createElement("span", null, `${formatPrice(r.spent)} · ${r.redeemedPoints} canjeados`)),
                             React.createElement("div", { className:"club-ranking-points" }, r.points, React.createElement("small", null,"pts"))))),
                     clubRankingStats.length>10 && React.createElement("button", { type:"button", onClick:()=>setClubRankingAllOpen(v=>!v), className:"club-ranking-more" }, clubRankingAllOpen ? React.createElement(React.Fragment,null,"Ver sólo top 10 ",React.createElement("i",{className:"fas fa-chevron-up"})) : React.createElement(React.Fragment,null,`Ver ${clubRankingStats.length-10} más `,React.createElement("i",{className:"fas fa-chevron-down"})))),
-                React.createElement("h3", { className:"font-black text-lg mt-5 mb-1" }, "Historial unificado de todas las órdenes"),
-                React.createElement("p", { className:"text-xs text-neutral-400 mb-3" }, "Incluye pedidos de Firebase, Apps Script, respaldos pendientes y ventas de Mercado Pago recuperadas desde Cloudflare, pagadas o no."),
+                React.createElement("h3", { id:"la-admin-orders-history",className:"font-black text-lg mt-5 mb-1" }, "Todos los pedidos · historial unificado"),
+                React.createElement("p", { className:"text-xs text-neutral-400 mb-3" }, "Pedidos de Firebase, Apps Script y Cloudflare, con estado de pago y canal separados. Abrir WhatsApp no confirma que el mensaje fue enviado."),
                 React.createElement("button",{type:"button",onClick:()=>fetchMpAdminOrders(false),disabled:mpAdminOrdersBusy,className:"mb-3 w-full sm:w-auto px-5 py-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-black text-sm"},
                     React.createElement("i",{className:"fas fa-arrows-rotate mr-2"}),mpAdminOrdersBusy?"Recuperando órdenes…":"Recuperar pedidos de hoy y todas las ventas MP"),
-                React.createElement("p",{className:"text-xs text-neutral-400 mb-3"},mpAdminOrders.length+" órdenes de Cloudflare consultadas · "+adminOrderLedger.length+" registros visibles.",
+                React.createElement("p",{className:"text-xs text-neutral-400 mb-3"},mpAdminOrders.length+" órdenes recuperadas de Cloudflare · "+adminOrderLedger.length+" pedidos registrados · "+adminFilteredLedger.length+" coincidencias.",
                     mpAdminOrdersHasMore?" Quedan más páginas para recuperar.":""),
                 mpAdminOrdersError&&React.createElement("p",{role:"alert",className:"text-xs text-amber-200 mb-3"},mpAdminOrdersError),
                 mpAdminOrdersHasMore&&React.createElement("button",{type:"button",onClick:()=>fetchMpAdminOrders(true),className:"mb-3 px-4 py-2 rounded-xl bg-neutral-700 text-white text-xs font-bold"},"Recuperar más órdenes"),
-                React.createElement("div", { className:"grid gap-2 max-h-[540px] overflow-auto" }, adminOrderLedger.map(o => {
+                React.createElement("div",{className:"la-ledger-filterbar"},
+                    React.createElement("input",{type:"search",className:"la-ledger-search",value:adminLedgerSearch,
+                        onChange:e=>setAdminLedgerSearch(e.target.value),placeholder:"Buscar cliente, equipo, foto o pedido","aria-label":"Buscar pedidos"}),
+                    React.createElement("select",{className:"la-ledger-select",value:adminLedgerFilter,
+                        onChange:e=>setAdminLedgerFilter(e.target.value),"aria-label":"Filtrar por estado"},
+                        [["all","Todos"],["paid","Pagados"],["pending","Pendiente de pago"],
+                         ["whatsapp","Consultas WhatsApp"],["agreed","Pago acordado"],
+                         ["manual_paid","Pagado otro medio"],["cancelled","Cancelados"]].map(([value,label])=>
+                            React.createElement("option",{key:value,value},label))),
+                    React.createElement("input",{type:"date",className:"la-ledger-date",value:adminLedgerDate,
+                        onChange:e=>setAdminLedgerDate(e.target.value),"aria-label":"Filtrar fecha"}),
+                    React.createElement("button",{type:"button",className:"la-ledger-clear",
+                        onClick:()=>{setAdminLedgerSearch('');setAdminLedgerFilter('all');setAdminLedgerDate('')}},"Limpiar")),
+                React.createElement("div", { className:"la-ledger-rows" }, adminFilteredLedger.map(o => {
                     const isRedemption = o.type === 'benefit_redemption' || o.benefitRedemption === true;
                     const printCount = orderPrintInfo(o).count;
                     return React.createElement("div", { key:o.id, className:"bg-neutral-950 border border-neutral-800 rounded-2xl p-3 flex flex-col sm:flex-row sm:items-center gap-3" },
