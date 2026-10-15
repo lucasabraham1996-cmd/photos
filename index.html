@@ -5293,6 +5293,7 @@ function App() {
     const [orders, setOrders] = useState([]);
     const [ordersLoading, setOrdersLoading] = useState(false);
     const [orderSearch, setOrderSearch] = useState("");
+    const [adminPanelTab,setAdminPanelTab] = useState('inicio');
     const [adminLedgerFilter,setAdminLedgerFilter] = useState('all');
     const [adminLedgerSearch,setAdminLedgerSearch] = useState('');
     const [adminLedgerDate,setAdminLedgerDate] = useState('');
@@ -7618,6 +7619,7 @@ En breve te las preparo y te las envío por acá 😊
             return;
         markAdminReviewed(order.id);
         setAdminNotificationsOpen(false);
+        setAdminPanelTab('pedidos');
         setOrderSearch('#' + order.id);
         setDirectOrder(order);
         setOrderSearchTouched(true);
@@ -7758,7 +7760,7 @@ En breve te las preparo y te las envío por acá 😊
                 }, React.createElement("i", { className:"fas fa-rotate mr-2" }), "Restablecer Face ID / biometría"),
                 adminLoginError && React.createElement("div", { className:"mt-4 rounded-xl border border-red-500/25 bg-red-500/10 px-3 py-3 text-sm text-red-200" }, adminLoginError)));
     if (route === "#/admin")
-        return React.createElement("div", { className: "la-admin-workspace min-h-screen p-5 md:p-8 max-w-7xl mx-auto" },
+        return React.createElement("div", { className: "la-admin-workspace min-h-screen p-5 md:p-8 max-w-7xl mx-auto", "data-la-admin-tab":adminPanelTab },
             React.createElement("header", { className: "la-admin-main-header flex flex-col sm:flex-row gap-3 sm:items-end sm:justify-between border-b border-neutral-800 pb-5 mb-6" },
                 React.createElement("div", null,
                     React.createElement("h1", { className: "text-3xl font-black" },
@@ -7774,22 +7776,22 @@ En breve te las preparo y te las envío por acá 😊
                     React.createElement("button", { onClick: goToGallery, className: "bg-indigo-600 px-4 py-3 rounded-xl font-bold" }, "Ver galer\u00EDa"))),
 
             React.createElement("div", { className: "la-admin-control-hub" },
-                React.createElement("nav", { className: "la-admin-nav", "aria-label": "Navegación del administrador" },
+                React.createElement("nav", { className: "la-admin-nav la-admin-tabs", "aria-label": "Pestañas del administrador" },
                     [
-                        ["la-admin-overview", "fa-chart-line", "Inicio"],
-                        ["la-admin-orders-history", "fa-receipt", "Pedidos"],
-                        ["la-admin-payments", "fa-credit-card", "Pagos"],
-                        ["la-admin-gallery", "fa-images", "Galerías"],
-                        ["la-admin-promos", "fa-tags", "Promociones"],
-                        ["admin-security-access", "fa-shield-halved", "Configuración"]
-                    ].map(([id,icon,label]) => React.createElement("button", {
-                        key:id, type:"button", className:"la-admin-nav-link",
-                        onClick: () => {
-                            const section=document.getElementById(id);
-                            if(section) section.scrollIntoView({behavior:window.matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth',block:'start'});
-                        }
-                    }, React.createElement("i",{className:"fas "+icon,"aria-hidden":true}),label))),
-                React.createElement("section", { className: "la-admin-overview", id:"la-admin-overview", "aria-label":"Resumen de gestión" },
+                        ["inicio", "fa-chart-line", "Inicio"],
+                        ["pedidos", "fa-receipt", "Pedidos"],
+                        ["pagos", "fa-credit-card", "Pagos"],
+                        ["galerias", "fa-images", "Galerías"],
+                        ["promociones", "fa-tags", "Promociones"],
+                        ["configuracion", "fa-shield-halved", "Configuración"],
+                        ["herramientas", "fa-screwdriver-wrench", "Herramientas"]
+                    ].map(([id,icon,label])=>React.createElement("button",{
+                        key:id,type:"button",className:"la-admin-nav-link"+(adminPanelTab===id?" active":""),
+                        "aria-current":adminPanelTab===id?"page":undefined,
+                        "aria-pressed":adminPanelTab===id,
+                        onClick:()=>{setAdminPanelTab(id);window.scrollTo({top:0,behavior:"smooth"});}
+                    },React.createElement("i",{className:"fas "+icon,"aria-hidden":true}),label))),
+                React.createElement("section", { className: "la-admin-overview", id:"la-admin-overview", hidden:adminPanelTab!=='inicio', "aria-label":"Resumen de gestión" },
                     React.createElement("div",{className:"la-admin-overview-head"},
                         React.createElement("h2",null,"Resumen de tu negocio"),
                         React.createElement("p",null,ordersLoading||mpAdminOrdersBusy?"Actualizando operaciones…":"Datos recuperados hasta la última actualización")),
@@ -7811,7 +7813,7 @@ En breve te las preparo y te las envío por acá 😊
                                 React.createElement("small",{className:"la-admin-kpi-note"},note))))),
                 React.createElement("p",{className:"la-admin-hub-note"},
                     "Indicadores calculados sobre las órdenes disponibles de Firebase, Apps Script y Cloudflare. Actualizá y recuperá pedidos para consultar la información más reciente; no reemplazan una conciliación contable.")),
-            React.createElement("section",{id:"la-admin-orders-today",className:"mb-5 rounded-3xl border border-emerald-400/25 bg-neutral-900 p-4 sm:p-5"},
+            React.createElement("section",{id:"la-admin-orders-today",hidden:adminPanelTab!=='inicio',className:"mb-5 rounded-3xl border border-emerald-400/25 bg-neutral-900 p-4 sm:p-5"},
                 React.createElement("h2",{className:"text-lg font-black text-white"},"Pedidos de hoy"),
                 React.createElement("p",{className:"text-sm text-neutral-300 mt-1"},
                     adminTodayOrders.length+" pedidos encontrados en las fuentes consultadas · "+adminTodayOrders.filter(o=>['paid','manual_paid'].includes(adminOrderState(o))).length+" pagados · "+
@@ -7823,7 +7825,7 @@ En breve te las preparo y te las envío por acá 😊
                     ordersLoading||mpAdminOrdersBusy?"Consultando pedidos…":"Actualizar y recuperar todos los pedidos"),
                 mpAdminOrdersError&&React.createElement("p",{role:"alert",className:"mt-2 text-xs text-amber-200"},mpAdminOrdersError)),
             adminMessage && React.createElement("div", { className: "mb-4 bg-emerald-600/15 border border-emerald-500/30 text-emerald-300 rounded-2xl px-4 py-3 text-sm" }, adminMessage),
-            React.createElement("section", { id:"admin-security-access", className:"mb-5 rounded-3xl border border-sky-400/20 bg-gradient-to-br from-sky-500/10 via-neutral-900 to-neutral-900 p-5" },
+            React.createElement("section", { id:"admin-security-access", hidden:adminPanelTab!=='configuracion', className:"mb-5 rounded-3xl border border-sky-400/20 bg-gradient-to-br from-sky-500/10 via-neutral-900 to-neutral-900 p-5" },
                 React.createElement("div", { className:"flex flex-col md:flex-row md:items-center md:justify-between gap-4" },
                     React.createElement("div", { className:"flex items-start gap-3" },
                         React.createElement("div", { className:"w-11 h-11 rounded-2xl bg-sky-400/15 border border-sky-300/20 flex items-center justify-center shrink-0" }, React.createElement("i", { className:"fas fa-shield-halved text-sky-300" })),
@@ -7845,7 +7847,7 @@ En breve te las preparo y te las envío por acá 😊
                         React.createElement("p", { className:"text-[11px] text-neutral-500" }, "Mínimo 6 caracteres. La nueva clave se guarda como verificador derivado; no queda escrita en el código."),
                         React.createElement("button", { disabled:securityBusy || !currentAdminSecret || !newAdminSecret || !confirmAdminSecret, className:"bg-white text-black px-5 py-3 rounded-xl font-black disabled:opacity-40" }, securityBusy ? "Guardando..." : "Guardar nueva contraseña")))),
             window.LA_ORDER_LOAD_WARNING && React.createElement("div", { className:"order-storage-warning", role:"alert" }, window.LA_ORDER_LOAD_WARNING),
-            React.createElement("div", { className:"admin-notif-shell" },
+            React.createElement("div", { className:"admin-notif-shell", hidden:adminPanelTab!=='inicio' },
                 React.createElement("button", { type:"button", onClick:() => setAdminNotificationsOpen(v => !v), className:"admin-notif-btn" },
                     React.createElement("div", { className:"admin-notif-left" },
                         React.createElement("div", { className:"admin-notif-icon" }, React.createElement("i", { className:"fas fa-bell" }), unseenAdminTotal > 0 && React.createElement("span", { className:"admin-notif-count" }, unseenAdminTotal > 99 ? '99+' : unseenAdminTotal)),
@@ -7856,7 +7858,7 @@ En breve te las preparo y te las envío por acá 😊
                     unseenAdminTotal === 0 && React.createElement("p", { className:"text-xs text-neutral-500 p-2" }, "Cuando llegue un pedido, un canje o una solicitud de partido, aparecerá acá."),
                     unseenAdminBookingRequests.slice(0,8).map(b => React.createElement("button", { key:`booking-${b.id}`, onClick:() => openBookingRequestFromNotification(b), className:"admin-notif-item" }, React.createElement("div", { className:"min-w-0" }, React.createElement("div", { className:"flex items-center gap-2" }, React.createElement("span", { className:"admin-notif-kind request" }, "PARTIDO"), React.createElement("b", { className:"text-xs truncate" }, `${b.home||'Local'} vs ${b.away||'Visitante'}`)), React.createElement("p", { className:"text-[10px] text-neutral-500 mt-1 truncate" }, `${b.date||'Sin fecha'} · ${b.category||'Sin categoría'} · ${b.clientName||'Sin nombre'}`)), React.createElement("i", { className:"fas fa-calendar-days text-emerald-400 text-xs" }))),
                     unseenAdminOrders.slice(0,12).map(o => { const isClub=o.type==='benefit_redemption'||o.benefitRedemption===true; return React.createElement("button", { key:o.id, onClick:() => openOrderFromQueue(o), className:"admin-notif-item" }, React.createElement("div", { className:"min-w-0" }, React.createElement("div", { className:"flex items-center gap-2" }, React.createElement("span", { className:`admin-notif-kind ${isClub?'club':'order'}` }, isClub?'CANJE CLUB':'PEDIDO'), React.createElement("b", { className:"text-xs truncate" }, `#${o.id}`)), React.createElement("p", { className:"text-[10px] text-neutral-500 mt-1 truncate" }, `${o.customerName||'Sin nombre'} · ${isClub ? (o.rewardName||'Beneficio') : formatPrice(o.total)}`)), React.createElement("i", { className:"fas fa-chevron-right text-neutral-600 text-xs" })); })) ),
-            React.createElement("section", { className: "relative overflow-hidden bg-gradient-to-br from-sky-500/15 via-blue-600/10 to-neutral-900 border border-sky-400/20 rounded-3xl p-5 sm:p-6 mb-6" },
+            React.createElement("section", { hidden:adminPanelTab!=='herramientas', className: "relative overflow-hidden bg-gradient-to-br from-sky-500/15 via-blue-600/10 to-neutral-900 border border-sky-400/20 rounded-3xl p-5 sm:p-6 mb-6" },
     React.createElement("div", { className: "absolute -right-10 -top-12 w-40 h-40 bg-sky-400/10 blur-3xl rounded-full pointer-events-none" }),
     React.createElement("div", { className: "relative flex flex-col md:flex-row md:items-center justify-between gap-5" },
         React.createElement("div", { className: "flex items-start gap-4" },
@@ -7870,7 +7872,7 @@ En breve te las preparo y te las envío por acá 😊
         React.createElement("button", { onClick: () => { try { sessionStorage.setItem('la_booking_admin', '1'); } catch (e) {} location.href = 'contrataciones.html#/admin'; }, className: "w-full md:w-auto bg-gradient-to-r from-sky-400 to-blue-600 text-white px-5 py-3.5 rounded-2xl font-black shadow-[0_16px_40px_rgba(37,99,235,.25)] hover:brightness-110 transition" },
             React.createElement("i", { className: "fas fa-calendar-days mr-2" }),
             "Abrir contrataciones"))),
-React.createElement("div", { id: "order-search-panel", className: "bg-neutral-900 border border-neutral-800 rounded-3xl p-5 mb-6" },
+React.createElement("div", { id: "order-search-panel", hidden:adminPanelTab!=='pedidos', className: "bg-neutral-900 border border-neutral-800 rounded-3xl p-5 mb-6" },
                 React.createElement("div", { className: "flex flex-col lg:flex-row lg:items-end gap-4 lg:justify-between" },
                     React.createElement("div", null,
                         React.createElement("h2", { className: "text-xl font-black mb-1" }, "Buscar operaci\u00F3n y obtener links de Drive"),
@@ -7994,7 +7996,7 @@ React.createElement("div", { id: "order-search-panel", className: "bg-neutral-90
                                         o.rejected ? 'Rechazado' : o.delivered ? 'Cargado y entregado' : 'Pendiente'),
                                     React.createElement("button", { onClick: () => openOrderFromQueue(o), className: "bg-neutral-800 hover:bg-neutral-700 px-3 py-2 rounded-xl text-xs font-black" }, "Abrir")));
                         })))),
-            React.createElement("div", { className: "bg-neutral-900 border border-neutral-800 rounded-3xl p-5 mb-6" },
+            React.createElement("div", { hidden:adminPanelTab!=='pedidos', className: "bg-neutral-900 border border-neutral-800 rounded-3xl p-5 mb-6" },
                 CLUB_ENABLED && React.createElement("div", { className:"flex flex-col lg:flex-row lg:items-start lg:justify-between gap-3 mb-4" },
                     React.createElement("div", null,
                         React.createElement("h2", { className: "text-xl font-black" }, React.createElement("i", { className:"fas fa-gift mr-2 text-orange-300" }), "Club de beneficios"),
@@ -8096,7 +8098,7 @@ React.createElement("div", { id: "order-search-panel", className: "bg-neutral-90
                                     onClick:()=>updateManualWhatsappStatus(o,'manual_paid')},"Confirmar otro medio")),
                         !isResolvedOrder(o)&&!(o.paid||o.paymentStatus==='accredited') && React.createElement("button", { onClick:() => { if (confirm(isRedemption ? '¿Anular este canje y devolver los puntos?' : '¿Marcar este pedido como cancelado/no pagado?')) setOrderDecisionAndClose(o,'rejected'); }, className:"bg-red-500/15 border border-red-500/30 text-red-200 px-3 py-2 rounded-xl text-xs font-black" }, isRedemption ? "Anular canje" : "Anular / no pagado"));
                 })))),
-            React.createElement("div", { className: "bg-neutral-900 border border-neutral-800 rounded-3xl p-5 mb-6" },
+            React.createElement("div", { hidden:adminPanelTab!=='configuracion', className: "bg-neutral-900 border border-neutral-800 rounded-3xl p-5 mb-6" },
                 React.createElement("div", { className: "flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4" },
                     React.createElement("div", null,
                         React.createElement("h2", { className: "text-xl font-black mb-1" }, "Configuraci\u00F3n de marca de agua"),
@@ -8114,7 +8116,7 @@ React.createElement("div", { id: "order-search-panel", className: "bg-neutral-90
                                 Math.round((watermarkSettings.darkness || 0) * 100),
                                 "%"),
                             React.createElement("input", { type: "range", min: "0.02", max: "0.12", step: "0.01", value: watermarkSettings.darkness, onChange: e => setWatermarkSettings(w => ({ ...w, darkness: Number(e.target.value) })), className: "w-full mt-2" }))))),
-            React.createElement("div", { className: "bg-neutral-900 border border-neutral-800 rounded-3xl p-5 mb-6" },
+            React.createElement("div", { hidden:adminPanelTab!=='promociones', className: "bg-neutral-900 border border-neutral-800 rounded-3xl p-5 mb-6" },
                 React.createElement("div", { className: "flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4" },
                     React.createElement("div", null,
                         React.createElement("h2", { id:"la-admin-promos", className: "text-xl font-black mb-1" }, "Descuento general de la web"),
@@ -8133,7 +8135,7 @@ React.createElement("div", { id: "order-search-panel", className: "bg-neutral-90
                         siteDiscountPercent,
                         "%"),
                     ". Se muestra como burbuja en los \u00E1lbumes no exceptuados.")),
-            React.createElement("div", { className: "bg-neutral-900 border border-neutral-800 rounded-3xl p-5 mb-6" },
+            React.createElement("div", { hidden:adminPanelTab!=='promociones', className: "bg-neutral-900 border border-neutral-800 rounded-3xl p-5 mb-6" },
                 React.createElement("div", { className: "flex flex-col lg:flex-row lg:items-end lg:justify-between gap-4 mb-4" },
                     React.createElement("div", null,
                         React.createElement("h2", { className: "text-xl font-black mb-1" }, "Cupones de descuento"),
@@ -8156,7 +8158,7 @@ React.createElement("div", { id: "order-search-panel", className: "bg-neutral-90
                         React.createElement("div", { className: "flex gap-2" },
                             React.createElement("button", { onClick: () => toggleCoupon(c.code), className: `${c.active === false ? 'bg-emerald-600' : 'bg-neutral-800'} px-3 py-2 rounded-xl text-xs font-black` }, c.active === false ? 'Activar' : 'Pausar'),
                             React.createElement("button", { onClick: () => deleteCoupon(c.code), className: "bg-red-600/20 border border-red-500/30 text-red-200 px-3 py-2 rounded-xl text-xs font-black" }, "Borrar")))))),
-            React.createElement("div", { className: "bg-neutral-900 border border-neutral-800 rounded-3xl p-5 mb-6" },
+            React.createElement("div", { hidden:adminPanelTab!=='promociones', className: "bg-neutral-900 border border-neutral-800 rounded-3xl p-5 mb-6" },
                 React.createElement("div", { className: "flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 mb-4" },
                     React.createElement("div", null,
                         React.createElement("h2", { className: "text-xl font-black mb-1" },
@@ -8176,11 +8178,11 @@ React.createElement("div", { id: "order-search-panel", className: "bg-neutral-90
                 React.createElement("div", { className: "flex flex-col sm:flex-row gap-2 mt-4" },
                     React.createElement("button", { onClick: () => setBannerSettings({ visible: false, items: [] }), className: "bg-neutral-800 px-4 py-3 rounded-xl font-bold" }, "Ocultar y borrar banners"),
                     React.createElement("button", { onClick: () => setBannerSettings(bs => ({ ...bs, items: [...(bs.items || []), { src: '', title: 'Nuevo banner', text: 'Descripción del banner', msg: 'Hola Lucas! Quiero consultar por este servicio.' }] })), className: "bg-indigo-600 px-4 py-3 rounded-xl font-bold" }, "Agregar banner"))),
-            React.createElement("div", { id:"la-admin-gallery", className: "mb-5" },
-                React.createElement("div", { className: "relative" },
+            React.createElement("div", { id:"la-admin-gallery", hidden:!['galerias','pagos','pedidos'].includes(adminPanelTab), className: "mb-5" },
+                React.createElement("div", { hidden:adminPanelTab!=='galerias', className: "relative" },
                     React.createElement("i", { className: "fas fa-search absolute left-4 top-1/2 -translate-y-1/2 text-neutral-500 text-sm" }),
                     React.createElement("input", { value: albumSearch, onChange: e => setAlbumSearch(e.target.value), placeholder: "Buscar \u00E1lbum...", className: "w-full bg-neutral-900 border border-neutral-800 rounded-2xl pl-11 pr-4 py-3 text-sm outline-none focus:border-indigo-500" }))),
-            React.createElement("div", { className: "grid md:grid-cols-2 xl:grid-cols-3 gap-5" }, displayAlbums.filter(album => { const q = norm(albumSearch); return !q || norm(album.name).includes(q) || norm(album.dateLabel).includes(q); }).map(album => {
+            React.createElement("div", { hidden:adminPanelTab!=='galerias', className: "grid md:grid-cols-2 xl:grid-cols-3 gap-5" }, displayAlbums.filter(album => { const q = norm(albumSearch); return !q || norm(album.name).includes(q) || norm(album.dateLabel).includes(q); }).map(album => {
                 var _a, _b;
                 const currentLogoSource = album.logoSource || getAlbumLogoSource(album, albumLogoSources);
                 return React.createElement("div", { key: album.id, className: "bg-neutral-900 border border-neutral-800 rounded-3xl overflow-hidden transition-all duration-500 hover:-translate-y-1 hover:border-indigo-400/50 hover:shadow-[0_18px_45px_rgba(99,102,241,.18)]" },
@@ -8245,7 +8247,7 @@ React.createElement("div", { id: "order-search-panel", className: "bg-neutral-90
                                 React.createElement("i", { className: "fas fa-trash-can mr-2" }),
                                 "Quitar car\u00E1tula personalizada"))));
             })),
-            admin && React.createElement("section",{className:"rounded-3xl border border-emerald-400/25 bg-neutral-900 p-4 sm:p-5 mb-6","aria-label":"Historial unificado de pedidos"},
+            admin && React.createElement("section",{hidden:adminPanelTab!=='pedidos',className:"rounded-3xl border border-emerald-400/25 bg-neutral-900 p-4 sm:p-5 mb-6","aria-label":"Historial unificado de pedidos"},
                 React.createElement("h3",{className:"font-black text-lg text-white"},"Historial unificado de todas las órdenes"),
                 React.createElement("p",{className:"text-xs text-neutral-400 mt-1 mb-3"},
                     "Pedidos registrados y recuperados de Firebase, Apps Script y Cloudflare (pagados, pendientes y entregados)."),
@@ -8275,13 +8277,14 @@ React.createElement("div", { id: "order-search-panel", className: "bg-neutral-90
                                     React.createElement("i",{className:"fas fa-download"})," ",p.name||"Foto "+(i+1));
                             })))))),
                         admin && React.createElement("div", {
+                hidden:adminPanelTab!=='galerias',
                 className:"rounded-2xl border border-sky-400/30 bg-sky-500/10 px-5 py-4 mt-6 mb-6"
             },
                 React.createElement("h3", { className:"text-sky-200 font-black" }, "Mercado Pago · Sincronizar precios y galerías"),
                 React.createElement("p", { className:"text-xs text-sky-100/75 mt-1 mb-3" },
                     "Actualiza en Cloudflare las fotos originales, el precio de cada álbum, descuentos web y cupones. Repetir cuando cambies los precios o las promociones."),
                 renderMpCatalogueSyncControls()),
-            admin && React.createElement("section",{id:"la-admin-payments",className:"rounded-3xl border border-sky-400/25 bg-neutral-900 p-4 sm:p-5 mb-6","aria-label":"Historial Mercado Pago"},
+            admin && React.createElement("section",{id:"la-admin-payments",hidden:adminPanelTab!=='pagos',className:"rounded-3xl border border-sky-400/25 bg-neutral-900 p-4 sm:p-5 mb-6","aria-label":"Historial Mercado Pago"},
                 React.createElement("div",{className:"flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3"},
                     React.createElement("div",null,
                         React.createElement("h3",{className:"font-black text-lg text-white"},React.createElement("i",{className:"fas fa-file-invoice-dollar text-sky-300 mr-2"}),"Ventas Mercado Pago · todas las órdenes"),
@@ -8317,16 +8320,16 @@ React.createElement("div", { id: "order-search-panel", className: "bg-neutral-90
                             React.createElement("a",{href:"https://facturador.afip.gob.ar/",target:"_blank",rel:"noopener noreferrer",className:"text-xs font-black rounded-xl bg-sky-600 text-white px-3 py-2"},"Emitir factura C en ARCA"),
                             React.createElement("button",{type:"button",onClick:()=>navigator.clipboard.writeText('Pedido: '+(o.order_id||o.checkout_id)+' · Importe: '+formatPrice(o.amount)+' · Fecha: '+o.created_at),className:"text-xs font-black rounded-xl bg-neutral-800 text-white px-3 py-2"},"Copiar datos para facturar"))))),
                 mpAdminOrdersHasMore&&React.createElement("button",{type:"button",disabled:mpAdminOrdersBusy,onClick:()=>fetchMpAdminOrders(true),className:"mt-4 px-4 py-3 rounded-xl text-xs font-black bg-neutral-800"},"Cargar 50 órdenes más")),
-            React.createElement("div", { className:"mt-8 mb-6" },
+            React.createElement("div", { hidden:adminPanelTab!=='configuracion', className:"mt-8 mb-6" },
                 React.createElement("p", { className:"text-[10px] uppercase tracking-[.18em] text-neutral-600 font-black mb-2" }, "Información técnica")),
-            React.createElement("div", { className: "mb-4 bg-blue-500/10 border border-blue-500/25 text-blue-100 rounded-2xl px-4 py-3 text-xs leading-relaxed" },
+            React.createElement("div", { hidden:adminPanelTab!=='configuracion', className: "mb-4 bg-blue-500/10 border border-blue-500/25 text-blue-100 rounded-2xl px-4 py-3 text-xs leading-relaxed" },
                 React.createElement("b", null, "Firebase:"),
                 " proyecto lucasabraham-b84aa \u00B7 ruta principal ",
                 React.createElement("b", null, "artifacts/lucasabraham-ph-db/orders"),
                 " \u00B7 versi\u00F3n ",
                 React.createElement("b", null, APP_VERSION),
                 ". Si al comprar aparece un aviso rojo, el pedido qued\u00F3 local pero Firestore rechaz\u00F3 la escritura."),
-            React.createElement("div", { className: "mb-6 bg-neutral-900 border border-neutral-800 rounded-3xl p-5" },
+            React.createElement("div", { hidden:adminPanelTab!=='configuracion', className: "mb-6 bg-neutral-900 border border-neutral-800 rounded-3xl p-5" },
                 React.createElement("div", { className: "flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4 mb-4" },
                     React.createElement("div", null,
                         React.createElement("h2", { className: "text-xl font-black mb-1" },
