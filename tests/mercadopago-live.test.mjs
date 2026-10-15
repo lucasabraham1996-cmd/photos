@@ -478,6 +478,7 @@ test('Un administrador sincroniza una galería ausente y reintenta el mismo carr
   const app=appHarness(f,{mode:'public',available:true,public_enabled:true});
   app.context.admin=true;app.context.displayAlbums=[{id:'album-01',name:'Álbum',fullPrice:60000,
     photos:[{id:'photo-0',name:'Foto 0.jpg',rawUrl:'https://drive.google.com/file/d/validDriveId123450/view'}]}];
+  app.context.sourceDisplayAlbums=app.context.displayAlbums;
   await app.actions.beginMpTrial();assert.equal(app.context.mpTrialPurchase,null);assert.equal(f.state.posts.length,1);
   await app.actions.syncMpCatalogueAndRetry();
   assert.ok(app.context.mpTrialPurchase);assert.equal(app.context.mpTrialPurchase.amount,2000);
@@ -547,7 +548,7 @@ function appHarness(f,config={mode:'validation',available:true,validation_amount
     selectedPhotos:[{id:'photo-0',albumId:'album-01'}],checkoutTotal:2000,checkoutPrint:false,appliedCoupon:null,
     checkoutBuyerName:'Lucas Abraham',checkoutBuyerPhone:'3515580770',
     cart:['photo-0'],printedPhotoIds:[],
-    printSelectedPhotos:[],displayAlbums:[],discountSettings:{},coupons:[],
+    printSelectedPhotos:[],displayAlbums:[],sourceDisplayAlbums:[],discountSettings:{},coupons:[],
     formatPrice:v=>'$'+v,albumPriceWithDiscount:()=>60000,location:{search:'?mp_live=1',pathname:'/photos/',origin:ORIGIN},
     buildOrderPackage:id=>({orderData:{id,date:stamp,total:2000,items:[{id:'photo-0'}],delivered:false,status:'pendiente'}}),
     saveOrderRemote:async order=>{remoteOrders.push(order);return {firebase:true,script:false}},
