@@ -6755,7 +6755,7 @@ En breve te las preparo y te las envío por acá 😊
         const timeout=setTimeout(()=>controller.abort(),45000);
         try{
             const data={
-                albums:displayAlbums.map(a=>({
+                albums:sourceDisplayAlbums.map(a=>({
                     id:a.id,name:a.name,fullPrice:a.fullPrice,
                     photos:(a.photos||[]).map(p=>({id:p.id,name:p.name,driveLink:p.rawUrl||p.driveLink||p.fullUrl||p.url}))
                 })),
