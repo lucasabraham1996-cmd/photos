@@ -4807,7 +4807,7 @@ function PurchaseIntro({ photos = [], onClose }) {
     const steps = [
         { icon: 'fa-plus', title: 'Agregá fotos al carrito', text: 'Tocá el botón + de cada foto. Vas a ver cómo aumenta el carrito con las imágenes que elegiste.' },
         { icon: 'fa-cart-shopping', title: 'Procedé a comprar', text: 'Abrí el carrito y revisá las fotos seleccionadas, la cantidad y el precio final antes de continuar.' },
-        { icon: 'fa-credit-card', title: 'Elegí cómo pagar', text: 'Pagar con Mercado Pago abre el pago seguro. Consultar otros medios de pago te lleva al WhatsApp personal de Lucas para acordarlo.' },
+        { icon: 'fa-credit-card', title: 'Elegí cómo pagar', text: 'Pagar con Mercado Pago abre el pago seguro. Si preferís transferencia, podés hablar directamente con Lucas por WhatsApp.' },
         { icon: 'fa-download', title: 'Descargá tus fotos', text: 'Cuando Mercado Pago aprueba el pago, tus fotos quedan listas para descargar. Otros medios de pago y las impresiones se coordinan con Lucas.' }
     ];
     const [step, setStep] = useState(0);
@@ -4850,7 +4850,7 @@ function PurchaseIntro({ photos = [], onClose }) {
             React.createElement("div", { className: "intro-wa-head" },step===2?"Elegí cómo pagar":"Pago aprobado"),
             React.createElement("div", { className: "intro-wa-bubble",style:{background:'#073046'} },
                 React.createElement("div", {style:{background:'#009ee3',color:'#012f46',padding:10,borderRadius:10,fontWeight:900}},step===2?"Pagar con Mercado Pago":"Descargar tus fotos"),
-                React.createElement("div", { className: "mt-2" },step===2?"Consultar otros medios de pago":"Fotos originales sin marca de agua"),
+                React.createElement("div", { className: "mt-2" },step===2?"Consultar transferencia por WhatsApp":"Fotos originales sin marca de agua"),
                 React.createElement("div", { className: "mt-1 text-emerald-100" },step===2?"Por WhatsApp con Lucas":"Descarga habilitada al aprobarse el pago")))
     );
     const phone = React.createElement("div", { className: "intro-phone" }, step >= 2 ? paymentScreen : galleryScreen);
@@ -7109,8 +7109,20 @@ En breve te las preparo y te las envío por acá 😊
             channel:'whatsapp',paymentProvider:'whatsapp',paymentStatus:'pending',
             status:'consulta_whatsapp_iniciada',paid:false,delivered:false,
             whatsappOpenedAt:now,wantsPoints:false,
+            // Conserva el encargo de impresión al consultar por transferencia.
+            printRequested:Boolean(checkoutPrint&&printSelectedPhotos.length),
+            printFormat:'10x15 cm',
+            printCount:checkoutPrint?printSelectedPhotos.length:0,
+            printSurchargePerPhoto:PRINT_SURCHARGE_PER_PHOTO,
+            printSurcharge:checkoutPrint?printSurcharge:0,
+            printedPhotoIds:checkoutPrint?printSelectedPhotos.map(p=>p.id):[],
+            printedItems:checkoutPrint?printSelectedPhotos.map(p=>({
+                id:p.id,albumName:p.albumName,name:p.name,code:p.code
+            })):[],
             items:selectedPhotos.map(p=>({id:p.id,name:p.name,code:p.code,
-                albumName:p.albumName,subAlbumName:p.subAlbumName||'',price:Number(p.price)||0,
+                albumName:p.albumName,subAlbumName:p.subAlbumName||'',
+                price:Number(p.price)||0,
+                printRequested:Boolean(checkoutPrint&&printedPhotoIds.includes(p.id)),
                 driveLink:p.rawUrl||p.fullUrl||p.url||''}))};
         try{
             saveLocalOrders(mergeOrders(readLocalOrders(),[order]));
@@ -8871,7 +8883,7 @@ React.createElement("div", { id: "order-search-panel", hidden:adminPanelTab!=='p
                     React.createElement("div", { className: "purchase-step" }, React.createElement("div", { className: "purchase-step-num" }, "1"), React.createElement("p", { className: "text-sm leading-relaxed" }, "Seleccioná cada foto tocando el botón +.")),
                     React.createElement("div", { className: "purchase-step" }, React.createElement("div", { className: "purchase-step-num" }, "2"), React.createElement("p", { className: "text-sm leading-relaxed" }, "Tocá ‘Proceder a comprar’ para abrir la ventana de pago.")),
                     React.createElement("div", { className: "purchase-step" }, React.createElement("div", { className: "purchase-step-num" }, "3"), React.createElement("p", { className: "text-sm leading-relaxed" }, "Revisá el total, cargá tu cupón si tenés y tocá ‘Pagar con Mercado Pago’. Se abre el pago seguro y tus fotos se habilitan al aprobarse el pago.")),
-                    React.createElement("div", { className: "purchase-step" }, React.createElement("div", { className: "purchase-step-num" }, "4"), React.createElement("p", { className: "text-sm leading-relaxed" }, "Si preferís otro medio, tocá ‘Consultar otros medios de pago’. Se abre el WhatsApp personal de Lucas con tus fotos y el total para acordarlo allí.")),
+                    React.createElement("div", { className: "purchase-step" }, React.createElement("div", { className: "purchase-step-num" }, "4"), React.createElement("p", { className: "text-sm leading-relaxed" }, "Si preferís abonar por transferencia, tocá ‘Hablar con Lucas para abonar por transferencia’. Se abre WhatsApp con tus fotos y el total para coordinarlo.")),
                     React.createElement("div", { className: "purchase-step" }, React.createElement("div", { className: "purchase-step-num" }, "5"), React.createElement("p", { className: "text-sm leading-relaxed" }, "Luego recibirás las fotos en alta calidad con su link correspondiente. Descargalas apenas las recibas: duran 15 días en la nube desde la creación del álbum."))),
                 React.createElement("button", { onClick: () => setPurchaseHelpOpen(false), className: "mt-5 w-full final-buy-btn py-3.5 rounded-2xl font-black" }, "Entendido"))),
         checkoutOpen && React.createElement(Modal, { onClose:closeMpCheckout, max: "max-w-lg" },
