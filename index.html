@@ -7010,10 +7010,11 @@ En breve te las preparo y te las envío por acá 😊
         return 'https://wa.me/'+SELLER_PHONE+'?text='+encodeURIComponent(message);
     };
     // Registrar cada consulta con su canal real, sin dar el mensaje por enviado.
-    const startOtherPaymentWhatsapp=(event)=>{
-        if(event&&event.preventDefault)event.preventDefault();
+    const startOtherPaymentWhatsapp=()=>{
+        // Registrar como observador: NO cancelar el enlace original ni abrir otra pestaña.
+        // El navegador conserva exactamente el flujo original de WhatsApp.
         if(!selectedPhotos.length)return;
-        const id=newOrderCode(),url=otherPaymentWhatsappUrl(),now=new Date().toISOString();
+        const id=newOrderCode(),now=new Date().toISOString();
         const order={id,date:now,kind:'photos',total:checkoutTotal,subtotal:regular,
             customerName:checkoutBuyerName||'',phone:checkoutBuyerPhone||'',
             albumName:[...new Set(selectedPhotos.map(p=>p.albumName).filter(Boolean))].join(' · '),
@@ -7027,8 +7028,6 @@ En breve te las preparo y te las envío por acá 😊
             saveLocalOrders(mergeOrders(readLocalOrders(),[order]));
             savePendingOrders(mergeOrders(readPendingOrders(),[compactOrderForScript(order)]));
         }catch(err){console.warn('Respaldo de consulta WhatsApp:',err)}
-        const opened=window.open(url,'_blank');
-        if(!opened)window.location.href=url;
         saveOrderRemote(order).catch(err=>console.warn('Consulta WhatsApp pendiente de reintento:',err));
     };
     // Las consultas de álbumes completos no pasan por Mercado Pago. Primero
