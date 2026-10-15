@@ -3033,15 +3033,17 @@ async function updateOrderFirebase(orderId, partial) {
     const db = await getFirebaseDb();
     if (!db)
         return false;
+    let wrote=false;
     for (const path of orderCollections()) {
         try {
             await db.collection(path).doc(firebaseDocId(orderId)).set({ id: orderId, ...partial, updatedAt: new Date().toISOString() }, { merge: true });
+            wrote=true;
         }
         catch (e) {
             console.warn('No se pudo actualizar estado en Firebase:', path, e);
         }
     }
-    return true;
+    return wrote;
 }
 function readLocalOrders() { try {
     return JSON.parse(localStorage.getItem(LS_ORDERS_KEY) || "[]");
@@ -5291,6 +5293,9 @@ function App() {
     const [orders, setOrders] = useState([]);
     const [ordersLoading, setOrdersLoading] = useState(false);
     const [orderSearch, setOrderSearch] = useState("");
+    const [adminLedgerFilter,setAdminLedgerFilter] = useState('all');
+    const [adminLedgerSearch,setAdminLedgerSearch] = useState('');
+    const [adminLedgerDate,setAdminLedgerDate] = useState('');
     const [directOrder, setDirectOrder] = useState(null);
     const [orderSearchTouched, setOrderSearchTouched] = useState(false);
     const [albumSearch, setAlbumSearch] = useState("");
@@ -6161,20 +6166,85 @@ ${clone.outerHTML}`;
             (CLUB_ENABLED || !isClubRecord(o)) && normalizeOrderCode(o && o.id)
         ).sort((a,b) => new Date(b.date || 0) - new Date(a.date || 0));
     }, [orders, mpAdminOrders]);
+    // Canal de contacto y estado de pago son diferentes: abrir WhatsApp NO significa pago.
+    const adminOrderChannel=o=>{
+        const provider=String(o&&((o.channel||o.paymentProvider))||'').toLowerCase();
+        return provider.includes('whatsapp')?'whatsapp':
+            (provider.includes('mercadopago')||o&&o.mpCheckoutId)?'mercadopago':'sin_dato';
+    };
+    const adminOrderState=o=>{
+        if(!o)return 'pending';
+        const status=String(o.status||'').toLowerCase();
+        if(o.cancelled||o.rejected||['cancelado','anulado','rechazado'].includes(status))return 'cancelled';
+        if(o.manualPaymentConfirmedAt&&adminOrderChannel(o)==='whatsapp')return 'manual_paid';
+        if(o.paymentStatus==='agreed'&&adminOrderChannel(o)==='whatsapp')return 'agreed';
+        if(adminOrderChannel(o)==='mercadopago'&&(o.paid===true||String(o.paymentStatus||'').toLowerCase()==='accredited'))return 'paid';
+        if(adminOrderChannel(o)==='whatsapp')return 'whatsapp';
+        return 'pending';
+    };
+    const adminOrderStateLabel=o=>({
+        paid:'Pago acreditado',manual_paid:'Pagado por otro medio',
+        agreed:'Pago acordado, pendiente',
+        whatsapp:'Consulta por WhatsApp iniciada',
+        cancelled:'Cancelado / anulado',pending:'Pendiente de pago'
+    })[adminOrderState(o)]||'Pendiente';
     const adminTodayOrders = adminOrderLedger.filter(o=>isSameLocalDate(o.date||o.createdAt));
-    // KPIs derivados exclusivamente de pedidos ya cargados y consolidados (no estimaciones).
-    const adminOverview = useMemo(() => {
-        const real = adminOrderLedger.filter(o => o && !isClubRecord(o) && !o.rejected && !o.cancelled);
-        const paid = real.filter(o => Boolean(o.paid) || String(o.paymentStatus || '').toLowerCase() === 'accredited');
-        const pending = real.filter(o => !(o.paid || String(o.paymentStatus || '').toLowerCase() === 'accredited') && !o.delivered);
+    const adminOverview=useMemo(()=>{
+        const real=adminOrderLedger.filter(o=>o&&!isClubRecord(o));
+        const paid=real.filter(o=>['paid','manual_paid'].includes(adminOrderState(o)));
         return {
-            orders: real.length,
-            paid: paid.length,
-            pending: pending.length,
-            gross: paid.reduce((sum, o) => sum + (Number(o.total) || 0), 0),
-            photos: paid.reduce((sum, o) => sum + (Array.isArray(o.items) ? o.items.length : 0), 0)
+            orders:real.length,paid:paid.length,
+            pending:real.filter(o=>['pending','agreed'].includes(adminOrderState(o))).length,
+            whatsapp:real.filter(o=>adminOrderChannel(o)==='whatsapp').length,
+            gross:paid.reduce((sum,o)=>sum+(Number(o.total)||0),0),
+            photos:paid.reduce((sum,o)=>sum+(Array.isArray(o.items)?o.items.length:0),0)
         };
-    }, [adminOrderLedger]);
+    },[adminOrderLedger]);
+    const adminFilteredLedger=useMemo(()=>{
+        const needle=norm(adminLedgerSearch);
+        return adminOrderLedger.filter(o=>{
+            const state=adminOrderState(o),channel=adminOrderChannel(o);
+            const filterOk=adminLedgerFilter==='all'||
+                (adminLedgerFilter==='paid'&&['paid','manual_paid'].includes(state))||
+                (adminLedgerFilter==='whatsapp'&&channel==='whatsapp')||
+                state===adminLedgerFilter;
+            const dateOk=!adminLedgerDate||String(o.date||o.createdAt||'').slice(0,10)===adminLedgerDate;
+            const items=Array.isArray(o.items)?o.items:[];
+            const haystack=[o.id,o.customerName,o.phone,o.albumName,o.mpOrderId,
+                ...items.flatMap(p=>[p&&p.name,p&&p.albumName,p&&p.code])].filter(Boolean).join(' ');
+            return filterOk&&dateOk&&(!needle||norm(haystack).includes(needle));
+        });
+    },[adminOrderLedger,adminLedgerFilter,adminLedgerSearch,adminLedgerDate]);
+    // El admin puede registrar una confirmación manual para seguimiento comercial.
+    // NO se marca paid=true ni se otorgan tokens de descarga del Worker.
+    const updateManualWhatsappStatus=async(o,next)=>{
+        if(!admin||adminOrderChannel(o)!=='whatsapp'||adminOrderState(o)==='cancelled')return;
+        if(!['agreed','manual_paid'].includes(next))return;
+        const method=next==='manual_paid'?window.prompt('Medio de pago recibido (transferencia, efectivo u otro):','transferencia'):null;
+        if(next==='manual_paid'&&(!method||!String(method).trim()))return;
+        if(!window.confirm(next==='manual_paid'?
+            '¿Confirmás que el dinero ya fue recibido? No se habilitarán descargas automáticamente.':
+            '¿Confirmás que acordaste un pago que todavía NO recibiste?'))return;
+        const at=new Date().toISOString();
+        const partial={
+            paymentStatus:next==='manual_paid'?'manual_confirmed':'agreed',
+            channel:'whatsapp',paymentProvider:'whatsapp',paid:false,
+            manualPaymentMethod:next==='manual_paid'?String(method).trim():'',
+            manualPaymentConfirmedAt:next==='manual_paid'?at:'',
+            status:next==='manual_paid'?'pagado_por_otro_medio':'pago_acordado',
+            statusHistory:[...(Array.isArray(o.statusHistory)?o.statusHistory:[]),
+                {at,action:next,method:next==='manual_paid'?String(method).trim():''}]
+        };
+        try{
+            const saved=await updateOrderFirebase(o.id,partial);
+            if(!saved)throw Error('Firebase no confirmó la actualización.');
+            const nextOrders=mergeOrders(readLocalOrders(),orders,[{...o,...partial}]);
+            saveLocalOrders(nextOrders);setOrders(nextOrders);
+            setAdminMessage('Estado actualizado. Las descargas siguen protegidas por Cloudflare.');
+        }catch(err){
+            setAdminMessage('No se guardó el estado: '+String(err&&err.message||err));
+        }
+    };
     const ADMIN_NOTIFICATION_START = Date.parse('2026-08-14T23:22:00Z');
     const unseenAdminOrders = useMemo(() => adminOrderLedger.filter(o => {
         const id = normalizeOrderCode(o && o.id);
@@ -7690,11 +7760,11 @@ En breve te las preparo y te las envío por acá 😊
                 React.createElement("nav", { className: "la-admin-nav", "aria-label": "Navegación del administrador" },
                     [
                         ["la-admin-overview", "fa-chart-line", "Inicio"],
-                        ["la-admin-orders-today", "fa-receipt", "Pedidos"],
+                        ["la-admin-orders-history", "fa-receipt", "Pedidos"],
                         ["la-admin-payments", "fa-credit-card", "Pagos"],
                         ["la-admin-gallery", "fa-images", "Galerías"],
                         ["la-admin-promos", "fa-tags", "Promociones"],
-                        ["admin-security-access", "fa-shield-halved", "Seguridad"]
+                        ["admin-security-access", "fa-shield-halved", "Configuración"]
                     ].map(([id,icon,label]) => React.createElement("button", {
                         key:id, type:"button", className:"la-admin-nav-link",
                         onClick: () => {
@@ -7713,7 +7783,8 @@ En breve te las preparo y te las envío por acá 😊
                             ["fa-wallet","Ingresos acreditados",formatPrice(adminOverview.gross),"Total bruto registrado"],
                             ["fa-image","Fotos vendidas",String(adminOverview.photos),"De órdenes acreditadas"],
                             ["fa-hourglass-half","Pedidos sin acreditar",String(adminOverview.pending),"Excluye entregados y anulados"],
-                            ["fa-layer-group","Galerías publicadas",String(activeAlbums.length),"Álbumes activos"]
+                            ["fa-layer-group","Galerías publicadas",String(activeAlbums.length),"Álbumes activos"],
+                            ["fa-comments","Consultas WhatsApp",String(adminOverview.whatsapp),"No se asumen enviadas ni pagadas"]
                         ].map(([icon,label,value,note]) =>
                             React.createElement("article",{key:label,className:"la-admin-kpi"},
                                 React.createElement("span",{className:"la-admin-kpi-icon"},React.createElement("i",{className:"fas "+icon,"aria-hidden":true})),
@@ -7726,8 +7797,8 @@ En breve te las preparo y te las envío por acá 😊
             React.createElement("section",{id:"la-admin-orders-today",className:"mb-5 rounded-3xl border border-emerald-400/25 bg-neutral-900 p-4 sm:p-5"},
                 React.createElement("h2",{className:"text-lg font-black text-white"},"Pedidos de hoy"),
                 React.createElement("p",{className:"text-sm text-neutral-300 mt-1"},
-                    adminTodayOrders.length+" pedidos encontrados en las fuentes consultadas · "+adminTodayOrders.filter(o=>o.paid||o.paymentStatus==='accredited').length+" acreditados · "+
-                    adminTodayOrders.filter(o=>!(o.paid||o.paymentStatus==='accredited')).length+" pendientes o por verificar."),
+                    adminTodayOrders.length+" pedidos encontrados en las fuentes consultadas · "+adminTodayOrders.filter(o=>['paid','manual_paid'].includes(adminOrderState(o))).length+" pagados · "+
+                    adminTodayOrders.filter(o=>!['paid','manual_paid'].includes(adminOrderState(o))).length+" pendientes, consultas o anulados."),
                 React.createElement("p",{className:"text-xs text-amber-200/90 mt-2"},
                     "Si falta una compra, tocá recuperar: también se consultan las órdenes de Cloudflare que no llegaron a Firebase. Los resultados dependen de que el Worker esté actualizado."),
                 React.createElement("button",{type:"button",disabled:ordersLoading||mpAdminOrdersBusy,onClick:refreshAllAdminOrders,
