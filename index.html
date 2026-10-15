@@ -7109,8 +7109,20 @@ En breve te las preparo y te las envío por acá 😊
             channel:'whatsapp',paymentProvider:'whatsapp',paymentStatus:'pending',
             status:'consulta_whatsapp_iniciada',paid:false,delivered:false,
             whatsappOpenedAt:now,wantsPoints:false,
+            // Una consulta por transferencia también debe conservar el pedido de impresión.
+            printRequested:Boolean(checkoutPrint&&printSelectedPhotos.length),
+            printFormat:'10x15 cm',
+            printCount:checkoutPrint?printSelectedPhotos.length:0,
+            printSurchargePerPhoto:PRINT_SURCHARGE_PER_PHOTO,
+            printSurcharge:checkoutPrint?printSurcharge:0,
+            printedPhotoIds:checkoutPrint?printSelectedPhotos.map(p=>p.id):[],
+            printedItems:checkoutPrint?printSelectedPhotos.map(p=>({
+                id:p.id,albumName:p.albumName,name:p.name,code:p.code
+            })):[],
             items:selectedPhotos.map(p=>({id:p.id,name:p.name,code:p.code,
-                albumName:p.albumName,subAlbumName:p.subAlbumName||'',price:Number(p.price)||0,
+                albumName:p.albumName,subAlbumName:p.subAlbumName||'',
+                price:Number(p.price)||0,
+                printRequested:Boolean(checkoutPrint&&printedPhotoIds.includes(p.id)),
                 driveLink:p.rawUrl||p.fullUrl||p.url||''}))};
         try{
             saveLocalOrders(mergeOrders(readLocalOrders(),[order]));
