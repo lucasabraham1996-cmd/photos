@@ -14,7 +14,7 @@
       const requestedAdmin = location.hash === '#/admin' || params.get('admin') === '1' || (standalone && savedAdminRoute);
       if (requestedAdmin) {
         if (standalone && savedAdminRoute && location.hash !== '#/admin') location.hash = '#/admin';
-        if (params.get('build') !== 'v131-universal-admin-mobile') {
+        if (params.get('build') !== 'v132-mobile-admin-recovery') {
           params.set('admin','1');
           params.set('build','v131-universal-admin-mobile');
           location.replace(location.pathname + '?' + params.toString() + '#/admin');
@@ -7857,6 +7857,8 @@ En breve te las preparo y te las envío por acá 😊
                     type:"button", onClick:resetLocalAdminBiometric,
                     className:"w-full mt-3 border border-amber-400/25 bg-amber-500/10 text-amber-200 py-3 rounded-xl text-xs font-black"
                 }, React.createElement("i", { className:"fas fa-rotate mr-2" }), "Restablecer Face ID / biometría"),
+                React.createElement("p", { className:"mt-4 text-xs text-neutral-400 leading-relaxed" }, "¿Entrás desde otro celular? Primero usá tu PIN de administrador y vinculá la biometría desde Seguridad en ese dispositivo. Los pedidos se consultan de forma compartida, no se transfieren desde la PC."),
+                React.createElement("button", { type:"button", onClick:()=>{ const u=new URL(window.location.href);u.searchParams.set("mobile_refresh",String(Date.now()));window.location.replace(u.toString()); }, className:"w-full mt-3 border border-sky-400/25 bg-sky-500/10 text-sky-200 py-3 rounded-xl text-xs font-bold" }, React.createElement("i",{className:"fas fa-arrows-rotate mr-2"}),"Actualizar versión en este celular"),
                 adminLoginError && React.createElement("div", { className:"mt-4 rounded-xl border border-red-500/25 bg-red-500/10 px-3 py-3 text-sm text-red-200" }, adminLoginError)));
     if (route === "#/admin")
         return React.createElement("div", { className: "la-admin-workspace min-h-screen p-5 md:p-8 max-w-7xl mx-auto", "data-la-admin-tab":adminPanelTab },
