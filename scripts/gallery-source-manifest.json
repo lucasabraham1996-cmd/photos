@@ -2,7 +2,9 @@
   {
     "gid": 2100242601,
     "name": "All Boys - USV: Cuarta",
-    "hidden": false
+    "hidden": false,
+    "opponent": "Unión San Vicente",
+    "opponent_crest": "assets/lcf-v2/union-san-vicente.png"
   },
   {
     "gid": 2100112601,
