@@ -6024,6 +6024,14 @@ ${clone.outerHTML}`;
     const totalAlbumPages = Math.max(1, Math.ceil(albumPhotos.length / 60));
     const safeAlbumPage = Math.min(Math.max(1, albumPage), totalAlbumPages);
     const pagedPhotos = useMemo(() => albumPhotos.slice((safeAlbumPage - 1) * 60, safeAlbumPage * 60), [albumPhotos, safeAlbumPage]);
+    // Secuencia visible en cada categoría/álbum; la numeración no reinicia al cambiar de página.
+    const photoSequenceNumber = (photo) => {
+        if (!photo) return 0;
+        const list = albumPhotos.some(p => p.id === photo.id) ? albumPhotos :
+            ((displayAlbums.find(a => a.id === photo.albumId) || {}).photos || []);
+        const index = list.findIndex(p => p.id === photo.id);
+        return index >= 0 ? index + 1 : 0;
+    };
     useEffect(() => { if (!loading && activeAlbum && displayAlbums.length && !displayAlbums.find(a => a.id === activeAlbum)) {
         setActiveAlbum(null);
         if (location.hash.startsWith("#/album/"))
@@ -6250,6 +6258,27 @@ ${clone.outerHTML}`;
             items:Array.isArray(linked.items)&&linked.items.length?linked.items:
                 (Array.isArray(o.photos)?o.photos:[])
         });
+    };
+    // Agradecimiento listo para enviar únicamente a los pedidos MP acreditados.
+    const mpPaidDeliveryMessage=o=>{
+        if(!o||o.paid!==true)return '';
+        const links=(Array.isArray(o.photos)?o.photos:[]).filter(p=>p&&p.download_url);
+        if(!links.length)return '';
+        const customer=cleanWhatsappPersonName(adminMpBuyer(o).name);
+        const firstName=customer&&customer.toLowerCase()!=='cliente sin nombre'?customer.split(' ')[0]:'';
+        return '¡Hola'+(firstName?', '+firstName:'')+'! 👋😊\n\n'+
+            '¡Muchas gracias por tu compra en *lucasabraham.ph*! 📸⚽💙\n'+
+            'Tu pago con Mercado Pago ya fue acreditado. Te comparto las fotos en alta calidad para que puedas descargarlas cuando quieras:\n\n'+
+            links.map((p,i)=>'📷 *'+(p.name||'Foto '+(i+1))+'*\n'+p.download_url).join('\n\n')+
+            '\n\n¡Gracias por confiar en mi trabajo y por apoyar la fotografía deportiva! 🙌📸'+
+            (adminMpPrintInfo(o).has?'\n\n🖼️ ¡También coordinamos por acá la entrega de las impresiones!':'');
+    };
+    const mpPaidDeliveryWhatsappUrl=o=>{
+        const phone=normalizeClubPhone(adminMpBuyer(o).phone);
+        const message=mpPaidDeliveryMessage(o);
+        return phone&&phone.length>=10&&message
+            ? 'https://api.whatsapp.com/send?phone=549'+phone+'&text='+encodeURIComponent(message)
+            : '';
     };
     const adminOrderChannel=o=>{
         const provider=String(o&&((o.channel||o.paymentProvider))||'').toLowerCase();
@@ -6559,8 +6588,43 @@ ${clone.outerHTML}`;
     const moveFocus = (dir) => { if (!albumPhotos.length || !focusPhoto)
         return; const i = albumPhotos.findIndex(p => p.id === focusPhoto.id); const next = albumPhotos[(i + dir + albumPhotos.length) % albumPhotos.length]; setFocusPhoto(next); };
     const moveViewer = (dir) => { if (!viewer)
-        return; const list = allPhotos.filter(p => p.albumId === viewer.albumId); if (!list.length)
-        return; const i = list.findIndex(p => p.id === viewer.id); setViewer(list[(i + dir + list.length) % list.length]); };
+        return; const list = albumPhotos.some(p => p.id === viewer.id) ? albumPhotos :
+            allPhotos.filter(p => p.albumId === viewer.albumId);
+        if (!list.length) return;
+        const i = list.findIndex(p => p.id === viewer.id);
+        setViewer(list[(i + dir + list.length) % list.length]); };
+    // Acceso privado desde el logotipo discreto del visor. La foto no se libera
+    // sin volver a escribir la contraseña vigente del administrador.
+    const downloadViewerOriginalAsAdmin = async () => {
+        if (!viewer) return;
+        if (!sharedReady) {
+            window.alert('Todavía se está cargando la seguridad del administrador. Reintentá en unos segundos.');
+            return;
+        }
+        const password = window.prompt('🔒 Descarga privada · Ingresá la contraseña o PIN de administrador:');
+        if (password === null || !password) return;
+        try {
+            const authenticated = await verifyAdminSecret(password, adminAuth);
+            if (!authenticated) {
+                window.alert('Contraseña de administrador incorrecta. La foto no se descargó.');
+                return;
+            }
+        } catch (_) {
+            window.alert('No se pudo validar la contraseña. Reintentá.');
+            return;
+        }
+        const raw = viewer.rawUrl || viewer.fullUrl || viewer.originalUrl || viewer.url || '';
+        const driveId = extractDriveId(raw);
+        const downloadUrl = driveId
+            ? 'https://drive.google.com/uc?export=download&id=' + encodeURIComponent(driveId)
+            : '';
+        if (!downloadUrl) {
+            window.alert('Esta foto todavía no tiene disponible un enlace original de descarga.');
+            return;
+        }
+        // Navegación directa: funciona mejor que popups o ZIPs en Safari de iPhone.
+        window.location.assign(downloadUrl);
+    };
     const handleSwipeEnd = (cb) => e => { var _a, _b; if (touchStartX.current === null)
         return; const end = ((_b = (_a = e.changedTouches) === null || _a === void 0 ? void 0 : _a[0]) === null || _b === void 0 ? void 0 : _b.clientX) || 0; const diff = end - touchStartX.current; touchStartX.current = null; if (Math.abs(diff) > 45)
         cb(diff < 0 ? 1 : -1); };
@@ -7056,6 +7120,17 @@ En breve te las preparo y te las envío por acá 😊
             setMpAdminOrdersError(String(err&&err.message||err));
         }finally{setMpAdminOrdersBusy(false)}
     };
+    // Si la clave Cloudflare ya fue ingresada, mantener las ventas MP actualizadas
+    // aun cuando el cliente nunca regrese de Mercado Pago al sitio.
+    useEffect(()=>{
+        if(!admin||!String(mpCatalogueSetupKey||'').trim()||
+            !['pedidos','pagos'].includes(adminPanelTab))return;
+        fetchMpAdminOrders(false);
+        const timer=setInterval(()=>{
+            if(!document.hidden)fetchMpAdminOrders(false);
+        },90000);
+        return ()=>clearInterval(timer);
+    },[admin,mpCatalogueSetupKey,adminPanelTab]);
     const refreshAllAdminOrders=async()=>{
         if(ordersLoading||mpAdminOrdersBusy)return;
         setOrdersLoading(true);
@@ -7091,11 +7166,11 @@ En breve te las preparo y te las envío por acá 😊
         const amount=selectedPhotos.length?checkoutTotal:mpTrialPurchase&&mpTrialPurchase.amount||0;
         const printCount=selectedPhotos.length?printSelectedPhotos.length:mpTrialPurchase&&mpTrialPurchase.order_data&&mpTrialPurchase.order_data.printCount||0;
         const details=photos.slice(0,25).map(p=>'• '+p.albumName+' · '+(p.name||p.code||p.id)).join('\n');
-        const message='Hola Lucas! Quiero consultar otros medios de pago para estas fotos.\n\n'+details+
-            (photos.length>25?'\nY '+(photos.length-25)+' fotos más.':'')+
-            '\n\nTotal de la selección: '+formatPrice(amount)+
-            (printCount?'\nCon impresión 10x15 de '+printCount+' fotos.':'')+
-            '\n¿Cómo podemos acordar el pago?';
+        const message='¡Hola, Lucas! 👋😊 Me gustaron estas fotos y quisiera abonarlas por transferencia bancaria 📸⚽\n\n'+details+
+            (photos.length>25?'\n📷 Y '+(photos.length-25)+' fotos más.':'')+
+            '\n\n💰 *Total de la selección: '+formatPrice(amount)+'*'+
+            (printCount?'\n🖼️ También seleccioné impresión 10x15 de '+printCount+' fotos.':'')+
+            '\n\n💳 ¿Me pasás tu *alias* para poder hacerte la transferencia? 🙌\n¡Muchas gracias! 😊';
         return 'https://wa.me/'+SELLER_PHONE+'?text='+encodeURIComponent(message);
     };
     // Registrar cada consulta con su canal real, sin dar el mensaje por enviado.
@@ -8410,7 +8485,7 @@ React.createElement("div", { id: "order-search-panel", hidden:adminPanelTab!=='p
                 React.createElement("p",{className:"text-[11px] text-neutral-500 mt-2"},"Acceso reservado al administrador. Usa la clave ingresada arriba, sin guardarla en el navegador."),
                 mpAdminOrdersError&&React.createElement("p",{role:"alert",className:"mt-3 text-xs text-amber-200"},mpAdminOrdersError),
                 React.createElement("div",{className:"grid gap-3 mt-4 max-h-[560px] overflow-y-auto"},
-                    mpAdminOrders.map(o=>React.createElement("article",{key:o.checkout_id,className:"border border-white/10 bg-black/40 rounded-2xl p-3 sm:p-4"},
+                    mpAdminOrders.map(o=>React.createElement("article",{key:o.checkout_id,className:o.paid?"border border-emerald-400/30 bg-emerald-500/5 rounded-2xl p-3 sm:p-4":"border border-white/10 bg-black/40 rounded-2xl p-3 sm:p-4"},
                         React.createElement("div",{className:"flex flex-wrap items-center justify-between gap-2"},
                             React.createElement("div",{className:"min-w-0"},
                                 React.createElement("p",{className:"text-xs text-neutral-400"},new Date(o.created_at).toLocaleString('es-AR')),
@@ -8439,11 +8514,11 @@ React.createElement("div", { id: "order-search-panel", hidden:adminPanelTab!=='p
                         React.createElement("div",{className:"admin-order-links"},(o.photos||[]).map((p,i)=>p.download_url&&React.createElement("a",{key:i,href:p.download_url,target:"_blank",rel:"noopener noreferrer"},
                             React.createElement("i",{className:"fas fa-download"}),p.name||("Foto "+(i+1))))),
                         o.paid&&React.createElement("div",{className:"flex flex-wrap gap-2 mt-3"},
+                            mpPaidDeliveryWhatsappUrl(o)&&React.createElement("a",{href:mpPaidDeliveryWhatsappUrl(o),target:"_blank",rel:"noopener noreferrer",className:"text-xs font-black rounded-xl bg-emerald-500 text-emerald-950 px-3 py-2"},
+                                React.createElement("i",{className:"fab fa-whatsapp mr-2"}),"Enviar agradecimiento y fotos"),
                             React.createElement("button",{type:"button",onClick:()=>{
-                                const links=(o.photos||[]).filter(p=>p.download_url);
-                                const message='📸 ¡Hola! Gracias por tu compra en lucasabraham.ph. Acá tenés tus '+links.length+' fotos en calidad original:\n\n'+
-                                    links.map((p,i)=>'📷 '+(p.name||('Foto '+(i+1)))+'\n'+p.download_url).join('\n\n')+
-                                    '\n\n¡Gracias por confiar en mi trabajo!';
+                                const message=mpPaidDeliveryMessage(o);
+                                if(!message){setMpAdminOrdersError('Este pedido aún no tiene enlaces para entregar.');return;}
                                 navigator.clipboard.writeText(message).then(()=>setAdminMessage('Mensaje con todas las fotos copiado. Pegalo en el WhatsApp del comprador.')).catch(()=>setMpAdminOrdersError('No se pudo copiar el mensaje al portapapeles.'));
                             },className:"text-xs font-black rounded-xl bg-emerald-500 text-emerald-950 px-3 py-2"},
                                 React.createElement("i",{className:"fab fa-whatsapp mr-2"}),"Copiar mensaje con "+(o.photos||[]).length+" fotos"),
@@ -8769,7 +8844,7 @@ React.createElement("div", { id: "order-search-panel", hidden:adminPanelTab!=='p
                         React.createElement("button", { onClick: () => setViewer(focusPhoto), className: "absolute bottom-3 right-3 bg-white text-black px-4 py-2 rounded-xl font-black text-sm" }, "Abrir")),
                     React.createElement("div", { className: "mt-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3" },
                         React.createElement("div", null,
-                            React.createElement("h3", { className: "font-black" }, focusPhoto.name),
+                            React.createElement("h3", { className: "font-black" }, "Foto " + photoSequenceNumber(focusPhoto) + " · " + focusPhoto.name),
                             React.createElement("p", { className: "text-xs text-neutral-400" },
                                 "C\u00F3digo ",
                                 focusPhoto.code,
@@ -8805,6 +8880,8 @@ React.createElement("div", { id: "order-search-panel", hidden:adminPanelTab!=='p
                         React.createElement("button", { onClick: () => viewMode === 'gallery' ? setFocusPhoto(photo) : setViewer(photo), className: "absolute inset-0 z-10", "aria-label": "Ver foto" }),
                         React.createElement("img", { src: toImgUrl(photo.rawUrl || photo.fullUrl || photo.url, 360), loading: "lazy", decoding: "async", draggable: false, onContextMenu: e => e.preventDefault(), className: "protected-photo w-full h-full object-cover pointer-events-none" }),
                         React.createElement(PreviewWatermark, { ...wmProps(photo.albumId), compact: viewMode === 'mosaic' }),
+                        React.createElement("span", { className: "absolute top-2 left-2 z-20 pointer-events-none rounded-lg border border-white/25 bg-black/75 px-2.5 py-1 text-xs font-black text-white shadow-lg", "aria-label": "Foto número " + ((safeAlbumPage - 1) * 60 + photoIndex + 1) },
+                            String((safeAlbumPage - 1) * 60 + photoIndex + 1)),
                         React.createElement("div", { className: `absolute inset-0 ${isSelected ? (bulkQuoteMode ? 'bg-emerald-900/35' : 'bg-indigo-900/40') : 'bg-transparent'} pointer-events-none` }),
                         React.createElement("div", { className: "absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent p-2 pt-6 pointer-events-none" },
                             React.createElement("p", { className: "text-white/80 font-mono text-[9px] sm:text-[10px] truncate" }, photo.name),
@@ -9116,7 +9193,7 @@ React.createElement("div", { id: "order-search-panel", hidden:adminPanelTab!=='p
                 React.createElement("div", { onContextMenu: e => e.preventDefault(), onDragStart: e => e.preventDefault(), onTouchStart: e => { var _a, _b; return touchStartX.current = (_b = (_a = e.touches) === null || _a === void 0 ? void 0 : _a[0]) === null || _b === void 0 ? void 0 : _b.clientX; }, onTouchEnd: handleSwipeEnd(moveViewer), className: "photo-viewer-lock rounded-3xl overflow-hidden bg-black border border-neutral-800 relative" },
                     React.createElement("img", { src: viewer.url, loading: "eager", decoding: "async", draggable: false, onContextMenu: e => e.preventDefault(), className: "protected-photo w-full max-h-[80vh] object-contain mx-auto" }),
                     React.createElement(PreviewWatermark, { ...wmProps(viewer.albumId) }),
-                    React.createElement(PhotoLicenseReminder, { overlay: true }),
+                    // La licencia ahora se muestra en formato compacto junto al título.
                     React.createElement("button", { onClick: () => moveViewer(-1), className: "absolute left-2 sm:left-3 top-1/2 -translate-y-1/2 px-3 h-10 rounded-full bg-black/70 border border-white/20 text-white font-bold text-xs" },
                         React.createElement("i", { className: "fas fa-chevron-left sm:mr-1" }),
                         React.createElement("span", { className: "hidden sm:inline viewer-nav-label" }, "Anterior")),
@@ -9124,7 +9201,10 @@ React.createElement("div", { id: "order-search-panel", hidden:adminPanelTab!=='p
                         React.createElement("span", { className: "hidden sm:inline viewer-nav-label" }, "Siguiente"),
                         React.createElement("i", { className: "fas fa-chevron-right sm:ml-1" }))),
                 React.createElement("div", null,
-                    React.createElement("h3", { className: "text-2xl font-black mb-1" }, viewer.name),
+                    React.createElement("h3", { className: "text-2xl font-black mb-1" }, "Foto " + photoSequenceNumber(viewer) + " · " + viewer.name),
+                    React.createElement("div", { className: "inline-flex max-w-full items-start gap-2 rounded-lg border border-amber-400/25 bg-amber-400/5 px-2.5 py-1.5 text-[11px] leading-snug text-amber-100/85 mb-2" },
+                        React.createElement("i", { className: "fas fa-lock text-amber-300/80 shrink-0" }),
+                        React.createElement("span", null, "Foto con licencia · Su uso requiere compra; no se permite utilizar la vista con marca de agua.")),
                     React.createElement("p", { className: "text-neutral-400 text-sm mb-2" },
                         "C\u00F3digo ",
                         viewer.code,
@@ -9133,13 +9213,14 @@ React.createElement("div", { id: "order-search-panel", hidden:adminPanelTab!=='p
                     React.createElement("p", { className: "text-sky-300 font-black text-xl mb-4" }, formatPrice(viewer.price)),
                     React.createElement("div", { className: "bg-neutral-950 border border-neutral-800 rounded-2xl p-4 mb-4 space-y-3" },
                         React.createElement("p", { className: "text-sm text-neutral-300" }, "La foto comprada se entrega en alta calidad, sin la marca de agua repetitiva y con un único logo de lucasabraham.ph en la parte inferior. Una vez adquirida, podés recortarla como quieras."),
-                        React.createElement("div", { className: "rounded-2xl border border-amber-400/25 bg-black/25 p-3 text-amber-100 text-sm leading-relaxed" },
-                            React.createElement("div", { className: "font-black mb-1 flex items-center gap-2" },
-                                React.createElement("i", { className: "fas fa-certificate text-amber-300" }),
-                                React.createElement("span", null, "Aviso de licencia")),
-                            React.createElement("p", { className: "text-amber-100/90" }, "Esta imagen tiene licencia, debe ser adquirida para su uso y no puede utilizarse con la marca de agua."))),
+                        React.createElement("p", { className: "text-xs text-neutral-500" }, "La foto original queda disponible después de acreditar el pago.")),
                     React.createElement("button", { onClick: () => bulkQuoteMode ? toggleBulkQuotePhoto(viewer.id) : toggle(viewer.id), className: "w-full " + (bulkQuoteMode ? "bulk-quote-photo-btn" : "buy-btn") + " font-black py-4 rounded-xl mb-3" }, bulkQuoteMode ? (bulkQuoteIds.includes(viewer.id) ? "Quitar de la negociación" : "Seleccionar para negociar") : (cart.includes(viewer.id) ? "Quitar del carrito" : "Agregar al carrito")),
-                    React.createElement("button", { onClick: () => setViewer(null), className: "w-full bg-neutral-800 py-4 rounded-xl font-bold" }, "Cerrar")))),
+                    React.createElement("button", { onClick: () => setViewer(null), className: "w-full bg-neutral-800 py-4 rounded-xl font-bold" }, "Cerrar"),
+                    React.createElement("button", { type: "button", onClick: downloadViewerOriginalAsAdmin,
+                        className: "mx-auto mt-4 flex items-center justify-center rounded-full p-2 opacity-[.12] hover:opacity-70 focus:opacity-90 transition-opacity",
+                        "aria-label": "Descarga privada con contraseña de administrador",
+                        title: "Acceso privado · Descargar original" },
+                        React.createElement("img", { src: BRAND_LOGO_URL, alt: "lucasabraham.ph · Acceso privado", className: "w-7 h-7 object-contain" }))))),
         bulkQuoteMode && currentAlbum && React.createElement("div", { className:"bulk-quote-floating up" },
             React.createElement("div", { className:"bulk-quote-floating-count" },
                 React.createElement("strong", null, bulkQuotePhotos.length),
