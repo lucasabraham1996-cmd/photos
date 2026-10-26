@@ -6024,13 +6024,14 @@ ${clone.outerHTML}`;
     const totalAlbumPages = Math.max(1, Math.ceil(albumPhotos.length / 60));
     const safeAlbumPage = Math.min(Math.max(1, albumPage), totalAlbumPages);
     const pagedPhotos = useMemo(() => albumPhotos.slice((safeAlbumPage - 1) * 60, safeAlbumPage * 60), [albumPhotos, safeAlbumPage]);
-    // Secuencia visible en cada categoría/álbum; la numeración no reinicia al cambiar de página.
+    // Numeración inversa dentro de cada categoría/álbum: la última foto es la Nº 1.
+    // La secuencia continúa correctamente entre páginas y en el visor ampliado.
     const photoSequenceNumber = (photo) => {
         if (!photo) return 0;
         const list = albumPhotos.some(p => p.id === photo.id) ? albumPhotos :
             ((displayAlbums.find(a => a.id === photo.albumId) || {}).photos || []);
         const index = list.findIndex(p => p.id === photo.id);
-        return index >= 0 ? index + 1 : 0;
+        return index >= 0 ? list.length - index : 0;
     };
     useEffect(() => { if (!loading && activeAlbum && displayAlbums.length && !displayAlbums.find(a => a.id === activeAlbum)) {
         setActiveAlbum(null);
@@ -8880,8 +8881,8 @@ React.createElement("div", { id: "order-search-panel", hidden:adminPanelTab!=='p
                         React.createElement("button", { onClick: () => viewMode === 'gallery' ? setFocusPhoto(photo) : setViewer(photo), className: "absolute inset-0 z-10", "aria-label": "Ver foto" }),
                         React.createElement("img", { src: toImgUrl(photo.rawUrl || photo.fullUrl || photo.url, 360), loading: "lazy", decoding: "async", draggable: false, onContextMenu: e => e.preventDefault(), className: "protected-photo w-full h-full object-cover pointer-events-none" }),
                         React.createElement(PreviewWatermark, { ...wmProps(photo.albumId), compact: viewMode === 'mosaic' }),
-                        React.createElement("span", { className: "absolute top-2 left-2 z-20 pointer-events-none rounded-lg border border-white/25 bg-black/75 px-2.5 py-1 text-xs font-black text-white shadow-lg", "aria-label": "Foto número " + ((safeAlbumPage - 1) * 60 + photoIndex + 1) },
-                            String((safeAlbumPage - 1) * 60 + photoIndex + 1)),
+                        React.createElement("span", { className: "absolute top-2 left-2 z-20 pointer-events-none rounded-lg border border-white/25 bg-black/75 px-2.5 py-1 text-xs font-black text-white shadow-lg", "aria-label": "Foto número " + photoSequenceNumber(photo) },
+                            String(photoSequenceNumber(photo))),
                         React.createElement("div", { className: `absolute inset-0 ${isSelected ? (bulkQuoteMode ? 'bg-emerald-900/35' : 'bg-indigo-900/40') : 'bg-transparent'} pointer-events-none` }),
                         React.createElement("div", { className: "absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent p-2 pt-6 pointer-events-none" },
                             React.createElement("p", { className: "text-white/80 font-mono text-[9px] sm:text-[10px] truncate" }, photo.name),
@@ -9193,7 +9194,7 @@ React.createElement("div", { id: "order-search-panel", hidden:adminPanelTab!=='p
                 React.createElement("div", { onContextMenu: e => e.preventDefault(), onDragStart: e => e.preventDefault(), onTouchStart: e => { var _a, _b; return touchStartX.current = (_b = (_a = e.touches) === null || _a === void 0 ? void 0 : _a[0]) === null || _b === void 0 ? void 0 : _b.clientX; }, onTouchEnd: handleSwipeEnd(moveViewer), className: "photo-viewer-lock rounded-3xl overflow-hidden bg-black border border-neutral-800 relative" },
                     React.createElement("img", { src: viewer.url, loading: "eager", decoding: "async", draggable: false, onContextMenu: e => e.preventDefault(), className: "protected-photo w-full max-h-[80vh] object-contain mx-auto" }),
                     React.createElement(PreviewWatermark, { ...wmProps(viewer.albumId) }),
-                    // La licencia ahora se muestra en formato compacto junto al título.
+                    // Sin cartel superpuesto: la licencia se informa debajo del carrito.
                     React.createElement("button", { onClick: () => moveViewer(-1), className: "absolute left-2 sm:left-3 top-1/2 -translate-y-1/2 px-3 h-10 rounded-full bg-black/70 border border-white/20 text-white font-bold text-xs" },
                         React.createElement("i", { className: "fas fa-chevron-left sm:mr-1" }),
                         React.createElement("span", { className: "hidden sm:inline viewer-nav-label" }, "Anterior")),
@@ -9202,19 +9203,19 @@ React.createElement("div", { id: "order-search-panel", hidden:adminPanelTab!=='p
                         React.createElement("i", { className: "fas fa-chevron-right sm:ml-1" }))),
                 React.createElement("div", null,
                     React.createElement("h3", { className: "text-2xl font-black mb-1" }, "Foto " + photoSequenceNumber(viewer) + " · " + viewer.name),
-                    React.createElement("div", { className: "inline-flex max-w-full items-start gap-2 rounded-lg border border-amber-400/25 bg-amber-400/5 px-2.5 py-1.5 text-[11px] leading-snug text-amber-100/85 mb-2" },
-                        React.createElement("i", { className: "fas fa-lock text-amber-300/80 shrink-0" }),
-                        React.createElement("span", null, "Foto con licencia · Su uso requiere compra; no se permite utilizar la vista con marca de agua.")),
                     React.createElement("p", { className: "text-neutral-400 text-sm mb-2" },
                         "C\u00F3digo ",
                         viewer.code,
                         " \u00B7 ",
                         viewer.albumName),
                     React.createElement("p", { className: "text-sky-300 font-black text-xl mb-4" }, formatPrice(viewer.price)),
+                    React.createElement("button", { onClick: () => bulkQuoteMode ? toggleBulkQuotePhoto(viewer.id) : toggle(viewer.id), className: "w-full " + (bulkQuoteMode ? "bulk-quote-photo-btn" : "buy-btn") + " font-black py-4 rounded-xl mb-3" }, bulkQuoteMode ? (bulkQuoteIds.includes(viewer.id) ? "Quitar de la negociación" : "Seleccionar para negociar") : (cart.includes(viewer.id) ? "Quitar del carrito" : "Agregar al carrito")),
                     React.createElement("div", { className: "bg-neutral-950 border border-neutral-800 rounded-2xl p-4 mb-4 space-y-3" },
                         React.createElement("p", { className: "text-sm text-neutral-300" }, "La foto comprada se entrega en alta calidad, sin la marca de agua repetitiva y con un único logo de lucasabraham.ph en la parte inferior. Una vez adquirida, podés recortarla como quieras."),
-                        React.createElement("p", { className: "text-xs text-neutral-500" }, "La foto original queda disponible después de acreditar el pago.")),
-                    React.createElement("button", { onClick: () => bulkQuoteMode ? toggleBulkQuotePhoto(viewer.id) : toggle(viewer.id), className: "w-full " + (bulkQuoteMode ? "bulk-quote-photo-btn" : "buy-btn") + " font-black py-4 rounded-xl mb-3" }, bulkQuoteMode ? (bulkQuoteIds.includes(viewer.id) ? "Quitar de la negociación" : "Seleccionar para negociar") : (cart.includes(viewer.id) ? "Quitar del carrito" : "Agregar al carrito")),
+                        React.createElement("p", { className: "text-xs text-neutral-500" }, "La foto original queda disponible después de acreditar el pago."),
+                        React.createElement("div", { className: "flex items-start gap-2 border-t border-amber-400/15 pt-3 text-[11px] leading-snug text-amber-100/80" },
+                            React.createElement("i", { className: "fas fa-lock text-amber-300/80 shrink-0 mt-0.5" }),
+                            React.createElement("span", null, "Foto con licencia. Debe ser adquirida para su uso y no puede utilizarse con la marca de agua."))),
                     React.createElement("button", { onClick: () => setViewer(null), className: "w-full bg-neutral-800 py-4 rounded-xl font-bold" }, "Cerrar"),
                     React.createElement("button", { type: "button", onClick: downloadViewerOriginalAsAdmin,
                         className: "mx-auto mt-4 flex items-center justify-center rounded-full p-2 opacity-[.12] hover:opacity-70 focus:opacity-90 transition-opacity",
