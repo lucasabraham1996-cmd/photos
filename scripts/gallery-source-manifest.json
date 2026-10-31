@@ -1,5 +1,26 @@
 [
   {
+    "gid": 2026103103,
+    "name": "Defensores Central Córdoba - All Boys: Reserva",
+    "hidden": false,
+    "opponent": "Defensores Central Córdoba",
+    "opponent_crest": "https://i.postimg.cc/0Q8bDQp3/Defensores-Central-Cordoba.png"
+  },
+  {
+    "gid": 2026103102,
+    "name": "Defensores Central Córdoba - All Boys: Cebollitas",
+    "hidden": false,
+    "opponent": "Defensores Central Córdoba",
+    "opponent_crest": "https://i.postimg.cc/0Q8bDQp3/Defensores-Central-Cordoba.png"
+  },
+  {
+    "gid": 2026103101,
+    "name": "Defensores Central Córdoba - All Boys: Primera",
+    "hidden": false,
+    "opponent": "Defensores Central Córdoba",
+    "opponent_crest": "https://i.postimg.cc/0Q8bDQp3/Defensores-Central-Cordoba.png"
+  },
+  {
     "gid": 1071012925,
     "name": "All Boys - Defensores Juveniles: Primera",
     "hidden": false
