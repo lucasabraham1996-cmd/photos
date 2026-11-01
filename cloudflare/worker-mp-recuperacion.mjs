@@ -63,7 +63,7 @@ async function verifyWebhook(req,url,secret) {
 }
 
 /* === PILOTO: cesta completa + álbum + promociones — fuente de precios en D1 === */
-const MAX_CART = 500;
+const MAX_CART = 5000;
 function intMoney(v) { const n=Number(v);return Number.isSafeInteger(n)&&n>=0&&n<=100000000?n:null; }
 function pct(v,max=100){const n=Number(v);return Number.isFinite(n)&&n>=0&&n<=max?n:null;}
 function normalizeCoupon(v){return String(v||"").trim().toUpperCase().replace(/\s+/g,"");}
@@ -76,7 +76,9 @@ function safePhotos(raw, albumId) {
     const file=driveId(photo.driveLink||photo.rawUrl||"");
     if(!id||!name||!file||seen.has(id))throw Error("Foto duplicada o enlace Drive inválido en "+albumId);
     seen.add(id);
-    return {id,name,drive_id:file};
+    return {id,name,drive_id:file,free:photo.free===true,promotions:(Array.isArray(photo.promotions)?photo.promotions:[])
+      .filter(x=>x&&typeof x.code==='string'&&Number(x.percent)>0&&Number(x.percent)<=90)
+      .map(x=>({code:normalizeCoupon(x.code),percent:Number(x.percent)})).slice(0,20)};
   });
 }
 function computePriceBasket(requested,catalogRows,coupons) {
@@ -95,7 +97,7 @@ function computePriceBasket(requested,catalogRows,coupons) {
     return {kind,amount:total,items:photos.map(p=>({...p,album_id:id})),printed:[],quantity:photos.length,base_total:album.full_price,percent:album.discount_percent,coupon:""};
   }
   const ids=requested.items;
-  if(!Array.isArray(ids)||ids.length<1||ids.length>MAX_CART)throw Error("Elegí entre 1 y 500 fotografías");
+  if(!Array.isArray(ids)||ids.length<1||ids.length>MAX_CART)throw Error("La compra supera la capacidad máxima de procesamiento; contactá al administrador");
   const seen=new Set();
   const selected=ids.map(item=>{
     const albumId=String(item.album_id||"");
@@ -110,21 +112,28 @@ function computePriceBasket(requested,catalogRows,coupons) {
     if(!photo)throw Error("Una foto ya no está disponible; recargá la galería");
     return {...photo,album_id:albumId,site_percent:album.discount_percent};
   });
+  if(selected.some(p=>p.free))throw Error("Las fotos gratuitas se descargan directamente y no deben incluirse en pagos");
   const cartDiscount=selected.length>=5?.15:selected.length>=3?.10:0;
   // Misma regla que la app: cada foto se redondea después de aplicar ambos descuentos.
-  const discounted=selected.reduce((sum,p)=>sum+Math.round(2000*(1-cartDiscount)*(1-p.site_percent/100)),0);
+  const discountedLine=p=>Math.round(2000*(1-cartDiscount)*(1-p.site_percent/100));
+  const discounted=selected.reduce((sum,p)=>sum+discountedLine(p),0);
   let couponPct=0;
+  let eligibleDiscountBase=discounted;
   const couponCode=normalizeCoupon(requested.coupon);
   if(couponCode){
-    const found=coupons.find(c=>normalizeCoupon(c.code)===couponCode&&c.active!==false);
-    if(!found)throw Error("El cupón no existe o no está activo");
+    const globalCoupon=coupons.find(c=>normalizeCoupon(c.code)===couponCode&&c.active!==false);
+    const eligible=selected.filter(p=>(p.promotions||[]).some(c=>normalizeCoupon(c.code)===couponCode));
+    const sheetCoupon=eligible.flatMap(p=>p.promotions||[]).find(c=>normalizeCoupon(c.code)===couponCode);
+    const found=globalCoupon||sheetCoupon;
+    if(!found)throw Error("El cupón no existe o no corresponde a estas fotos");
     couponPct=pct(found.percent,90);
     if(couponPct===null)throw Error("Configuración de cupón inválida");
+    if(!globalCoupon)eligibleDiscountBase=eligible.reduce((sum,p)=>sum+discountedLine(p),0);
   }
   const printIds=Array.isArray(requested.print_ids)?requested.print_ids.map(String):[];
   if(printIds.length>MAX_CART||new Set(printIds).size!==printIds.length)throw Error("Selección de impresiones inválida");
   for(const id of printIds)if(!selected.some(p=>p.id===id))throw Error("Solo se pueden imprimir fotos incluidas en el carrito");
-  const digital=Math.round(discounted*(1-couponPct/100));
+  const digital=Math.round(discounted-eligibleDiscountBase*(couponPct/100));
   const amount=digital+printIds.length*3000;
   if(amount<1)throw Error("El total de la compra debe ser mayor a cero");
   return {kind,amount,items:selected.map(({site_percent,...rest})=>rest),printed:printIds,quantity:selected.length,
@@ -788,7 +797,7 @@ async function adminOrders(request,env) {
     throw new HttpError(400,'Página inválida');
   const limit=50;
   const rows=await env.LA_ORDERS_DB.prepare(
-    'SELECT checkout_id,mp_order_id,mode,kind,amount,items_json,print_ids_json,mp_status,status_detail,payment_valid,created_at,paid_verified_at,download_verified_at,customer_name,customer_phone FROM la_mp_live_orders ORDER BY created_at DESC LIMIT ? OFFSET ?'
+    'SELECT checkout_id,mp_order_id,external_reference,mode,kind,amount,currency,seller_id,application_id,items_json,print_ids_json,mp_status,status_detail,payment_valid,created_at,paid_verified_at,download_verified_at,customer_name,customer_phone FROM la_mp_live_orders ORDER BY created_at DESC LIMIT ? OFFSET ?'
   ).bind(limit+1,offset).all();
   const records=rows.results||[];
   // La vuelta del comprador a la web y el webhook no son condiciones para que el
