@@ -3157,10 +3157,10 @@ function readAlbumCache() {
         if (!Array.isArray(raw)) return [];
         return raw.map(album => ({
             ...album,
-            photos: Array.isArray(album.photos) ? album.photos.map(photo => ({ ...photo, price: PHOTO_APP_UNIT_PRICE })) : [],
+            photos: Array.isArray(album.photos) ? album.photos.map(photo => ({ ...photo, price: photo.free ? 0 : PHOTO_APP_UNIT_PRICE })) : [],
             subalbums: Array.isArray(album.subalbums) ? album.subalbums.map(subalbum => ({
                 ...subalbum,
-                photos: Array.isArray(subalbum.photos) ? subalbum.photos.map(photo => ({ ...photo, price: PHOTO_APP_UNIT_PRICE })) : []
+                photos: Array.isArray(subalbum.photos) ? subalbum.photos.map(photo => ({ ...photo, price: photo.free ? 0 : PHOTO_APP_UNIT_PRICE })) : []
             })) : []
         }));
     }
@@ -3348,6 +3348,15 @@ function buildDeliveryLinksMessage(order) {
     return `${EM.wave} ¡Buenas! Acá van las fotos:\n${links.map(l => `${EM.camera} ${l}`).join('\n')}\n\n${EM.sparkles} ¡Gracias por confiar en mi trabajo! ${EM.thanks}`;
 }
 const yes = (v) => ["si", "sí", "yes", "true", "1", "x", "portada", "cover"].includes(norm(v));
+function parsePhotoPromotions(raw) {
+    return String(raw || '').split(/[;,\n|]+/).map(item => item.trim()).filter(Boolean).map(item => {
+        const match = item.match(/^(.+?)\s*[:= -]?\s*(\d{1,2}(?:[.,]\d+)?)\s*%$/);
+        if (!match) return null;
+        const percent = Number(match[2].replace(',', '.'));
+        if (!Number.isFinite(percent) || percent <= 0 || percent > 90) return null;
+        return { code: item.replace(/\s+/g, '').toUpperCase(), percent };
+    }).filter(Boolean);
+}
 const safeCode = (name) => String(name || "").split(".")[0].slice(0, 20).toUpperCase().replace(/[^A-Z0-9]+/g, "").slice(-6) || Math.random().toString(36).slice(2, 8).toUpperCase();
 const albumHash = (albumId, subAlbumId = '') => subAlbumId ? `#/album/${encodeURIComponent(albumId)}/sub/${encodeURIComponent(subAlbumId)}` : `#/album/${encodeURIComponent(albumId)}`;
 const albumUrl = (albumId, subAlbumId = '') => `${location.origin}${location.pathname}${albumHash(albumId, subAlbumId)}`;
@@ -4297,7 +4306,9 @@ function normalizeAlbums(data) {
                 rawUrl,
                 fullUrl,
                 driveLink: rawUrl,
-                price: PHOTO_APP_UNIT_PRICE,
+                price: yes(pick(row, ["foto gratuita", "gratuita", "gratis", "free"])) ? 0 : PHOTO_APP_UNIT_PRICE,
+                free: yes(pick(row, ["foto gratuita", "gratuita", "gratis", "free"])),
+                promotions: parsePhotoPromotions(pick(row, ["promociones", "promocion", "promoción"])),
                 isCover: isRowSelectedAsCover(row),
                 active: !["no", "false", "0", "ocultar", "hide"].includes(norm(pick(row, ["activa", "active", "visible", "publicar"])))
             };
@@ -6310,7 +6321,7 @@ ${clone.outerHTML}`;
         return 'pending';
     };
     const adminOrderStateLabel=o=>({
-        paid:'Pago acreditado',manual_paid:'Pagado por otro medio',
+        paid:'PAGADO',manual_paid:'Pagado por otro medio',
         agreed:'Pago acordado, pendiente',
         whatsapp:'Consulta por WhatsApp iniciada',
         cancelled:'Cancelado / anulado',pending:'Pendiente de pago'
@@ -6444,11 +6455,13 @@ ${clone.outerHTML}`;
     const siteDiscountPercent = Math.max(0, Math.min(100, Number(discountSettings.percent) || 0));
     const albumSiteDiscount = (albumId) => { var _a; return ((_a = discountSettings.excludedAlbums) === null || _a === void 0 ? void 0 : _a[albumId]) ? 0 : siteDiscountPercent; };
     const hasSiteDiscount = (albumId) => albumSiteDiscount(albumId) > 0;
-    const calculatedDiscountTotal = Math.round(selectedPhotos.reduce((sum, p) => sum + (Number(p.price) || 0) * (1 - discount) * (1 - (albumSiteDiscount(p.albumId) / 100)), 0));
+    const discountLinePrice = p => Math.round((Number(p.price) || 0) * (1 - discount) * (1 - (albumSiteDiscount(p.albumId) / 100)));
+    const calculatedDiscountTotal = selectedPhotos.reduce((sum, p) => sum + discountLinePrice(p), 0);
     const total = calculatedDiscountTotal;
     const couponPercent = appliedCoupon ? Math.max(0, Math.min(90, Number(appliedCoupon.percent) || 0)) : 0;
     const PRINT_SURCHARGE_PER_PHOTO = 3000;
-    const checkoutDigitalTotal = Math.round(total * (1 - couponPercent / 100));
+    const promoEligibleTotal = appliedCoupon && appliedCoupon.sheetOnly ? selectedPhotos.filter(p => (p.promotions || []).some(x => x.code === appliedCoupon.code)).reduce((sum,p)=>sum+discountLinePrice(p),0) : total;
+    const checkoutDigitalTotal = Math.round(total - promoEligibleTotal * couponPercent / 100);
     const printSelectedPhotos = selectedPhotos.filter(p => printedPhotoIds.includes(p.id));
     const printSurcharge = checkoutPrint ? printSelectedPhotos.length * PRINT_SURCHARGE_PER_PHOTO : 0;
     const checkoutTotal = checkoutDigitalTotal + printSurcharge;
@@ -6541,10 +6554,7 @@ ${clone.outerHTML}`;
                             React.createElement("span", { className:"album-cta-chip shrink-0" }, React.createElement("i", { className:"fas fa-arrow-right" }), " Ver"))))));
     };
     const toggleAlbumDiscountException = (albumId) => setDiscountSettings(s => { var _a; return ({ ...s, excludedAlbums: { ...(s.excludedAlbums || {}), [albumId]: !((_a = s.excludedAlbums) === null || _a === void 0 ? void 0 : _a[albumId]) } }); });
-    const promoText = () => { const n = cart.length; if (n === 0)
-        return "Seleccioná tus fotos favoritas"; const site = siteDiscountPercent > 0 ? ` + ${siteDiscountPercent}% web` : ""; if (n < 3)
-        return `Sumá ${3 - n} foto${3 - n === 1 ? "" : "s"} más y obtené 10% de descuento${site}`; if (n < 5)
-        return `Descuento aplicado: 10%${site}. Sumá ${5 - n} foto${5 - n === 1 ? "" : "s"} más y pasá al 15%`; return `Descuento aplicado: 15%${site}`; };
+    const promoText = () => cart.length ? cart.length + ' fotos seleccionadas · sin límite de cantidad' : 'Seleccioná todas las fotos que quieras';
     // CARRITO_SIN_LIMITE: la selección de fotos no tiene máximo de unidades.
     const toggle = (id) => {
         const removing = cart.includes(id);
@@ -6758,14 +6768,17 @@ ${clone.outerHTML}`;
             setCouponMessage("Ingresá un cupón para aplicarlo.");
             return;
         }
-        const found = coupons.find(c => cleanOperationCode(c.code) === code && c.active !== false);
+        const foundGlobal = coupons.find(c => cleanOperationCode(c.code) === code && c.active !== false);
+        const sheetCode = String(checkoutCoupon || '').trim().replace(/\s+/g, '').toUpperCase();
+        const eligiblePromos = selectedPhotos.flatMap(p => p.promotions || []).filter(p => p.code === sheetCode);
+        const found = foundGlobal || (eligiblePromos.length ? { ...eligiblePromos[0], sheetOnly:true } : null);
         if (!found) {
             setAppliedCoupon(null);
-            setCouponMessage("El cupón ingresado no existe o no está activo.");
+            setCouponMessage("El código no existe o no corresponde a las fotos seleccionadas.");
             return;
         }
         setAppliedCoupon(found);
-        setCouponMessage(`Cupón ${found.code} aplicado: ${found.percent}% de descuento extra.`);
+        setCouponMessage('Código ' + found.code + ': ' + found.percent + '% ' + (found.sheetOnly ? 'en las fotos de la promoción.' : 'de descuento extra.'));
     };
     function cleanWhatsappPersonName(value) {
         return String(value || '').trim().replace(/\s+/g, ' ');
@@ -6938,7 +6951,7 @@ En breve te las preparo y te las envío por acá 😊
             const data={
                 albums:sourceDisplayAlbums.map(a=>({
                     id:a.id,name:a.name,fullPrice:a.fullPrice,
-                    photos:(a.photos||[]).map(p=>({id:p.id,name:p.name,driveLink:p.rawUrl||p.driveLink||p.fullUrl||p.url}))
+                    photos:(a.photos||[]).map(p=>({id:p.id,name:p.name,driveLink:p.rawUrl||p.driveLink||p.fullUrl||p.url,free:p.free===true,promotions:p.promotions||[]}))
                 })),
                 discountSettings:{percent:discountSettings.percent||0,excludedAlbums:discountSettings.excludedAlbums||{}},
                 coupons:coupons.map(x=>({code:x.code,percent:x.percent,active:x.active!==false}))
@@ -7081,7 +7094,7 @@ En breve te las preparo y te las envío por acá 😊
         }finally{mpCreateBusyRef.current=false;setMpTrialBusy(false)}
     };
     const mpSelectionForCart=()=>({
-        kind:'photos',items:selectedPhotos.map(p=>({album_id:p.albumId,photo_id:p.id})),
+        kind:'photos',items:selectedPhotos.filter(p=>!p.free).map(p=>({album_id:p.albumId,photo_id:p.id})),
         print_ids:checkoutPrint?printSelectedPhotos.map(p=>p.id):[],coupon:appliedCoupon?appliedCoupon.code:''
     });
     const mpCurrentCartPaid=Boolean(mpVerifiedReceipt&&mpTrialPurchase&&mpTrialPurchase.selection_signature===
@@ -7193,7 +7206,7 @@ En breve te las preparo y te las envío por acá 😊
         const photos=selectedPhotos.length?selectedPhotos:mpTrialPurchase&&mpTrialPurchase.order_data&&mpTrialPurchase.order_data.items||[];
         const amount=selectedPhotos.length?checkoutTotal:mpTrialPurchase&&mpTrialPurchase.amount||0;
         const printCount=selectedPhotos.length?printSelectedPhotos.length:mpTrialPurchase&&mpTrialPurchase.order_data&&mpTrialPurchase.order_data.printCount||0;
-        const details=photos.slice(0,40).map(p=>'• '+p.albumName+' · '+(p.name||p.code||p.id)).join('\n');
+        const details=photos.map(p=>'• '+p.albumName+' · '+(p.name||p.code||p.id)).join('\n');
         const message='¡Hola, Lucas! 👋😊 Me gustaron estas fotos y quisiera abonarlas por transferencia bancaria 📸⚽\n\n'+details+
             (photos.length>40?'\n📷 Y '+(photos.length-40)+' fotos más.':'')+
             (orderCode?'\n\n🧾 *Código de pedido: '+orderCode+'*':'')+'\n📸 *Cantidad de fotos: '+photos.length+'*'+'\n\n💰 *Total de la selección: '+formatPrice(amount)+'*'+
@@ -7204,6 +7217,7 @@ En breve te las preparo y te las envío por acá 😊
     // Registrar cada consulta con su canal real, sin dar el mensaje por enviado.
     const startOtherPaymentWhatsapp=async()=>{
         if(!selectedPhotos.length||transferWhatsappBusy)return;
+        if(!validateCheckoutBuyer())return;
         setTransferWhatsappBusy(true);setCheckoutSaveError('');
         const id=newOrderCode(),now=new Date().toISOString();
         const whatsappUrl=otherPaymentWhatsappUrl(null,id);
@@ -8496,7 +8510,7 @@ React.createElement("div", { id: "order-search-panel", hidden:adminPanelTab!=='p
                         React.createElement("div",{className:"flex flex-wrap items-center justify-between gap-2"},
                             React.createElement("b",{className:"text-sm text-white break-all"},"#"+o.id),
                             React.createElement("span",{className:o.paid||o.paymentStatus==='accredited'?"text-emerald-300 text-xs font-bold":"text-amber-200 text-xs font-bold"},
-                                o.paid||o.paymentStatus==='accredited'?"Pago acreditado":o.delivered?"Entregado":['created','pending','action_required','processing'].includes(String(o.paymentStatus||'').toLowerCase())?"Pendiente de pago":o.paymentStatus||"Pendiente")),
+                                o.paid||o.paymentStatus==='accredited'?"PAGADO":o.delivered?"Entregado":['created','pending','action_required','processing'].includes(String(o.paymentStatus||'').toLowerCase())?"Pendiente de pago":o.paymentStatus||"Pendiente")),
                         React.createElement("p",{className:"text-xs text-neutral-300 mt-1"},
                             (o.customerName||"Sin nombre")+" · "+(o.phone||"Sin teléfono")+" · "+formatPrice(o.total)),
                         React.createElement("p",{className:"text-xs text-neutral-500 mt-1"},
@@ -8530,7 +8544,7 @@ React.createElement("div", { id: "order-search-panel", hidden:adminPanelTab!=='p
                             React.createElement("div",{className:"min-w-0"},
                                 React.createElement("p",{className:"text-xs text-neutral-400"},new Date(o.created_at).toLocaleString('es-AR')),
                                 React.createElement("b",{className:"text-sm text-white break-all"},o.order_id||o.checkout_id)),
-                            React.createElement("span",{className:`text-xs font-black px-3 py-2 rounded-xl ${o.paid?'bg-emerald-500/15 text-emerald-200 border border-emerald-400/25':'bg-amber-500/15 text-amber-200 border border-amber-400/25'}`},o.paid?'Pago acreditado':o.payment_status||'Pendiente')),
+                            React.createElement("span",{className:`text-xs font-black px-3 py-2 rounded-xl ${o.paid?'bg-emerald-500/15 text-emerald-200 border border-emerald-400/25':'bg-amber-500/15 text-amber-200 border border-amber-400/25'}`},o.paid?'PAGADO':o.payment_status||'Pendiente')),
                         React.createElement("div",{className:"flex flex-wrap gap-2 mt-3 text-sm items-center"},
                             React.createElement("b",{className:"text-white"},formatPrice(o.amount)),
                             React.createElement("span",{className:"text-neutral-400"},(o.photos||[]).length+" fotos"),
@@ -9171,7 +9185,7 @@ React.createElement("div", { id: "order-search-panel", hidden:adminPanelTab!=='p
                 !mpReceiptView&&React.createElement("section", { className:"checkout-payment-options",id:"checkout-mercadopago","aria-label":"Cómo querés pagar" },
                     React.createElement("p",{className:"payment-options-label"},"Elegí cómo pagar"),
                     React.createElement("button", {type:"button",onClick:payWithMercadoPago,
-                        disabled:!MP_PAYMENT_VISIBLE||mpTrialBusy||mpCurrentCartPaid||(!selectedPhotos.length&&!mpResumeWithoutCart),
+                        disabled:!checkoutBuyerComplete||!MP_PAYMENT_VISIBLE||mpTrialBusy||mpCurrentCartPaid||(!selectedPhotos.length&&!mpResumeWithoutCart),
                         className:"mp-pay-button","aria-busy":mpTrialBusy},
                         React.createElement("img",{src:MP_LOGO,alt:"","aria-hidden":true}),
                         React.createElement("span",null,
@@ -9182,7 +9196,7 @@ React.createElement("div", { id: "order-search-panel", hidden:adminPanelTab!=='p
                     React.createElement("p",{className:"mp-payment-hint",role:"status"},
                         !MP_PAYMENT_VISIBLE?(mpPaymentConfig.loading?"Comprobando disponibilidad de Mercado Pago…":"Mercado Pago no está disponible ahora. Podés consultar por WhatsApp."):
                         MP_TRIAL_ENABLED?"Compra ficticia con la cuenta de prueba.":"Pago seguro. Tus fotos se habilitan al aprobarse el pago."),
-                    React.createElement("button",{type:"button",onClick:startOtherPaymentWhatsapp,disabled:transferWhatsappBusy,className:"other-payment-button"},
+                    React.createElement("button",{type:"button",onClick:startOtherPaymentWhatsapp,disabled:!checkoutBuyerComplete||transferWhatsappBusy,className:"other-payment-button"},
                         React.createElement("i",{className:"fab fa-whatsapp","aria-hidden":true}),
                         React.createElement("span",null,transferWhatsappBusy?"Registrando pedido antes de abrir WhatsApp…":"Hablar con Lucas para abonar por transferencia"),
                         React.createElement("i",{className:"fas fa-arrow-up-right-from-square","aria-hidden":true})),
