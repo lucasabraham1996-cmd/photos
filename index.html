@@ -6506,7 +6506,7 @@ ${clone.outerHTML}`;
             (delivery?'\n'+(toDriveViewLink(x.photo.rawUrl||x.photo.url)||'Enlace no disponible'):'')).join('\n\n');
         const message=delivery?
             intro+'\n\nTe comparto los enlaces de las fotos que acordamos 📸⚽\n\n'+lines+'\n\n¡Muchas gracias por tu compra! 🙌':
-            intro+'\n\nPreparé tu selección de *lucasabraham.ph* 📸⚽\n\n🏟️ *'+album.name+'* · '+(category&&category.name||'Galería')\n\n'+lines+
+            intro+'\n\nPreparé tu selección de *lucasabraham.ph* 📸⚽\n\n🏟️ *'+album.name+'* · '+(category&&category.name||'Galería')+'\n\n'+lines+
             '\n\n📸 *Cantidad:* '+items.length+' foto(s)\n💰 *Total a abonar:* '+formatPrice(totalAmount)+
             '\n\n🔗 *Galería:* '+albumUrl(album.id,category&&category.id)+
             '\n\n💳 Podés abonar por transferencia y enviarme el comprobante por acá. Una vez acreditado, te paso los enlaces de descarga.\n\n¡Gracias! 🙌';
