@@ -7255,9 +7255,9 @@ En breve te las preparo y te las envío por acá 😊
         const photos=selectedPhotos.length?selectedPhotos:mpTrialPurchase&&mpTrialPurchase.order_data&&mpTrialPurchase.order_data.items||[];
         const amount=selectedPhotos.length?checkoutTotal:mpTrialPurchase&&mpTrialPurchase.amount||0;
         const printCount=selectedPhotos.length?printSelectedPhotos.length:mpTrialPurchase&&mpTrialPurchase.order_data&&mpTrialPurchase.order_data.printCount||0;
-        const details=(photos.length>60 ? [] : photos).map(p=>'• '+p.albumName+' · '+(p.name||p.code||p.id)).join('\n');
+        const details=photos.length>60 ? ('📋 La selección completa de '+photos.length+' fotos quedó registrada en el pedido '+orderCode+'; Lucas puede ver cada archivo y enlace desde Administración.') : photos.map(p=>'• '+p.albumName+' · '+(p.name||p.code||p.id)).join('\n');
         const message='¡Hola, Lucas! 👋😊 Me gustaron estas fotos y quisiera abonarlas por transferencia bancaria 📸⚽\n\n'+details+
-            (false ?'\n📷 Y '+(photos.length-40)+' fotos más.':'')+
+
             (orderCode?'\n\n🧾 *Código de pedido: '+orderCode+'*':'')+'\n📸 *Cantidad de fotos: '+photos.length+'*'+'\n\n💰 *Total de la selección: '+formatPrice(amount)+'*'+
             (printCount?'\n🖼️ También seleccioné impresión 10x15 de '+printCount+' fotos.':'')+
             '\n\n💳 ¿Me pasás tu *alias* para poder hacerte la transferencia? 🙌\n¡Muchas gracias! 😊';
