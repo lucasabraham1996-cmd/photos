@@ -4246,8 +4246,12 @@ function normalizeAlbums(data) {
     const parsed = src.map((sheet, idx) => {
         const sheetName = sheet.name || sheet.album || sheet.title || `Álbum ${idx + 1}`;
         const parts = String(sheetName).split(':');
-        const albumBaseName = parts[0].trim() || sheetName;
-        const subAlbumName = parts.length > 1 ? parts.slice(1).join(':').trim() : '';
+        // Aceptar hojas tituladas «Equipo A - Equipo B - Escuelita» sin cambiar el nombre de la pestaña.
+        const suffixCategory = parts.length === 1 ? String(sheetName).match(/^(.+?)\s[-–—]\s(Escuelita|Participando)$/i) : null;
+        const albumBaseName = suffixCategory ? suffixCategory[1].trim() : (parts[0].trim() || sheetName);
+        const originalSubAlbumName = suffixCategory ? suffixCategory[2] : (parts.length > 1 ? parts.slice(1).join(':').trim() : '');
+        // Escuelita y Participando son la misma categoría visual, pero los IDs antiguos se conservan.
+        const subAlbumName = /^(escuelita|participando)$/i.test(originalSubAlbumName) ? 'Escuelita' : originalSubAlbumName;
         const rawRows = sheet.rows || sheet.photos || sheet.data || [];
         const teamEntries = resolveAlbumTeams(sheet, rawRows, albumBaseName);
         const teamColors = teamEntries.map(t => t.color).filter(Boolean);
@@ -4258,7 +4262,7 @@ function normalizeAlbums(data) {
         const dateKey = dateTs ? String(dateTs) : 'sin_fecha';
         const albumId = `${norm(albumBaseName) || `album_${idx + 1}`}_${dateKey}`;
         const albumName = albumBaseName;
-        const subAlbumId = `${albumId}_${norm(subAlbumName) || 'general'}`;
+        const subAlbumId = `${albumId}_${norm(originalSubAlbumName) || 'general'}`;
         const archived = Boolean(sheet.hidden || sheet.isHidden || sheet.archived || sheet.oculto || sheet.hiddenByUser ||
             yes(pick(metaRow, ["archivado", "archived", "oculto", "hidden", "hoja oculta", "sheet hidden"])));
         const photos = rawRows
@@ -5032,6 +5036,7 @@ function canonicalMatchPickerCategory(value) {
     const original = String(value || '').trim();
     if (!original) return '';
     const raw = original.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[._-]+/g, ' ').replace(/\s+/g, ' ').trim();
+    if (/^(escuelita|participando)(\b|\s)/.test(raw)) return 'Escuelita';
     const rules = [
         [/^(1ra|1era|primera)(\b|\s)/, 'Primera'],
         [/^(2da|segunda)(\b|\s)/, 'Segunda'],
