@@ -2240,7 +2240,7 @@ img{-webkit-user-drag:none;}
 .mp-catalogue-result.error{background:#431d22;color:#ffd3d3!important;border:1px solid #98545c}.mp-catalogue-result.success{background:#0d3b25;color:#c7ffdd!important;border:1px solid #258859}
 @media(max-width:380px){.checkout-payment-options{padding:12px}.mp-pay-button{padding:12px;gap:9px}.mp-pay-button strong{font-size:18px}.mp-pay-button>img{width:44px;height:44px;flex-basis:44px}.other-payment-button{padding:11px;font-size:14px;gap:9px}}
 </style>
-  <link rel="stylesheet" href="./premium-ux-v132.css?v=136.2" />
+  <link rel="stylesheet" href="./premium-ux-v132.css?v=137.1" />
   <script defer src="./premium-ux-v132.js?v=135"></script>
 </head>
 <body style="background:#050505;color:#fff;">
@@ -3360,13 +3360,19 @@ function buildDeliveryLinksMessage(order) {
 const yes = (v) => ["si", "sí", "yes", "true", "1", "x", "portada", "cover"].includes(norm(v));
 function parsePhotoPromotions(raw) {
     return String(raw || '').split(/[;,\n|]+/).map(item => item.trim()).filter(Boolean).map(item => {
+        // Un porcentaje sin palabra es un descuento directo del precio de esa foto.
+        const direct = item.match(/^(\d{1,3}(?:[.,]\d+)?)\s*%$/);
+        if (direct) {
+            const percent = Number(direct[1].replace(',', '.'));
+            return Number.isFinite(percent) && percent > 0 && percent <= 90 ? {direct:true,percent} : null;
+        }
+        // Una palabra seguida del porcentaje es un cupón que se aplica al ingresarlo.
         const match = item.match(/^(.+?)\s*[:= -]?\s*(\d{1,2}(?:[.,]\d+)?)\s*%$/);
         if (!match) return null;
         const percent = Number(match[2].replace(',', '.'));
         if (!Number.isFinite(percent) || percent <= 0 || percent > 90) return null;
         const code = match[1].trim().replace(/[\s:=_-]+/g, '').toUpperCase();
         if (!/^[A-Z0-9]{2,32}$/.test(code)) return null;
-        // Código corto visible (ALBO) y código completo existente en el Worker (ALBO50%).
         return { code, percent, sourceCode: item.replace(/\s+/g, '').toUpperCase() };
     }).filter(Boolean);
 }
@@ -4305,6 +4311,7 @@ function normalizeAlbums(data) {
                 return null;
             const values = Object.values(row || {}).map(v => String(v || "").trim());
             const name = pick(row, ["nombre de foto", "nombre_foto", "nombre foto", "nombre", "name", "titulo", "title", "archivo", "filename", "foto", "jugador", "player"]) || values[1] || `Foto ${i + 1}`;
+            const promoEntries = parsePhotoPromotions(pick(row, ["promociones", "promocion", "promoción"]));
             return {
                 id: `${subAlbumId}_${i + 1}`,
                 albumId,
@@ -4321,7 +4328,8 @@ function normalizeAlbums(data) {
                 driveLink: rawUrl,
                 price: yes(pick(row, ["foto gratuita", "gratuita", "gratis", "free"])) ? 0 : PHOTO_APP_UNIT_PRICE,
                 free: yes(pick(row, ["foto gratuita", "gratuita", "gratis", "free"])),
-                promotions: parsePhotoPromotions(pick(row, ["promociones", "promocion", "promoción"])),
+                promotions: promoEntries.filter(p=>!p.direct),
+                directDiscountPercent: Math.max(0,...promoEntries.filter(p=>p.direct).map(p=>p.percent)),
                 isCover: isRowSelectedAsCover(row),
                 active: !["no", "false", "0", "ocultar", "hide"].includes(norm(pick(row, ["activa", "active", "visible", "publicar"])))
             };
@@ -6474,7 +6482,7 @@ ${clone.outerHTML}`;
     const siteDiscountPercent = Math.max(0, Math.min(100, Number(discountSettings.percent) || 0));
     const albumSiteDiscount = (albumId) => { var _a; return ((_a = discountSettings.excludedAlbums) === null || _a === void 0 ? void 0 : _a[albumId]) ? 0 : siteDiscountPercent; };
     const hasSiteDiscount = (albumId) => albumSiteDiscount(albumId) > 0;
-    const discountLinePrice = p => Math.round((Number(p.price) || 0) * (1 - discount) * (1 - (albumSiteDiscount(p.albumId) / 100)));
+    const discountLinePrice = p => Math.round((Number(p.price) || 0) * (1 - discount) * (1 - (albumSiteDiscount(p.albumId) / 100)) * (1 - (Math.max(0,Math.min(90,Number(p.directDiscountPercent)||0))/100)));
     const calculatedDiscountTotal = selectedPhotos.reduce((sum, p) => sum + discountLinePrice(p), 0);
     const total = calculatedDiscountTotal;
     const couponPercent = appliedCoupon ? Math.max(0, Math.min(90, Number(appliedCoupon.percent) || 0)) : 0;
@@ -7013,7 +7021,7 @@ En breve te las preparo y te las envío por acá 😊
             const data={
                 albums:sourceDisplayAlbums.map(a=>({
                     id:a.id,name:a.name,fullPrice:a.fullPrice,
-                    photos:(a.photos||[]).map(p=>({id:p.id,name:p.name,driveLink:p.rawUrl||p.driveLink||p.fullUrl||p.url,free:p.free===true,promotions:(p.promotions||[]).map(c=>({code:c.sourceCode||c.code,percent:c.percent}))}))
+                    photos:(a.photos||[]).map(p=>({id:p.id,name:p.name,driveLink:p.rawUrl||p.driveLink||p.fullUrl||p.url,free:p.free===true,promotions:(p.promotions||[]).map(c=>({code:c.sourceCode||c.code,percent:c.percent})),directDiscountPercent:Number(p.directDiscountPercent)||0}))
                 })),
                 discountSettings:{percent:discountSettings.percent||0,excludedAlbums:discountSettings.excludedAlbums||{}},
                 coupons:coupons.map(x=>({code:x.code,percent:x.percent,active:x.active!==false}))
@@ -8521,7 +8529,7 @@ React.createElement("div", { id: "order-search-panel", hidden:adminPanelTab!=='p
             },
                 React.createElement("h3", { className:"text-sky-200 font-black" }, "Mercado Pago · Sincronizar precios y galerías"),
                 React.createElement("p", { className:"text-xs text-sky-100/75 mt-1 mb-3" },
-                    "Actualiza en Cloudflare las fotos originales, el precio de cada álbum, descuentos web y cupones. Repetir cuando cambies los precios o las promociones."),
+                    "Actualiza en Cloudflare las fotos originales, descuentos directos y cupones por palabra. Repetir cuando cambies los precios o las promociones."),
                 renderMpCatalogueSyncControls()),
             React.createElement("div", { id:"la-admin-gallery", hidden:!['galerias','pagos','pedidos'].includes(adminPanelTab), className: "mb-5" },
                 React.createElement("div", { hidden:adminPanelTab!=='galerias', className: "relative" },
@@ -9015,9 +9023,9 @@ React.createElement("div", { id: "order-search-panel", hidden:adminPanelTab!=='p
                                 "C\u00F3digo ",
                                 focusPhoto.code,
                                 " \u00B7 ",
-                                (focusPhoto.free ? "GRATUITA" : formatPrice(focusPhoto.price))),
+                                (focusPhoto.free ? "GRATUITA" : formatPrice(Math.round(focusPhoto.price*(1-(focusPhoto.directDiscountPercent||0)/100))))),
                             focusPhoto.free && React.createElement("span",{className:"la-photo-free-status"},React.createElement("i",{className:"fas fa-circle-check","aria-hidden":true})," GRATUITA"),
-                            !focusPhoto.free && (focusPhoto.promotions||[]).map((promo,i)=>React.createElement("span",{key:i,className:"la-photo-discount-badge la-photo-discount-inline"},React.createElement("i",{className:"fas fa-ticket","aria-hidden":true})," Código ",promo.code," · ",promo.percent,"% OFF"))),
+                            !focusPhoto.free && focusPhoto.directDiscountPercent>0 && React.createElement("span",{className:"la-photo-discount-badge la-photo-discount-inline"},React.createElement("i",{className:"fas fa-tag","aria-hidden":true})," ",focusPhoto.directDiscountPercent,"% OFF · Descuento directo")),
                         React.createElement("button", { onClick: () => focusPhoto.free ? downloadFreePhoto(focusPhoto) : bulkQuoteMode ? toggleBulkQuotePhoto(focusPhoto.id) : toggle(focusPhoto.id), className: (focusPhoto.free ? "la-photo-free-cta" : bulkQuoteMode ? "bulk-quote-photo-btn" : "buy-btn") + " w-full sm:w-auto px-4 py-3 rounded-xl font-black text-sm" },
                             focusPhoto.free ? React.createElement(React.Fragment,null,React.createElement("i",{className:"fas fa-download mr-2","aria-hidden":true}),"Descargar foto gratuita") : bulkQuoteMode ? (bulkQuoteIds.includes(focusPhoto.id) ? "Seleccionada para negociar" : "Seleccionar para negociar") : (cart.includes(focusPhoto.id) ? "Agregada al carrito" : "Agregar al carrito")))),
                 totalAlbumPages > 1 && React.createElement("div", { className: "page-panel rounded-2xl p-3 mb-4 flex flex-col gap-3" },
@@ -9053,10 +9061,10 @@ React.createElement("div", { id: "order-search-panel", hidden:adminPanelTab!=='p
                             String(photoSequenceNumber(photo))),
                         React.createElement("div", { className: `absolute inset-0 ${isSelected ? (bulkQuoteMode ? 'bg-emerald-900/35' : 'bg-indigo-900/40') : 'bg-transparent'} pointer-events-none` }),
                         photo.free && React.createElement("span",{className:"la-photo-free-badge"},React.createElement("i",{className:"fas fa-circle-check","aria-hidden":true})," GRATUITA"),
-                        !photo.free && (photo.promotions||[]).slice(0,1).map((promo,i)=>React.createElement("span",{key:i,className:"la-photo-discount-badge la-photo-discount-tile"},"Código ",promo.code," · ",promo.percent,"% OFF")),
+                        !photo.free && photo.directDiscountPercent>0 && React.createElement("span",{className:"la-photo-discount-badge la-photo-discount-tile"},"-",photo.directDiscountPercent,"% OFF"),
                         React.createElement("div", { className: "absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent p-2 pt-6 pointer-events-none" },
                             React.createElement("p", { className: "text-white/80 font-mono text-[9px] sm:text-[10px] truncate" }, photo.name),
-                            React.createElement("p", { className: (photo.free ? "text-emerald-300" : bulkQuoteMode ? "text-emerald-300" : "text-sky-300") + " text-[9px] font-bold" }, photo.free ? 'Descarga directa' : bulkQuoteMode ? (isSelected ? "Seleccionada para negociar" : "Tocá + para seleccionar") : formatPrice(photo.price))),
+                            React.createElement("p", { className: (photo.free ? "text-emerald-300" : bulkQuoteMode ? "text-emerald-300" : "text-sky-300") + " text-[9px] font-bold" }, photo.free ? 'Descarga directa' : bulkQuoteMode ? (isSelected ? "Seleccionada para negociar" : "Tocá + para seleccionar") : formatPrice(Math.round(photo.price*(1-(photo.directDiscountPercent||0)/100)))),
                         React.createElement("button", { onClick: (e) => { e.stopPropagation(); photo.free ? downloadFreePhoto(photo) : bulkQuoteMode ? toggleBulkQuotePhoto(photo.id) : toggle(photo.id); }, className: `absolute top-2 right-2 sm:top-3 sm:right-3 w-8 h-8 rounded-full flex items-center justify-center transition-all duration-300 z-20 ${photo.free ? 'la-photo-free-download' : isSelected ? (bulkQuoteMode ? 'bg-emerald-400 text-black scale-110 shadow-lg' : 'bg-indigo-500 text-white scale-110 shadow-lg') : 'bg-black/50 text-white/60 border border-white/20 backdrop-blur-sm'}`,title:photo.free?"Descargar foto gratuita":undefined,"aria-label":photo.free?"Descargar foto gratuita":isSelected?"Quitar foto":"Agregar foto" },
                             React.createElement("i", { className: `fas ${photo.free ? 'fa-download' : isSelected ? 'fa-check' : 'fa-plus'} text-sm` })));
                 })),
@@ -9380,8 +9388,8 @@ React.createElement("div", { id: "order-search-panel", hidden:adminPanelTab!=='p
                         viewer.code,
                         " \u00B7 ",
                         viewer.albumName),
-                    viewer.free ? React.createElement("div",{className:"la-photo-free-status la-photo-free-status-viewer"},React.createElement("i",{className:"fas fa-circle-check mr-2","aria-hidden":true}),"GRATUITA · Descarga directa") : React.createElement("p", { className: "text-sky-300 font-black text-xl mb-4" },formatPrice(viewer.price)),
-                    !viewer.free && (viewer.promotions||[]).map((promo,i)=>React.createElement("div",{key:i,className:"la-photo-discount-badge la-photo-discount-viewer"},React.createElement("i",{className:"fas fa-ticket mr-2","aria-hidden":true}),"Código ",promo.code," · ",promo.percent,"% OFF")),
+                    viewer.free ? React.createElement("div",{className:"la-photo-free-status la-photo-free-status-viewer"},React.createElement("i",{className:"fas fa-circle-check mr-2","aria-hidden":true}),"GRATUITA · Descarga directa") : React.createElement("p", { className: "text-sky-300 font-black text-xl mb-4" },formatPrice(Math.round(viewer.price*(1-(viewer.directDiscountPercent||0)/100)))),
+                    !viewer.free && viewer.directDiscountPercent>0 && React.createElement("div",{className:"la-photo-discount-badge la-photo-discount-viewer"},React.createElement("i",{className:"fas fa-tag mr-2","aria-hidden":true}),viewer.directDiscountPercent,"% OFF · Se aplica automáticamente"),
                     React.createElement("button", { onClick: () => viewer.free ? downloadFreePhoto(viewer) : bulkQuoteMode ? toggleBulkQuotePhoto(viewer.id) : toggle(viewer.id), className: "w-full " + (viewer.free ? "la-photo-free-cta" : bulkQuoteMode ? "bulk-quote-photo-btn" : "buy-btn") + " font-black py-4 rounded-xl mb-3" },
                         viewer.free ? React.createElement(React.Fragment,null,React.createElement("i",{className:"fas fa-download mr-2","aria-hidden":true}),"Descargar foto gratuita") : bulkQuoteMode ? (bulkQuoteIds.includes(viewer.id) ? "Quitar de la negociación" : "Seleccionar para negociar") : (cart.includes(viewer.id) ? "Quitar del carrito" : "Agregar al carrito")),
                     React.createElement("button", { type:"button", onClick:()=>setViewer(null),
