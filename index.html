@@ -2240,7 +2240,7 @@ img{-webkit-user-drag:none;}
 .mp-catalogue-result.error{background:#431d22;color:#ffd3d3!important;border:1px solid #98545c}.mp-catalogue-result.success{background:#0d3b25;color:#c7ffdd!important;border:1px solid #258859}
 @media(max-width:380px){.checkout-payment-options{padding:12px}.mp-pay-button{padding:12px;gap:9px}.mp-pay-button strong{font-size:18px}.mp-pay-button>img{width:44px;height:44px;flex-basis:44px}.other-payment-button{padding:11px;font-size:14px;gap:9px}}
 </style>
-  <link rel="stylesheet" href="./premium-ux-v132.css?v=135.1" />
+  <link rel="stylesheet" href="./premium-ux-v132.css?v=136.2" />
   <script defer src="./premium-ux-v132.js?v=135"></script>
 </head>
 <body style="background:#050505;color:#fff;">
@@ -3364,7 +3364,10 @@ function parsePhotoPromotions(raw) {
         if (!match) return null;
         const percent = Number(match[2].replace(',', '.'));
         if (!Number.isFinite(percent) || percent <= 0 || percent > 90) return null;
-        return { code: item.replace(/\s+/g, '').toUpperCase(), percent };
+        const code = match[1].trim().replace(/[\s:=_-]+/g, '').toUpperCase();
+        if (!/^[A-Z0-9]{2,32}$/.test(code)) return null;
+        // Código corto visible (ALBO) y código completo existente en el Worker (ALBO50%).
+        return { code, percent, sourceCode: item.replace(/\s+/g, '').toUpperCase() };
     }).filter(Boolean);
 }
 const safeCode = (name) => String(name || "").split(".")[0].slice(0, 20).toUpperCase().replace(/[^A-Z0-9]+/g, "").slice(-6) || Math.random().toString(36).slice(2, 8).toUpperCase();
@@ -6829,7 +6832,7 @@ ${clone.outerHTML}`;
         }
         const foundGlobal = coupons.find(c => cleanOperationCode(c.code) === code && c.active !== false);
         const sheetCode = String(checkoutCoupon || '').trim().replace(/\s+/g, '').toUpperCase();
-        const eligiblePromos = selectedPhotos.flatMap(p => p.promotions || []).filter(p => p.code === sheetCode);
+        const eligiblePromos = selectedPhotos.filter(p=>!p.free).flatMap(p => p.promotions || []).filter(p => p.code === sheetCode || p.sourceCode === sheetCode);
         const found = foundGlobal || (eligiblePromos.length ? { ...eligiblePromos[0], sheetOnly:true } : null);
         if (!found) {
             setAppliedCoupon(null);
@@ -6837,7 +6840,7 @@ ${clone.outerHTML}`;
             return;
         }
         setAppliedCoupon(found);
-        setCouponMessage('Código ' + found.code + ': ' + found.percent + '% ' + (found.sheetOnly ? 'en las fotos de la promoción.' : 'de descuento extra.'));
+        setCouponMessage('Código ' + found.code + ': ' + found.percent + '% OFF ' + (found.sheetOnly ? 'en las fotos de la promoción.' : 'de descuento extra.'));
     };
     function cleanWhatsappPersonName(value) {
         return String(value || '').trim().replace(/\s+/g, ' ');
@@ -7010,7 +7013,7 @@ En breve te las preparo y te las envío por acá 😊
             const data={
                 albums:sourceDisplayAlbums.map(a=>({
                     id:a.id,name:a.name,fullPrice:a.fullPrice,
-                    photos:(a.photos||[]).map(p=>({id:p.id,name:p.name,driveLink:p.rawUrl||p.driveLink||p.fullUrl||p.url,free:p.free===true,promotions:p.promotions||[]}))
+                    photos:(a.photos||[]).map(p=>({id:p.id,name:p.name,driveLink:p.rawUrl||p.driveLink||p.fullUrl||p.url,free:p.free===true,promotions:(p.promotions||[]).map(c=>({code:c.sourceCode||c.code,percent:c.percent}))}))
                 })),
                 discountSettings:{percent:discountSettings.percent||0,excludedAlbums:discountSettings.excludedAlbums||{}},
                 coupons:coupons.map(x=>({code:x.code,percent:x.percent,active:x.active!==false}))
@@ -7154,7 +7157,7 @@ En breve te las preparo y te las envío por acá 😊
     };
     const mpSelectionForCart=()=>({
         kind:'photos',items:selectedPhotos.filter(p=>!p.free).map(p=>({album_id:p.albumId,photo_id:p.id})),
-        print_ids:checkoutPrint?printSelectedPhotos.map(p=>p.id):[],coupon:appliedCoupon?appliedCoupon.code:''
+        print_ids:checkoutPrint?printSelectedPhotos.map(p=>p.id):[],coupon:appliedCoupon?(appliedCoupon.sheetOnly?(appliedCoupon.sourceCode||appliedCoupon.code):appliedCoupon.code):''
     });
     const mpCurrentCartPaid=Boolean(mpVerifiedReceipt&&mpTrialPurchase&&mpTrialPurchase.selection_signature===
         JSON.stringify({selection:mpSelectionForCart(),expected_total:checkoutTotal,mode:MP_TRIAL_ENABLED?'test':mpPaymentConfig.mode}));
@@ -9012,8 +9015,11 @@ React.createElement("div", { id: "order-search-panel", hidden:adminPanelTab!=='p
                                 "C\u00F3digo ",
                                 focusPhoto.code,
                                 " \u00B7 ",
-                                (focusPhoto.free ? "GRATIS" : formatPrice(focusPhoto.price)))),
-                        React.createElement("button", { onClick: () => focusPhoto.free ? downloadFreePhoto(focusPhoto) : bulkQuoteMode ? toggleBulkQuotePhoto(focusPhoto.id) : toggle(focusPhoto.id), className: (bulkQuoteMode ? "bulk-quote-photo-btn" : "buy-btn") + " w-full sm:w-auto px-4 py-3 rounded-xl font-black text-sm" }, bulkQuoteMode ? (bulkQuoteIds.includes(focusPhoto.id) ? "Seleccionada para negociar" : "Seleccionar para negociar") : (focusPhoto.free ? "Descargar foto gratuita" : cart.includes(focusPhoto.id) ? "Agregada al carrito" : "Agregar al carrito")))),
+                                (focusPhoto.free ? "GRATUITA" : formatPrice(focusPhoto.price))),
+                            focusPhoto.free && React.createElement("span",{className:"la-photo-free-status"},React.createElement("i",{className:"fas fa-circle-check","aria-hidden":true})," GRATUITA"),
+                            !focusPhoto.free && (focusPhoto.promotions||[]).map((promo,i)=>React.createElement("span",{key:i,className:"la-photo-discount-badge la-photo-discount-inline"},React.createElement("i",{className:"fas fa-ticket","aria-hidden":true})," Código ",promo.code," · ",promo.percent,"% OFF"))),
+                        React.createElement("button", { onClick: () => focusPhoto.free ? downloadFreePhoto(focusPhoto) : bulkQuoteMode ? toggleBulkQuotePhoto(focusPhoto.id) : toggle(focusPhoto.id), className: (focusPhoto.free ? "la-photo-free-cta" : bulkQuoteMode ? "bulk-quote-photo-btn" : "buy-btn") + " w-full sm:w-auto px-4 py-3 rounded-xl font-black text-sm" },
+                            focusPhoto.free ? React.createElement(React.Fragment,null,React.createElement("i",{className:"fas fa-download mr-2","aria-hidden":true}),"Descargar foto gratuita") : bulkQuoteMode ? (bulkQuoteIds.includes(focusPhoto.id) ? "Seleccionada para negociar" : "Seleccionar para negociar") : (cart.includes(focusPhoto.id) ? "Agregada al carrito" : "Agregar al carrito")))),
                 totalAlbumPages > 1 && React.createElement("div", { className: "page-panel rounded-2xl p-3 mb-4 flex flex-col gap-3" },
                     React.createElement("div", { className: "flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2" },
                         React.createElement("p", { className: "page-current-badge text-sm" },
@@ -9046,10 +9052,12 @@ React.createElement("div", { id: "order-search-panel", hidden:adminPanelTab!=='p
                         React.createElement("span", { className: "absolute top-2 left-2 z-20 pointer-events-none rounded-lg border border-sky-400/45 bg-black/80 px-2.5 py-1 text-xs font-black text-sky-300 shadow-[0_3px_12px_rgba(56,189,248,.16)]", "aria-label": "Foto número " + photoSequenceNumber(photo) },
                             String(photoSequenceNumber(photo))),
                         React.createElement("div", { className: `absolute inset-0 ${isSelected ? (bulkQuoteMode ? 'bg-emerald-900/35' : 'bg-indigo-900/40') : 'bg-transparent'} pointer-events-none` }),
+                        photo.free && React.createElement("span",{className:"la-photo-free-badge"},React.createElement("i",{className:"fas fa-circle-check","aria-hidden":true})," GRATUITA"),
+                        !photo.free && (photo.promotions||[]).slice(0,1).map((promo,i)=>React.createElement("span",{key:i,className:"la-photo-discount-badge la-photo-discount-tile"},"Código ",promo.code," · ",promo.percent,"% OFF")),
                         React.createElement("div", { className: "absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent p-2 pt-6 pointer-events-none" },
                             React.createElement("p", { className: "text-white/80 font-mono text-[9px] sm:text-[10px] truncate" }, photo.name),
-                            React.createElement("p", { className: (bulkQuoteMode ? "text-emerald-300" : "text-sky-300") + " text-[9px] font-bold" }, bulkQuoteMode ? (isSelected ? "Seleccionada para negociar" : "Tocá + para seleccionar") : (photo.free ? 'GRATIS · Descarga directa' : formatPrice(photo.price)))),
-                        React.createElement("button", { onClick: (e) => { e.stopPropagation(); photo.free ? downloadFreePhoto(photo) : bulkQuoteMode ? toggleBulkQuotePhoto(photo.id) : toggle(photo.id); }, className: `absolute top-2 right-2 sm:top-3 sm:right-3 w-8 h-8 rounded-full flex items-center justify-center transition-all duration-300 z-20 ${isSelected ? (bulkQuoteMode ? 'bg-emerald-400 text-black scale-110 shadow-lg' : 'bg-indigo-500 text-white scale-110 shadow-lg') : 'bg-black/50 text-white/60 border border-white/20 backdrop-blur-sm'}` },
+                            React.createElement("p", { className: (photo.free ? "text-emerald-300" : bulkQuoteMode ? "text-emerald-300" : "text-sky-300") + " text-[9px] font-bold" }, photo.free ? 'Descarga directa' : bulkQuoteMode ? (isSelected ? "Seleccionada para negociar" : "Tocá + para seleccionar") : formatPrice(photo.price))),
+                        React.createElement("button", { onClick: (e) => { e.stopPropagation(); photo.free ? downloadFreePhoto(photo) : bulkQuoteMode ? toggleBulkQuotePhoto(photo.id) : toggle(photo.id); }, className: `absolute top-2 right-2 sm:top-3 sm:right-3 w-8 h-8 rounded-full flex items-center justify-center transition-all duration-300 z-20 ${photo.free ? 'la-photo-free-download' : isSelected ? (bulkQuoteMode ? 'bg-emerald-400 text-black scale-110 shadow-lg' : 'bg-indigo-500 text-white scale-110 shadow-lg') : 'bg-black/50 text-white/60 border border-white/20 backdrop-blur-sm'}`,title:photo.free?"Descargar foto gratuita":undefined,"aria-label":photo.free?"Descargar foto gratuita":isSelected?"Quitar foto":"Agregar foto" },
                             React.createElement("i", { className: `fas ${photo.free ? 'fa-download' : isSelected ? 'fa-check' : 'fa-plus'} text-sm` })));
                 })),
                 totalAlbumPages > 1 && React.createElement("div", { className: "page-panel rounded-2xl p-3 mt-[-64px] mb-6 flex flex-col gap-3" },
@@ -9372,8 +9380,10 @@ React.createElement("div", { id: "order-search-panel", hidden:adminPanelTab!=='p
                         viewer.code,
                         " \u00B7 ",
                         viewer.albumName),
-                    React.createElement("p", { className: "text-sky-300 font-black text-xl mb-4" }, viewer.free ? "GRATIS · Descarga directa" : formatPrice(viewer.price)),
-                    React.createElement("button", { onClick: () => viewer.free ? downloadFreePhoto(viewer) : bulkQuoteMode ? toggleBulkQuotePhoto(viewer.id) : toggle(viewer.id), className: "w-full " + (bulkQuoteMode ? "bulk-quote-photo-btn" : "buy-btn") + " font-black py-4 rounded-xl mb-3" }, viewer.free ? "Descargar foto gratuita" : bulkQuoteMode ? (bulkQuoteIds.includes(viewer.id) ? "Quitar de la negociación" : "Seleccionar para negociar") : (cart.includes(viewer.id) ? "Quitar del carrito" : "Agregar al carrito")),
+                    viewer.free ? React.createElement("div",{className:"la-photo-free-status la-photo-free-status-viewer"},React.createElement("i",{className:"fas fa-circle-check mr-2","aria-hidden":true}),"GRATUITA · Descarga directa") : React.createElement("p", { className: "text-sky-300 font-black text-xl mb-4" },formatPrice(viewer.price)),
+                    !viewer.free && (viewer.promotions||[]).map((promo,i)=>React.createElement("div",{key:i,className:"la-photo-discount-badge la-photo-discount-viewer"},React.createElement("i",{className:"fas fa-ticket mr-2","aria-hidden":true}),"Código ",promo.code," · ",promo.percent,"% OFF")),
+                    React.createElement("button", { onClick: () => viewer.free ? downloadFreePhoto(viewer) : bulkQuoteMode ? toggleBulkQuotePhoto(viewer.id) : toggle(viewer.id), className: "w-full " + (viewer.free ? "la-photo-free-cta" : bulkQuoteMode ? "bulk-quote-photo-btn" : "buy-btn") + " font-black py-4 rounded-xl mb-3" },
+                        viewer.free ? React.createElement(React.Fragment,null,React.createElement("i",{className:"fas fa-download mr-2","aria-hidden":true}),"Descargar foto gratuita") : bulkQuoteMode ? (bulkQuoteIds.includes(viewer.id) ? "Quitar de la negociación" : "Seleccionar para negociar") : (cart.includes(viewer.id) ? "Quitar del carrito" : "Agregar al carrito")),
                     React.createElement("button", { type:"button", onClick:()=>setViewer(null),
                         className:"w-full inline-flex items-center justify-center gap-3 bg-neutral-800/85 hover:bg-neutral-700 border border-white/15 text-white py-3.5 rounded-xl font-bold mb-4",
                         "aria-label":"Cerrar foto y volver a la galería" },
@@ -9381,11 +9391,11 @@ React.createElement("div", { id: "order-search-panel", hidden:adminPanelTab!=='p
                         React.createElement("span", null, "Cerrar y volver"),
                         React.createElement("i", { className:"fas fa-xmark text-neutral-400", "aria-hidden":true })),
                     React.createElement("div", { className: "bg-neutral-950 border border-neutral-800 rounded-2xl p-4 mb-4 space-y-3" },
-                        React.createElement("p", { className: "text-sm text-neutral-300" }, "La foto comprada se entrega en alta calidad, sin la marca de agua repetitiva y con un único logo de lucasabraham.ph en la parte inferior. Una vez adquirida, podés recortarla como quieras."),
+                        React.createElement("p", { className: "text-sm text-neutral-300" }, viewer.free ? "Esta foto es gratuita. Descargala en alta calidad, sin pasar por el carrito." : "La foto comprada se entrega en alta calidad, sin la marca de agua repetitiva y con un único logo de lucasabraham.ph en la parte inferior. Una vez adquirida, podés recortarla como quieras."),
                         React.createElement("p", { className: "text-xs text-neutral-500" }, viewer.free ? "Esta foto fue publicada como gratuita y podés descargarla sin pagar." : "La foto original queda disponible después de acreditar el pago."),
                         React.createElement("div", { className: "flex items-start gap-2 border-t border-amber-400/15 pt-3 text-[11px] leading-snug text-amber-100/80" },
                             React.createElement("i", { className: "fas fa-lock text-amber-300/80 shrink-0 mt-0.5" }),
-                            React.createElement("span", null, "Foto con licencia. Debe ser adquirida para su uso y no puede utilizarse con la marca de agua."))),
+                            React.createElement("span", null, viewer.free ? "Foto con licencia: podés utilizar el original descargado sin la marca de agua de vista previa." : "Foto con licencia. Debe ser adquirida para su uso y no puede utilizarse con la marca de agua."))),
                     React.createElement("button", { type: "button", onClick: downloadViewerOriginalAsAdmin,
                         className: "mx-auto mt-4 flex items-center justify-center rounded-full p-2 opacity-[.12] hover:opacity-70 focus:opacity-90 transition-opacity",
                         "aria-label": "Descarga privada con contraseña de administrador",
