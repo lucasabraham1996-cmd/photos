@@ -76,7 +76,7 @@ function safePhotos(raw, albumId) {
     const file=driveId(photo.driveLink||photo.rawUrl||"");
     if(!id||!name||!file||seen.has(id))throw Error("Foto duplicada o enlace Drive inválido en "+albumId);
     seen.add(id);
-    return {id,name,drive_id:file,free:photo.free===true,promotions:(Array.isArray(photo.promotions)?photo.promotions:[])
+    return {id,name,drive_id:file,free:photo.free===true,direct_discount_percent:Math.max(0,Math.min(90,Number(photo.directDiscountPercent)||0)),promotions:(Array.isArray(photo.promotions)?photo.promotions:[])
       .filter(x=>x&&typeof x.code==='string'&&Number(x.percent)>0&&Number(x.percent)<=90)
       .map(x=>({code:normalizeCoupon(x.code),percent:Number(x.percent)})).slice(0,20)};
   });
@@ -115,7 +115,7 @@ function computePriceBasket(requested,catalogRows,coupons) {
   if(selected.some(p=>p.free))throw Error("Las fotos gratuitas se descargan directamente y no deben incluirse en pagos");
   const cartDiscount=selected.length>=5?.15:selected.length>=3?.10:0;
   // Misma regla que la app: cada foto se redondea después de aplicar ambos descuentos.
-  const discountedLine=p=>Math.round(2000*(1-cartDiscount)*(1-p.site_percent/100));
+  const discountedLine=p=>Math.round(2000*(1-cartDiscount)*(1-p.site_percent/100)*(1-(Number(p.direct_discount_percent)||0)/100));
   const discounted=selected.reduce((sum,p)=>sum+discountedLine(p),0);
   let couponPct=0;
   let eligibleDiscountBase=discounted;
