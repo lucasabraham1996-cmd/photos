@@ -5370,6 +5370,7 @@ function App() {
     const [orderSearch, setOrderSearch] = useState("");
     const [adminPanelTab,setAdminPanelTab] = useState('inicio');
     const [adminGeneratorAlbumId,setAdminGeneratorAlbumId] = useState('');
+    const [adminGeneratorSubId,setAdminGeneratorSubId] = useState('');
     const [adminGeneratorNumbers,setAdminGeneratorNumbers] = useState('');
     const [adminGeneratorCustomer,setAdminGeneratorCustomer] = useState('');
     const [adminGeneratorPhone,setAdminGeneratorPhone] = useState('');
@@ -6488,7 +6489,9 @@ ${clone.outerHTML}`;
     const generateAdminClientOrder = (delivery=false) => {
         if (!admin) return;
         const album=displayAlbums.find(a=>a.id===adminGeneratorAlbumId)||displayAlbums[0];
-        const list=(album && album.photos)||[];
+        const subalbums=(album&&album.subalbums)||[];
+        const category=subalbums.find(sa=>sa.id===adminGeneratorSubId)||subalbums[0];
+        const list=(category&&category.photos)||(album&&album.photos)||[];
         const nums=[...new Set((String(adminGeneratorNumbers).match(/\d+/g)||[]).map(Number))];
         const missing=nums.filter(n=>!Number.isInteger(n)||n<1||n>list.length);
         const items=nums.filter(n=>!missing.includes(n)).map(n=>({number:n,photo:list[list.length-n]})).filter(x=>x.photo);
@@ -6503,9 +6506,9 @@ ${clone.outerHTML}`;
             (delivery?'\n'+(toDriveViewLink(x.photo.rawUrl||x.photo.url)||'Enlace no disponible'):'')).join('\n\n');
         const message=delivery?
             intro+'\n\nTe comparto los enlaces de las fotos que acordamos 📸⚽\n\n'+lines+'\n\n¡Muchas gracias por tu compra! 🙌':
-            intro+'\n\nPreparé tu selección de *lucasabraham.ph* 📸⚽\n\n🏟️ *'+album.name+'*\n\n'+lines+
+            intro+'\n\nPreparé tu selección de *lucasabraham.ph* 📸⚽\n\n🏟️ *'+album.name+'* · '+(category&&category.name||'Galería')\n\n'+lines+
             '\n\n📸 *Cantidad:* '+items.length+' foto(s)\n💰 *Total a abonar:* '+formatPrice(totalAmount)+
-            '\n\n🔗 *Galería:* '+albumUrl(album.id)+
+            '\n\n🔗 *Galería:* '+albumUrl(album.id,category&&category.id)+
             '\n\n💳 Podés abonar por transferencia y enviarme el comprobante por acá. Una vez acreditado, te paso los enlaces de descarga.\n\n¡Gracias! 🙌';
         setAdminGeneratorMessage(message+(missing.length?'\n\n⚠️ Números no encontrados: '+missing.join(', '):''));
     };
@@ -8074,8 +8077,15 @@ En breve te las preparo y te las envío por acá 😊
                     React.createElement("p",{className:"text-sm text-neutral-300 mt-1 mb-4"},"Elegí el partido y escribí los números celestes de la galería separados por comas o espacios. No hay límite de fotos."),
                     React.createElement("div",{className:"grid gap-3 sm:grid-cols-2"},
                         React.createElement("label",{className:"block text-sm font-bold text-sky-100"},"Galería",
-                            React.createElement("select",{value:adminGeneratorAlbumId||((displayAlbums[0]||{}).id||''),onChange:e=>{setAdminGeneratorAlbumId(e.target.value);setAdminGeneratorMessage('')},className:"w-full mt-2 bg-black border border-white/20 text-white p-3 rounded-xl"},
+                            React.createElement("select",{value:adminGeneratorAlbumId||((displayAlbums[0]||{}).id||''),onChange:e=>{setAdminGeneratorAlbumId(e.target.value);setAdminGeneratorSubId('');setAdminGeneratorMessage('')},className:"w-full mt-2 bg-black border border-white/20 text-white p-3 rounded-xl"},
                                 displayAlbums.map(a=>React.createElement("option",{key:a.id,value:a.id},a.name+" · "+(a.dateLabel||"sin fecha")+" · "+(a.photos||[]).length+" fotos")))),
+                        React.createElement("label",{className:"block text-sm font-bold text-sky-100"},"Categoría",
+                            React.createElement("select",{
+                                value:adminGeneratorSubId||((((displayAlbums.find(a=>a.id===adminGeneratorAlbumId)||displayAlbums[0])||{}).subalbums||[])[0]||{}).id||'',
+                                onChange:e=>{setAdminGeneratorSubId(e.target.value);setAdminGeneratorMessage('')},
+                                className:"w-full mt-2 bg-black border border-white/20 text-white p-3 rounded-xl"
+                            },((displayAlbums.find(a=>a.id===adminGeneratorAlbumId)||displayAlbums[0]||{}).subalbums||[]).map(sa=>
+                                React.createElement("option",{key:sa.id,value:sa.id},sa.name+" · "+(sa.photos||[]).length+" fotos")))),
                         React.createElement("label",{className:"block text-sm font-bold text-sky-100"},"Nombre del cliente",
                             React.createElement("input",{value:adminGeneratorCustomer,onChange:e=>setAdminGeneratorCustomer(e.target.value),placeholder:"Nombre y apellido",className:"w-full mt-2 bg-black border border-white/20 text-white p-3 rounded-xl"})),
                         React.createElement("label",{className:"block text-sm font-bold text-sky-100 sm:col-span-2"},"Números de las fotos",
