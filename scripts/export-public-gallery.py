@@ -29,10 +29,12 @@ def sheet_rows(tab):
             # Las galerías recientes tienen atributos por foto en J/K.
             # Si un CSV publicado quedó con el esquema anterior, probar el
             # export nativo antes de publicarlo como si fuera un catálogo nuevo.
-            if gid in {'2026110101', '2026103103', '2026103102', '2026103101'}:
-                normalized = {str(h).strip().casefold() for h in headers}
-                if not {'foto gratuita', 'promociones'}.issubset(normalized):
-                    raise ValueError('El CSV todavía no incluye Foto gratuita y Promociones (columnas J/K)')
+            # Todas las galerías tienen ahora columnas dedicadas para fotos
+            # gratuitas y promociones, incluso las históricas. Si el CSV
+            # publicado está atrasado, intentar el export nativo actualizado.
+            normalized = {str(h).strip().casefold() for h in headers}
+            if not {'foto gratuita', 'promociones'}.issubset(normalized):
+                raise ValueError('El CSV todavía no incluye Foto gratuita y Promociones (columnas J/K)')
             converted = []
             for row in rows[1:]:
                 record = {}
