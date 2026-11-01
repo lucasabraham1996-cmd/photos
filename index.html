@@ -6486,7 +6486,8 @@ ${clone.outerHTML}`;
     const effectiveDiscountPercent = regular > 0 ? Math.round((1 - (checkoutDigitalTotal / regular)) * 100) : 0;
     const albumPriceWithDiscount = (album) => Math.round(Number((album === null || album === void 0 ? void 0 : album.fullPrice) || 0) * (1 - (albumSiteDiscount(album === null || album === void 0 ? void 0 : album.id) / 100)));
 
-    const generateAdminClientOrder = (delivery=false) => {
+    // Exclusivo de administración: entregar enlaces originales sin solicitar otro pago.
+    const generateAdminClientOrder = () => {
         if (!admin) return;
         const album=displayAlbums.find(a=>a.id===adminGeneratorAlbumId)||displayAlbums[0];
         const subalbums=(album&&album.subalbums)||[];
@@ -6495,22 +6496,31 @@ ${clone.outerHTML}`;
         const nums=[...new Set((String(adminGeneratorNumbers).match(/\d+/g)||[]).map(Number))];
         const missing=nums.filter(n=>!Number.isInteger(n)||n<1||n>list.length);
         const items=nums.filter(n=>!missing.includes(n)).map(n=>({number:n,photo:list[list.length-n]})).filter(x=>x.photo);
-        if(!album || !items.length){setAdminGeneratorMessage('Elegí una galería y escribí números válidos de fotos.');return;}
+        if (!album || !items.length) {
+            setAdminGeneratorMessage('Elegí una galería y escribí números válidos de fotos.');
+            return;
+        }
+        const linked=items.map(x=>({
+            ...x,
+            link:toDriveViewLink(x.photo.rawUrl||x.photo.driveLink||x.photo.fullUrl||x.photo.url)
+        }));
+        const withoutLink=linked.filter(x=>!x.link);
+        if (withoutLink.length) {
+            setAdminGeneratorMessage('No se puede preparar la entrega: faltan los enlaces originales de las fotos Nº '+withoutLink.map(x=>x.number).join(', ')+'. Revisá los enlaces en la planilla y volvé a sincronizar.');
+            return;
+        }
         const name=String(adminGeneratorCustomer||'').trim();
         const intro=name?'¡Hola, '+name.split(/\s+/)[0]+'! 👋📸':'¡Hola! 👋📸';
-        const selected=items.map(x=>x.photo);
-        const paidCount=selected.filter(p=>!p.free).length;
-        const cartDiscount=discountRate(paidCount);
-        const totalAmount=selected.reduce((sum,p)=>sum+Math.round((Number(p.price)||0)*(1-cartDiscount)*(1-albumSiteDiscount(p.albumId)/100)),0);
-        const lines=items.map(x=>'📷 *Foto Nº '+x.number+'* · '+x.photo.name+
-            (delivery?'\n'+(toDriveViewLink(x.photo.rawUrl||x.photo.url)||'Enlace no disponible'):'')).join('\n\n');
-        const message=delivery?
-            intro+'\n\nTe comparto los enlaces de las fotos que acordamos 📸⚽\n\n'+lines+'\n\n¡Muchas gracias por tu compra! 🙌':
-            intro+'\n\nPreparé tu selección de *lucasabraham.ph* 📸⚽\n\n🏟️ *'+album.name+'* · '+(category&&category.name||'Galería')+'\n\n'+lines+
-            '\n\n📸 *Cantidad:* '+items.length+' foto(s)\n💰 *Total a abonar:* '+formatPrice(totalAmount)+
-            '\n\n🔗 *Galería:* '+albumUrl(album.id,category&&category.id)+
-            '\n\n💳 Podés abonar por transferencia y enviarme el comprobante por acá. Una vez acreditado, te paso los enlaces de descarga.\n\n¡Gracias! 🙌';
-        setAdminGeneratorMessage(message+(missing.length?'\n\n⚠️ Números no encontrados: '+missing.join(', '):''));
+        const lines=linked.map(x=>
+            '📷 *Foto Nº '+x.number+'* · '+x.photo.name+'\n🔗 '+x.link
+        ).join('\n\n');
+        const message=intro+'\n\n¡Acá tenés tus fotos de *lucasabraham.ph* listas para descargar! 📸⚽'+
+            '\n\n🏟️ *'+album.name+'* · '+(category&&category.name||'Galería')+
+            '\n\n'+lines+
+            '\n\n📸 *Total:* '+linked.length+' foto(s)'+
+            '\n\n📥 Abrí cada enlace para ver y descargar la foto original en alta calidad.'+
+            '\n\n¡Muchas gracias por confiar en mi trabajo! 🙌';
+        setAdminGeneratorMessage(message+(missing.length?'\n\n⚠️ No se encontraron los números: '+missing.join(', '):''));
     };
     const adminGeneratorWhatsappLink = () => {
         const phone=normalizeClubPhone(adminGeneratorPhone);
@@ -8075,8 +8085,8 @@ En breve te las preparo y te las envío por acá 😊
                         onClick:()=>{setAdminPanelTab(id);window.scrollTo({top:0,behavior:"smooth"});}
                     },React.createElement("i",{className:"fas "+icon,"aria-hidden":true}),label))),
                 React.createElement("section",{hidden:adminPanelTab!=='generador',className:"bg-neutral-900 border border-sky-400/25 rounded-3xl p-4 sm:p-6 mb-6","aria-label":"Generador de pedido para clientes",id:"la-admin-generator"},
-                    React.createElement("h2",{className:"text-xl font-black text-white"},"Generador de pedidos por número"),
-                    React.createElement("p",{className:"text-sm text-neutral-300 mt-1 mb-4"},"Elegí el partido y escribí los números celestes de la galería separados por comas o espacios. No hay límite de fotos."),
+                    React.createElement("h2",{className:"text-xl font-black text-white"},"Entregar fotos por número"),
+                    React.createElement("p",{className:"text-sm text-neutral-300 mt-1 mb-4"},"Elegí el partido y los números celestes separados por comas o espacios. Se prepara el mensaje de entrega con un enlace original por foto, sin precios ni instrucciones de pago. Enviá los enlaces únicamente cuando corresponda entregar las fotos."),
                     React.createElement("div",{className:"grid gap-3 sm:grid-cols-2"},
                         React.createElement("label",{className:"block text-sm font-bold text-sky-100"},"Galería",
                             React.createElement("select",{value:adminGeneratorAlbumId||((displayAlbums[0]||{}).id||''),onChange:e=>{setAdminGeneratorAlbumId(e.target.value);setAdminGeneratorSubId('');setAdminGeneratorMessage('')},className:"w-full mt-2 bg-black border border-white/20 text-white p-3 rounded-xl"},
@@ -8095,12 +8105,11 @@ En breve te las preparo y te las envío por acá 😊
                         React.createElement("label",{className:"block text-sm font-bold text-sky-100 sm:col-span-2"},"WhatsApp del cliente",
                             React.createElement("input",{value:adminGeneratorPhone,onChange:e=>setAdminGeneratorPhone(e.target.value),placeholder:"351 1234567",inputMode:"tel",className:"w-full mt-2 bg-black border border-white/20 text-white p-3 rounded-xl"}))),
                     React.createElement("div",{className:"flex flex-wrap gap-2 mt-4"},
-                        React.createElement("button",{type:"button",className:"bg-sky-500 text-white font-black px-4 py-3 rounded-xl",onClick:()=>generateAdminClientOrder(false)},"Generar pedido para cobrar"),
-                        React.createElement("button",{type:"button",className:"bg-neutral-700 text-white font-bold px-4 py-3 rounded-xl",onClick:()=>generateAdminClientOrder(true)},"Preparar links para entregar después del pago")),
+                        React.createElement("button",{type:"button",className:"bg-sky-500 text-white font-black px-4 py-3 rounded-xl",onClick:generateAdminClientOrder},React.createElement("i",{className:"fas fa-link mr-2","aria-hidden":true}),"Generar pedido listo para entregar")),
                     adminGeneratorMessage&&React.createElement("div",{className:"mt-4"},
                         React.createElement("textarea",{readOnly:true,value:adminGeneratorMessage,rows:12,className:"w-full bg-black border border-sky-400/25 text-white p-3 rounded-xl text-sm resize-y"}),
                         React.createElement("div",{className:"flex flex-wrap gap-2 mt-3"},
-                            React.createElement("button",{type:"button",className:"bg-emerald-500 text-black font-black px-4 py-3 rounded-xl",onClick:()=>navigator.clipboard.writeText(adminGeneratorMessage)},"Copiar mensaje con links"),
+                            React.createElement("button",{type:"button",className:"bg-emerald-500 text-black font-black px-4 py-3 rounded-xl",onClick:()=>navigator.clipboard.writeText(adminGeneratorMessage)},"Copiar pedido y enlaces de descarga"),
                             adminGeneratorWhatsappLink()&&React.createElement("a",{href:adminGeneratorWhatsappLink(),target:"_blank",rel:"noopener noreferrer",className:"bg-green-700 text-white font-black px-4 py-3 rounded-xl"},"Enviar por WhatsApp")))),
                 React.createElement("section", { className: "la-admin-overview", id:"la-admin-overview", hidden:adminPanelTab!=='inicio', "aria-label":"Resumen de gestión" },
                     React.createElement("div",{className:"la-admin-overview-head"},
