@@ -2240,7 +2240,7 @@ img{-webkit-user-drag:none;}
 .mp-catalogue-result.error{background:#431d22;color:#ffd3d3!important;border:1px solid #98545c}.mp-catalogue-result.success{background:#0d3b25;color:#c7ffdd!important;border:1px solid #258859}
 @media(max-width:380px){.checkout-payment-options{padding:12px}.mp-pay-button{padding:12px;gap:9px}.mp-pay-button strong{font-size:18px}.mp-pay-button>img{width:44px;height:44px;flex-basis:44px}.other-payment-button{padding:11px;font-size:14px;gap:9px}}
 </style>
-  <link rel="stylesheet" href="./premium-ux-v132.css?v=137.1" />
+  <link rel="stylesheet" href="./premium-ux-v132.css?v=138.0" />
   <script defer src="./premium-ux-v132.js?v=135"></script>
 </head>
 <body style="background:#050505;color:#fff;">
@@ -3375,6 +3375,16 @@ function parsePhotoPromotions(raw) {
         if (!/^[A-Z0-9]{2,32}$/.test(code)) return null;
         return { code, percent, sourceCode: item.replace(/\s+/g, '').toUpperCase() };
     }).filter(Boolean);
+}
+// Estado de descuento directo de la cobertura. Los códigos de palabra no se publicitan.
+function albumDirectDiscountInfo(album) {
+    const paid = (album && Array.isArray(album.photos) ? album.photos : []).filter(photo=>photo && !photo.free);
+    if (!paid.length) return null;
+    const promo = paid.filter(photo=>(Number(photo.directDiscountPercent)||0)>0);
+    if (!promo.length) return null;
+    const percent = Math.max(...promo.map(photo=>Number(photo.directDiscountPercent)||0));
+    const all = promo.length === paid.length && promo.every(photo=>(Number(photo.directDiscountPercent)||0)===percent);
+    return {percent,all,count:promo.length};
 }
 const safeCode = (name) => String(name || "").split(".")[0].slice(0, 20).toUpperCase().replace(/[^A-Z0-9]+/g, "").slice(-6) || Math.random().toString(36).slice(2, 8).toUpperCase();
 const albumHash = (albumId, subAlbumId = '') => subAlbumId ? `#/album/${encodeURIComponent(albumId)}/sub/${encodeURIComponent(subAlbumId)}` : `#/album/${encodeURIComponent(albumId)}`;
@@ -5309,6 +5319,7 @@ function MatchPickerModal({ albums, onClose, onSelect }) {
                                 matchPickerDateLabel(album) ? React.createElement('span', { className: 'match-picker-chip' }, React.createElement('i', { className: 'far fa-calendar' }), matchPickerDateLabel(album)) : null,
                                 React.createElement('span', { className: 'match-picker-chip' }, React.createElement('i', { className: 'fas fa-layer-group' }), category),
                                 photoCount ? React.createElement('span', { className: 'match-picker-chip' }, React.createElement('i', { className: 'far fa-image' }), `${photoCount} fotos`) : null,
+                                albumDirectDiscountInfo(album) && React.createElement('span',{className:'match-picker-chip la-direct-off-chip'}, React.createElement('i',{className:'fas fa-tags'}),albumDirectDiscountInfo(album).all ? albumDirectDiscountInfo(album).percent+'% OFF en fotos' : 'Hasta '+albumDirectDiscountInfo(album).percent+'% OFF en fotos'),
                                 album.archived ? React.createElement('span', { className: 'match-picker-chip archive' }, React.createElement('i', { className: 'fas fa-box-archive' }), 'Archivo') : null)),
                         crest(away, true));
                 }) : React.createElement('div', { className: 'match-picker-empty' }, React.createElement('i', { className: 'fas fa-magnifying-glass mb-2' }), React.createElement('div', null, 'No encontré partidos con esos filtros.'))),
@@ -6600,6 +6611,7 @@ ${clone.outerHTML}`;
         React.createElement("i", { className:"fas fa-arrow-right text-sky-300 text-xs shrink-0" }));
     const renderHomeAlbumCard = (a) => {
         const categoryCount = Array.isArray(a.subalbums) ? a.subalbums.length : 0;
+        const directPromo = albumDirectDiscountInfo(a);
         return React.createElement("div", { key:a.id, className:"home-album-card-wrap" },
             isAlbumNew(a) && React.createElement("span", { className:"new-gallery-badge" }, "Nueva"),
             React.createElement("button", { "data-album-card-id":a.id, onClick:e=>handleAlbumCardTap(e,a), className:"group text-left active:scale-[0.98] focus:outline-none w-full", "aria-pressed":mobileRevealedAlbumId === a.id },
@@ -6612,7 +6624,8 @@ ${clone.outerHTML}`;
                     React.createElement("div", { className:"absolute top-2 left-2 sm:top-3 sm:left-3 z-[3] bg-black/55 backdrop-blur-md border border-white/15 px-2.5 py-1.5 rounded-full text-[9px] sm:text-[10px] text-white album-date-chip shadow-lg" },
                         React.createElement("i", { className:"fas fa-calendar-days mr-1 text-sky-300" }), a.dateLabel || "Sin fecha"),
                     a.archived && React.createElement("div", { className:"absolute top-2 right-2 sm:top-3 sm:right-3 z-[4] bg-amber-400 text-black rounded-full px-2.5 py-1 text-[8px] font-black uppercase tracking-wider" }, "Archivo"),
-                    !a.archived && hasSiteDiscount(a.id) && React.createElement("div", { className:"promo-badge absolute top-2 right-2 sm:top-3 sm:right-3" },
+                    directPromo && React.createElement("div",{className:"la-album-direct-badge"+(a.archived?" archived":"")},React.createElement("strong",null,directPromo.all?"-"+directPromo.percent+"%":"HASTA -"+directPromo.percent+"%"),React.createElement("small",null,"OFF EN FOTOS")),
+                    !directPromo && !a.archived && hasSiteDiscount(a.id) && React.createElement("div", { className:"promo-badge absolute top-2 right-2 sm:top-3 sm:right-3" },
                         React.createElement("span", null, "-", albumSiteDiscount(a.id), "%"), React.createElement("small", null, "OFF")),
                     React.createElement("div", { className:"album-info-panel absolute bottom-2 sm:bottom-3 left-2 sm:left-3 right-2 sm:right-3 z-[3] rounded-2xl p-2.5 sm:p-3 border border-white/12 bg-black/54 backdrop-blur-xl shadow-[0_18px_40px_rgba(0,0,0,.42)]" },
                         React.createElement("div", { className:"flex items-start justify-between gap-2" },
@@ -9023,7 +9036,7 @@ React.createElement("div", { id: "order-search-panel", hidden:adminPanelTab!=='p
                                 "C\u00F3digo ",
                                 focusPhoto.code,
                                 " \u00B7 ",
-                                (focusPhoto.free ? "GRATUITA" : formatPrice(Math.round(focusPhoto.price*(1-(focusPhoto.directDiscountPercent||0)/100))))),
+                                (focusPhoto.free ? "GRATUITA" : (focusPhoto.directDiscountPercent>0 ? formatPrice(focusPhoto.price) + " → " : "")+formatPrice(Math.round(focusPhoto.price*(1-(focusPhoto.directDiscountPercent||0)/100))))),
                             focusPhoto.free && React.createElement("span",{className:"la-photo-free-status"},React.createElement("i",{className:"fas fa-circle-check","aria-hidden":true})," GRATUITA"),
                             !focusPhoto.free && focusPhoto.directDiscountPercent>0 && React.createElement("span",{className:"la-photo-discount-badge la-photo-discount-inline"},React.createElement("i",{className:"fas fa-tag","aria-hidden":true})," ",focusPhoto.directDiscountPercent,"% OFF · Descuento directo")),
                         React.createElement("button", { onClick: () => focusPhoto.free ? downloadFreePhoto(focusPhoto) : bulkQuoteMode ? toggleBulkQuotePhoto(focusPhoto.id) : toggle(focusPhoto.id), className: (focusPhoto.free ? "la-photo-free-cta" : bulkQuoteMode ? "bulk-quote-photo-btn" : "buy-btn") + " w-full sm:w-auto px-4 py-3 rounded-xl font-black text-sm" },
@@ -9064,7 +9077,10 @@ React.createElement("div", { id: "order-search-panel", hidden:adminPanelTab!=='p
                         !photo.free && photo.directDiscountPercent>0 && React.createElement("span",{className:"la-photo-discount-badge la-photo-discount-tile"},"-",photo.directDiscountPercent,"% OFF"),
                         React.createElement("div", { className: "absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent p-2 pt-6 pointer-events-none" },
                             React.createElement("p", { className: "text-white/80 font-mono text-[9px] sm:text-[10px] truncate" }, photo.name),
-                            React.createElement("p", { className: (photo.free ? "text-emerald-300" : bulkQuoteMode ? "text-emerald-300" : "text-sky-300") + " text-[9px] font-bold" }, photo.free ? 'Descarga directa' : bulkQuoteMode ? (isSelected ? "Seleccionada para negociar" : "Tocá + para seleccionar") : formatPrice(Math.round(photo.price*(1-(photo.directDiscountPercent||0)/100)))),
+                            React.createElement("p", { className: (photo.free ? "text-emerald-300" : bulkQuoteMode ? "text-emerald-300" : "text-sky-300") + " text-[9px] font-bold" },
+                              photo.free ? 'Descarga directa' : React.createElement(React.Fragment,null,
+                                photo.directDiscountPercent>0 && React.createElement("s",{className:"la-old-unit-price"},formatPrice(photo.price)),
+                                " ",formatPrice(Math.round(photo.price*(1-(photo.directDiscountPercent||0)/100))))),
                         React.createElement("button", { onClick: (e) => { e.stopPropagation(); photo.free ? downloadFreePhoto(photo) : bulkQuoteMode ? toggleBulkQuotePhoto(photo.id) : toggle(photo.id); }, className: `absolute top-2 right-2 sm:top-3 sm:right-3 w-8 h-8 rounded-full flex items-center justify-center transition-all duration-300 z-20 ${photo.free ? 'la-photo-free-download' : isSelected ? (bulkQuoteMode ? 'bg-emerald-400 text-black scale-110 shadow-lg' : 'bg-indigo-500 text-white scale-110 shadow-lg') : 'bg-black/50 text-white/60 border border-white/20 backdrop-blur-sm'}`,title:photo.free?"Descargar foto gratuita":undefined,"aria-label":photo.free?"Descargar foto gratuita":isSelected?"Quitar foto":"Agregar foto" },
                             React.createElement("i", { className: `fas ${photo.free ? 'fa-download' : isSelected ? 'fa-check' : 'fa-plus'} text-sm` })));
                 })),
@@ -9388,7 +9404,9 @@ React.createElement("div", { id: "order-search-panel", hidden:adminPanelTab!=='p
                         viewer.code,
                         " \u00B7 ",
                         viewer.albumName),
-                    viewer.free ? React.createElement("div",{className:"la-photo-free-status la-photo-free-status-viewer"},React.createElement("i",{className:"fas fa-circle-check mr-2","aria-hidden":true}),"GRATUITA · Descarga directa") : React.createElement("p", { className: "text-sky-300 font-black text-xl mb-4" },formatPrice(Math.round(viewer.price*(1-(viewer.directDiscountPercent||0)/100)))),
+                    viewer.free ? React.createElement("div",{className:"la-photo-free-status la-photo-free-status-viewer"},React.createElement("i",{className:"fas fa-circle-check mr-2","aria-hidden":true}),"GRATUITA · Descarga directa") : React.createElement("p", { className: "text-sky-300 font-black text-xl mb-4" },
+                      viewer.directDiscountPercent>0 && React.createElement("s",{className:"la-old-unit-price la-old-unit-price-large"},formatPrice(viewer.price)),
+                      " ",formatPrice(Math.round(viewer.price*(1-(viewer.directDiscountPercent||0)/100)))),
                     !viewer.free && viewer.directDiscountPercent>0 && React.createElement("div",{className:"la-photo-discount-badge la-photo-discount-viewer"},React.createElement("i",{className:"fas fa-tag mr-2","aria-hidden":true}),viewer.directDiscountPercent,"% OFF · Se aplica automáticamente"),
                     React.createElement("button", { onClick: () => viewer.free ? downloadFreePhoto(viewer) : bulkQuoteMode ? toggleBulkQuotePhoto(viewer.id) : toggle(viewer.id), className: "w-full " + (viewer.free ? "la-photo-free-cta" : bulkQuoteMode ? "bulk-quote-photo-btn" : "buy-btn") + " font-black py-4 rounded-xl mb-3" },
                         viewer.free ? React.createElement(React.Fragment,null,React.createElement("i",{className:"fas fa-download mr-2","aria-hidden":true}),"Descargar foto gratuita") : bulkQuoteMode ? (bulkQuoteIds.includes(viewer.id) ? "Quitar de la negociación" : "Seleccionar para negociar") : (cart.includes(viewer.id) ? "Quitar del carrito" : "Agregar al carrito")),
