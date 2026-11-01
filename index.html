@@ -7184,7 +7184,7 @@ En breve te las preparo y te las envío por acá 😊
             role:mpCatalogueSync.status==='error'?"alert":"status","aria-live":"polite",
             className:"mp-catalogue-result "+mpCatalogueSync.status
         },mpCatalogueSync.message));
-    const otherPaymentWhatsappUrl=(album=null)=>{
+    const otherPaymentWhatsappUrl=(album=null,orderCode='')=>{
         if(album)return 'https://wa.me/'+SELLER_PHONE+'?text='+encodeURIComponent(
             'Hola Lucas! Quiero comprar el álbum completo de '+album.name+
             '.\nImporte publicado: '+formatPrice(albumPriceWithDiscount(album))+
@@ -7192,20 +7192,22 @@ En breve te las preparo y te las envío por acá 😊
         const photos=selectedPhotos.length?selectedPhotos:mpTrialPurchase&&mpTrialPurchase.order_data&&mpTrialPurchase.order_data.items||[];
         const amount=selectedPhotos.length?checkoutTotal:mpTrialPurchase&&mpTrialPurchase.amount||0;
         const printCount=selectedPhotos.length?printSelectedPhotos.length:mpTrialPurchase&&mpTrialPurchase.order_data&&mpTrialPurchase.order_data.printCount||0;
-        const details=photos.slice(0,25).map(p=>'• '+p.albumName+' · '+(p.name||p.code||p.id)).join('\n');
+        const details=photos.slice(0,40).map(p=>'• '+p.albumName+' · '+(p.name||p.code||p.id)).join('\n');
         const message='¡Hola, Lucas! 👋😊 Me gustaron estas fotos y quisiera abonarlas por transferencia bancaria 📸⚽\n\n'+details+
-            (photos.length>25?'\n📷 Y '+(photos.length-25)+' fotos más.':'')+
-            '\n\n💰 *Total de la selección: '+formatPrice(amount)+'*'+
+            (photos.length>40?'\n📷 Y '+(photos.length-40)+' fotos más.':'')+
+            (orderCode?'\n\n🧾 *Código de pedido: '+orderCode+'*':'')+'\n📸 *Cantidad de fotos: '+photos.length+'*'+'\n\n💰 *Total de la selección: '+formatPrice(amount)+'*'+
             (printCount?'\n🖼️ También seleccioné impresión 10x15 de '+printCount+' fotos.':'')+
             '\n\n💳 ¿Me pasás tu *alias* para poder hacerte la transferencia? 🙌\n¡Muchas gracias! 😊';
         return 'https://wa.me/'+SELLER_PHONE+'?text='+encodeURIComponent(message);
     };
     // Registrar cada consulta con su canal real, sin dar el mensaje por enviado.
-    const startOtherPaymentWhatsapp=()=>{
+    const startOtherPaymentWhatsapp=(event)=>{
         // Registrar como observador: NO cancelar el enlace original ni abrir otra pestaña.
         // El navegador conserva exactamente el flujo original de WhatsApp.
         if(!selectedPhotos.length)return;
         const id=newOrderCode(),now=new Date().toISOString();
+        // El mensaje y el registro deben llevar exactamente el mismo código.
+        if(event&&event.currentTarget)event.currentTarget.href=otherPaymentWhatsappUrl(null,id);
         const order={id,date:now,kind:'photos',total:checkoutTotal,subtotal:regular,
             customerName:checkoutBuyerName||'',phone:checkoutBuyerPhone||'',
             albumName:[...new Set(selectedPhotos.map(p=>p.albumName).filter(Boolean))].join(' · '),
@@ -7231,7 +7233,12 @@ En breve te las preparo y te las envío por acá 😊
             saveLocalOrders(mergeOrders(readLocalOrders(),[order]));
             savePendingOrders(mergeOrders(readPendingOrders(),[compactOrderForScript(order)]));
         }catch(err){console.warn('Respaldo de consulta WhatsApp:',err)}
-        saveOrderRemote(order).catch(err=>console.warn('Consulta WhatsApp pendiente de reintento:',err));
+        saveOrderRemote(order).then(status=>{
+            if(!status.firebase&&!status.script)setCheckoutSaveError('La consulta '+id+' aún no se sincronizó. Conservá el código enviado por WhatsApp para que Lucas pueda recuperarla.');
+        }).catch(err=>{
+            console.warn('Consulta WhatsApp pendiente de reintento:',err);
+            setCheckoutSaveError('La consulta '+id+' aún no se sincronizó. Conservá el código enviado por WhatsApp.');
+        });
     };
     // Las consultas de álbumes completos no pasan por Mercado Pago. Primero
     // registramos un pedido resumido para no perder solicitudes grandes en Firebase.
