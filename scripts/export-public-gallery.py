@@ -26,6 +26,13 @@ def sheet_rows(tab):
             if len(rows) < 2 or not any('foto' in str(v).lower() for v in rows[0]):
                 raise ValueError('Unexpected photo sheet structure')
             headers = rows[0]
+            # Las galerías recientes tienen atributos por foto en J/K.
+            # Si un CSV publicado quedó con el esquema anterior, probar el
+            # export nativo antes de publicarlo como si fuera un catálogo nuevo.
+            if gid in {'2026110101', '2026103103', '2026103102', '2026103101'}:
+                normalized = {str(h).strip().casefold() for h in headers}
+                if not {'foto gratuita', 'promociones'}.issubset(normalized):
+                    raise ValueError('El CSV todavía no incluye Foto gratuita y Promociones (columnas J/K)')
             converted = []
             for row in rows[1:]:
                 record = {}
@@ -34,7 +41,9 @@ def sheet_rows(tab):
                     if i < len(headers) and headers[i].strip():
                         record[headers[i].strip()] = value
                 converted.append(record)
-            print('Photo tab', gid, 'rows', len(converted), flush=True)
+            free_count = sum(str(row.get('Foto gratuita', '')).strip().casefold() in ('sí', 'si', 'yes', 'true', '1', 'x') for row in converted)
+            promo_count = sum(bool(str(row.get('Promociones', '')).strip()) for row in converted)
+            print('Photo tab', gid, 'rows', len(converted), 'free', free_count, 'promotions', promo_count, flush=True)
             return {'name':tab['name'], 'hidden':bool(tab['hidden']), 'publishedAt':tab.get('publishedAt', ''), 'rows':converted}
         except Exception as error:
             errors.append(type(error).__name__ + ': ' + str(error)[:120])
