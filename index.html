@@ -3394,8 +3394,12 @@ function formatAlbumDate(ts) {
 }
 const NEW_ALBUM_MAX_AGE_DAYS = 5;
 const HOME_RECENT_MAX_AGE_DAYS = 15;
+function albumRecencyTs(album) {
+    // La fecha del partido tiene prioridad; si falta, usar únicamente la fecha de publicación.
+    return Number(album && (album.dateTs || album.publishedTs)) || 0;
+}
 function albumAgeDays(album, now = Date.now()) {
-    const ts = Number(album && album.dateTs) || 0;
+    const ts = albumRecencyTs(album);
     if (!ts) return Infinity;
     const albumDay = new Date(ts);
     const today = new Date(now);
@@ -4259,6 +4263,7 @@ function normalizeAlbums(data) {
         const teamNames = teamEntries.map(t => t.name || '').slice(0, 2);
         const metaRow = rawRows[0] || {};
         const dateTs = getAlbumDateFromRows(rawRows);
+        const publishedTs = parseAlbumDate(sheet.publishedAt || sheet.published_at || '') || 0;
         const dateKey = dateTs ? String(dateTs) : 'sin_fecha';
         const albumId = `${norm(albumBaseName) || `album_${idx + 1}`}_${dateKey}`;
         const albumName = albumBaseName;
@@ -4304,11 +4309,11 @@ function normalizeAlbums(data) {
         const coverPhoto = explicitCoverPhoto || photos[0] || null;
         const coverPriority = (explicitCoverPhoto ? 100 : 0) + (norm(subAlbumName).includes('primera') || norm(sheetName).includes('primera') ? 2 : 0);
         const metaPriority = norm(subAlbumName).includes('primera') || norm(sheetName).includes('primera') ? 2 : ((teamEntries || []).some(t => String((t && t.name) || '').trim() || String((t && t.logo) || '').trim() || String((t && t.color) || '').trim()) ? 1 : 0);
-        return { id: albumId, name: albumName, sourceName: sheetName, subAlbumName: subAlbumName || 'Galería', subAlbumId, photos, cover: coverPhoto ? coverPhoto.url : "", coverPriority, fullPrice, dateTs, dateLabel: formatAlbumDate(dateTs), archived, teamColors, teamLogo, teamNames, teamEntries, metaPriority };
+        return { id: albumId, name: albumName, sourceName: sheetName, subAlbumName: subAlbumName || 'Galería', subAlbumId, photos, cover: coverPhoto ? coverPhoto.url : "", coverPriority, fullPrice, dateTs, publishedTs, dateLabel: formatAlbumDate(dateTs), archived, teamColors, teamLogo, teamNames, teamEntries, metaPriority };
     }).filter(a => a.photos.length > 0);
     const map = new Map();
     parsed.forEach(item => {
-        const current = map.get(item.id) || { id: item.id, name: item.name, photos: [], cover: "", coverPriority: -1, fullPrice: item.fullPrice, dateTs: item.dateTs || 0, dateLabel: item.dateLabel || "", archived: false, subalbums: [], teamColors: item.teamColors, teamLogo: item.teamLogo, teamNames: item.teamNames, teamEntries: item.teamEntries, metaPriority: item.metaPriority || 0 };
+        const current = map.get(item.id) || { id: item.id, name: item.name, photos: [], cover: "", coverPriority: -1, fullPrice: item.fullPrice, dateTs: item.dateTs || 0, publishedTs: item.publishedTs || 0, dateLabel: item.dateLabel || "", archived: false, subalbums: [], teamColors: item.teamColors, teamLogo: item.teamLogo, teamNames: item.teamNames, teamEntries: item.teamEntries, metaPriority: item.metaPriority || 0 };
         current.photos = [...current.photos, ...item.photos];
         if ((item.coverPriority ?? 0) > (current.coverPriority ?? -1) || !current.cover) {
             current.cover = item.cover || current.cover;
@@ -4316,6 +4321,7 @@ function normalizeAlbums(data) {
         }
         current.fullPrice = item.fullPrice || current.fullPrice;
         current.dateTs = item.dateTs || current.dateTs || 0;
+        current.publishedTs = Math.max(current.publishedTs || 0, item.publishedTs || 0);
         current.dateLabel = formatAlbumDate(current.dateTs);
         current.archived = current.archived || item.archived;
         const shouldUseItemMeta = (item.metaPriority || 0) >= (current.metaPriority || 0) || !(current.teamEntries && current.teamEntries.length);
@@ -4380,7 +4386,7 @@ function groupNearbyCategoryAlbumsForDisplay(albums) {
         };
     }
     return groups.map(group => group.album).sort((a, b) =>
-        (b.dateTs || 0) - (a.dateTs || 0) || a.name.localeCompare(b.name));
+        albumRecencyTs(b) - albumRecencyTs(a) || a.name.localeCompare(b.name));
 }
 
 function readFileAsDataURL(file, maxW = 1200, quality = 0.82) {
@@ -5986,7 +5992,7 @@ ${clone.outerHTML}`;
         if (!firebaseReady)
             return;
     }, [firebaseReady]);
-    const sourceDisplayAlbums = useMemo(() => albums.map(a => applyAlbumLogoSource({ ...a, cover: coverOverrides[a.id] || a.cover }, albumLogoSources)).sort((a, b) => (b.dateTs || 0) - (a.dateTs || 0) || a.name.localeCompare(b.name)), [albums, coverOverrides, albumLogoSources]);
+    const sourceDisplayAlbums = useMemo(() => albums.map(a => applyAlbumLogoSource({ ...a, cover: coverOverrides[a.id] || a.cover }, albumLogoSources)).sort((a, b) => albumRecencyTs(b) - albumRecencyTs(a) || a.name.localeCompare(b.name)), [albums, coverOverrides, albumLogoSources]);
     const displayAlbums = useMemo(() => groupNearbyCategoryAlbumsForDisplay(sourceDisplayAlbums), [sourceDisplayAlbums]);
     const activeAlbums = useMemo(() => displayAlbums.filter(a => !a.archived), [displayAlbums]);
     const archivedAlbums = useMemo(() => displayAlbums.filter(a => a.archived), [displayAlbums]);
