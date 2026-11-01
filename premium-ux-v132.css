@@ -715,3 +715,34 @@ html[data-la-route="public"] #root > .min-h-screen{
   .la-photo-discount-tile{top:44px;right:5px;padding:4px 6px;font-size:8px}
   .la-photo-free-status-viewer{font-size:12px}
 }
+
+
+/* Descuento directo de hojas de cálculo: visible en portada, selector y fotos. */
+.la-album-direct-badge{
+  position:absolute;z-index:8;top:11px;right:11px;pointer-events:none;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  min-width:70px;max-width:115px;min-height:54px;padding:8px 10px;
+  border-radius:17px;text-align:center;
+  color:#fff;background:linear-gradient(140deg,#be123c 0%,#e11d48 55%,#fb7185 100%);
+  border:1px solid rgba(255,228,230,.72);
+  box-shadow:0 9px 24px rgba(128,20,49,.45),inset 0 1px 0 rgba(255,255,255,.24);
+  transform:rotate(4deg);
+}
+.la-album-direct-badge.archived{top:45px}
+.la-album-direct-badge strong{font-weight:1000;font-size:20px;line-height:1.08;letter-spacing:-.04em}
+.la-album-direct-badge small{font-size:8px;font-weight:900;letter-spacing:.085em;line-height:1.15;margin-top:4px}
+.la-direct-off-chip{
+  color:#fecdd3!important;background:rgba(190,18,60,.16)!important;
+  border:1px solid rgba(251,113,133,.49)!important;
+  font-weight:900!important
+}
+.la-direct-off-chip i{color:#fda4af!important}
+.la-old-unit-price{color:#a3a3a3;font-size:10px;margin-right:5px;font-weight:600;text-decoration-color:#fb7185}
+.la-old-unit-price-large{font-size:14px;display:inline-block;margin-right:12px}
+@media(max-width:640px){
+  .la-album-direct-badge{top:9px;right:9px;min-width:57px;max-width:92px;min-height:44px;padding:6px 7px;border-radius:13px}
+  .la-album-direct-badge.archived{top:39px}
+  .la-album-direct-badge strong{font-size:16px}
+  .la-album-direct-badge small{font-size:7px}
+  .la-old-unit-price{font-size:9px;margin-right:3px}
+}
