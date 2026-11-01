@@ -5368,7 +5368,7 @@ function App() {
     const [orders, setOrders] = useState([]);
     const [ordersLoading, setOrdersLoading] = useState(false);
     const [orderSearch, setOrderSearch] = useState("");
-    const [adminPanelTab,setAdminPanelTab] = useState('inicio');
+    const [adminPanelTab,setAdminPanelTab] = useState(()=>{const tab=new URLSearchParams(window.location.search).get("tab");return ["inicio","generador","pedidos","pagos","galerias","promociones","configuracion","herramientas"].includes(tab)?tab:"inicio";});
     const [adminGeneratorAlbumId,setAdminGeneratorAlbumId] = useState('');
     const [adminGeneratorSubId,setAdminGeneratorSubId] = useState('');
     const [adminGeneratorNumbers,setAdminGeneratorNumbers] = useState('');
@@ -8048,6 +8048,8 @@ En breve te las preparo y te las envío por acá 😊
                         BRAND),
                     React.createElement("p", { className: "text-neutral-400 text-sm" }, "Pod\u00E9s ver las galer\u00EDas, cambiar car\u00E1tulas y elegir qu\u00E9 \u00E1lbumes aparecen como historias destacadas en el encabezado.")),
                 React.createElement("div", { className: "mobile-stack flex gap-2" },
+                    React.createElement("button", { type:"button",onClick:()=>{setAdminPanelTab("generador");window.scrollTo({top:0,behavior:"smooth"});},className:"bg-sky-500 text-black px-4 py-3 rounded-xl font-black ring-2 ring-sky-300/30",title:"Crear un pedido por números de foto" },
+                        React.createElement("i",{className:"fas fa-list-ol mr-2","aria-hidden":true}),"Generar pedido"),
                     React.createElement("button", { onClick: refreshGalleryFromAdmin, className: "bg-neutral-800 px-4 py-3 rounded-xl" },
                         React.createElement("i", { className: "fas fa-rotate-right mr-2" }),
                         "Actualizar"),
@@ -8059,8 +8061,8 @@ En breve te las preparo y te las envío por acá 😊
                 React.createElement("nav", { className: "la-admin-nav la-admin-tabs", "aria-label": "Pestañas del administrador" },
                     [
                         ["inicio", "fa-chart-line", "Inicio"],
-                        ["pedidos", "fa-receipt", "Pedidos"],
                         ["generador", "fa-list-ol", "Generar pedido"],
+                        ["pedidos", "fa-receipt", "Pedidos"],
                         ["pagos", "fa-credit-card", "Pagos"],
                         ["galerias", "fa-images", "Galerías"],
                         ["promociones", "fa-tags", "Promociones"],
@@ -8072,7 +8074,7 @@ En breve te las preparo y te las envío por acá 😊
                         "aria-pressed":adminPanelTab===id,
                         onClick:()=>{setAdminPanelTab(id);window.scrollTo({top:0,behavior:"smooth"});}
                     },React.createElement("i",{className:"fas "+icon,"aria-hidden":true}),label))),
-                React.createElement("section",{hidden:adminPanelTab!=='generador',className:"bg-neutral-900 border border-sky-400/25 rounded-3xl p-4 sm:p-6 mb-6","aria-label":"Generador de pedido para clientes"},
+                React.createElement("section",{hidden:adminPanelTab!=='generador',className:"bg-neutral-900 border border-sky-400/25 rounded-3xl p-4 sm:p-6 mb-6","aria-label":"Generador de pedido para clientes",id:"la-admin-generator"},
                     React.createElement("h2",{className:"text-xl font-black text-white"},"Generador de pedidos por número"),
                     React.createElement("p",{className:"text-sm text-neutral-300 mt-1 mb-4"},"Elegí el partido y escribí los números celestes de la galería separados por comas o espacios. No hay límite de fotos."),
                     React.createElement("div",{className:"grid gap-3 sm:grid-cols-2"},
@@ -8501,6 +8503,14 @@ React.createElement("div", { id: "order-search-panel", hidden:adminPanelTab!=='p
                 React.createElement("div", { className: "flex flex-col sm:flex-row gap-2 mt-4" },
                     React.createElement("button", { onClick: () => setBannerSettings({ visible: false, items: [] }), className: "bg-neutral-800 px-4 py-3 rounded-xl font-bold" }, "Ocultar y borrar banners"),
                     React.createElement("button", { onClick: () => setBannerSettings(bs => ({ ...bs, items: [...(bs.items || []), { src: '', title: 'Nuevo banner', text: 'Descripción del banner', msg: 'Hola Lucas! Quiero consultar por este servicio.' }] })), className: "bg-indigo-600 px-4 py-3 rounded-xl font-bold" }, "Agregar banner"))),
+            admin && React.createElement("div", { id:"la-admin-mp-sync",
+                hidden:adminPanelTab!=='galerias',
+                className:"rounded-2xl border border-sky-400/30 bg-sky-500/10 px-5 py-4 mb-6"
+            },
+                React.createElement("h3", { className:"text-sky-200 font-black" }, "Mercado Pago · Sincronizar precios y galerías"),
+                React.createElement("p", { className:"text-xs text-sky-100/75 mt-1 mb-3" },
+                    "Actualiza en Cloudflare las fotos originales, el precio de cada álbum, descuentos web y cupones. Repetir cuando cambies los precios o las promociones."),
+                renderMpCatalogueSyncControls()),
             React.createElement("div", { id:"la-admin-gallery", hidden:!['galerias','pagos','pedidos'].includes(adminPanelTab), className: "mb-5" },
                 React.createElement("div", { hidden:adminPanelTab!=='galerias', className: "relative" },
                     React.createElement("i", { className: "fas fa-search absolute left-4 top-1/2 -translate-y-1/2 text-neutral-500 text-sm" }),
@@ -8599,15 +8609,7 @@ React.createElement("div", { id: "order-search-panel", hidden:adminPanelTab!=='p
                                 return link&&React.createElement("a",{key:i,href:link,target:"_blank",rel:"noopener noreferrer"},
                                     React.createElement("i",{className:"fas fa-download"})," ",p.name||"Foto "+(i+1));
                             })))))),
-                        admin && React.createElement("div", {
-                hidden:adminPanelTab!=='galerias',
-                className:"rounded-2xl border border-sky-400/30 bg-sky-500/10 px-5 py-4 mt-6 mb-6"
-            },
-                React.createElement("h3", { className:"text-sky-200 font-black" }, "Mercado Pago · Sincronizar precios y galerías"),
-                React.createElement("p", { className:"text-xs text-sky-100/75 mt-1 mb-3" },
-                    "Actualiza en Cloudflare las fotos originales, el precio de cada álbum, descuentos web y cupones. Repetir cuando cambies los precios o las promociones."),
-                renderMpCatalogueSyncControls()),
-            admin && React.createElement("section",{id:"la-admin-payments",hidden:adminPanelTab!=='pagos',className:"rounded-3xl border border-sky-400/25 bg-neutral-900 p-4 sm:p-5 mb-6","aria-label":"Historial Mercado Pago"},
+                        admin && React.createElement("section",{id:"la-admin-payments",hidden:adminPanelTab!=='pagos',className:"rounded-3xl border border-sky-400/25 bg-neutral-900 p-4 sm:p-5 mb-6","aria-label":"Historial Mercado Pago"},
                 React.createElement("div",{className:"flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3"},
                     React.createElement("div",null,
                         React.createElement("h3",{className:"font-black text-lg text-white"},React.createElement("i",{className:"fas fa-file-invoice-dollar text-sky-300 mr-2"}),"Ventas Mercado Pago · todas las órdenes"),
