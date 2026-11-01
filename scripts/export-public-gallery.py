@@ -35,7 +35,7 @@ def sheet_rows(tab):
                         record[headers[i].strip()] = value
                 converted.append(record)
             print('Photo tab', gid, 'rows', len(converted), flush=True)
-            return {'name':tab['name'], 'hidden':bool(tab['hidden']), 'rows':converted}
+            return {'name':tab['name'], 'hidden':bool(tab['hidden']), 'publishedAt':tab.get('publishedAt', ''), 'rows':converted}
         except Exception as error:
             errors.append(type(error).__name__ + ': ' + str(error)[:120])
     raise RuntimeError('Photo tab ' + gid + ' could not be read: ' + '; '.join(errors))
