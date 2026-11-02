@@ -53,6 +53,30 @@ function reminderMessage(item){
     "🤖 *Recordatorio automático de pago*, preparado por lucasabraham.ph.";
 }
 function whatsappLink(item){var phone=numberForWhatsapp(item.phone);return phone?"https://wa.me/"+phone+"?text="+encodeURIComponent(reminderMessage(item)):"";}
+function exportCalendar(r){
+  var start=new Date(r.dueAt);
+  if(!Number.isFinite(start.getTime()))return;
+  var utc=function(d){return d.toISOString().replace(/[-:]/g,"").replace(/\.\d{3}Z$/,"Z");};
+  var esc=function(x){return String(x||"").replace(/\\/g,"\\\\").replace(/\n/g,"\\n").replace(/[,;]/g,function(c){return "\\"+c;});};
+  var end=new Date(start.getTime()+15*60*1000);
+  var lines=[
+    "BEGIN:VCALENDAR","VERSION:2.0","CALSCALE:GREGORIAN","PRODID:-//lucasabraham.ph//Recordatorios de cobro//ES",
+    "BEGIN:VEVENT","UID:"+r.id.replace(/[^a-z0-9-]/gi,"")+"@lucasabraham.ph",
+    "DTSTAMP:"+utc(new Date()),"DTSTART:"+utc(start),"DTEND:"+utc(end),
+    "SUMMARY:"+esc("Cobrar "+money.format(r.amount)+" a "+r.name),
+    "DESCRIPTION:"+esc("Cobro pendiente de "+money.format(r.amount)+(r.concept?" por "+r.concept:"")+". Abrí lucasabraham.ph para preparar el mensaje de WhatsApp."),
+    "BEGIN:VALARM","ACTION:DISPLAY","TRIGGER:-PT0M",
+    "DESCRIPTION:"+esc("Recordatorio: "+r.name+" debe abonar "+money.format(r.amount)),
+    "END:VALARM","END:VEVENT","END:VCALENDAR"
+  ];
+  try{
+    var blob=new Blob([lines.join("\r\n")+"\r\n"],{type:"text/calendar;charset=utf-8"});
+    var uri=URL.createObjectURL(blob),a=document.createElement("a");
+    a.href=uri;a.download="recordatorio-cobro-"+r.id+".ics";
+    document.body.appendChild(a);a.click();a.remove();
+    setTimeout(function(){URL.revokeObjectURL(uri);},5000);
+  }catch(e){window.alert("No se pudo generar el aviso de calendario en este navegador.");}
+}
 function localDateTime(d){var pad=function(x){return String(x).padStart(2,"0");};return d.getFullYear()+"-"+pad(d.getMonth()+1)+"-"+pad(d.getDate())+"T"+pad(d.getHours())+":"+pad(d.getMinutes());}
 function defaultDue(){return localDateTime(new Date(Date.now()+24*60*60*1000));}
 function notifyDue(){
@@ -164,7 +188,7 @@ function PaymentReminders(){
         editing&&h("button",{type:"button",className:"la-reminders-btn la-reminders-muted",onClick:reset},"Cancelar edición"),
         h("button",{type:"button",className:"la-reminders-btn la-reminders-muted",onClick:requestPermission},permission==="granted"?"🔔 Notificaciones activadas":"🔔 Activar avisos del navegador")),
       info&&h("p",{role:"status",className:"la-reminders-feedback"},info)),
-    h("p",{className:"la-reminders-privacy"},"Importante: por ahora los cobros se guardan solamente en este navegador y dispositivo. Las notificaciones del sistema funcionan con la app abierta y el permiso concedido. WhatsApp NO envía mensajes solo: al tocar el botón se abre el texto preparado para que confirmes su envío."),
+    h("p",{className:"la-reminders-privacy"},"Importante: por ahora los cobros se guardan solamente en este navegador y dispositivo. Las notificaciones del sistema funcionan con la app abierta y el permiso concedido. Para un aviso aunque esté cerrada, exportá el recordatorio al calendario y activá su alerta al importarlo. WhatsApp NO envía mensajes solo: al tocar el botón se abre el texto preparado para que confirmes su envío."),
     h("div",{className:"la-reminders-actions"},
       h("button",{type:"button",onClick:function(){setFilter("open");},className:"la-reminders-btn "+(filter==="open"?"la-reminders-primary":"la-reminders-muted")},"Pendientes"),
       h("button",{type:"button",onClick:function(){setFilter("paid");},className:"la-reminders-btn "+(filter==="paid"?"la-reminders-primary":"la-reminders-muted")},"Cobrados"),
@@ -185,6 +209,7 @@ function PaymentReminders(){
             r.waOpenedAt&&h("div",null,"WhatsApp abierto: "+whenString(r.waOpenedAt))),
           h("div",{className:"la-reminders-actions"},
             r.status!=="paid"&&url&&h("a",{href:url,target:"_blank",rel:"noopener noreferrer",className:"la-reminders-btn la-reminders-wa",onClick:function(){opened(r);}},"Enviar WhatsApp"),
+            h("button",{type:"button",className:"la-reminders-btn la-reminders-muted",onClick:function(){exportCalendar(r);}},"📅 Agregar al calendario"),
             r.status!=="paid"&&h("button",{type:"button",className:"la-reminders-btn la-reminders-paid",onClick:function(){status(r,"paid");}},"✓ Marcar cobrado"),
             r.status==="paid"&&h("button",{type:"button",className:"la-reminders-btn la-reminders-muted",onClick:function(){status(r,"pending");}},"Reabrir"),
             h("button",{type:"button",className:"la-reminders-btn la-reminders-muted",onClick:function(){edit(r);}},"Editar"),
