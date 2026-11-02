@@ -41,16 +41,14 @@ function numberForWhatsapp(input){
   return d.length>=11&&d.length<=15?d:"";
 }
 function reminderMessage(item){
-  var name=(item.name||"").trim().split(/\s+/)[0]||"¿cómo estás?";
+  var name=String(item.name||"").trim()||"";
   var total=money.format(Number(item.amount)||0);
-  var concept=(item.concept||"").trim();
-  return "¡Hola, "+name+"! 😊 ¿Cómo estás?\n\n"+
-    "Te escribimos con un recordatorio amable: quedó pendiente el pago de *"+total+"*"+
-    (concept?" correspondiente a *"+concept+"*":"")+"."+
-    "\n\nCuando puedas, ¿nos confirmás si ya lo abonaste o cuándo te quedaría cómodo realizarlo? Si necesitás coordinarlo, no hay problema. "+
-    "Y si ya pagaste, por favor desestimá este mensaje. 🙏\n\n"+
+  return "¡Hola! 😊 "+name+" ¿Cómo estás?\n\n"+
+    "Te escribimos un recordatorio automático: quedó pendiente el pago de *"+total+"* correspondiente a las fotos adquiridas la última vez.\n\n"+
+    "Mi alias es lucasabraham.mp, luego me podés enviar comprobante por este medio.\n\n"+
+    "Si ya pagaste, por favor desestimá este mensaje. 🙏\n\n"+
     "¡Muchas gracias por elegir lucasabraham.ph! 📸⚽\n\n"+
-    "🤖 *Recordatorio automático de pago*, preparado por lucasabraham.ph.";
+    "🤖 *Recordatorio automático de pago*";
 }
 function whatsappLink(item){var phone=numberForWhatsapp(item.phone);return phone?"https://wa.me/"+phone+"?text="+encodeURIComponent(reminderMessage(item)):"";}
 function exportCalendar(r){
