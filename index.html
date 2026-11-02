@@ -14,9 +14,9 @@
       const requestedAdmin = location.hash === '#/admin' || params.get('admin') === '1' || (standalone && savedAdminRoute);
       if (requestedAdmin) {
         if (standalone && savedAdminRoute && location.hash !== '#/admin') location.hash = '#/admin';
-        if (params.get('build') !== 'v132-mobile-admin-recovery') {
+        if (params.get('build') !== 'v136-reminders-cloudflare') {
           params.set('admin','1');
-          params.set('build','v131-universal-admin-mobile');
+          params.set('build','v136-reminders-cloudflare');
           location.replace(location.pathname + '?' + params.toString() + '#/admin');
         }
       }
@@ -51,7 +51,7 @@
   <meta name="twitter:description" content="Fotos deportivas protegidas · Compra directa por WhatsApp" />
   <meta name="twitter:image" content="https://lucasabraham1996-cmd.github.io/photos/social-preview-la.png?v=105" />
   <title>lucasabraham.ph - Galería de Clientes</title>
-  <meta name="app-version" content="v131-universal-admin-mobile" /><style>html{color-scheme:dark}html,body{margin:0;min-height:100%;background:#050505;color:#fff}#root{min-height:100vh;background:#050505;color:#fff}
+  <meta name="app-version" content="v136-reminders-cloudflare" /><style>html{color-scheme:dark}html,body{margin:0;min-height:100%;background:#050505;color:#fff}#root{min-height:100vh;background:#050505;color:#fff}
     /* v41: estilo versus moderno para portada y álbum */
     .team-album-reveal{background:linear-gradient(180deg,rgba(3,7,18,.12),rgba(2,6,23,.28))}
     .team-reveal-half{left:12px!important;right:12px!important;width:auto!important;height:33%!important;padding:12px 16px!important;box-shadow:0 16px 36px rgba(0,0,0,.28),inset 0 1px 0 rgba(255,255,255,.14)!important;border:1px solid rgba(255,255,255,.10)!important;overflow:hidden}
@@ -2241,7 +2241,8 @@ img{-webkit-user-drag:none;}
 @media(max-width:380px){.checkout-payment-options{padding:12px}.mp-pay-button{padding:12px;gap:9px}.mp-pay-button strong{font-size:18px}.mp-pay-button>img{width:44px;height:44px;flex-basis:44px}.other-payment-button{padding:11px;font-size:14px;gap:9px}}
 </style>
   <link rel="stylesheet" href="./premium-ux-v132.css?v=138.0" />
-  <script defer src="./premium-ux-v132.js?v=135"></script>
+  <script src="./admin-recordatorios.js?v=20261101-1"></script>
+<script defer src="./premium-ux-v132.js?v=135"></script>
 </head>
 <body style="background:#050505;color:#fff;">
   <div id="boot-overlay" style="position:fixed;inset:0;z-index:99999;background:#050505;color:#fff;display:flex;align-items:center;justify-content:center;padding:24px;">
@@ -5390,7 +5391,7 @@ function App() {
     const [orders, setOrders] = useState([]);
     const [ordersLoading, setOrdersLoading] = useState(false);
     const [orderSearch, setOrderSearch] = useState("");
-    const [adminPanelTab,setAdminPanelTab] = useState(()=>{const tab=new URLSearchParams(window.location.search).get("tab");return ["inicio","generador","pedidos","pagos","galerias","promociones","configuracion","herramientas"].includes(tab)?tab:"inicio";});
+    const [adminPanelTab,setAdminPanelTab] = useState(()=>{const tab=new URLSearchParams(window.location.search).get("tab");return ["inicio","generador","pedidos","pagos","recordatorios","galerias","promociones","configuracion","herramientas"].includes(tab)?tab:"inicio";});
     const [adminGeneratorAlbumId,setAdminGeneratorAlbumId] = useState('');
     const [adminGeneratorSubId,setAdminGeneratorSubId] = useState('');
     const [adminGeneratorNumbers,setAdminGeneratorNumbers] = useState('');
@@ -5540,6 +5541,24 @@ function App() {
     const [checkoutSaveError, setCheckoutSaveError] = useState("");
     const orderSavingRef = useRef(false);
     const [adminNotificationsOpen, setAdminNotificationsOpen] = useState(false);
+    const [adminReminderDueCount, setAdminReminderDueCount] = useState(() =>
+        window.LAAdminReminders ? window.LAAdminReminders.getDueCount() : 0);
+    useEffect(() => {
+        if (!admin || route !== "#/admin" || !window.LAAdminReminders) return;
+        const refreshReminders = () => {
+            setAdminReminderDueCount(window.LAAdminReminders.getDueCount());
+            window.LAAdminReminders.notifyDue();
+        };
+        refreshReminders();
+        const timer = window.setInterval(refreshReminders, 30000);
+        document.addEventListener("visibilitychange", refreshReminders);
+        window.addEventListener("la-admin-reminders-updated", refreshReminders);
+        return () => {
+            window.clearInterval(timer);
+            document.removeEventListener("visibilitychange", refreshReminders);
+            window.removeEventListener("la-admin-reminders-updated", refreshReminders);
+        };
+    }, [admin, route]);
     const [adminReviewedIds, setAdminReviewedIds] = useState(() => { try { return JSON.parse(localStorage.getItem('LA_ADMIN_REVIEWED_ORDERS') || '[]'); } catch(e) { return []; } });
     const [adminResolvedIds, setAdminResolvedIds] = useState(() => { try { return JSON.parse(localStorage.getItem('LA_ADMIN_RESOLVED_ORDERS') || '[]'); } catch(e) { return []; } });
     const [adminBookingRequests, setAdminBookingRequests] = useState([]);
@@ -6439,7 +6458,7 @@ ${clone.outerHTML}`;
         return (CLUB_ENABLED || !isClubRecord(o)) && id && Number.isFinite(ts) && ts >= ADMIN_NOTIFICATION_START && !isTruthyStatus(o.delivered) && !isTruthyStatus(o.rejected) && !adminReviewedIds.includes(id);
     }).sort((a,b) => new Date(b.date || 0) - new Date(a.date || 0)), [adminOrderLedger, adminReviewedIds]);
     const unseenAdminBookingRequests = useMemo(() => (adminBookingRequests || []).filter(b => b && b.id && b.requestSource === 'public' && b.status === 'pendiente' && !adminReviewedBookingIds.includes(String(b.id))).sort((a,b) => new Date(b.createdAt || b.updatedAt || 0) - new Date(a.createdAt || a.updatedAt || 0)), [adminBookingRequests, adminReviewedBookingIds]);
-    const unseenAdminTotal = unseenAdminOrders.length + unseenAdminBookingRequests.length;
+    const unseenAdminTotal = unseenAdminOrders.length + unseenAdminBookingRequests.length + adminReminderDueCount;
     const markAdminReviewed = (id) => {
         const clean = normalizeOrderCode(id);
         if (!clean) return;
@@ -8098,6 +8117,7 @@ En breve te las preparo y te las envío por acá 😊
                         ["generador", "fa-list-ol", "Generar pedido"],
                         ["pedidos", "fa-receipt", "Pedidos"],
                         ["pagos", "fa-credit-card", "Pagos"],
+                        ["recordatorios", "fa-bell", "Recordatorios"+(adminReminderDueCount ? " ("+adminReminderDueCount+")" : "")],
                         ["galerias", "fa-images", "Galerías"],
                         ["promociones", "fa-tags", "Promociones"],
                         ["configuracion", "fa-shield-halved", "Configuración"],
@@ -8135,6 +8155,7 @@ En breve te las preparo y te las envío por acá 😊
                         React.createElement("div",{className:"flex flex-wrap gap-2 mt-3"},
                             React.createElement("button",{type:"button",className:"bg-emerald-500 text-black font-black px-4 py-3 rounded-xl",onClick:()=>navigator.clipboard.writeText(adminGeneratorMessage)},"Copiar pedido y enlaces de descarga"),
                             adminGeneratorWhatsappLink()&&React.createElement("a",{href:adminGeneratorWhatsappLink(),target:"_blank",rel:"noopener noreferrer",className:"bg-green-700 text-white font-black px-4 py-3 rounded-xl"},"Enviar por WhatsApp")))),
+                window.LAAdminReminders && React.createElement("section",{hidden:adminPanelTab!=='recordatorios',id:"la-admin-recordatorios",className:"mb-6"},React.createElement(window.LAAdminReminders.Panel,null)),
                 React.createElement("section", { className: "la-admin-overview", id:"la-admin-overview", hidden:adminPanelTab!=='inicio', "aria-label":"Resumen de gestión" },
                     React.createElement("div",{className:"la-admin-overview-head"},
                         React.createElement("h2",null,"Resumen de tu negocio"),
@@ -8198,8 +8219,13 @@ En breve te las preparo y te las envío por acá 😊
                         React.createElement("div", { className:"min-w-0 text-left" }, React.createElement("b", { className:"block text-sm" }, "Notificaciones"), React.createElement("span", { className:"block text-[11px] text-neutral-400 truncate" }, unseenAdminTotal ? `${unseenAdminTotal} novedad${unseenAdminTotal===1?'':'es'} sin revisar` : "No hay novedades sin revisar"))),
                     React.createElement("i", { className:`fas ${adminNotificationsOpen ? 'fa-chevron-up' : 'fa-chevron-down'} text-neutral-400` })),
                 adminNotificationsOpen && React.createElement("div", { className:"admin-notif-panel" },
-                    React.createElement("div", { className:"flex items-center justify-between gap-2 mb-2 px-1" }, React.createElement("b", { className:"text-xs" }, "Nuevos pedidos, canjes y partidos"), unseenAdminTotal > 0 && React.createElement("button", { onClick:markAllAdminReviewed, className:"text-[10px] text-orange-300 font-black" }, "Marcar todo revisado")),
-                    unseenAdminTotal === 0 && React.createElement("p", { className:"text-xs text-neutral-500 p-2" }, "Cuando llegue un pedido, un canje o una solicitud de partido, aparecerá acá."),
+                    React.createElement("div", { className:"flex items-center justify-between gap-2 mb-2 px-1" }, React.createElement("b", { className:"text-xs" }, "Pedidos y recordatorios pendientes"), (unseenAdminOrders.length + unseenAdminBookingRequests.length) > 0 && React.createElement("button", { onClick:markAllAdminReviewed, className:"text-[10px] text-orange-300 font-black" }, "Marcar pedidos revisados")),
+                    unseenAdminTotal === 0 && React.createElement("p", { className:"text-xs text-neutral-500 p-2" }, "Cuando llegue un pedido o se cumpla un recordatorio de cobro, aparecerá acá."),
+                    adminReminderDueCount > 0 && React.createElement("button",{type:"button",className:"admin-notif-item",onClick:()=>{setAdminPanelTab("recordatorios");setAdminNotificationsOpen(false);window.scrollTo({top:0,behavior:"smooth"});}},
+                        React.createElement("div",{className:"min-w-0"},React.createElement("span",{className:"admin-notif-kind order"},"COBRO"),
+                        React.createElement("b",{className:"text-xs ml-2"},adminReminderDueCount+" recordatorio"+(adminReminderDueCount===1?"":"s")+" para enviar"),
+                        React.createElement("p",{className:"text-[10px] text-neutral-500 mt-1"},"Entrá a Recordatorios y abrí WhatsApp para avisar al cliente")),
+                        React.createElement("i",{className:"fas fa-chevron-right text-emerald-400 text-xs"})),
                     unseenAdminBookingRequests.slice(0,8).map(b => React.createElement("button", { key:`booking-${b.id}`, onClick:() => openBookingRequestFromNotification(b), className:"admin-notif-item" }, React.createElement("div", { className:"min-w-0" }, React.createElement("div", { className:"flex items-center gap-2" }, React.createElement("span", { className:"admin-notif-kind request" }, "PARTIDO"), React.createElement("b", { className:"text-xs truncate" }, `${b.home||'Local'} vs ${b.away||'Visitante'}`)), React.createElement("p", { className:"text-[10px] text-neutral-500 mt-1 truncate" }, `${b.date||'Sin fecha'} · ${b.category||'Sin categoría'} · ${b.clientName||'Sin nombre'}`)), React.createElement("i", { className:"fas fa-calendar-days text-emerald-400 text-xs" }))),
                     unseenAdminOrders.slice(0,12).map(o => { const isClub=o.type==='benefit_redemption'||o.benefitRedemption===true; return React.createElement("button", { key:o.id, onClick:() => openOrderFromQueue(o), className:"admin-notif-item" }, React.createElement("div", { className:"min-w-0" }, React.createElement("div", { className:"flex items-center gap-2" }, React.createElement("span", { className:`admin-notif-kind ${isClub?'club':'order'}` }, isClub?'CANJE CLUB':'PEDIDO'), React.createElement("b", { className:"text-xs truncate" }, `#${o.id}`)), React.createElement("p", { className:"text-[10px] text-neutral-500 mt-1 truncate" }, `${o.customerName||'Sin nombre'} · ${isClub ? (o.rewardName||'Beneficio') : formatPrice(o.total)}`)), React.createElement("i", { className:"fas fa-chevron-right text-neutral-600 text-xs" })); })) ),
             React.createElement("section", { hidden:adminPanelTab!=='herramientas', className: "relative overflow-hidden bg-gradient-to-br from-sky-500/15 via-blue-600/10 to-neutral-900 border border-sky-400/20 rounded-3xl p-5 sm:p-6 mb-6" },
@@ -9080,7 +9106,7 @@ React.createElement("div", { id: "order-search-panel", hidden:adminPanelTab!=='p
                             React.createElement("p", { className: (photo.free ? "text-emerald-300" : bulkQuoteMode ? "text-emerald-300" : "text-sky-300") + " text-[9px] font-bold" },
                               photo.free ? 'Descarga directa' : React.createElement(React.Fragment,null,
                                 photo.directDiscountPercent>0 && React.createElement("s",{className:"la-old-unit-price"},formatPrice(photo.price)),
-                                " ",formatPrice(Math.round(photo.price*(1-(photo.directDiscountPercent||0)/100))))),
+                                " ",formatPrice(Math.round(photo.price*(1-(photo.directDiscountPercent||0)/100)))))),
                         React.createElement("button", { onClick: (e) => { e.stopPropagation(); photo.free ? downloadFreePhoto(photo) : bulkQuoteMode ? toggleBulkQuotePhoto(photo.id) : toggle(photo.id); }, className: `absolute top-2 right-2 sm:top-3 sm:right-3 w-8 h-8 rounded-full flex items-center justify-center transition-all duration-300 z-20 ${photo.free ? 'la-photo-free-download' : isSelected ? (bulkQuoteMode ? 'bg-emerald-400 text-black scale-110 shadow-lg' : 'bg-indigo-500 text-white scale-110 shadow-lg') : 'bg-black/50 text-white/60 border border-white/20 backdrop-blur-sm'}`,title:photo.free?"Descargar foto gratuita":undefined,"aria-label":photo.free?"Descargar foto gratuita":isSelected?"Quitar foto":"Agregar foto" },
                             React.createElement("i", { className: `fas ${photo.free ? 'fa-download' : isSelected ? 'fa-check' : 'fa-plus'} text-sm` })));
                 })),
