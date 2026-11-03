@@ -5537,6 +5537,8 @@ function App() {
     const [checkoutSaving, setCheckoutSaving] = useState(false);
     const [albumWhatsappBusy,setAlbumWhatsappBusy] = useState(false);
     const [transferWhatsappBusy,setTransferWhatsappBusy] = useState(false);
+    const transferOrderRef=useRef({signature:'',id:''});
+    const [transferSyncNotice,setTransferSyncNotice]=useState('');
     const [albumConsultOpen,setAlbumConsultOpen] = useState(false);
     const [checkoutSaveError, setCheckoutSaveError] = useState("");
     const orderSavingRef = useRef(false);
@@ -7316,12 +7318,21 @@ En breve te las preparo y te las envío por acá 😊
             '\n\n💳 ¿Me pasás tu *alias* para poder hacerte la transferencia? 🙌\n¡Muchas gracias! 😊';
         return 'https://wa.me/'+SELLER_PHONE+'?text='+encodeURIComponent(message);
     };
-    // Registrar cada consulta con su canal real, sin dar el mensaje por enviado.
-    const startOtherPaymentWhatsapp=async()=>{
+    // Abrir el chat sin esperar a Firebase ni Apps Script; el mismo ID evita pedidos duplicados.
+    const startOtherPaymentWhatsapp=()=>{
         if(!selectedPhotos.length||transferWhatsappBusy)return;
         if(!validateCheckoutBuyer())return;
-        setTransferWhatsappBusy(true);setCheckoutSaveError('');
-        const id=newOrderCode(),now=new Date().toISOString();
+        setTransferWhatsappBusy(true);
+        setCheckoutSaveError('');
+        const signature=JSON.stringify({
+            checkout:checkoutOrderCode,items:selectedPhotos.map(p=>p.id),
+            total:checkoutTotal,prints:checkoutPrint?printedPhotoIds:[],
+            name:checkoutBuyerName,phone:checkoutBuyerPhone
+        });
+        const id=transferOrderRef.current.signature===signature
+            ?transferOrderRef.current.id:newOrderCode();
+        transferOrderRef.current={signature,id};
+        const now=new Date().toISOString();
         const whatsappUrl=otherPaymentWhatsappUrl(null,id);
         const order={id,date:now,kind:'photos',total:checkoutTotal,subtotal:regular,
             customerName:checkoutBuyerName||'',phone:checkoutBuyerPhone||'',
@@ -7329,10 +7340,8 @@ En breve te las preparo y te las envío por acá 😊
             channel:'whatsapp',paymentProvider:'whatsapp',paymentStatus:'pending',
             status:'consulta_whatsapp_iniciada',paid:false,delivered:false,
             whatsappOpenedAt:now,wantsPoints:false,
-            // Una consulta por transferencia también debe conservar el pedido de impresión.
             printRequested:Boolean(checkoutPrint&&printSelectedPhotos.length),
-            printFormat:'10x15 cm',
-            printCount:checkoutPrint?printSelectedPhotos.length:0,
+            printFormat:'10x15 cm',printCount:checkoutPrint?printSelectedPhotos.length:0,
             printSurchargePerPhoto:PRINT_SURCHARGE_PER_PHOTO,
             printSurcharge:checkoutPrint?printSurcharge:0,
             printedPhotoIds:checkoutPrint?printSelectedPhotos.map(p=>p.id):[],
@@ -7344,23 +7353,27 @@ En breve te las preparo y te las envío por acá 😊
                 price:Number(p.price)||0,
                 printRequested:Boolean(checkoutPrint&&printedPhotoIds.includes(p.id)),
                 driveLink:p.rawUrl||p.fullUrl||p.url||''}))};
+        // Respaldo síncrono local antes de abandonar la aplicación.
         try{
             saveLocalOrders(mergeOrders(readLocalOrders(),[order]));
             savePendingOrders(mergeOrders(readPendingOrders(),[compactOrderForScript(order)]));
         }catch(err){console.warn('Respaldo de consulta WhatsApp:',err)}
-        try {
-            // Confirmar el registro compartido antes de salir hacia WhatsApp.
-            const status=await saveOrderRemote(order);
-            if(!status.firebase&&!status.script)throw new Error(status.error||'El servidor no confirmó el registro');
-            window.location.assign(whatsappUrl);
-        } catch(err) {
-            console.warn('Consulta por transferencia pendiente de registrar:',id,err);
-            setCheckoutSaveError('No se pudo confirmar el registro del pedido '+id+'. No se borraron las fotos seleccionadas.');
-            const proceed=window.confirm('No se pudo guardar el pedido en la base compartida. ¿Querés enviar igualmente la consulta por WhatsApp con el código '+id+' y el detalle de las fotos? Lucas tendrá que registrarla manualmente.');
-            if(proceed)window.location.assign(whatsappUrl);
-        } finally {
-            setTransferWhatsappBusy(false);
-        }
+        setTransferSyncNotice('Pedido '+id+' generado. Enviá el WhatsApp; el registro se sincroniza automáticamente.');
+        try{
+            const opened=window.open(whatsappUrl,'_blank');
+            if(!opened)window.location.assign(whatsappUrl);
+        }catch(err){window.location.assign(whatsappUrl)}
+        saveOrderRemote(order).then(status=>{
+            if(transferOrderRef.current.id!==id)return;
+            setTransferSyncNotice(status&&(status.firebase||status.script)
+                ?'Pedido '+id+' registrado correctamente.'
+                :'Pedido '+id+' pendiente de sincronización. Enviá el WhatsApp para que Lucas tenga el detalle.');
+        }).catch(err=>{
+            console.warn('Pedido de transferencia pendiente de reintentar:',id,err);
+            if(transferOrderRef.current.id===id)
+                setTransferSyncNotice('Pedido '+id+' conservado en este dispositivo. Enviá el WhatsApp para que Lucas tenga el detalle.');
+        });
+        setTransferWhatsappBusy(false);
     };
     // Las consultas de álbumes completos no pasan por Mercado Pago. Primero
     // registramos un pedido resumido para no perder solicitudes grandes en Firebase.
@@ -9345,9 +9358,10 @@ React.createElement("div", { id: "order-search-panel", hidden:adminPanelTab!=='p
                         MP_TRIAL_ENABLED?"Compra ficticia con la cuenta de prueba.":"Pago seguro. Tus fotos se habilitan al aprobarse el pago."),
                     React.createElement("button",{type:"button",onClick:startOtherPaymentWhatsapp,disabled:!checkoutBuyerComplete||transferWhatsappBusy,className:"other-payment-button"},
                         React.createElement("i",{className:"fab fa-whatsapp","aria-hidden":true}),
-                        React.createElement("span",null,transferWhatsappBusy?"Registrando pedido antes de abrir WhatsApp…":"Hablar con Lucas para abonar por transferencia"),
+                        React.createElement("span",null,transferWhatsappBusy?"Abriendo WhatsApp…":"Hablar con Lucas para abonar por transferencia"),
                         React.createElement("i",{className:"fas fa-arrow-up-right-from-square","aria-hidden":true})),
                     React.createElement("p",{className:"other-payment-hint"},"Coordiná una transferencia directamente con Lucas Abraham por WhatsApp."),
+                    transferSyncNotice&&React.createElement("p",{role:"status",className:"text-xs text-amber-200 mt-2"},transferSyncNotice),
                     mpTrialPurchase&&!mpTrialPurchase.paid&&React.createElement("div",{className:"mp-purchase-status"},
                         React.createElement("p",{className:"mp-purchase-reference"},"Tu compra: "+formatPrice(mpTrialPurchase.amount||0)+" · "+mpTrialPurchase.order_id),
                         React.createElement("button",{type:"button",onClick:checkMpTrial,disabled:mpTrialBusy,className:"mp-status-button"},"Actualizar estado del pago"),
