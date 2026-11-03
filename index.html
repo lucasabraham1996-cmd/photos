@@ -2291,7 +2291,7 @@ const LS_SHARED_STATE_KEY = "la_shared_admin_state_v2";
 const LS_BANNERS_KEY = "la_banner_settings_v1";
 const LS_INTRO_KEY = "la_purchase_intro_seen_v2";
 const PHOTOS_PER_PAGE = 70;
-const APP_VERSION = "v141-stable-firebase-auth";
+const APP_VERSION = "v142-admin-recent-first";
 const LS_ALBUM_CACHE_META_KEY = "la_album_cache_meta_v1";
 const ALBUM_CACHE_MAX_AGE_MS = 1000 * 60 * 60 * 12;
 const FIRESTORE_FREE_DAILY_LIMITS = {
@@ -8587,6 +8587,50 @@ En breve te las preparo y te las envío por acá 😊
             React.createElement("i", { className: "fas fa-calendar-days mr-2" }),
             "Abrir contrataciones"))),
 React.createElement("div", { id: "order-search-panel", hidden:adminPanelTab!=='pedidos', className: "bg-neutral-900 border border-neutral-800 rounded-3xl p-5 mb-6" },
+                React.createElement("div",{className:"mb-4 rounded-2xl border border-emerald-400/20 bg-emerald-500/5 p-4"},
+                    React.createElement("div",{className:"flex flex-wrap justify-between items-center gap-3 mb-3"},
+                        React.createElement("div",null,
+                            React.createElement("h4",{className:"text-sm font-black text-emerald-200"},"Ventas recientes de Mercado Pago · Cloudflare"),
+                            React.createElement("p",{className:"text-xs text-neutral-400 mt-1"},
+                                mpAdminVerifiedKeyRef.current?
+                                "Consulta conectada · "+mpAdminOrders.length+" órdenes recuperadas · actualización "+(mpAdminLastCheckedAt?new Date(mpAdminLastCheckedAt).toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit'}):"pendiente"):
+                                "Sin conectar: las ventas de Mercado Pago que solo están en Cloudflare todavía no aparecen en el historial."))),
+                    React.createElement("form",{className:"flex flex-col sm:flex-row gap-2",onSubmit:e=>{e.preventDefault();fetchMpAdminOrders(false);}},
+                        React.createElement("input",{type:"password",value:mpCatalogueSetupKey,
+                            onChange:e=>{setMpCatalogueSetupKey(e.target.value);mpAdminVerifiedKeyRef.current='';setMpAdminOrders([]);setMpAdminLastCheckedAt('');},
+                            autoComplete:"off",spellCheck:false,
+                            placeholder:"Clave MP_SETUP_KEY configurada en Cloudflare",
+                            "aria-label":"Clave para consultar pedidos de Mercado Pago",
+                            className:"min-w-0 flex-1 bg-black border border-white/20 rounded-xl p-3 text-sm text-white"}),
+                        React.createElement("button",{type:"submit",disabled:mpAdminOrdersBusy||!String(mpCatalogueSetupKey||'').trim(),
+                            className:"rounded-xl bg-emerald-500 text-black px-4 py-3 text-sm font-black disabled:opacity-40"},
+                            mpAdminOrdersBusy?"Consultando ventas…":mpAdminVerifiedKeyRef.current?"Actualizar ventas MP":"Conectar ventas MP")),
+                    React.createElement("p",{className:"text-[11px] text-neutral-400 mt-2"},
+                        "La clave se usa solo durante esta sesión y no se guarda en el navegador."),
+                    React.createElement("div",{className:"flex flex-wrap gap-3 text-[11px] text-neutral-400 mt-2"},
+                        React.createElement("span",null,"Firebase: ",window.LA_LAST_ORDER_LOAD?(window.LA_LAST_ORDER_LOAD.firebase?"consultado":"sin respuesta"):"pendiente"),
+                        React.createElement("span",null,"Apps Script: ",window.LA_LAST_ORDER_LOAD?(window.LA_LAST_ORDER_LOAD.script?"consultado":"sin respuesta"):"pendiente"),
+                        React.createElement("span",null,"Cloudflare: ",mpAdminVerifiedKeyRef.current?"consultado":"sin conectar"))),
+                React.createElement("div",{className:"mb-5 rounded-2xl border border-white/10 bg-black/25 p-3 sm:p-4"},
+                    React.createElement("div",{className:"flex flex-wrap gap-2 items-center justify-between mb-3"},
+                        React.createElement("h3",{className:"text-lg font-black text-white"},"Últimos pedidos registrados"),
+                        React.createElement("span",{className:"text-xs text-neutral-400"},"Últimos 30 días · hasta 8 pedidos")),
+                    React.createElement("div",{className:"grid gap-2"},
+                        adminOrderLedger.filter(o=>Number.isFinite(Date.parse(o.date||o.createdAt||''))&&
+                            Date.parse(o.date||o.createdAt||'')>=Date.now()-30*24*60*60*1000).slice(0,8).map(o=>
+                            React.createElement("button",{key:o.id,type:"button",onClick:()=>openOrderFromQueue(o),
+                                className:"w-full flex flex-wrap items-center justify-between gap-2 rounded-xl border border-white/10 bg-neutral-950 p-3 text-left hover:border-sky-400/40"},
+                                React.createElement("div",{className:"min-w-0"},
+                                    React.createElement("b",{className:"block text-sm text-white"},"#"+o.id+" · "+(o.customerName||"Cliente sin nombre")),
+                                    React.createElement("span",{className:"block text-xs text-neutral-400 mt-1"},
+                                        new Date(o.date||o.createdAt).toLocaleDateString("es-AR")+" · "+(o.items||[]).length+" fotos")),
+                                React.createElement("div",{className:"flex items-center gap-2"},
+                                    React.createElement("b",{className:"text-xs text-sky-200"},formatPrice(o.total)),
+                                    React.createElement("span",{className:"text-[10px] text-neutral-400"},"Abrir")))),
+                        !adminOrderLedger.some(o=>Date.parse(o.date||o.createdAt||'')>=Date.now()-30*24*60*60*1000)&&
+                            React.createElement("p",{className:"text-sm text-amber-100/80 py-3"},
+                                ordersLoading?"Buscando pedidos recientes…":"No hay pedidos recientes recuperados de las fuentes conectadas. Si fueron por Mercado Pago, conectá Cloudflare arriba."))),
+
                 React.createElement("div", { className: "flex flex-col lg:flex-row lg:items-end gap-4 lg:justify-between" },
                     React.createElement("div", null,
                         React.createElement("h2", { className: "text-xl font-black mb-1" }, "Buscar operaci\u00F3n y obtener links de Drive"),
@@ -8687,7 +8731,7 @@ React.createElement("div", { id: "order-search-panel", hidden:adminPanelTab!=='p
                 React.createElement("div", { className: "mt-5 border-t border-neutral-800 pt-4" },
                     React.createElement("div", { className: "flex items-center justify-between gap-3 mb-3" },
                         React.createElement("h3", { className: "font-black text-lg" }, "Cola de pedidos pendientes"),
-                        React.createElement("span", { className: "text-xs text-neutral-400" }, "Solo se muestran pendientes. Al marcar entregado o rechazado, desaparecen de esta cola.")),
+                        React.createElement("span", { className: "text-xs text-neutral-400" }, "Pendientes de los últimos 30 días. Los anteriores siguen disponibles en el historial.")),
                     React.createElement("div", { className: "grid gap-2" },
                         recentOrders.length === 0 && React.createElement("p", { className: "text-sm text-neutral-400" }, "No hay pedidos pendientes en la cola."),
                         recentOrders.map(o => {
@@ -8771,30 +8815,6 @@ React.createElement("div", { id: "order-search-panel", hidden:adminPanelTab!=='p
                     ordersLoading?"Consultando fuentes sin alterar el listado visible…":adminOrdersLastUpdatedAt?"Última actualización: "+new Date(adminOrdersLastUpdatedAt).toLocaleTimeString("es-AR",{hour:"2-digit",minute:"2-digit"}):"Listo para consultar pedidos."),
                 adminOrdersLoadWarning&&React.createElement("p",{className:"text-xs text-amber-200 mb-3",role:"status"},adminOrdersLoadWarning),
                 React.createElement("p", { className:"text-xs text-neutral-400 mb-3" }, "Pedidos de Firebase, Apps Script y Cloudflare, con estado de pago y canal separados. Abrir WhatsApp no confirma que el mensaje fue enviado."),
-                React.createElement("div",{className:"mb-4 rounded-2xl border border-emerald-400/20 bg-emerald-500/5 p-4"},
-                    React.createElement("div",{className:"flex flex-wrap justify-between items-center gap-3 mb-3"},
-                        React.createElement("div",null,
-                            React.createElement("h4",{className:"text-sm font-black text-emerald-200"},"Ventas recientes de Mercado Pago · Cloudflare"),
-                            React.createElement("p",{className:"text-xs text-neutral-400 mt-1"},
-                                mpAdminVerifiedKeyRef.current?
-                                "Consulta conectada · "+mpAdminOrders.length+" órdenes recuperadas · actualización "+(mpAdminLastCheckedAt?new Date(mpAdminLastCheckedAt).toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit'}):"pendiente"):
-                                "Sin conectar: las ventas de Mercado Pago que solo están en Cloudflare todavía no aparecen en el historial."))),
-                    React.createElement("form",{className:"flex flex-col sm:flex-row gap-2",onSubmit:e=>{e.preventDefault();fetchMpAdminOrders(false);}},
-                        React.createElement("input",{type:"password",value:mpCatalogueSetupKey,
-                            onChange:e=>{setMpCatalogueSetupKey(e.target.value);mpAdminVerifiedKeyRef.current='';setMpAdminOrders([]);setMpAdminLastCheckedAt('');},
-                            autoComplete:"off",spellCheck:false,
-                            placeholder:"Clave MP_SETUP_KEY configurada en Cloudflare",
-                            "aria-label":"Clave para consultar pedidos de Mercado Pago",
-                            className:"min-w-0 flex-1 bg-black border border-white/20 rounded-xl p-3 text-sm text-white"}),
-                        React.createElement("button",{type:"submit",disabled:mpAdminOrdersBusy||!String(mpCatalogueSetupKey||'').trim(),
-                            className:"rounded-xl bg-emerald-500 text-black px-4 py-3 text-sm font-black disabled:opacity-40"},
-                            mpAdminOrdersBusy?"Consultando ventas…":mpAdminVerifiedKeyRef.current?"Actualizar ventas MP":"Conectar ventas MP")),
-                    React.createElement("p",{className:"text-[11px] text-neutral-400 mt-2"},
-                        "La clave se usa solo durante esta sesión y no se guarda en el navegador."),
-                    React.createElement("div",{className:"flex flex-wrap gap-3 text-[11px] text-neutral-400 mt-2"},
-                        React.createElement("span",null,"Firebase: ",window.LA_LAST_ORDER_LOAD?(window.LA_LAST_ORDER_LOAD.firebase?"consultado":"sin respuesta"):"pendiente"),
-                        React.createElement("span",null,"Apps Script: ",window.LA_LAST_ORDER_LOAD?(window.LA_LAST_ORDER_LOAD.script?"consultado":"sin respuesta"):"pendiente"),
-                        React.createElement("span",null,"Cloudflare: ",mpAdminVerifiedKeyRef.current?"consultado":"sin conectar"))),
                 React.createElement("p",{className:"text-xs text-neutral-400 mb-3"},adminOrderLedger.length+" pedidos disponibles · "+adminFilteredLedger.length+" coincidencias"+(mpAdminOrdersHasMore?" · más ventas MP por recuperar":"")+"."),
                 mpAdminOrdersError&&React.createElement("p",{role:"alert",className:"text-xs text-amber-200 mb-3"},mpAdminOrdersError),
                 mpAdminOrdersHasMore&&React.createElement("button",{type:"button",onClick:()=>fetchMpAdminOrders(true),className:"mb-3 px-4 py-2 rounded-xl bg-neutral-700 text-white text-xs font-bold"},"Recuperar más órdenes"),
@@ -9021,7 +9041,7 @@ React.createElement("div", { id: "order-search-panel", hidden:adminPanelTab!=='p
                     React.createElement("div",null,
                         React.createElement("h3",{className:"font-black text-lg text-white"},React.createElement("i",{className:"fas fa-file-invoice-dollar text-sky-300 mr-2"}),"Ventas Mercado Pago · todas las órdenes"),
                         React.createElement("p",{className:"text-xs text-neutral-400 mt-1"},"Consulta directa a Cloudflare, incluso cuando el cliente no volvió a la web después de pagar.")),
-                    React.createElement("button",{type:"button",onClick:()=>fetchMpAdminOrders(false),disabled:mpAdminOrdersBusy,className:"buy-btn rounded-xl px-4 py-3 text-xs font-black"},
+                    React.createElement("button",{type:"button",onClick:()=>{setAdminPanelTab("pedidos");if(mpAdminVerifiedKeyRef.current)fetchMpAdminOrders(false);window.scrollTo({top:0,behavior:"smooth"});},disabled:mpAdminOrdersBusy,className:"buy-btn rounded-xl px-4 py-3 text-xs font-black"},
                         mpAdminOrdersBusy?"Cargando órdenes…":"Ver / actualizar ventas")),
                 React.createElement("p",{className:"text-[11px] text-neutral-500 mt-2"},"Acceso reservado al administrador. Usa la clave ingresada arriba, sin guardarla en el navegador."),
                 mpAdminOrdersError&&React.createElement("p",{role:"alert",className:"mt-3 text-xs text-amber-200"},mpAdminOrdersError),
