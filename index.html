@@ -3246,24 +3246,45 @@ async function saveOrderRemote(order){
         await LAOrderOutbox.put(clean);
         saveLocalOrders(mergeOrders(readLocalOrders(),[clean]));
         const status={firebase:false,script:false,error:'',id:clean.id};
-        try{await orderDeadline(saveOrderFirebase(clean));status.firebase=true}
-        catch(e){status.error=String(e&&e.message||e);console.warn('Firebase no confirmó el pedido:',clean.id,e)}
-        if(!status.firebase){
+        // Firebase principal y respaldo verificado con el mismo código: no demorar la orden
+        // hasta 45 segundos solo por una fuente lenta o inactiva.
+        const firebaseTask=orderDeadline(saveOrderFirebase(clean),12000).then(()=>{
+            status.firebase=true;
+            return true;
+        }).catch(e=>{
+            status.error=String(e&&e.message||e);
+            console.warn('Firebase no confirmó el pedido:',clean.id,e);
+            return false;
+        });
+        const scriptTask=(async()=>{
+            await wait(1600);
+            if(status.firebase)return false;
             const compact=compactOrderForScript(clean);
             const params={action:'createOrder',order:JSON.stringify(compact)};
-            const encoded=new URLSearchParams(params).toString();
-            if(encoded.length<=7000){
-                try{
-                    const response=await apiAction(params);
-                    if(response&&(response.error||response.ok===false||response.success===false))throw new Error(String(response.error||'El respaldo rechazó el pedido'));
-                    const verify=await apiAction({action:'getOrder',orderId:clean.id});
-                    const found=verify&&verify.order;
-                    const count=found?(Array.isArray(found.items)?found.items.length:Number(found.itemCount)||0):0;
-                    if(!found||!sameOrderCode(found.id||found.orderId,clean.id)||count!==clean.items.length||Number(found.total)!==Number(clean.total))throw new Error('El respaldo no devolvió el pedido completo');
-                    status.script=true;
-                }catch(e){status.error=String(e&&e.message||e);console.warn('Apps Script no confirmó el pedido:',clean.id,e)}
-            }else status.error='El respaldo alternativo no admite este tamaño; el pedido quedó conservado para reintentar Firebase.';
-        }
+            if(new URLSearchParams(params).toString().length>7000){
+                if(!status.firebase)status.error='El respaldo alternativo no admite este tamaño; el pedido quedó conservado para reintentar Firebase.';
+                return false;
+            }
+            try{
+                const response=await apiAction(params);
+                if(response&&(response.error||response.ok===false||response.success===false))
+                    throw new Error(String(response.error||'El respaldo rechazó el pedido'));
+                const verify=await apiAction({action:'getOrder',orderId:clean.id});
+                const found=verify&&verify.order;
+                const count=found?(Array.isArray(found.items)?found.items.length:Number(found.itemCount)||0):0;
+                if(!found||!sameOrderCode(found.id||found.orderId,clean.id)||
+                    count!==clean.items.length||Number(found.total)!==Number(clean.total))
+                    throw new Error('El respaldo no devolvió el pedido completo');
+                status.script=true;
+                return true;
+            }catch(e){
+                if(!status.firebase)status.error=String(e&&e.message||e);
+                console.warn('Apps Script no confirmó el pedido:',clean.id,e);
+                return false;
+            }
+        })();
+        const firstConfirmed=await Promise.race([firebaseTask,scriptTask]);
+        if(!firstConfirmed)await Promise.allSettled([firebaseTask,scriptTask]);
         if(status.firebase||status.script){
             await LAOrderOutbox.remove(clean.id);
             savePendingOrders(readPendingOrders().filter(o=>!sameOrderCode(o.id,clean.id)));
@@ -3274,7 +3295,40 @@ async function saveOrderRemote(order){
     LA_ORDER_SAVE_INFLIGHT.set(key,work);
     return work;
 }
-async function loadOrdersRemote(){const [sr,fr]=await Promise.allSettled([apiAction({action:'listOrders'}),loadOrdersFirebase()]);const scriptOk=sr.status==='fulfilled'&&sr.value&&!sr.value.error&&sr.value.ok!==false&&Array.isArray(sr.value.orders),firebaseOk=fr.status==='fulfilled';const scriptOrders=scriptOk?sr.value.orders:[],firebaseOrders=firebaseOk?fr.value:[];window.LA_ORDER_LOAD_WARNING=!scriptOk&&!firebaseOk?'No se pudieron consultar los pedidos remotos. Se muestran los respaldos disponibles.':(!scriptOk||!firebaseOk?'Una fuente de pedidos no respondió. Revisá los pendientes si falta alguno.':'');const byId=new Map(scriptOrders.map(o=>[normalizeOrderCode(o.id||o.orderId||o.codigo||o.code),o]));const completeFirebase=firebaseOrders.map(o=>{if(!o.storageIncomplete)return o;const backup=byId.get(normalizeOrderCode(o.id));return backup&&Array.isArray(backup.items)&&backup.items.length===Number(o.itemCount)?{...o,items:backup.items,printedItems:backup.printedItems||[],printedPhotoIds:backup.printedPhotoIds||[],storageIncomplete:false}:o});const local=mergeOrders(readLocalOrders(),readPendingOrders(),await LAOrderOutbox.all());return mergeOrders(local,scriptOrders,completeFirebase)}
+async function loadOrdersRemote(onProgress){
+    // Entregar local y cada fuente en cuanto haya datos, sin bloquear por la otra.
+    const local=mergeOrders(readLocalOrders(),readPendingOrders(),await LAOrderOutbox.all());
+    let scriptOrders=[],firebaseOrders=[];
+    const publish=()=>{if(typeof onProgress==='function')onProgress(mergeOrders(local,scriptOrders,firebaseOrders))};
+    publish();
+    const scriptTask=apiAction({action:'listOrders'}).then(data=>{
+        if(data&&!data.error&&data.ok!==false&&Array.isArray(data.orders)){
+            scriptOrders=data.orders;
+            publish();
+        }
+        return data;
+    });
+    const firebaseTask=loadOrdersFirebase().then(data=>{
+        firebaseOrders=data;
+        publish();
+        return data;
+    });
+    const [sr,fr]=await Promise.allSettled([scriptTask,firebaseTask]);
+    const scriptOk=sr.status==='fulfilled'&&sr.value&&!sr.value.error&&sr.value.ok!==false&&Array.isArray(sr.value.orders);
+    const firebaseOk=fr.status==='fulfilled';
+    window.LA_ORDER_LOAD_WARNING=!scriptOk&&!firebaseOk
+        ?'No se pudieron consultar los pedidos remotos. Se muestran los respaldos disponibles.'
+        :(!scriptOk||!firebaseOk?'Una fuente de pedidos no respondió. Revisá los pendientes si falta alguno.':'');
+    const byId=new Map(scriptOrders.map(o=>[normalizeOrderCode(o.id||o.orderId||o.codigo||o.code),o]));
+    const completeFirebase=firebaseOrders.map(o=>{
+        if(!o.storageIncomplete)return o;
+        const backup=byId.get(normalizeOrderCode(o.id));
+        return backup&&Array.isArray(backup.items)&&backup.items.length===Number(o.itemCount)
+            ?{...o,items:backup.items,printedItems:backup.printedItems||[],printedPhotoIds:backup.printedPhotoIds||[],storageIncomplete:false}
+            :o;
+    });
+    return mergeOrders(local,scriptOrders,completeFirebase);
+}
 async function markOrderDelivered(orderId, delivered) {
     try {
         await apiAction({ action: "updateOrder", orderId, delivered: String(delivered) });
@@ -7280,7 +7334,7 @@ En breve te las preparo y te las envío por acá 😊
         if(ordersLoading||mpAdminOrdersBusy)return;
         setOrdersLoading(true);
         try{
-            const list=await loadOrdersRemote();
+            const list=await loadOrdersRemote(partial=>setOrders(partial));
             setOrders(list);
             saveLocalOrders(list);
         }catch(err){console.warn('Revisión del historial general:',err)}
@@ -8009,7 +8063,9 @@ En breve te las preparo y te las envío por acá 😊
             if (!alive || refreshBusy) return;
             refreshBusy = true;
             try {
-                const list = await loadOrdersRemote();
+                const list = await loadOrdersRemote(partial => {
+                    if (alive) resetOldQueue(partial, false).catch(e=>console.warn('Vista parcial de pedidos:',e));
+                });
                 if (alive) await resetOldQueue(list, persist);
             } catch (e) {
                 console.warn('No se pudieron refrescar los pedidos compartidos.', e);
