@@ -2291,7 +2291,7 @@ const LS_SHARED_STATE_KEY = "la_shared_admin_state_v2";
 const LS_BANNERS_KEY = "la_banner_settings_v1";
 const LS_INTRO_KEY = "la_purchase_intro_seen_v2";
 const PHOTOS_PER_PAGE = 70;
-const APP_VERSION = "v138-admin-recent-orders";
+const APP_VERSION = "v139-admin-orders-recovery";
 const LS_ALBUM_CACHE_META_KEY = "la_album_cache_meta_v1";
 const ALBUM_CACHE_MAX_AGE_MS = 1000 * 60 * 60 * 12;
 const FIRESTORE_FREE_DAILY_LIMITS = {
@@ -2873,40 +2873,36 @@ function normalizeSharedState(state) {
     };
 }
 async function loadSharedAdminState() {
-    // v65: Firestore es la primera fuente de verdad. Apps Script queda como respaldo.
-    // localStorage se usa solo para arranque rápido/offline.
-    const local = readSharedCache();
-    try {
-        const db = await getFirebaseDb();
-        if (db) {
-            const snap = await db.doc(SHARED_STATE_DOC_PATH).get({ source: 'server' });
-            if (snap && snap.exists) {
-                const remote = normalizeSharedState(snap.data() || {});
-                remote.bannerSettings = { ...(remote.bannerSettings || DEFAULT_BANNER_SETTINGS), visible: false };
-                writeSharedCache(remote);
-                window.LA_LAST_SHARED_LOAD = { source: 'firebase', at: new Date().toISOString() };
-                return remote;
-            }
-        }
+    // Leer fuentes en paralelo: un Firebase lento no debe bloquear el login
+    // antes de consultar el respaldo de Apps Script.
+    const cached=readSharedCache();
+    const firebaseTask=(async()=>{
+        const db=await getFirebaseDb();
+        if(!db)throw new Error('Firebase no disponible');
+        const snap=await db.doc(SHARED_STATE_DOC_PATH).get({source:'server'});
+        if(!snap||!snap.exists)throw new Error('Sin configuración en Firebase');
+        return {source:'firebase',state:normalizeSharedState(snap.data()||{})};
+    })();
+    const scriptTask=apiAction({action:'getSiteState'}).then(r=>{
+        if(!r||r.error||!r.state||typeof r.state!=='object')
+            throw new Error('Configuración de Apps Script no disponible');
+        return {source:'apps-script',state:normalizeSharedState(r.state)};
+    });
+    try{
+        const winner=await Promise.any([
+            orderDeadline(firebaseTask,6500),
+            orderDeadline(scriptTask,6500)
+        ]);
+        const remote=winner.state;
+        remote.bannerSettings={...(remote.bannerSettings||DEFAULT_BANNER_SETTINGS),visible:false};
+        writeSharedCache(remote);
+        window.LA_LAST_SHARED_LOAD={source:winner.source,at:new Date().toISOString()};
+        return remote;
+    }catch(e){
+        console.warn('No respondió la configuración remota. Se conserva el acceso del dispositivo.',e);
+        window.LA_LAST_SHARED_LOAD={source:'local',at:new Date().toISOString(),warning:'Las fuentes de seguridad no respondieron.'};
+        return cached;
     }
-    catch (e) {
-        console.warn('No se pudo leer configuración desde Firebase. Se intenta Apps Script.', e);
-    }
-    try {
-        const r = await apiAction({ action: 'getSiteState' });
-        if (r && r.state) {
-            const remote = normalizeSharedState(r.state);
-            remote.bannerSettings = { ...(remote.bannerSettings || DEFAULT_BANNER_SETTINGS), visible: false };
-            writeSharedCache(remote);
-            window.LA_LAST_SHARED_LOAD = { source: 'apps-script', at: new Date().toISOString() };
-            return remote;
-        }
-    }
-    catch (e) {
-        console.warn('No se pudo leer configuración desde Apps Script.', e);
-    }
-    window.LA_LAST_SHARED_LOAD = { source: 'local', at: new Date().toISOString() };
-    return local;
 }
 async function saveSharedAdminState(partial) {
     const next = normalizeSharedState(writeSharedCache(partial));
@@ -3056,7 +3052,45 @@ function newOrderCode(){const random=typeof crypto!=='undefined'&&crypto.getRand
 function safeOrderWhatsappUrl(pkg){if(pkg.whatsappUrl.length<=6000)return pkg.whatsappUrl;const text=`Hola Lucas! Te envío mi pedido ${pkg.order} de ${pkg.orderData.items.length} fotos por ${formatPrice(pkg.orderData.total)}. El detalle completo, incluidas las impresiones, está guardado en el Admin. A continuación te envío el comprobante.`;return `https://api.whatsapp.com/send?phone=${SELLER_PHONE}&text=${encodeURIComponent(text)}`}
 async function saveOrderFirebase(order){const db=await getFirebaseDb();if(!db)throw new Error('Firebase no inicializó');const clean={...order,id:order.id||order.orderId||order.codigo||order.code};if(!clean.id)throw new Error('El pedido no tiene código');await LAOrderStorage.persist(db,ORDERS_COLLECTION_PATH,clean,firebaseDocId);window.LA_LAST_FIREBASE_SAVE={ok:true,id:clean.id,paths:[ORDERS_COLLECTION_PATH],at:new Date().toISOString(),appVersion:APP_VERSION};return true}
 
-async function loadOrdersFirebase(limit=350){const db=await getFirebaseDb();if(!db)throw new Error('Firebase no inicializó');const all=[],errors=[];let successful=0;for(const path of [...legacyOrderCollections(),ORDERS_COLLECTION_PATH]){const collection=db.collection(path),docs=new Map();for(const query of [collection.where('delivered','==',false).limit(250),collection.orderBy('date','desc').limit(Math.max(100,Math.min(limit,500)))]){try{const snap=await query.get({source:'server'});successful++;snap.docs.forEach(d=>docs.set(d.id,d))}catch(e){errors.push(String(e&&e.message||e))}}const entries=[...docs.values()];for(let i=0;i<entries.length;i+=18){const group=await Promise.all(entries.slice(i,i+18).map(async d=>{const data={id:d.data().id||d.id,...d.data()};try{return {...await LAOrderStorage.hydrate(d.ref,data),_firebasePath:path}}catch(e){console.warn('Detalle de pedido pendiente de recuperar:',data.id,e);return {...data,storageIncomplete:true,_firebasePath:path}}}));all.push(...group)}}window.LA_LAST_ORDER_FIREBASE_READ={ok:successful>0,errors,at:new Date().toISOString()};if(!successful)throw new Error(errors.join('; ')||'No se pudieron consultar pedidos en Firebase');return mergeOrders(all)}
+async function loadOrdersFirebase(limit=350){
+    const db=await getFirebaseDb();
+    if(!db)throw new Error('Firebase no inicializó');
+    const collection=db.collection(ORDERS_COLLECTION_PATH);
+    const docs=new Map(),errors=[];
+    let successful=0;
+    // Los nuevos pedidos van a la colección principal. No recorrer los
+    // históricos legacy cada vez que el administrador abre Pedidos.
+    const queries=[
+        collection.orderBy('date','desc').limit(Math.max(100,Math.min(limit,500))),
+        collection.where('delivered','==',false).limit(100)
+    ];
+    const results=await Promise.allSettled(queries.map(q=>q.get({source:'server'})));
+    results.forEach(result=>{
+        if(result.status==='fulfilled'){
+            successful++;
+            result.value.docs.forEach(doc=>docs.set(doc.id,doc));
+        }else errors.push(String(result.reason&&result.reason.message||result.reason));
+    });
+    if(!successful){
+        window.LA_LAST_ORDER_FIREBASE_READ={ok:false,errors,at:new Date().toISOString()};
+        throw new Error(errors.join('; ')||'Firebase no devolvió pedidos');
+    }
+    const entries=[...docs.values()];
+    const all=[];
+    for(let i=0;i<entries.length;i+=16){
+        const group=await Promise.all(entries.slice(i,i+16).map(async d=>{
+            const data={id:d.data().id||d.id,...d.data()};
+            try{return {...await LAOrderStorage.hydrate(d.ref,data),_firebasePath:ORDERS_COLLECTION_PATH}}
+            catch(err){
+                console.warn('Detalle incompleto:',data.id,err);
+                return {...data,storageIncomplete:true,_firebasePath:ORDERS_COLLECTION_PATH};
+            }
+        }));
+        all.push(...group);
+    }
+    window.LA_LAST_ORDER_FIREBASE_READ={ok:true,errors,at:new Date().toISOString(),count:all.length};
+    return mergeOrders(all);
+}
 function orderCodeVariants(v) {
     const clean = normalizeOrderCode(v);
     const withDash = clean.replace(/^LA(\d+)/, 'LA-$1');
@@ -6312,7 +6346,13 @@ ${clone.outerHTML}`;
     const orderStatusText = (o) => norm((o === null || o === void 0 ? void 0 : o.status) || (o === null || o === void 0 ? void 0 : o.estado) || '');
     const isResolvedOrder = (o) => isTruthyStatus(o === null || o === void 0 ? void 0 : o.delivered) || isTruthyStatus(o === null || o === void 0 ? void 0 : o.rejected) || isTruthyStatus(o === null || o === void 0 ? void 0 : o.cancelled) || ['entregado', 'cargado_y_entregado', 'rechazado', 'cancelado', 'anulado', 'no pagado', 'no_pagado', 'resuelto'].includes(orderStatusText(o));
     const isPendingOrder = (o) => o && (CLUB_ENABLED || !isClubRecord(o)) && normalizeOrderCode(o.id || o.orderId || o.codigo || o.code) && !isResolvedOrder(o);
-    const recentOrders = useMemo(() => mergeOrders(orders).filter(o => isPendingOrder(o) && !adminResolvedIds.includes(normalizeOrderCode(o.id || o.orderId || o.codigo || o.code))).sort((a, b) => new Date(b.date || 0) - new Date(a.date || 0)).slice(0, 10), [orders, adminResolvedIds]);
+    const recentOrders = useMemo(() => {
+        const cutoff=Date.now()-30*24*60*60*1000;
+        return mergeOrders(orders).filter(o =>
+            isPendingOrder(o)&&!adminResolvedIds.includes(normalizeOrderCode(o.id||o.orderId||o.codigo||o.code))&&
+            Number.isFinite(Date.parse(o.date||o.createdAt||''))&&Date.parse(o.date||o.createdAt||'')>=cutoff
+        ).sort((a,b)=>new Date(b.date||0)-new Date(a.date||0)).slice(0,10);
+    },[orders,adminResolvedIds]);
     const firebaseDailyEstimate = useMemo(() => {
         const all = mergeOrders(orders);
         const createdToday = all.filter(o => isSameLocalDate(o.date || o.createdAt || o.updatedAt));
