@@ -2291,7 +2291,7 @@ const LS_SHARED_STATE_KEY = "la_shared_admin_state_v2";
 const LS_BANNERS_KEY = "la_banner_settings_v1";
 const LS_INTRO_KEY = "la_purchase_intro_seen_v2";
 const PHOTOS_PER_PAGE = 70;
-const APP_VERSION = "v143-admin-orders-performance";
+const APP_VERSION = "v144-no-stale-retry";
 const LS_ALBUM_CACHE_META_KEY = "la_album_cache_meta_v1";
 const ALBUM_CACHE_MAX_AGE_MS = 1000 * 60 * 60 * 12;
 const FIRESTORE_FREE_DAILY_LIMITS = {
@@ -3266,7 +3266,23 @@ function hasUsableAlbumCache() {
 }
 const wait = (ms) => new Promise(r => setTimeout(r, ms));
 function apiAction(params) { const q = new URLSearchParams(params); return jsonp(APPS_SCRIPT_URL + (APPS_SCRIPT_URL.includes("?") ? "&" : "?") + q.toString()); }
-async function syncPendingOrders(){if(LA_PENDING_SYNC_RUNNING)return;LA_PENDING_SYNC_RUNNING=true;try{const pending=mergeOrders(readPendingOrders(),await LAOrderOutbox.all());for(const order of pending){const result=await saveOrderRemote(order);if(!result.firebase&&!result.script)console.warn('Pedido conservado para reintento:',order.id,result.error)}}finally{LA_PENDING_SYNC_RUNNING=false}}
+async function syncPendingOrders(){
+    if(LA_PENDING_SYNC_RUNNING)return;
+    LA_PENDING_SYNC_RUNNING=true;
+    try{
+        const pending=mergeOrders(readPendingOrders(),await LAOrderOutbox.all());
+        const cutoff=Date.now()-30*24*60*60*1000;
+        for(const order of pending){
+            const timestamp=Date.parse(order.date||order.createdAt||'');
+            // No resucitar órdenes antiguas al abrir el panel: se conservan
+            // en el respaldo local para búsqueda y recuperación manual.
+            if(!Number.isFinite(timestamp)||timestamp<cutoff)continue;
+            const result=await saveOrderRemote(order);
+            if(!result.firebase&&!result.script)
+                console.warn('Pedido reciente conservado para reintento:',order.id,result.error);
+        }
+    }finally{LA_PENDING_SYNC_RUNNING=false}
+}
 window.addEventListener('online',()=>syncPendingOrders().catch(e=>console.warn('Reintento de pedidos:',e)));
 setTimeout(()=>syncPendingOrders().catch(e=>console.warn('Recuperación de pedidos:',e)),2000);
 
