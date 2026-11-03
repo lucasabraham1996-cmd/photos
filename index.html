@@ -2291,7 +2291,7 @@ const LS_SHARED_STATE_KEY = "la_shared_admin_state_v2";
 const LS_BANNERS_KEY = "la_banner_settings_v1";
 const LS_INTRO_KEY = "la_purchase_intro_seen_v2";
 const PHOTOS_PER_PAGE = 70;
-const APP_VERSION = "v137-admin-orders-status";
+const APP_VERSION = "v138-admin-recent-orders";
 const LS_ALBUM_CACHE_META_KEY = "la_album_cache_meta_v1";
 const ALBUM_CACHE_MAX_AGE_MS = 1000 * 60 * 60 * 12;
 const FIRESTORE_FREE_DAILY_LIMITS = {
@@ -6541,9 +6541,11 @@ ${clone.outerHTML}`;
         const needle=norm(adminLedgerSearch);
         return adminOrderLedger.filter(o=>{
             const state=adminOrderState(o),channel=adminOrderChannel(o);
-            const recentCutoff=Date.now()-30*24*60*60*1000;
+            const recentCutoff=Date.now()-7*24*60*60*1000;
+            const monthCutoff=Date.now()-30*24*60*60*1000;
             const filterOk=adminLedgerFilter==='all'||
                 (adminLedgerFilter==='recent'&&(Boolean(needle)||Boolean(adminLedgerDate)||Date.parse(o.date||o.createdAt||'')>=recentCutoff))||
+                (adminLedgerFilter==='month'&&Date.parse(o.date||o.createdAt||'')>=monthCutoff)||
                 (adminLedgerFilter==='paid'&&['paid','manual_paid'].includes(state))||
                 (adminLedgerFilter==='whatsapp'&&channel==='whatsapp')||
                 state===adminLedgerFilter;
@@ -8729,7 +8731,7 @@ React.createElement("div", { id: "order-search-panel", hidden:adminPanelTab!=='p
                         onChange:e=>setAdminLedgerSearch(e.target.value),placeholder:"Buscar cliente, equipo, foto o pedido","aria-label":"Buscar pedidos"}),
                     React.createElement("select",{className:"la-ledger-select",value:adminLedgerFilter,
                         onChange:e=>setAdminLedgerFilter(e.target.value),"aria-label":"Filtrar por estado"},
-                        [["recent","Últimos 30 días"],["all","Historial completo"],["paid","Pagados"],["pending","Pendiente de pago"],
+                        [["recent","Últimos 7 días"],["month","Últimos 30 días"],["all","Historial completo"],["paid","Pagados"],["pending","Pendiente de pago"],
                          ["whatsapp","Consultas WhatsApp"],["agreed","Pago acordado"],
                          ["manual_paid","Pagado otro medio"],["cancelled","Cancelados"]].map(([value,label])=>
                             React.createElement("option",{key:value,value},label))),
