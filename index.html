@@ -2291,7 +2291,7 @@ const LS_SHARED_STATE_KEY = "la_shared_admin_state_v2";
 const LS_BANNERS_KEY = "la_banner_settings_v1";
 const LS_INTRO_KEY = "la_purchase_intro_seen_v2";
 const PHOTOS_PER_PAGE = 70;
-const APP_VERSION = "v136-admin-orders-atomic-render";
+const APP_VERSION = "v137-admin-orders-status";
 const LS_ALBUM_CACHE_META_KEY = "la_album_cache_meta_v1";
 const ALBUM_CACHE_MAX_AGE_MS = 1000 * 60 * 60 * 12;
 const FIRESTORE_FREE_DAILY_LIMITS = {
@@ -5492,6 +5492,8 @@ function App() {
     const [adminLedgerFilter,setAdminLedgerFilter] = useState('recent');
     const [adminLedgerVisibleLimit,setAdminLedgerVisibleLimit]=useState(30);
     const [adminOrdersReady,setAdminOrdersReady]=useState(false);
+    const [adminOrdersLastUpdatedAt,setAdminOrdersLastUpdatedAt]=useState('');
+    const [adminOrdersLoadWarning,setAdminOrdersLoadWarning]=useState('');
     const [adminLedgerSearch,setAdminLedgerSearch] = useState('');
     const [adminLedgerDate,setAdminLedgerDate] = useState('');
     const [directOrder, setDirectOrder] = useState(null);
@@ -7513,10 +7515,12 @@ En breve te las preparo y te las envío por acá 😊
             const list=await loadOrdersRemote();
             setOrders(list);
             setAdminOrdersReady(true);
+            setAdminOrdersLastUpdatedAt(new Date().toISOString());
+            setAdminOrdersLoadWarning(window.LA_ORDER_LOAD_WARNING||'');
             saveLocalOrders(list);
         }catch(err){console.warn('Revisión del historial general:',err)}
         finally{setOrdersLoading(false)}
-        await fetchMpAdminOrders(false);
+        if(String(mpCatalogueSetupKey||'').trim())await fetchMpAdminOrders(false);
     };
     // La consulta administrativa requiere clic explícito: no enviar una clave
     // incompleta a Cloudflare cada vez que el administrador escribe una letra.
@@ -8225,11 +8229,14 @@ En breve te las preparo y te las envío por acá 😊
                 setOrders(list);
                 saveLocalOrders(list);
                 setAdminOrdersReady(true);
+                setAdminOrdersLastUpdatedAt(new Date().toISOString());
+                setAdminOrdersLoadWarning(window.LA_ORDER_LOAD_WARNING||'');
             }catch(err){
                 console.warn('Error consultando pedidos:',err);
                 if(alive){
                     setOrders(mergeOrders(readLocalOrders(),readPendingOrders()));
                     setAdminOrdersReady(true);
+                    setAdminOrdersLoadWarning('Sin conexión: estos pedidos son el último respaldo guardado en este dispositivo.');
                 }
             }finally{
                 inFlight=false;
@@ -8702,7 +8709,14 @@ React.createElement("div", { id: "order-search-panel", hidden:adminPanelTab!=='p
                             React.createElement("div", { className:"club-ranking-activity" }, React.createElement("b", null, `${r.purchases} compra${r.purchases===1?'':'s'}`), React.createElement("span", null, `${formatPrice(r.spent)} · ${r.redeemedPoints} canjeados`)),
                             React.createElement("div", { className:"club-ranking-points" }, r.points, React.createElement("small", null,"pts"))))),
                     clubRankingStats.length>10 && React.createElement("button", { type:"button", onClick:()=>setClubRankingAllOpen(v=>!v), className:"club-ranking-more" }, clubRankingAllOpen ? React.createElement(React.Fragment,null,"Ver sólo top 10 ",React.createElement("i",{className:"fas fa-chevron-up"})) : React.createElement(React.Fragment,null,`Ver ${clubRankingStats.length-10} más `,React.createElement("i",{className:"fas fa-chevron-down"})))),
-                React.createElement("h3", { id:"la-admin-orders-history",className:"font-black text-lg mt-5 mb-1" }, "Todos los pedidos · historial unificado"),
+                React.createElement("div",{className:"flex flex-wrap items-center justify-between gap-3 mt-5 mb-2"},
+                    React.createElement("h3",{id:"la-admin-orders-history",className:"font-black text-lg"},"Pedidos · historial unificado"),
+                    React.createElement("button",{type:"button",onClick:refreshAllAdminOrders,disabled:ordersLoading,
+                        className:"px-4 py-2.5 rounded-xl bg-sky-500 text-black text-sm font-black disabled:opacity-50"},
+                        React.createElement("i",{className:"fas fa-arrows-rotate mr-2"}),ordersLoading?"Actualizando pedidos…":"Actualizar pedidos")),
+                React.createElement("p",{className:"text-xs text-neutral-400 mb-2"},
+                    ordersLoading?"Consultando fuentes sin alterar el listado visible…":adminOrdersLastUpdatedAt?"Última actualización: "+new Date(adminOrdersLastUpdatedAt).toLocaleTimeString("es-AR",{hour:"2-digit",minute:"2-digit"}):"Listo para consultar pedidos."),
+                adminOrdersLoadWarning&&React.createElement("p",{className:"text-xs text-amber-200 mb-3",role:"status"},adminOrdersLoadWarning),
                 React.createElement("p", { className:"text-xs text-neutral-400 mb-3" }, "Pedidos de Firebase, Apps Script y Cloudflare, con estado de pago y canal separados. Abrir WhatsApp no confirma que el mensaje fue enviado."),
                 React.createElement("button",{type:"button",onClick:()=>fetchMpAdminOrders(false),disabled:mpAdminOrdersBusy,className:"mb-3 w-full sm:w-auto px-5 py-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-black text-sm"},
                     React.createElement("i",{className:"fas fa-arrows-rotate mr-2"}),mpAdminOrdersBusy?"Recuperando órdenes…":"Recuperar pedidos de hoy y todas las ventas MP"),
