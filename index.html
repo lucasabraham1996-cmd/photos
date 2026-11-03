@@ -2291,7 +2291,7 @@ const LS_SHARED_STATE_KEY = "la_shared_admin_state_v2";
 const LS_BANNERS_KEY = "la_banner_settings_v1";
 const LS_INTRO_KEY = "la_purchase_intro_seen_v2";
 const PHOTOS_PER_PAGE = 70;
-const APP_VERSION = "v131-universal-admin-mobile";
+const APP_VERSION = "v134-admin-visual-trusted-device";
 const LS_ALBUM_CACHE_META_KEY = "la_album_cache_meta_v1";
 const ALBUM_CACHE_MAX_AGE_MS = 1000 * 60 * 60 * 12;
 const FIRESTORE_FREE_DAILY_LIMITS = {
@@ -6492,6 +6492,7 @@ ${clone.outerHTML}`;
         if(o.manualPaymentConfirmedAt&&adminOrderChannel(o)==='whatsapp')return 'manual_paid';
         if(o.paymentStatus==='agreed'&&adminOrderChannel(o)==='whatsapp')return 'agreed';
         if(adminOrderChannel(o)==='mercadopago'&&(o.paid===true||String(o.paymentStatus||'').toLowerCase()==='accredited'))return 'paid';
+        if(o.adminCreated&&adminOrderChannel(o)==='whatsapp')return 'pending';
         if(adminOrderChannel(o)==='whatsapp')return 'whatsapp';
         return 'pending';
     };
@@ -6718,7 +6719,9 @@ ${clone.outerHTML}`;
             setAdminGeneratorMessage('Completá nombre y apellido, y un WhatsApp válido del cliente antes de generar el pedido.');
             return;
         }
-        const signature=JSON.stringify({albumId:album.id,categoryId:category&&category.id||'',items:linked.map(x=>x.photo.id),name,phone});
+        const signature=JSON.stringify({albumId:album.id,categoryId:category&&category.id||'',
+            items:linked.map(x=>[x.photo.id,x.photo.price,x.photo.directDiscountPercent]),
+            discount:discountSettings.percent,excluded:discountSettings.excludedAlbums&&discountSettings.excludedAlbums[album.id],name,phone});
         const previous=adminGeneratorLastOrderRef.current;
         const id=previous.signature===signature&&previous.order?previous.order.id:newOrderCode();
         const date=previous.signature===signature&&previous.order?previous.order.date:new Date().toISOString();
@@ -6733,7 +6736,7 @@ ${clone.outerHTML}`;
         const order=previous.signature===signature&&previous.order?previous.order:{
             id,date,kind:'photos',albumName:album.name,
             customerName:name,phone,total,subtotal,
-            status:'pendiente_pago',channel:'admin',paymentProvider:'transferencia',
+            status:'pendiente_pago',channel:'whatsapp',paymentProvider:'transferencia',
             paymentStatus:'pending',paid:false,delivered:false,wantsPoints:false,
             adminCreated:true,printRequested:false,printCount:0,
             items:linked.map(x=>({id:x.photo.id,name:x.photo.name,code:x.photo.code,
@@ -8721,7 +8724,7 @@ React.createElement("div", { id: "order-search-panel", hidden:adminPanelTab!=='p
                         React.createElement("button", { onClick:() => openOrderFromQueue(o), className:"text-left min-w-0 flex-1" },
                             React.createElement("div", { className:"flex flex-wrap items-center gap-2" }, React.createElement("b", null, "#", o.id), isRedemption && React.createElement("span", { className:"club-order-badge" }, "CANJE CLUB"), printCount > 0 && React.createElement("span", { className:"print-order-badge" }, `IMPRESIÓN 10x15 × ${printCount}`),
                                 React.createElement("span",{className:"la-ledger-badge "+adminOrderState(o)},adminOrderStateLabel(o)),
-                                React.createElement("span",{className:"la-ledger-channel"},adminOrderChannel(o)==='whatsapp'?"WhatsApp":adminOrderChannel(o)==='mercadopago'?"Mercado Pago":"Sin canal")),
+                                React.createElement("span",{className:"la-ledger-channel"},o.adminCreated?"Administración":adminOrderChannel(o)==='whatsapp'?"WhatsApp":adminOrderChannel(o)==='mercadopago'?"Mercado Pago":"Sin canal")),
                             React.createElement("div",{className:"la-ledger-customer"},
                                 React.createElement("strong",null,o.customerName||"Cliente sin nombre"),
                                 React.createElement("span",null,o.phone||"Teléfono no informado")),
@@ -8749,7 +8752,7 @@ React.createElement("div", { id: "order-search-panel", hidden:adminPanelTab!=='p
                             className:"la-ledger-whatsapp","aria-label":"Hablar por WhatsApp con "+(o.customerName||"comprador")},
                             React.createElement("i",{className:"fab fa-whatsapp"})," Hablar con ",o.customerName||"comprador"),
                         adminOrderChannel(o)==='whatsapp'&&
-                            ['whatsapp','agreed'].includes(adminOrderState(o))&&
+                            ['whatsapp','agreed','pending'].includes(adminOrderState(o))&&
                             React.createElement("div",{className:"la-ledger-manual"},
                                 adminOrderState(o)!=='agreed'&&React.createElement("button",{type:"button",
                                     onClick:()=>updateManualWhatsappStatus(o,'agreed')},"Pago acordado"),
