@@ -2291,7 +2291,7 @@ const LS_SHARED_STATE_KEY = "la_shared_admin_state_v2";
 const LS_BANNERS_KEY = "la_banner_settings_v1";
 const LS_INTRO_KEY = "la_purchase_intro_seen_v2";
 const PHOTOS_PER_PAGE = 70;
-const APP_VERSION = "v142-admin-recent-first";
+const APP_VERSION = "v143-admin-orders-performance";
 const LS_ALBUM_CACHE_META_KEY = "la_album_cache_meta_v1";
 const ALBUM_CACHE_MAX_AGE_MS = 1000 * 60 * 60 * 12;
 const FIRESTORE_FREE_DAILY_LIMITS = {
@@ -3061,7 +3061,7 @@ function newOrderCode(){const random=typeof crypto!=='undefined'&&crypto.getRand
 function safeOrderWhatsappUrl(pkg){if(pkg.whatsappUrl.length<=6000)return pkg.whatsappUrl;const text=`Hola Lucas! Te envío mi pedido ${pkg.order} de ${pkg.orderData.items.length} fotos por ${formatPrice(pkg.orderData.total)}. El detalle completo, incluidas las impresiones, está guardado en el Admin. A continuación te envío el comprobante.`;return `https://api.whatsapp.com/send?phone=${SELLER_PHONE}&text=${encodeURIComponent(text)}`}
 async function saveOrderFirebase(order){const db=await getFirebaseDb();if(!db)throw new Error('Firebase no inicializó');const clean={...order,id:order.id||order.orderId||order.codigo||order.code};if(!clean.id)throw new Error('El pedido no tiene código');await LAOrderStorage.persist(db,ORDERS_COLLECTION_PATH,clean,firebaseDocId);window.LA_LAST_FIREBASE_SAVE={ok:true,id:clean.id,paths:[ORDERS_COLLECTION_PATH],at:new Date().toISOString(),appVersion:APP_VERSION};return true}
 
-async function loadOrdersFirebase(limit=350){
+async function loadOrdersFirebase(limit=160){
     const db=await getFirebaseDb();
     if(!db)throw new Error('Firebase no inicializó');
     const collection=db.collection(ORDERS_COLLECTION_PATH);
@@ -3070,8 +3070,8 @@ async function loadOrdersFirebase(limit=350){
     // Los nuevos pedidos van a la colección principal. No recorrer los
     // históricos legacy cada vez que el administrador abre Pedidos.
     const queries=[
-        collection.orderBy('date','desc').limit(Math.max(100,Math.min(limit,500))),
-        collection.where('delivered','==',false).limit(100)
+        collection.orderBy('date','desc').limit(Math.max(80,Math.min(limit,350))),
+        collection.where('delivered','==',false).limit(60)
     ];
     const results=await Promise.allSettled(queries.map(q=>q.get({source:'server'})));
     results.forEach(result=>{
@@ -3381,8 +3381,8 @@ async function loadOrdersRemote(){
     // mientras Firebase y Apps Script contestan en distinto orden.
     const local=mergeOrders(readLocalOrders(),readPendingOrders(),await LAOrderOutbox.all());
     const [sr,fr]=await Promise.allSettled([
-        orderDeadline(apiAction({action:'listOrders'}),18000),
-        orderDeadline(loadOrdersFirebase(),18000)
+        orderDeadline(apiAction({action:'listOrders'}),10000),
+        orderDeadline(loadOrdersFirebase(),10000)
     ]);
     const scriptOk=sr.status==='fulfilled'&&sr.value&&!sr.value.error&&sr.value.ok!==false&&Array.isArray(sr.value.orders);
     const firebaseOk=fr.status==='fulfilled'&&Array.isArray(fr.value);
@@ -5661,6 +5661,7 @@ function App() {
     const [mpAdminOrdersError,setMpAdminOrdersError] = useState('');
     const [mpAdminOrdersHasMore,setMpAdminOrdersHasMore] = useState(false);
     const [mpAdminLastCheckedAt,setMpAdminLastCheckedAt]=useState('');
+    const [mpAdminConnected,setMpAdminConnected]=useState(false);
     const mpAdminVerifiedKeyRef=useRef('');
     const mpAdminLoadingRef=useRef(false);
     const mpCatalogueBusyRef=useRef(false);
@@ -7535,6 +7536,7 @@ En breve te las preparo y te las envío por acá 😊
             if(!response.ok||!data||!data.ok||!Array.isArray(data.orders))
                 throw Error(data&&data.error||'No se pudo recuperar el historial de Cloudflare.');
             mpAdminVerifiedKeyRef.current=key;
+            setMpAdminConnected(true);
             const real=data.orders.filter(o=>o&&o.mode!=='validation');
             setMpAdminOrders(prev=>loadMore?[...prev,...real]:real);
             setMpAdminOrdersOffset(offset+data.orders.length);
@@ -7542,6 +7544,7 @@ En breve te las preparo y te las envío por acá 😊
             setMpAdminLastCheckedAt(new Date().toISOString());
         }catch(err){
             mpAdminVerifiedKeyRef.current='';
+            setMpAdminConnected(false);
             setMpAdminOrdersError('Cloudflare no confirmó la consulta: '+String(err&&err.message||err)+'. Tus pedidos no se borraron.');
         }finally{
             mpAdminLoadingRef.current=false;
@@ -7552,12 +7555,12 @@ En breve te las preparo y te las envío por acá 😊
     useEffect(()=>{
         if(!admin||!['pedidos','pagos'].includes(adminPanelTab)||
             mpAdminVerifiedKeyRef.current!==String(mpCatalogueSetupKey||'').trim()||
-            !mpAdminVerifiedKeyRef.current)return;
+            !mpAdminVerifiedKeyRef.current||!mpAdminConnected)return;
         const timer=setInterval(()=>{
             if(!document.hidden&&!mpAdminLoadingRef.current)fetchMpAdminOrders(false);
         },120000);
         return ()=>clearInterval(timer);
-    },[admin,mpCatalogueSetupKey,adminPanelTab]);
+    },[admin,mpCatalogueSetupKey,adminPanelTab,mpAdminConnected]);
     const refreshAllAdminOrders=async()=>{
         if(ordersLoading||mpAdminLoadingRef.current)return;
         setOrdersLoading(true);
@@ -8592,25 +8595,25 @@ React.createElement("div", { id: "order-search-panel", hidden:adminPanelTab!=='p
                         React.createElement("div",null,
                             React.createElement("h4",{className:"text-sm font-black text-emerald-200"},"Ventas recientes de Mercado Pago · Cloudflare"),
                             React.createElement("p",{className:"text-xs text-neutral-400 mt-1"},
-                                mpAdminVerifiedKeyRef.current?
+                                mpAdminConnected?
                                 "Consulta conectada · "+mpAdminOrders.length+" órdenes recuperadas · actualización "+(mpAdminLastCheckedAt?new Date(mpAdminLastCheckedAt).toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit'}):"pendiente"):
                                 "Sin conectar: las ventas de Mercado Pago que solo están en Cloudflare todavía no aparecen en el historial."))),
                     React.createElement("form",{className:"flex flex-col sm:flex-row gap-2",onSubmit:e=>{e.preventDefault();fetchMpAdminOrders(false);}},
                         React.createElement("input",{type:"password",value:mpCatalogueSetupKey,
-                            onChange:e=>{setMpCatalogueSetupKey(e.target.value);mpAdminVerifiedKeyRef.current='';setMpAdminOrders([]);setMpAdminLastCheckedAt('');},
+                            onChange:e=>{setMpCatalogueSetupKey(e.target.value);mpAdminVerifiedKeyRef.current='';setMpAdminConnected(false);setMpAdminOrders([]);setMpAdminLastCheckedAt('');},
                             autoComplete:"off",spellCheck:false,
                             placeholder:"Clave MP_SETUP_KEY configurada en Cloudflare",
                             "aria-label":"Clave para consultar pedidos de Mercado Pago",
                             className:"min-w-0 flex-1 bg-black border border-white/20 rounded-xl p-3 text-sm text-white"}),
                         React.createElement("button",{type:"submit",disabled:mpAdminOrdersBusy||!String(mpCatalogueSetupKey||'').trim(),
                             className:"rounded-xl bg-emerald-500 text-black px-4 py-3 text-sm font-black disabled:opacity-40"},
-                            mpAdminOrdersBusy?"Consultando ventas…":mpAdminVerifiedKeyRef.current?"Actualizar ventas MP":"Conectar ventas MP")),
+                            mpAdminOrdersBusy?"Consultando ventas…":mpAdminConnected?"Actualizar ventas MP":"Conectar ventas MP")),
                     React.createElement("p",{className:"text-[11px] text-neutral-400 mt-2"},
                         "La clave se usa solo durante esta sesión y no se guarda en el navegador."),
                     React.createElement("div",{className:"flex flex-wrap gap-3 text-[11px] text-neutral-400 mt-2"},
                         React.createElement("span",null,"Firebase: ",window.LA_LAST_ORDER_LOAD?(window.LA_LAST_ORDER_LOAD.firebase?"consultado":"sin respuesta"):"pendiente"),
                         React.createElement("span",null,"Apps Script: ",window.LA_LAST_ORDER_LOAD?(window.LA_LAST_ORDER_LOAD.script?"consultado":"sin respuesta"):"pendiente"),
-                        React.createElement("span",null,"Cloudflare: ",mpAdminVerifiedKeyRef.current?"consultado":"sin conectar"))),
+                        React.createElement("span",null,"Cloudflare: ",mpAdminConnected?"consultado":"sin conectar"))),
                 React.createElement("div",{className:"mb-5 rounded-2xl border border-white/10 bg-black/25 p-3 sm:p-4"},
                     React.createElement("div",{className:"flex flex-wrap gap-2 items-center justify-between mb-3"},
                         React.createElement("h3",{className:"text-lg font-black text-white"},"Últimos pedidos registrados"),
@@ -8823,7 +8826,7 @@ React.createElement("div", { id: "order-search-panel", hidden:adminPanelTab!=='p
                         onChange:e=>setAdminLedgerSearch(e.target.value),placeholder:"Buscar cliente, equipo, foto o pedido","aria-label":"Buscar pedidos"}),
                     React.createElement("select",{className:"la-ledger-select",value:adminLedgerFilter,
                         onChange:e=>setAdminLedgerFilter(e.target.value),"aria-label":"Filtrar por estado"},
-                        [["recent","Últimos 7 días"],["month","Últimos 30 días"],["all","Historial completo"],["paid","Pagados"],["pending","Pendiente de pago"],
+                        [["recent","Últimos 7 días"],["month","Últimos 30 días"],["all","Historial disponible"],["paid","Pagados"],["pending","Pendiente de pago"],
                          ["whatsapp","Consultas WhatsApp"],["agreed","Pago acordado"],
                          ["manual_paid","Pagado otro medio"],["cancelled","Cancelados"]].map(([value,label])=>
                             React.createElement("option",{key:value,value},label))),
@@ -8831,8 +8834,9 @@ React.createElement("div", { id: "order-search-panel", hidden:adminPanelTab!=='p
                         onChange:e=>setAdminLedgerDate(e.target.value),"aria-label":"Filtrar fecha"}),
                     React.createElement("button",{type:"button",className:"la-ledger-clear",
                         onClick:()=>{setAdminLedgerSearch('');setAdminLedgerFilter('recent');setAdminLedgerDate('')}},"Limpiar")),
-                React.createElement("div", { className:"la-ledger-rows" }, !adminOrdersReady&&React.createElement("p",{className:"text-neutral-400 text-sm py-4"},"Cargando los pedidos de las fuentes conectadas…"),
-                    adminOrdersReady&&adminVisibleLedger.map(o => {
+                React.createElement("div", { className:"la-ledger-rows" }, !adminOrdersReady&&!mpAdminOrders.length&&React.createElement("p",{className:"text-neutral-400 text-sm py-4"},"Cargando los pedidos de las fuentes conectadas…"),
+                    adminOrdersReady&&!adminVisibleLedger.length&&React.createElement("p",{className:"text-sm text-amber-100/80 py-4"},"No hay pedidos para este filtro en las fuentes consultadas. Si faltan ventas de Mercado Pago, conectá Cloudflare en el cuadro superior."),
+                    (adminOrdersReady||mpAdminOrders.length>0)&&adminVisibleLedger.map(o => {
                     const isRedemption = o.type === 'benefit_redemption' || o.benefitRedemption === true;
                     const printCount = orderPrintInfo(o).count;
                     return React.createElement("div", { key:o.id, className:"la-ledger-entry"+(printCount>0?" la-ledger-with-print":"") },
