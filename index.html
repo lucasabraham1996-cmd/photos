@@ -2291,7 +2291,7 @@ const LS_SHARED_STATE_KEY = "la_shared_admin_state_v2";
 const LS_BANNERS_KEY = "la_banner_settings_v1";
 const LS_INTRO_KEY = "la_purchase_intro_seen_v2";
 const PHOTOS_PER_PAGE = 70;
-const APP_VERSION = "v139-admin-orders-recovery";
+const APP_VERSION = "v140-admin-cloudflare-orders";
 const LS_ALBUM_CACHE_META_KEY = "la_album_cache_meta_v1";
 const ALBUM_CACHE_MAX_AGE_MS = 1000 * 60 * 60 * 12;
 const FIRESTORE_FREE_DAILY_LIMITS = {
@@ -5651,6 +5651,9 @@ function App() {
     const [mpAdminOrdersBusy,setMpAdminOrdersBusy] = useState(false);
     const [mpAdminOrdersError,setMpAdminOrdersError] = useState('');
     const [mpAdminOrdersHasMore,setMpAdminOrdersHasMore] = useState(false);
+    const [mpAdminLastCheckedAt,setMpAdminLastCheckedAt]=useState('');
+    const mpAdminVerifiedKeyRef=useRef('');
+    const mpAdminLoadingRef=useRef(false);
     const mpCatalogueBusyRef=useRef(false);
     const mpCreateBusyRef=useRef(false);
     const mpStatusBusyRef=useRef(false);
@@ -7499,59 +7502,55 @@ En breve te las preparo y te las envío por acá 😊
     const syncMpCatalogueAndRetry=async()=>{
         if(await syncMpCatalogue())return beginMpTrial(true);
     };
-    // Esta consulta es exclusiva del panel administrador; la clave nunca se envía a los compradores.
-    // La clave queda solo en memoria React durante esta sesión; jamás en localStorage.
+    // Cloudflare guarda operaciones reales de Mercado Pago en D1.
+    // La lectura requiere MP_SETUP_KEY; nunca se guarda la clave en localStorage.
     const fetchMpAdminOrders=async(loadMore=false)=>{
-        if(!admin||mpAdminOrdersBusy)return;
-        let key=String(mpCatalogueSetupKey||'').trim();
+        if(!admin||mpAdminLoadingRef.current)return;
+        const key=String(mpCatalogueSetupKey||'').trim();
         if(!key){
-            key=String(window.prompt('Ingresá MP_SETUP_KEY de Cloudflare para recuperar las órdenes:')||'').trim();
-            if(!key){setMpAdminOrdersError('Ingresá la clave administrativa para recuperar las ventas.');return;}
-            setMpCatalogueSetupKey(key);
+            setMpAdminOrdersError('Para consultar las ventas recientes de Mercado Pago, ingresá la clave administrativa de Cloudflare.');
+            return;
         }
-        setMpAdminOrdersBusy(true);setMpAdminOrdersError('');
-        let offset=loadMore?mpAdminOrdersOffset:0;
-        const collected=[];
-        let more=false;
+        mpAdminLoadingRef.current=true;
+        setMpAdminOrdersBusy(true);
+        setMpAdminOrdersError('');
+        const offset=loadMore?mpAdminOrdersOffset:0;
         try{
-            let pages=0;
-            do {
-                const response=await fetch(MP_TRIAL_BASE+'/api/admin-orders',{
-                    method:'POST',headers:{'Content-Type':'application/json','X-Setup-Key':key},
-                    body:JSON.stringify({offset})
-                });
-                const data=await response.json().catch(()=>null);
-                if(!response.ok||!data||!data.ok||!Array.isArray(data.orders))
-                    throw Error(data&&data.error||'No se pudo recuperar el historial de Cloudflare. Comprobá el Worker.');
-                collected.push(...data.orders);
-                offset+=data.orders.length;
-                more=Boolean(data.has_more);
-                pages++;
-                if(more&&!data.orders.length)throw Error('La siguiente página de órdenes no está disponible.');
-            }while(more&&pages<20);
-            setMpAdminOrders(prev=>loadMore?[...prev,...collected]:collected);
-            setMpAdminOrdersOffset(offset);setMpAdminOrdersHasMore(more);
+            // La consulta inicial carga 50 pedidos recientes. El resto, bajo demanda.
+            // Evita bloquear la pantalla recuperando cientos de ventas antiguas.
+            const response=await orderDeadline(fetch(MP_TRIAL_BASE+'/api/admin-orders',{
+                method:'POST',headers:{'Content-Type':'application/json','X-Setup-Key':key},
+                body:JSON.stringify({offset})
+            }),16000);
+            const data=await response.json().catch(()=>null);
+            if(!response.ok||!data||!data.ok||!Array.isArray(data.orders))
+                throw Error(data&&data.error||'No se pudo recuperar el historial de Cloudflare.');
+            mpAdminVerifiedKeyRef.current=key;
+            const real=data.orders.filter(o=>o&&o.mode!=='validation');
+            setMpAdminOrders(prev=>loadMore?[...prev,...real]:real);
+            setMpAdminOrdersOffset(offset+data.orders.length);
+            setMpAdminOrdersHasMore(Boolean(data.has_more));
+            setMpAdminLastCheckedAt(new Date().toISOString());
         }catch(err){
-            if(collected.length){
-                setMpAdminOrders(prev=>loadMore?[...prev,...collected]:collected);
-                setMpAdminOrdersOffset(offset);setMpAdminOrdersHasMore(true);
-            }
-            setMpAdminOrdersError(String(err&&err.message||err));
-        }finally{setMpAdminOrdersBusy(false)}
+            mpAdminVerifiedKeyRef.current='';
+            setMpAdminOrdersError('Cloudflare no confirmó la consulta: '+String(err&&err.message||err)+'. Tus pedidos no se borraron.');
+        }finally{
+            mpAdminLoadingRef.current=false;
+            setMpAdminOrdersBusy(false);
+        }
     };
-    // Si la clave Cloudflare ya fue ingresada, mantener las ventas MP actualizadas
-    // aun cuando el cliente nunca regrese de Mercado Pago al sitio.
+    // Refrescar solo después de autenticar correctamente, no al tipear la clave.
     useEffect(()=>{
-        if(!admin||!String(mpCatalogueSetupKey||'').trim()||
-            !['pedidos','pagos'].includes(adminPanelTab))return;
-        fetchMpAdminOrders(false);
+        if(!admin||!['pedidos','pagos'].includes(adminPanelTab)||
+            mpAdminVerifiedKeyRef.current!==String(mpCatalogueSetupKey||'').trim()||
+            !mpAdminVerifiedKeyRef.current)return;
         const timer=setInterval(()=>{
-            if(!document.hidden)fetchMpAdminOrders(false);
-        },90000);
+            if(!document.hidden&&!mpAdminLoadingRef.current)fetchMpAdminOrders(false);
+        },120000);
         return ()=>clearInterval(timer);
     },[admin,mpCatalogueSetupKey,adminPanelTab]);
     const refreshAllAdminOrders=async()=>{
-        if(ordersLoading||mpAdminOrdersBusy)return;
+        if(ordersLoading||mpAdminLoadingRef.current)return;
         setOrdersLoading(true);
         try{
             const list=await loadOrdersRemote();
@@ -7560,9 +7559,12 @@ En breve te las preparo y te las envío por acá 😊
             setAdminOrdersLastUpdatedAt(new Date().toISOString());
             setAdminOrdersLoadWarning(window.LA_ORDER_LOAD_WARNING||'');
             saveLocalOrders(list);
-        }catch(err){console.warn('Revisión del historial general:',err)}
-        finally{setOrdersLoading(false)}
-        if(String(mpCatalogueSetupKey||'').trim())await fetchMpAdminOrders(false);
+        }catch(err){
+            console.warn('Revisión del historial general:',err);
+            setAdminOrdersLoadWarning('No se pudo consultar el historial remoto. Los pedidos almacenados en este dispositivo se conservan.');
+        }finally{setOrdersLoading(false)}
+        if(mpAdminVerifiedKeyRef.current===String(mpCatalogueSetupKey||'').trim()&&
+            mpAdminVerifiedKeyRef.current)await fetchMpAdminOrders(false);
     };
     // La consulta administrativa requiere clic explícito: no enviar una clave
     // incompleta a Cloudflare cada vez que el administrador escribe una letra.
@@ -8760,10 +8762,31 @@ React.createElement("div", { id: "order-search-panel", hidden:adminPanelTab!=='p
                     ordersLoading?"Consultando fuentes sin alterar el listado visible…":adminOrdersLastUpdatedAt?"Última actualización: "+new Date(adminOrdersLastUpdatedAt).toLocaleTimeString("es-AR",{hour:"2-digit",minute:"2-digit"}):"Listo para consultar pedidos."),
                 adminOrdersLoadWarning&&React.createElement("p",{className:"text-xs text-amber-200 mb-3",role:"status"},adminOrdersLoadWarning),
                 React.createElement("p", { className:"text-xs text-neutral-400 mb-3" }, "Pedidos de Firebase, Apps Script y Cloudflare, con estado de pago y canal separados. Abrir WhatsApp no confirma que el mensaje fue enviado."),
-                React.createElement("button",{type:"button",onClick:()=>fetchMpAdminOrders(false),disabled:mpAdminOrdersBusy,className:"mb-3 w-full sm:w-auto px-5 py-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-black text-sm"},
-                    React.createElement("i",{className:"fas fa-arrows-rotate mr-2"}),mpAdminOrdersBusy?"Recuperando órdenes…":"Recuperar pedidos de hoy y todas las ventas MP"),
-                React.createElement("p",{className:"text-xs text-neutral-400 mb-3"},mpAdminOrders.length+" órdenes recuperadas de Cloudflare · "+adminOrderLedger.length+" pedidos registrados · "+adminFilteredLedger.length+" coincidencias.",
-                    mpAdminOrdersHasMore?" Quedan más páginas para recuperar.":""),
+                React.createElement("div",{className:"mb-4 rounded-2xl border border-emerald-400/20 bg-emerald-500/5 p-4"},
+                    React.createElement("div",{className:"flex flex-wrap justify-between items-center gap-3 mb-3"},
+                        React.createElement("div",null,
+                            React.createElement("h4",{className:"text-sm font-black text-emerald-200"},"Ventas recientes de Mercado Pago · Cloudflare"),
+                            React.createElement("p",{className:"text-xs text-neutral-400 mt-1"},
+                                mpAdminVerifiedKeyRef.current?
+                                "Consulta conectada · "+mpAdminOrders.length+" órdenes recuperadas · actualización "+(mpAdminLastCheckedAt?new Date(mpAdminLastCheckedAt).toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit'}):"pendiente"):
+                                "Sin conectar: las ventas de Mercado Pago que solo están en Cloudflare todavía no aparecen en el historial."))),
+                    React.createElement("form",{className:"flex flex-col sm:flex-row gap-2",onSubmit:e=>{e.preventDefault();fetchMpAdminOrders(false);}},
+                        React.createElement("input",{type:"password",value:mpCatalogueSetupKey,
+                            onChange:e=>{setMpCatalogueSetupKey(e.target.value);mpAdminVerifiedKeyRef.current='';setMpAdminOrders([]);setMpAdminLastCheckedAt('');},
+                            autoComplete:"off",spellCheck:false,
+                            placeholder:"Clave MP_SETUP_KEY configurada en Cloudflare",
+                            "aria-label":"Clave para consultar pedidos de Mercado Pago",
+                            className:"min-w-0 flex-1 bg-black border border-white/20 rounded-xl p-3 text-sm text-white"}),
+                        React.createElement("button",{type:"submit",disabled:mpAdminOrdersBusy||!String(mpCatalogueSetupKey||'').trim(),
+                            className:"rounded-xl bg-emerald-500 text-black px-4 py-3 text-sm font-black disabled:opacity-40"},
+                            mpAdminOrdersBusy?"Consultando ventas…":mpAdminVerifiedKeyRef.current?"Actualizar ventas MP":"Conectar ventas MP")),
+                    React.createElement("p",{className:"text-[11px] text-neutral-400 mt-2"},
+                        "La clave se usa solo durante esta sesión y no se guarda en el navegador."),
+                    React.createElement("div",{className:"flex flex-wrap gap-3 text-[11px] text-neutral-400 mt-2"},
+                        React.createElement("span",null,"Firebase: ",window.LA_LAST_ORDER_LOAD?(window.LA_LAST_ORDER_LOAD.firebase?"consultado":"sin respuesta"):"pendiente"),
+                        React.createElement("span",null,"Apps Script: ",window.LA_LAST_ORDER_LOAD?(window.LA_LAST_ORDER_LOAD.script?"consultado":"sin respuesta"):"pendiente"),
+                        React.createElement("span",null,"Cloudflare: ",mpAdminVerifiedKeyRef.current?"consultado":"sin conectar"))),
+                React.createElement("p",{className:"text-xs text-neutral-400 mb-3"},adminOrderLedger.length+" pedidos disponibles · "+adminFilteredLedger.length+" coincidencias"+(mpAdminOrdersHasMore?" · más ventas MP por recuperar":"")+"."),
                 mpAdminOrdersError&&React.createElement("p",{role:"alert",className:"text-xs text-amber-200 mb-3"},mpAdminOrdersError),
                 mpAdminOrdersHasMore&&React.createElement("button",{type:"button",onClick:()=>fetchMpAdminOrders(true),className:"mb-3 px-4 py-2 rounded-xl bg-neutral-700 text-white text-xs font-bold"},"Recuperar más órdenes"),
                 React.createElement("div",{className:"la-ledger-filterbar"},
