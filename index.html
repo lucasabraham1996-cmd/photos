@@ -5449,6 +5449,11 @@ function App() {
     const [adminGeneratorAlbumId,setAdminGeneratorAlbumId] = useState('');
     const [adminGeneratorSubId,setAdminGeneratorSubId] = useState('');
     const [adminGeneratorNumbers,setAdminGeneratorNumbers] = useState('');
+    const [adminGeneratorSelectedIds,setAdminGeneratorSelectedIds] = useState([]);
+    const [adminGeneratorSearch,setAdminGeneratorSearch] = useState('');
+    const [adminGeneratorPage,setAdminGeneratorPage] = useState(1);
+    const [adminGeneratorSaving,setAdminGeneratorSaving] = useState(false);
+    const adminGeneratorLastOrderRef=useRef({signature:'',order:null});
     const [adminGeneratorCustomer,setAdminGeneratorCustomer] = useState('');
     const [adminGeneratorPhone,setAdminGeneratorPhone] = useState('');
     const [adminGeneratorMessage,setAdminGeneratorMessage] = useState('');
@@ -6583,41 +6588,127 @@ ${clone.outerHTML}`;
     const effectiveDiscountPercent = regular > 0 ? Math.round((1 - (checkoutDigitalTotal / regular)) * 100) : 0;
     const albumPriceWithDiscount = (album) => Math.round(Number((album === null || album === void 0 ? void 0 : album.fullPrice) || 0) * (1 - (albumSiteDiscount(album === null || album === void 0 ? void 0 : album.id) / 100)));
 
-    // Exclusivo de administración: entregar enlaces originales sin solicitar otro pago.
-    const generateAdminClientOrder = () => {
-        if (!admin) return;
-        const album=displayAlbums.find(a=>a.id===adminGeneratorAlbumId)||displayAlbums[0];
-        const subalbums=(album&&album.subalbums)||[];
-        const category=subalbums.find(sa=>sa.id===adminGeneratorSubId)||subalbums[0];
-        const list=(category&&category.photos)||(album&&album.photos)||[];
-        const nums=[...new Set((String(adminGeneratorNumbers).match(/\d+/g)||[]).map(Number))];
-        const missing=nums.filter(n=>!Number.isInteger(n)||n<1||n>list.length);
-        const items=nums.filter(n=>!missing.includes(n)).map(n=>({number:n,photo:list[list.length-n]})).filter(x=>x.photo);
-        if (!album || !items.length) {
-            setAdminGeneratorMessage('Elegí una galería y escribí números válidos de fotos.');
+    // Selector visual privado: se puede armar por miniaturas y/o por números celestes.
+    const adminGeneratorAlbum=displayAlbums.find(a=>a.id===adminGeneratorAlbumId)||displayAlbums[0]||null;
+    const adminGeneratorCategories=(adminGeneratorAlbum&&adminGeneratorAlbum.subalbums)||[];
+    const adminGeneratorCategory=adminGeneratorCategories.find(sa=>sa.id===adminGeneratorSubId)||adminGeneratorCategories[0]||null;
+    const adminGeneratorPhotos=(adminGeneratorCategory&&adminGeneratorCategory.photos)||(adminGeneratorAlbum&&adminGeneratorAlbum.photos)||[];
+    const adminGeneratorVisiblePhotos=adminGeneratorPhotos.map((photo,index)=>({
+        photo,number:adminGeneratorPhotos.length-index
+    })).filter(({photo,number})=>{
+        const query=String(adminGeneratorSearch||'').trim().toLowerCase();
+        return !query||String(number).includes(query)||
+            String(photo.name||'').toLowerCase().includes(query)||
+            String(photo.code||'').toLowerCase().includes(query);
+    });
+    const adminGeneratorPageSize=36;
+    const adminGeneratorPageCount=Math.max(1,Math.ceil(adminGeneratorVisiblePhotos.length/adminGeneratorPageSize));
+    const adminGeneratorPageSafe=Math.min(adminGeneratorPage,adminGeneratorPageCount);
+    const adminGeneratorPagedPhotos=adminGeneratorVisiblePhotos.slice(
+        (adminGeneratorPageSafe-1)*adminGeneratorPageSize,adminGeneratorPageSafe*adminGeneratorPageSize);
+    const adminGeneratorSelections=()=>{
+        const album=adminGeneratorAlbum,category=adminGeneratorCategory,list=adminGeneratorPhotos;
+        const typed=[...new Set((String(adminGeneratorNumbers).match(/\d+/g)||[]).map(Number))];
+        const missing=typed.filter(n=>!Number.isInteger(n)||n<1||n>list.length);
+        const selectedNumbers=list.map((p,i)=>adminGeneratorSelectedIds.includes(p.id)?list.length-i:null).filter(Boolean);
+        const nums=[...new Set([...selectedNumbers,...typed.filter(n=>!missing.includes(n))])];
+        const items=nums.map(n=>({number:n,photo:list[list.length-n]})).filter(x=>x.photo);
+        return {album,category,list,items,missing};
+    };
+    const toggleAdminGeneratorPhoto=id=>{
+        setAdminGeneratorSelectedIds(ids=>ids.includes(id)?ids.filter(v=>v!==id):[...ids,id]);
+        setAdminGeneratorMessage('');
+    };
+    const resetAdminGeneratorSelection=()=>{
+        setAdminGeneratorSelectedIds([]);
+        setAdminGeneratorNumbers('');
+        setAdminGeneratorMessage('');
+        setAdminGeneratorPage(1);
+        adminGeneratorLastOrderRef.current={signature:'',order:null};
+    };
+    const generateAdminClientOrder = (mode='pedido') => {
+        if(!admin)return;
+        if(adminGeneratorSaving)return;
+        const {album,category,items,missing}=adminGeneratorSelections();
+        if(!album||!items.length){
+            setAdminGeneratorMessage('Seleccioná las fotos tocando las miniaturas o ingresá números válidos.');
             return;
         }
-        const linked=items.map(x=>({
-            ...x,
-            link:toDriveViewLink(x.photo.rawUrl||x.photo.driveLink||x.photo.fullUrl||x.photo.url)
-        }));
-        const withoutLink=linked.filter(x=>!x.link);
-        if (withoutLink.length) {
-            setAdminGeneratorMessage('No se puede preparar la entrega: faltan los enlaces originales de las fotos Nº '+withoutLink.map(x=>x.number).join(', ')+'. Revisá los enlaces en la planilla y volvé a sincronizar.');
+        if(missing.length){
+            setAdminGeneratorMessage('Revisá estos números: '+missing.join(', ')+'. No corresponden a esta categoría.');
             return;
         }
+        const linked=items.map(x=>({...x,link:toDriveViewLink(
+            x.photo.rawUrl||x.photo.driveLink||x.photo.fullUrl||x.photo.url)}));
         const name=String(adminGeneratorCustomer||'').trim();
-        const intro=name?'¡Hola, '+name.split(/\s+/)[0]+'! 👋📸':'¡Hola! 👋📸';
-        const lines=linked.map(x=>
-            '📷 *Foto Nº '+x.number+'* · '+x.photo.name+'\n🔗 '+x.link
-        ).join('\n\n');
-        const message=intro+'\n\n¡Acá tenés tus fotos de *lucasabraham.ph* listas para descargar! 📸⚽'+
-            '\n\n🏟️ *'+album.name+'* · '+(category&&category.name||'Galería')+
-            '\n\n'+lines+
-            '\n\n📸 *Total:* '+linked.length+' foto(s)'+
-            '\n\n📥 Abrí cada enlace para ver y descargar la foto original en alta calidad.'+
-            '\n\n¡Muchas gracias por confiar en mi trabajo! 🙌';
-        setAdminGeneratorMessage(message+(missing.length?'\n\n⚠️ No se encontraron los números: '+missing.join(', '):''));
+        const phone=normalizeClubPhone(adminGeneratorPhone);
+        if(mode==='entrega'){
+            const withoutLink=linked.filter(x=>!x.link);
+            if(withoutLink.length){
+                setAdminGeneratorMessage('No se puede preparar la entrega: faltan los enlaces originales de las fotos Nº '+withoutLink.map(x=>x.number).join(', ')+'. Revisá la planilla.');
+                return;
+            }
+            const intro=name?'¡Hola, '+name.split(/\s+/)[0]+'! 👋📸':'¡Hola! 👋📸';
+            const lines=linked.map(x=>'📷 *Foto Nº '+x.number+'* · '+x.photo.name+'\n🔗 '+x.link).join('\n\n');
+            setAdminGeneratorMessage(intro+'\n\n¡Acá tenés tus fotos de *lucasabraham.ph* listas para descargar! 📸⚽'+
+                '\n\n🏟️ *'+album.name+'* · '+(category&&category.name||'Galería')+
+                '\n\n'+lines+'\n\n📸 *Total:* '+linked.length+' foto(s)'+
+                '\n\n📥 Abrí cada enlace para descargar la foto original en alta calidad.'+
+                '\n\n¡Muchas gracias por confiar en mi trabajo! 🙌');
+            return;
+        }
+        if(name.split(/\s+/).filter(Boolean).length<2||phone.length<10){
+            setAdminGeneratorMessage('Completá nombre y apellido, y un WhatsApp válido del cliente antes de generar el pedido.');
+            return;
+        }
+        const signature=JSON.stringify({albumId:album.id,categoryId:category&&category.id||'',items:linked.map(x=>x.photo.id),name,phone});
+        const previous=adminGeneratorLastOrderRef.current;
+        const id=previous.signature===signature&&previous.order?previous.order.id:newOrderCode();
+        const date=previous.signature===signature&&previous.order?previous.order.date:new Date().toISOString();
+        const subtotal=linked.reduce((sum,x)=>sum+(Number(x.photo.price)||0),0);
+        const quantityDiscount=Math.max(0,Math.min(1,discountRate(linked.length)));
+        const total=Math.round(linked.reduce((sum,x)=>{
+            const p=x.photo;
+            return sum+(Number(p.price)||0)*(1-quantityDiscount)*
+                (1-albumSiteDiscount(p.albumId)/100)*
+                (1-Math.max(0,Math.min(90,Number(p.directDiscountPercent)||0))/100);
+        },0));
+        const order=previous.signature===signature&&previous.order?previous.order:{
+            id,date,kind:'photos',albumName:album.name,
+            customerName:name,phone,total,subtotal,
+            status:'pendiente_pago',channel:'admin',paymentProvider:'transferencia',
+            paymentStatus:'pending',paid:false,delivered:false,wantsPoints:false,
+            adminCreated:true,printRequested:false,printCount:0,
+            items:linked.map(x=>({id:x.photo.id,name:x.photo.name,code:x.photo.code,
+                number:x.number,albumName:album.name,
+                subAlbumName:category&&category.name||'',price:Number(x.photo.price)||0,
+                driveLink:x.photo.rawUrl||x.photo.driveLink||x.photo.fullUrl||x.photo.url||''}))
+        };
+        adminGeneratorLastOrderRef.current={signature,order};
+        try{
+            saveLocalOrders(mergeOrders(readLocalOrders(),[order]));
+            savePendingOrders(mergeOrders(readPendingOrders(),[compactOrderForScript(order)]));
+            setOrders(orders=>mergeOrders(orders,[order]));
+        }catch(e){console.warn('Respaldo de pedido administrativo:',e);}
+        const detail=linked.map(x=>'• Foto Nº '+x.number+' · '+x.photo.name).join('\n');
+        setAdminGeneratorMessage('¡Hola, '+name.split(/\s+/)[0]+'! 👋📸\n\n'+
+            'Te comparto tu pedido de *lucasabraham.ph*:\n\n'+
+            '🧾 *Pedido '+id+'*\n🏟️ '+album.name+' · '+(category&&category.name||'Galería')+
+            '\n\n'+detail+'\n\n📸 *Cantidad:* '+linked.length+
+            '\n💰 *Total:* '+formatPrice(total)+
+            '\n💳 *Transferencia al alias:* '+MP_ALIAS+
+            '\n\nCuando abones, enviame el comprobante por acá para coordinar la entrega de los originales. 🙌');
+        setAdminGeneratorSaving(true);
+        saveOrderRemote(order).then(result=>{
+            if(result&&(result.firebase||result.script)){
+                setAdminMessage('Pedido '+id+' registrado en el historial.');
+            }else{
+                setAdminMessage('Pedido '+id+' conservado localmente. Se reintentará su registro.');
+            }
+        }).catch(err=>{
+            console.warn('Pedido de administrador pendiente de sincronización:',err);
+            setAdminMessage('Pedido conservado localmente; se reintentará su registro.');
+        }).finally(()=>setAdminGeneratorSaving(false));
     };
     const adminGeneratorWhatsappLink = () => {
         const phone=normalizeClubPhone(adminGeneratorPhone);
@@ -8199,33 +8290,74 @@ En breve te las preparo y te las envío por acá 😊
                         "aria-pressed":adminPanelTab===id,
                         onClick:()=>{setAdminPanelTab(id);window.scrollTo({top:0,behavior:"smooth"});}
                     },React.createElement("i",{className:"fas "+icon,"aria-hidden":true}),label))),
-                React.createElement("section",{hidden:adminPanelTab!=='generador',className:"bg-neutral-900 border border-sky-400/25 rounded-3xl p-4 sm:p-6 mb-6","aria-label":"Generador de pedido para clientes",id:"la-admin-generator"},
-                    React.createElement("h2",{className:"text-xl font-black text-white"},"Entregar fotos por número"),
-                    React.createElement("p",{className:"text-sm text-neutral-300 mt-1 mb-4"},"Elegí el partido y los números celestes separados por comas o espacios. Se prepara el mensaje de entrega con un enlace original por foto, sin precios ni instrucciones de pago. Enviá los enlaces únicamente cuando corresponda entregar las fotos."),
+                React.createElement("section",{hidden:adminPanelTab!=='generador',className:"bg-neutral-900 border border-sky-400/25 rounded-3xl p-4 sm:p-6 mb-6","aria-label":"Generador visual de pedidos",id:"la-admin-generator"},
+                    React.createElement("div",{className:"flex flex-wrap gap-2 items-start justify-between mb-4"},
+                        React.createElement("div",null,
+                            React.createElement("h2",{className:"text-xl font-black text-white"},"Armar pedido con fotos"),
+                            React.createElement("p",{className:"text-sm text-neutral-300 mt-1"},"Elegí el partido y tocá las fotos. También podés escribir sus números celestes.")),
+                        React.createElement("button",{type:"button",onClick:resetAdminGeneratorSelection,
+                            className:"px-4 py-2 rounded-xl bg-neutral-800 text-neutral-200 text-xs font-bold"},"Limpiar selección")),
                     React.createElement("div",{className:"grid gap-3 sm:grid-cols-2"},
                         React.createElement("label",{className:"block text-sm font-bold text-sky-100"},"Galería",
-                            React.createElement("select",{value:adminGeneratorAlbumId||((displayAlbums[0]||{}).id||''),onChange:e=>{setAdminGeneratorAlbumId(e.target.value);setAdminGeneratorSubId('');setAdminGeneratorMessage('')},className:"w-full mt-2 bg-black border border-white/20 text-white p-3 rounded-xl"},
-                                displayAlbums.map(a=>React.createElement("option",{key:a.id,value:a.id},a.name+" · "+(a.dateLabel||"sin fecha")+" · "+(a.photos||[]).length+" fotos")))),
+                            React.createElement("select",{value:adminGeneratorAlbum&&adminGeneratorAlbum.id||'',onChange:e=>{
+                                setAdminGeneratorAlbumId(e.target.value);setAdminGeneratorSubId('');resetAdminGeneratorSelection();setAdminGeneratorSearch('');
+                            },className:"w-full mt-2 bg-black border border-white/20 text-white p-3 rounded-xl"},
+                                displayAlbums.map(a=>React.createElement("option",{key:a.id,value:a.id},a.name+" · "+(a.dateLabel||"sin fecha"))))),
                         React.createElement("label",{className:"block text-sm font-bold text-sky-100"},"Categoría",
-                            React.createElement("select",{
-                                value:adminGeneratorSubId||((((displayAlbums.find(a=>a.id===adminGeneratorAlbumId)||displayAlbums[0])||{}).subalbums||[])[0]||{}).id||'',
-                                onChange:e=>{setAdminGeneratorSubId(e.target.value);setAdminGeneratorMessage('')},
-                                className:"w-full mt-2 bg-black border border-white/20 text-white p-3 rounded-xl"
-                            },((displayAlbums.find(a=>a.id===adminGeneratorAlbumId)||displayAlbums[0]||{}).subalbums||[]).map(sa=>
-                                React.createElement("option",{key:sa.id,value:sa.id},sa.name+" · "+(sa.photos||[]).length+" fotos")))),
-                        React.createElement("label",{className:"block text-sm font-bold text-sky-100"},"Nombre del cliente",
+                            React.createElement("select",{value:adminGeneratorCategory&&adminGeneratorCategory.id||'',onChange:e=>{
+                                setAdminGeneratorSubId(e.target.value);resetAdminGeneratorSelection();setAdminGeneratorSearch('');
+                            },className:"w-full mt-2 bg-black border border-white/20 text-white p-3 rounded-xl"},
+                                adminGeneratorCategories.length?adminGeneratorCategories.map(sa=>React.createElement("option",{key:sa.id,value:sa.id},sa.name+" · "+(sa.photos||[]).length+" fotos")):
+                                    React.createElement("option",{value:""},"Galería general")))),
+                    React.createElement("div",{className:"flex flex-wrap gap-3 items-center justify-between mt-5 mb-3"},
+                        React.createElement("p",{className:"text-sky-200 text-sm font-black"},adminGeneratorSelectedIds.length+" fotos seleccionadas"),
+                        React.createElement("input",{type:"search",value:adminGeneratorSearch,onChange:e=>{setAdminGeneratorSearch(e.target.value);setAdminGeneratorPage(1);},
+                            placeholder:"Buscar número o nombre",className:"bg-black border border-white/20 text-white px-3 py-2 rounded-xl text-sm w-full sm:w-64","aria-label":"Buscar fotos para seleccionar"})),
+                    React.createElement("div",{className:"grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-2 max-h-[600px] overflow-y-auto pr-1","aria-label":"Seleccionar fotos del pedido"},
+                        adminGeneratorPagedPhotos.map(({photo,number})=>{
+                            const selected=adminGeneratorSelectedIds.includes(photo.id);
+                            return React.createElement("button",{key:photo.id,type:"button",
+                                "aria-pressed":selected,"aria-label":(selected?"Quitar":"Seleccionar")+" foto número "+number,
+                                onClick:()=>toggleAdminGeneratorPhoto(photo.id),
+                                className:"relative text-left overflow-hidden rounded-xl border-2 "+(selected?"border-emerald-400 bg-emerald-950/30":"border-white/10 bg-black/40")},
+                                React.createElement("img",{src:toImgUrl(photo.rawUrl||photo.fullUrl||photo.url,200),loading:"lazy",decoding:"async",alt:"Foto "+number,
+                                    className:"w-full aspect-square object-cover protected-photo"}),
+                                React.createElement("span",{className:"absolute top-1 left-1 bg-black/80 text-sky-300 text-xs font-black rounded-md px-1.5 py-0.5"},"#"+number),
+                                React.createElement("span",{className:"absolute top-1 right-1 rounded-full w-6 h-6 flex items-center justify-center "+(selected?"bg-emerald-400 text-black":"bg-black/75 text-white")},
+                                    React.createElement("i",{className:"fas "+(selected?"fa-check":"fa-plus")})),
+                                React.createElement("span",{className:"block truncate text-[10px] text-neutral-200 px-1.5 py-1.5"},photo.name||"Foto "+number));
+                        })),
+                    !adminGeneratorPagedPhotos.length&&React.createElement("p",{className:"text-neutral-400 text-xs my-4"},"No encontré fotos con esa búsqueda."),
+                    adminGeneratorPageCount>1&&React.createElement("div",{className:"flex justify-between items-center gap-2 my-3"},
+                        React.createElement("button",{type:"button",disabled:adminGeneratorPageSafe===1,onClick:()=>setAdminGeneratorPage(p=>Math.max(1,p-1)),
+                            className:"bg-neutral-800 text-white rounded-lg px-3 py-2 disabled:opacity-30"},"Anterior"),
+                        React.createElement("span",{className:"text-xs text-neutral-300"},"Página "+adminGeneratorPageSafe+" de "+adminGeneratorPageCount),
+                        React.createElement("button",{type:"button",disabled:adminGeneratorPageSafe===adminGeneratorPageCount,onClick:()=>setAdminGeneratorPage(p=>Math.min(adminGeneratorPageCount,p+1)),
+                            className:"bg-neutral-800 text-white rounded-lg px-3 py-2 disabled:opacity-30"},"Siguiente")),
+                    React.createElement("div",{className:"grid gap-3 sm:grid-cols-2 mt-4"},
+                        React.createElement("label",{className:"block text-sm font-bold text-sky-100 sm:col-span-2"},"Números adicionales (opcional)",
+                            React.createElement("textarea",{value:adminGeneratorNumbers,onChange:e=>{setAdminGeneratorNumbers(e.target.value);setAdminGeneratorMessage('');},
+                                placeholder:"238, 236, 221",rows:2,className:"w-full mt-2 bg-black border border-white/20 text-white p-3 rounded-xl resize-y"})),
+                        React.createElement("label",{className:"block text-sm font-bold text-sky-100"},"Nombre y apellido del cliente",
                             React.createElement("input",{value:adminGeneratorCustomer,onChange:e=>setAdminGeneratorCustomer(e.target.value),placeholder:"Nombre y apellido",className:"w-full mt-2 bg-black border border-white/20 text-white p-3 rounded-xl"})),
-                        React.createElement("label",{className:"block text-sm font-bold text-sky-100 sm:col-span-2"},"Números de las fotos",
-                            React.createElement("textarea",{value:adminGeneratorNumbers,onChange:e=>{setAdminGeneratorNumbers(e.target.value);setAdminGeneratorMessage('')},placeholder:"238, 236, 221, 220, 215",rows:3,className:"w-full mt-2 bg-black border border-white/20 text-white p-3 rounded-xl resize-y"})),
-                        React.createElement("label",{className:"block text-sm font-bold text-sky-100 sm:col-span-2"},"WhatsApp del cliente",
+                        React.createElement("label",{className:"block text-sm font-bold text-sky-100"},"WhatsApp del cliente",
                             React.createElement("input",{value:adminGeneratorPhone,onChange:e=>setAdminGeneratorPhone(e.target.value),placeholder:"351 1234567",inputMode:"tel",className:"w-full mt-2 bg-black border border-white/20 text-white p-3 rounded-xl"}))),
                     React.createElement("div",{className:"flex flex-wrap gap-2 mt-4"},
-                        React.createElement("button",{type:"button",className:"bg-sky-500 text-white font-black px-4 py-3 rounded-xl",onClick:generateAdminClientOrder},React.createElement("i",{className:"fas fa-link mr-2","aria-hidden":true}),"Generar pedido listo para entregar")),
+                        React.createElement("button",{type:"button",disabled:adminGeneratorSaving,
+                            className:"bg-sky-500 text-black font-black px-4 py-3 rounded-xl disabled:opacity-50",
+                            onClick:()=>generateAdminClientOrder('pedido')},
+                            React.createElement("i",{className:"fas fa-receipt mr-2","aria-hidden":true}),adminGeneratorSaving?"Registrando…":"Generar pedido pendiente"),
+                        React.createElement("button",{type:"button",className:"bg-neutral-800 border border-white/20 text-white font-black px-4 py-3 rounded-xl",
+                            onClick:()=>generateAdminClientOrder('entrega')},
+                            React.createElement("i",{className:"fas fa-link mr-2","aria-hidden":true}),"Preparar entrega con enlaces")),
+                    React.createElement("p",{className:"text-xs text-amber-200/85 mt-3"},"Los enlaces originales son privados: prepará la entrega únicamente cuando el pago esté confirmado."),
                     adminGeneratorMessage&&React.createElement("div",{className:"mt-4"},
                         React.createElement("textarea",{readOnly:true,value:adminGeneratorMessage,rows:12,className:"w-full bg-black border border-sky-400/25 text-white p-3 rounded-xl text-sm resize-y"}),
                         React.createElement("div",{className:"flex flex-wrap gap-2 mt-3"},
-                            React.createElement("button",{type:"button",className:"bg-emerald-500 text-black font-black px-4 py-3 rounded-xl",onClick:()=>navigator.clipboard.writeText(adminGeneratorMessage)},"Copiar pedido y enlaces de descarga"),
-                            adminGeneratorWhatsappLink()&&React.createElement("a",{href:adminGeneratorWhatsappLink(),target:"_blank",rel:"noopener noreferrer",className:"bg-green-700 text-white font-black px-4 py-3 rounded-xl"},"Enviar por WhatsApp")))),
+                            React.createElement("button",{type:"button",className:"bg-emerald-500 text-black font-black px-4 py-3 rounded-xl",
+                                onClick:()=>navigator.clipboard.writeText(adminGeneratorMessage)},"Copiar mensaje"),
+                            adminGeneratorWhatsappLink()&&React.createElement("a",{href:adminGeneratorWhatsappLink(),target:"_blank",rel:"noopener noreferrer",
+                                className:"bg-green-700 text-white font-black px-4 py-3 rounded-xl"},"Enviar por WhatsApp")))),
                 window.LAAdminReminders && React.createElement("section",{hidden:adminPanelTab!=='recordatorios',id:"la-admin-recordatorios",className:"mb-6"},React.createElement(window.LAAdminReminders.Panel,null)),
                 React.createElement("section", { className: "la-admin-overview", id:"la-admin-overview", hidden:adminPanelTab!=='inicio', "aria-label":"Resumen de gestión" },
                     React.createElement("div",{className:"la-admin-overview-head"},
