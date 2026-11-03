@@ -7383,12 +7383,12 @@ En breve te las preparo y te las envío por acá 😊
             total:checkoutTotal,prints:checkoutPrint?printedPhotoIds:[],
             name:checkoutBuyerName,phone:checkoutBuyerPhone
         });
-        const id=transferOrderRef.current.signature===signature
-            ?transferOrderRef.current.id:newOrderCode();
-        transferOrderRef.current={signature,id};
-        const now=new Date().toISOString();
+        const previous=transferOrderRef.current.signature===signature
+            ?transferOrderRef.current.order:null;
+        const id=previous&&previous.id?previous.id:newOrderCode();
+        const now=previous&&previous.date?previous.date:new Date().toISOString();
         const whatsappUrl=otherPaymentWhatsappUrl(null,id);
-        const order={id,date:now,kind:'photos',total:checkoutTotal,subtotal:regular,
+        const order=previous||{id,date:now,kind:'photos',total:checkoutTotal,subtotal:regular,
             customerName:checkoutBuyerName||'',phone:checkoutBuyerPhone||'',
             albumName:[...new Set(selectedPhotos.map(p=>p.albumName).filter(Boolean))].join(' · '),
             channel:'whatsapp',paymentProvider:'whatsapp',paymentStatus:'pending',
@@ -7407,6 +7407,7 @@ En breve te las preparo y te las envío por acá 😊
                 price:Number(p.price)||0,
                 printRequested:Boolean(checkoutPrint&&printedPhotoIds.includes(p.id)),
                 driveLink:p.rawUrl||p.fullUrl||p.url||''}))};
+        transferOrderRef.current={signature,id,order};
         // Respaldo síncrono local antes de abandonar la aplicación.
         try{
             saveLocalOrders(mergeOrders(readLocalOrders(),[order]));
