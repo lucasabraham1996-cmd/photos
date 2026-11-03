@@ -2291,7 +2291,7 @@ const LS_SHARED_STATE_KEY = "la_shared_admin_state_v2";
 const LS_BANNERS_KEY = "la_banner_settings_v1";
 const LS_INTRO_KEY = "la_purchase_intro_seen_v2";
 const PHOTOS_PER_PAGE = 70;
-const APP_VERSION = "v140-admin-cloudflare-orders";
+const APP_VERSION = "v141-stable-firebase-auth";
 const LS_ALBUM_CACHE_META_KEY = "la_album_cache_meta_v1";
 const ALBUM_CACHE_MAX_AGE_MS = 1000 * 60 * 60 * 12;
 const FIRESTORE_FREE_DAILY_LIMITS = {
@@ -2873,8 +2873,9 @@ function normalizeSharedState(state) {
     };
 }
 async function loadSharedAdminState() {
-    // Leer fuentes en paralelo: un Firebase lento no debe bloquear el login
-    // antes de consultar el respaldo de Apps Script.
+    // Consultar ambas fuentes a la vez con límite de espera. Preferir Firebase
+    // (fuente principal) cuando está disponible, evitando sobrescribir claves
+    // o configuraciones nuevas con respaldos de Apps Script desactualizados.
     const cached=readSharedCache();
     const firebaseTask=(async()=>{
         const db=await getFirebaseDb();
@@ -2888,21 +2889,29 @@ async function loadSharedAdminState() {
             throw new Error('Configuración de Apps Script no disponible');
         return {source:'apps-script',state:normalizeSharedState(r.state)};
     });
-    try{
-        const winner=await Promise.any([
-            orderDeadline(firebaseTask,6500),
-            orderDeadline(scriptTask,6500)
-        ]);
-        const remote=winner.state;
-        remote.bannerSettings={...(remote.bannerSettings||DEFAULT_BANNER_SETTINGS),visible:false};
-        writeSharedCache(remote);
-        window.LA_LAST_SHARED_LOAD={source:winner.source,at:new Date().toISOString()};
-        return remote;
-    }catch(e){
-        console.warn('No respondió la configuración remota. Se conserva el acceso del dispositivo.',e);
-        window.LA_LAST_SHARED_LOAD={source:'local',at:new Date().toISOString(),warning:'Las fuentes de seguridad no respondieron.'};
+    const [fb,script]=await Promise.allSettled([
+        orderDeadline(firebaseTask,4000),
+        orderDeadline(scriptTask,4000)
+    ]);
+    const winner=fb.status==='fulfilled'?fb.value:
+        script.status==='fulfilled'?script.value:null;
+    if(!winner){
+        window.LA_LAST_SHARED_LOAD={source:'local',at:new Date().toISOString(),warning:'Fuentes de seguridad sin respuesta'};
         return cached;
     }
+    const remote=winner.state;
+    const cachedAuth=normalizeAdminAuthConfig(cached.adminAuth);
+    const sourceAuth=normalizeAdminAuthConfig(remote.adminAuth);
+    // No reemplazar un verificador actualizado por una copia antigua.
+    if(cachedAuth.verifier&&
+       (!sourceAuth.verifier||
+        Date.parse(cachedAuth.updatedAt||0)>Date.parse(sourceAuth.updatedAt||0))){
+        remote.adminAuth=cachedAuth;
+    }
+    remote.bannerSettings={...(remote.bannerSettings||DEFAULT_BANNER_SETTINGS),visible:false};
+    writeSharedCache(remote);
+    window.LA_LAST_SHARED_LOAD={source:winner.source,at:new Date().toISOString()};
+    return remote;
 }
 async function saveSharedAdminState(partial) {
     const next = normalizeSharedState(writeSharedCache(partial));
