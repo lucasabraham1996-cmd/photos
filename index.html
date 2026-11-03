@@ -2361,6 +2361,44 @@ async function createAdminAuthConfig(secret, currentConfig) {
         updatedAt: new Date().toISOString()
     };
 }
+// Recordatorio de acceso solo para este navegador. No se guarda el PIN.
+const LA_ADMIN_TRUST_KEY='LA_ADMIN_TRUSTED_DEVICE_14D';
+const LA_ADMIN_TRUST_DURATION=14*24*60*60*1000;
+function readTrustedAdminDevice(){
+    try{
+        const saved=JSON.parse(localStorage.getItem(LA_ADMIN_TRUST_KEY)||'null');
+        if(!saved||typeof saved!=='object'||!Number.isFinite(Number(saved.expiresAt))||
+            Number(saved.expiresAt)<=Date.now()){
+            localStorage.removeItem(LA_ADMIN_TRUST_KEY);
+            return null;
+        }
+        return saved;
+    }catch(e){return null;}
+}
+function forgetTrustedAdminDevice(){
+    try{localStorage.removeItem(LA_ADMIN_TRUST_KEY);}catch(e){}
+}
+function rememberTrustedAdminDevice(authConfig){
+    const auth=normalizeAdminAuthConfig(authConfig);
+    if(!auth.verifier||!auth.updatedAt)return false;
+    try{
+        localStorage.setItem(LA_ADMIN_TRUST_KEY,JSON.stringify({
+            expiresAt:Date.now()+LA_ADMIN_TRUST_DURATION,
+            authUpdatedAt:auth.updatedAt
+        }));
+        return true;
+    }catch(e){return false;}
+}
+function trustedAdminDeviceMatches(authConfig){
+    const saved=readTrustedAdminDevice();
+    const auth=normalizeAdminAuthConfig(authConfig);
+    if(!saved)return false;
+    if(!auth.verifier||!auth.updatedAt||saved.authUpdatedAt!==auth.updatedAt){
+        forgetTrustedAdminDevice();
+        return false;
+    }
+    return true;
+}
 function readLocalAdminPasskeyId() {
     try { return localStorage.getItem(LS_ADMIN_PASSKEY_KEY) || ""; }
     catch (e) { return ""; }
@@ -5427,6 +5465,7 @@ function App() {
     const [adminAuth, setAdminAuth] = useState(() => normalizeAdminAuthConfig(readSharedCache().adminAuth));
     const [adminLoginBusy, setAdminLoginBusy] = useState(false);
     const [adminLoginError, setAdminLoginError] = useState("");
+    const [rememberAdminDevice,setRememberAdminDevice]=useState(()=>Boolean(readTrustedAdminDevice()));
     const [showPinLogin, setShowPinLogin] = useState(() => !readLocalAdminPasskeyId());
     const [securityOpen, setSecurityOpen] = useState(false);
     const [securityBusy, setSecurityBusy] = useState(false);
@@ -5644,6 +5683,26 @@ function App() {
     const adminPasskeyIds = useMemo(() => normalizeAdminAuthConfig(adminAuth).passkeyIds, [adminAuth]);
     const localAdminPasskeyId = readLocalAdminPasskeyId();
     const adminBiometricConfigured = supportsAdminBiometrics() && Boolean(localAdminPasskeyId);
+    const completeAdminLogin=()=>{
+        try{sessionStorage.setItem('LA_ADMIN_UNLOCKED_AT',String(Date.now()));}catch(e){}
+        if(rememberAdminDevice)rememberTrustedAdminDevice(adminAuth);
+        else forgetTrustedAdminDevice();
+        setAdmin(true);setAdminLoginError('');setPin('');
+    };
+    const logoutAdmin=()=>{
+        try{sessionStorage.removeItem('LA_ADMIN_UNLOCKED_AT');}catch(e){}
+        forgetTrustedAdminDevice();setRememberAdminDevice(false);
+        setAdmin(false);setPin('');setAdminPanelTab('inicio');
+        location.hash='#/admin';
+    };
+    useEffect(()=>{
+        if(!sharedReady||admin)return;
+        const source=window.LA_LAST_SHARED_LOAD&&window.LA_LAST_SHARED_LOAD.source;
+        if((source==='firebase'||source==='apps-script')&&trustedAdminDeviceMatches(adminAuth)){
+            try{sessionStorage.setItem('LA_ADMIN_UNLOCKED_AT',String(Date.now()));}catch(e){}
+            setRememberAdminDevice(true);setAdmin(true);
+        }
+    },[sharedReady,adminAuth.updatedAt,admin]);
 
     async function submitAdminSecret(event) {
         if (event) event.preventDefault();
@@ -5660,9 +5719,7 @@ function App() {
                 setAdminLoginError("PIN o contraseña incorrectos.");
                 return;
             }
-            try { sessionStorage.setItem('LA_ADMIN_UNLOCKED_AT', String(Date.now())); } catch (e) {}
-            setAdmin(true);
-            setPin("");
+            completeAdminLogin();
             const setupBioRequested = new URLSearchParams(location.search).get("setupbio") === "1";
             if (setupBioRequested && supportsAdminBiometrics()) {
                 setAdminMessage("PIN correcto. Ahora tocá “Vincular biometría de este dispositivo” una sola vez para dejarlo vinculado.");
@@ -5691,8 +5748,7 @@ function App() {
             const credentialId = await authenticateAdminPasskey(adminPasskeyIds);
             if (!credentialId)
                 throw new Error("No se pudo validar la biometría.");
-            try { sessionStorage.setItem('LA_ADMIN_UNLOCKED_AT', String(Date.now())); } catch (e) {}
-            setAdmin(true);
+            completeAdminLogin();
             setShowPinLogin(false);
             setAdminLoginError("");
         }
@@ -5771,6 +5827,7 @@ function App() {
             const next = await createAdminAuthConfig(nextSecret, adminAuth);
             await saveSharedAdminState({ adminAuth: next });
             setAdminAuth(next);
+            forgetTrustedAdminDevice();setRememberAdminDevice(false);
             setCurrentAdminSecret("");
             setNewAdminSecret("");
             setConfirmAdminSecret("");
@@ -8230,30 +8287,43 @@ En breve te las preparo y te las envío por acá 😊
                                 "Recargar la página"))),
                     React.createElement("p", { className: "text-center text-xs text-neutral-500 mt-4" }, "Tip: si fue un bloqueo momentáneo de Google Sheets, el primer botón suele alcanzar para solucionarlo."))));
     if (route === "#/admin" && !admin)
-        return React.createElement("div", { className: "la-admin-login-screen min-h-screen flex items-center justify-center p-4 bg-[#050505]" },
-            React.createElement("div", { className: "relative bg-neutral-900 border border-neutral-800 p-7 rounded-3xl w-full max-w-sm shadow-2xl" },
-                React.createElement("button", { type:"button", onClick:goToGallery, className:"absolute top-4 right-4 w-9 h-9 rounded-full bg-black/40 border border-white/10 text-neutral-400 hover:text-white flex items-center justify-center", title:"Cerrar", "aria-label":"Cerrar acceso administrador" }, React.createElement("i", { className:"fas fa-xmark" })),
-                React.createElement("div", { className:"w-16 h-16 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center mb-5" },
-                    React.createElement("img", { src:"./brand-logo.png?v=105", alt:BRAND, className:"w-11 h-11 object-contain" })),
-                React.createElement("h1", { className: "text-2xl font-black mb-2 pr-10" }, "Acceso admin"),
-                React.createElement("p", { className: "text-neutral-400 text-sm mb-5" }, adminBiometricConfigured ? (adminLoginBusy ? "Validando con la seguridad de este dispositivo..." : "Biometría / seguridad del dispositivo es tu acceso principal. El PIN queda como alternativa.") : (!sharedReady ? "Preparando acceso seguro..." : "Entrá con tu PIN o contraseña. Después podés activar Face ID o huella desde Seguridad.")),
-                adminBiometricConfigured && React.createElement("button", { type:"button", onClick:()=>submitAdminBiometric(), disabled:adminLoginBusy, className:"w-full bg-gradient-to-r from-sky-400 to-blue-600 text-white py-4 rounded-2xl font-black shadow-[0_16px_40px_rgba(37,99,235,.22)] disabled:opacity-50" },
-                    React.createElement("i", { className:"fas fa-fingerprint mr-2" }),
-                    adminLoginBusy ? "Abriendo Face ID / huella..." : "Entrar con biometría / seguridad del dispositivo"),
-                adminBiometricConfigured && React.createElement("div", { className:"flex items-center gap-3 my-4 text-[10px] uppercase tracking-[.16em] text-neutral-600" },
-                    React.createElement("span", { className:"h-px bg-neutral-800 flex-1" }),
-                    React.createElement("span", null, "Opción 2"),
-                    React.createElement("span", { className:"h-px bg-neutral-800 flex-1" })),
-                React.createElement("form", { onSubmit:submitAdminSecret },
-                    React.createElement("input", { value:pin, onChange:e=>setPin(e.target.value), type:"password", autoComplete:"current-password", placeholder:"PIN / contraseña", disabled:!sharedReady, className:"w-full bg-black border border-neutral-700 rounded-xl p-4 mb-3 text-center text-lg tracking-wider outline-none focus:border-sky-500 disabled:opacity-50" }),
-                    React.createElement("button", { disabled:adminLoginBusy || !sharedReady || !pin, className:"w-full bg-neutral-100 text-black py-4 rounded-xl font-black disabled:opacity-40" }, !sharedReady ? "Cargando seguridad..." : (adminLoginBusy ? "Validando..." : "Entrar con PIN / contraseña"))),
-                adminBiometricConfigured && React.createElement("button", {
-                    type:"button", onClick:resetLocalAdminBiometric,
-                    className:"w-full mt-3 border border-amber-400/25 bg-amber-500/10 text-amber-200 py-3 rounded-xl text-xs font-black"
-                }, React.createElement("i", { className:"fas fa-rotate mr-2" }), "Restablecer Face ID / biometría"),
-                React.createElement("p", { className:"mt-4 text-xs text-neutral-400 leading-relaxed" }, "¿Entrás desde otro celular? Primero usá tu PIN de administrador y vinculá la biometría desde Seguridad en ese dispositivo. Los pedidos se consultan de forma compartida, no se transfieren desde la PC."),
-                React.createElement("button", { type:"button", onClick:()=>{ const u=new URL(window.location.href);u.searchParams.set("mobile_refresh",String(Date.now()));window.location.replace(u.toString()); }, className:"w-full mt-3 border border-sky-400/25 bg-sky-500/10 text-sky-200 py-3 rounded-xl text-xs font-bold" }, React.createElement("i",{className:"fas fa-arrows-rotate mr-2"}),"Actualizar versión en este celular"),
-                adminLoginError && React.createElement("div", { className:"mt-4 rounded-xl border border-red-500/25 bg-red-500/10 px-3 py-3 text-sm text-red-200" }, adminLoginError)));
+        return React.createElement("div",{className:"la-admin-login-screen min-h-screen flex items-center justify-center p-4 bg-[#050505]"},
+            React.createElement("section",{className:"relative w-full max-w-sm rounded-[28px] border border-white/10 bg-neutral-900 p-7 sm:p-9 shadow-[0_28px_90px_rgba(0,0,0,.46)]","aria-label":"Ingreso de administrador"},
+                React.createElement("button",{type:"button",onClick:goToGallery,
+                    className:"absolute top-4 right-4 w-9 h-9 rounded-full bg-white/5 text-neutral-400 hover:text-white flex items-center justify-center",
+                    "aria-label":"Volver a la galería"},React.createElement("i",{className:"fas fa-xmark"})),
+                React.createElement("div",{className:"w-16 h-16 rounded-2xl flex items-center justify-center bg-black/60 border border-white/10 mb-5"},
+                    React.createElement("img",{src:"./brand-logo.png?v=105",alt:BRAND,className:"w-11 h-11 object-contain"})),
+                React.createElement("p",{className:"uppercase tracking-[.2em] text-[10px] font-black text-sky-300 mb-1"},"LUCASABRAHAM.PH"),
+                React.createElement("h1",{className:"text-2xl font-black text-white mb-2"},"Administración"),
+                React.createElement("p",{className:"text-sm text-neutral-400 leading-relaxed mb-6"},"Ingresá para gestionar pedidos, fotos y entregas."),
+                adminBiometricConfigured&&React.createElement("button",{type:"button",onClick:()=>submitAdminBiometric(),disabled:adminLoginBusy,
+                    className:"w-full rounded-2xl bg-sky-500 hover:bg-sky-400 text-black py-4 font-black disabled:opacity-40"},
+                    React.createElement("i",{className:"fas fa-fingerprint mr-2"}),adminLoginBusy?"Validando…":"Ingresar con Face ID / huella"),
+                (!adminBiometricConfigured||showPinLogin)&&React.createElement("form",{onSubmit:submitAdminSecret,className:adminBiometricConfigured?"mt-4":"mt-1"},
+                    React.createElement("label",{className:"block text-xs font-bold text-neutral-300 mb-2",htmlFor:"la-admin-pin"},"PIN o contraseña"),
+                    React.createElement("input",{id:"la-admin-pin",value:pin,onChange:e=>setPin(e.target.value),
+                        type:"password",autoComplete:"current-password",placeholder:"Ingresá tu clave",
+                        disabled:!sharedReady||adminLoginBusy,
+                        className:"w-full bg-black/70 border border-neutral-700 rounded-2xl p-4 mb-3 outline-none focus:border-sky-400 text-white"}),
+                    React.createElement("button",{type:"submit",disabled:adminLoginBusy||!sharedReady||!pin,
+                        className:"w-full rounded-2xl border border-white/15 bg-white text-black py-3.5 font-black disabled:opacity-40"},
+                        !sharedReady?"Cargando acceso…":adminLoginBusy?"Validando…":"Entrar al panel")),
+                adminBiometricConfigured&&!showPinLogin&&React.createElement("button",{type:"button",
+                    onClick:()=>{setShowPinLogin(true);setAdminLoginError('');},
+                    className:"block mx-auto mt-4 text-xs font-bold text-neutral-300 underline underline-offset-4"},"Usar PIN o contraseña"),
+                React.createElement("label",{className:"mt-5 flex items-start gap-3 rounded-xl border border-white/10 bg-black/30 p-3 cursor-pointer"},
+                    React.createElement("input",{type:"checkbox",checked:rememberAdminDevice,
+                        onChange:e=>setRememberAdminDevice(e.target.checked),
+                        disabled:!normalizeAdminAuthConfig(adminAuth).verifier,
+                        className:"mt-0.5 accent-sky-400 w-4 h-4"}),
+                    React.createElement("span",{className:"text-xs text-neutral-300 leading-relaxed"},
+                        React.createElement("b",{className:"text-white block mb-1"},"Recordar este dispositivo · 14 días"),
+                        normalizeAdminAuthConfig(adminAuth).verifier?"Solo en equipos personales. No guardamos tu contraseña.":"Disponible al configurar una contraseña de administrador actualizada.")),
+                adminBiometricConfigured&&React.createElement("button",{type:"button",onClick:resetLocalAdminBiometric,
+                    className:"block mx-auto mt-4 text-[11px] text-neutral-500 hover:text-neutral-300"},"Volver a vincular Face ID o huella"),
+                adminLoginError&&React.createElement("div",{role:"alert",className:"mt-4 rounded-xl border border-red-500/25 bg-red-500/10 px-3 py-3 text-xs text-red-200"},adminLoginError),
+                React.createElement("p",{className:"text-center text-[11px] leading-relaxed text-neutral-500 mt-5"},"No actives «Recordar» en dispositivos compartidos.")));
     if (route === "#/admin")
         return React.createElement("div", { className: "la-admin-workspace min-h-screen p-5 md:p-8 max-w-7xl mx-auto", "data-la-admin-tab":adminPanelTab },
             React.createElement("header", { className: "la-admin-main-header flex flex-col sm:flex-row gap-3 sm:items-end sm:justify-between border-b border-neutral-800 pb-5 mb-6" },
@@ -8270,7 +8340,9 @@ En breve te las preparo y te las envío por acá 😊
                         "Actualizar"),
                     React.createElement("button", { onClick: () => setPriceAdminOpen(true), className: "bg-emerald-500 text-black px-4 py-3 rounded-xl font-black" }, React.createElement("i", { className: "fas fa-tags mr-2" }), "Precios"),
                     React.createElement("button", { onClick: async () => { const link='https://lucasabraham1996-cmd.github.io/photos/contrataciones.html#/solicitar'; try { await navigator.clipboard.writeText(link); setAdminMessage('Link público de solicitudes copiado.'); } catch(e) { window.prompt('Copiá el link público de solicitudes:', link); } }, className: "bg-sky-600 px-4 py-3 rounded-xl font-bold" }, React.createElement("i", { className: "fas fa-link mr-2" }), "Copiar link solicitudes"),
-                    React.createElement("button", { onClick: goToGallery, className: "bg-indigo-600 px-4 py-3 rounded-xl font-bold" }, "Ver galer\u00EDa"))),
+                    React.createElement("button", { onClick: goToGallery, className: "bg-indigo-600 px-4 py-3 rounded-xl font-bold" }, "Ver galer\u00EDa"),
+                    React.createElement("button", { type:"button",onClick:logoutAdmin,className:"bg-neutral-800 border border-white/15 px-4 py-3 rounded-xl text-sm font-bold text-neutral-200" },
+                        React.createElement("i",{className:"fas fa-right-from-bracket mr-2"}),"Cerrar sesión"))),
 
             React.createElement("div", { className: "la-admin-control-hub" },
                 React.createElement("nav", { className: "la-admin-nav la-admin-tabs", "aria-label": "Pestañas del administrador" },
