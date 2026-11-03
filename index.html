@@ -2291,7 +2291,7 @@ const LS_SHARED_STATE_KEY = "la_shared_admin_state_v2";
 const LS_BANNERS_KEY = "la_banner_settings_v1";
 const LS_INTRO_KEY = "la_purchase_intro_seen_v2";
 const PHOTOS_PER_PAGE = 70;
-const APP_VERSION = "v135-trusted-device-checkbox-fix";
+const APP_VERSION = "v136-admin-orders-atomic-render";
 const LS_ALBUM_CACHE_META_KEY = "la_album_cache_meta_v1";
 const ALBUM_CACHE_MAX_AGE_MS = 1000 * 60 * 60 * 12;
 const FIRESTORE_FREE_DAILY_LIMITS = {
@@ -3056,7 +3056,7 @@ function newOrderCode(){const random=typeof crypto!=='undefined'&&crypto.getRand
 function safeOrderWhatsappUrl(pkg){if(pkg.whatsappUrl.length<=6000)return pkg.whatsappUrl;const text=`Hola Lucas! Te envío mi pedido ${pkg.order} de ${pkg.orderData.items.length} fotos por ${formatPrice(pkg.orderData.total)}. El detalle completo, incluidas las impresiones, está guardado en el Admin. A continuación te envío el comprobante.`;return `https://api.whatsapp.com/send?phone=${SELLER_PHONE}&text=${encodeURIComponent(text)}`}
 async function saveOrderFirebase(order){const db=await getFirebaseDb();if(!db)throw new Error('Firebase no inicializó');const clean={...order,id:order.id||order.orderId||order.codigo||order.code};if(!clean.id)throw new Error('El pedido no tiene código');await LAOrderStorage.persist(db,ORDERS_COLLECTION_PATH,clean,firebaseDocId);window.LA_LAST_FIREBASE_SAVE={ok:true,id:clean.id,paths:[ORDERS_COLLECTION_PATH],at:new Date().toISOString(),appVersion:APP_VERSION};return true}
 
-async function loadOrdersFirebase(limit=3000){const db=await getFirebaseDb();if(!db)throw new Error('Firebase no inicializó');const all=[],errors=[];let successful=0;for(const path of [...legacyOrderCollections(),ORDERS_COLLECTION_PATH]){const collection=db.collection(path),docs=new Map();for(const query of [collection.where('delivered','==',false),collection.orderBy('date','desc').limit(Math.max(300,Math.min(limit,1000)))]){try{const snap=await query.get({source:'server'});successful++;snap.docs.forEach(d=>docs.set(d.id,d))}catch(e){errors.push(String(e&&e.message||e))}}const entries=[...docs.values()];for(let i=0;i<entries.length;i+=6){const group=await Promise.all(entries.slice(i,i+6).map(async d=>{const data={id:d.data().id||d.id,...d.data()};try{return {...await LAOrderStorage.hydrate(d.ref,data),_firebasePath:path}}catch(e){console.warn('Detalle de pedido pendiente de recuperar:',data.id,e);return {...data,storageIncomplete:true,_firebasePath:path}}}));all.push(...group)}}window.LA_LAST_ORDER_FIREBASE_READ={ok:successful>0,errors,at:new Date().toISOString()};if(!successful)throw new Error(errors.join('; ')||'No se pudieron consultar pedidos en Firebase');return mergeOrders(all)}
+async function loadOrdersFirebase(limit=350){const db=await getFirebaseDb();if(!db)throw new Error('Firebase no inicializó');const all=[],errors=[];let successful=0;for(const path of [...legacyOrderCollections(),ORDERS_COLLECTION_PATH]){const collection=db.collection(path),docs=new Map();for(const query of [collection.where('delivered','==',false).limit(250),collection.orderBy('date','desc').limit(Math.max(100,Math.min(limit,500)))]){try{const snap=await query.get({source:'server'});successful++;snap.docs.forEach(d=>docs.set(d.id,d))}catch(e){errors.push(String(e&&e.message||e))}}const entries=[...docs.values()];for(let i=0;i<entries.length;i+=18){const group=await Promise.all(entries.slice(i,i+18).map(async d=>{const data={id:d.data().id||d.id,...d.data()};try{return {...await LAOrderStorage.hydrate(d.ref,data),_firebasePath:path}}catch(e){console.warn('Detalle de pedido pendiente de recuperar:',data.id,e);return {...data,storageIncomplete:true,_firebasePath:path}}}));all.push(...group)}}window.LA_LAST_ORDER_FIREBASE_READ={ok:successful>0,errors,at:new Date().toISOString()};if(!successful)throw new Error(errors.join('; ')||'No se pudieron consultar pedidos en Firebase');return mergeOrders(all)}
 function orderCodeVariants(v) {
     const clean = normalizeOrderCode(v);
     const withDash = clean.replace(/^LA(\d+)/, 'LA-$1');
@@ -3333,27 +3333,18 @@ async function saveOrderRemote(order){
     LA_ORDER_SAVE_INFLIGHT.set(key,work);
     return work;
 }
-async function loadOrdersRemote(onProgress){
-    // Entregar local y cada fuente en cuanto haya datos, sin bloquear por la otra.
+async function loadOrdersRemote(){
+    // Una sola publicación: evita que la vista salte de pedidos viejos a otros nuevos
+    // mientras Firebase y Apps Script contestan en distinto orden.
     const local=mergeOrders(readLocalOrders(),readPendingOrders(),await LAOrderOutbox.all());
-    let scriptOrders=[],firebaseOrders=[];
-    const publish=()=>{if(typeof onProgress==='function')onProgress(mergeOrders(local,scriptOrders,firebaseOrders))};
-    publish();
-    const scriptTask=apiAction({action:'listOrders'}).then(data=>{
-        if(data&&!data.error&&data.ok!==false&&Array.isArray(data.orders)){
-            scriptOrders=data.orders;
-            publish();
-        }
-        return data;
-    });
-    const firebaseTask=loadOrdersFirebase().then(data=>{
-        firebaseOrders=data;
-        publish();
-        return data;
-    });
-    const [sr,fr]=await Promise.allSettled([scriptTask,firebaseTask]);
+    const [sr,fr]=await Promise.allSettled([
+        orderDeadline(apiAction({action:'listOrders'}),18000),
+        orderDeadline(loadOrdersFirebase(),18000)
+    ]);
     const scriptOk=sr.status==='fulfilled'&&sr.value&&!sr.value.error&&sr.value.ok!==false&&Array.isArray(sr.value.orders);
-    const firebaseOk=fr.status==='fulfilled';
+    const firebaseOk=fr.status==='fulfilled'&&Array.isArray(fr.value);
+    const scriptOrders=scriptOk?sr.value.orders:[];
+    const firebaseOrders=firebaseOk?fr.value:[];
     window.LA_ORDER_LOAD_WARNING=!scriptOk&&!firebaseOk
         ?'No se pudieron consultar los pedidos remotos. Se muestran los respaldos disponibles.'
         :(!scriptOk||!firebaseOk?'Una fuente de pedidos no respondió. Revisá los pendientes si falta alguno.':'');
@@ -3365,7 +3356,9 @@ async function loadOrdersRemote(onProgress){
             ?{...o,items:backup.items,printedItems:backup.printedItems||[],printedPhotoIds:backup.printedPhotoIds||[],storageIncomplete:false}
             :o;
     });
-    return mergeOrders(local,scriptOrders,completeFirebase);
+    const result=mergeOrders(local,scriptOrders,completeFirebase);
+    window.LA_LAST_ORDER_LOAD={at:new Date().toISOString(),firebase:firebaseOk,script:scriptOk,count:result.length};
+    return result;
 }
 async function markOrderDelivered(orderId, delivered) {
     try {
@@ -5496,7 +5489,9 @@ function App() {
     const [adminGeneratorCustomer,setAdminGeneratorCustomer] = useState('');
     const [adminGeneratorPhone,setAdminGeneratorPhone] = useState('');
     const [adminGeneratorMessage,setAdminGeneratorMessage] = useState('');
-    const [adminLedgerFilter,setAdminLedgerFilter] = useState('all');
+    const [adminLedgerFilter,setAdminLedgerFilter] = useState('recent');
+    const [adminLedgerVisibleLimit,setAdminLedgerVisibleLimit]=useState(30);
+    const [adminOrdersReady,setAdminOrdersReady]=useState(false);
     const [adminLedgerSearch,setAdminLedgerSearch] = useState('');
     const [adminLedgerDate,setAdminLedgerDate] = useState('');
     const [directOrder, setDirectOrder] = useState(null);
@@ -6544,7 +6539,9 @@ ${clone.outerHTML}`;
         const needle=norm(adminLedgerSearch);
         return adminOrderLedger.filter(o=>{
             const state=adminOrderState(o),channel=adminOrderChannel(o);
+            const recentCutoff=Date.now()-30*24*60*60*1000;
             const filterOk=adminLedgerFilter==='all'||
+                (adminLedgerFilter==='recent'&&(Boolean(needle)||Boolean(adminLedgerDate)||Date.parse(o.date||o.createdAt||'')>=recentCutoff))||
                 (adminLedgerFilter==='paid'&&['paid','manual_paid'].includes(state))||
                 (adminLedgerFilter==='whatsapp'&&channel==='whatsapp')||
                 state===adminLedgerFilter;
@@ -6555,6 +6552,8 @@ ${clone.outerHTML}`;
             return filterOk&&dateOk&&(!needle||norm(haystack).includes(needle));
         });
     },[adminOrderLedger,adminLedgerFilter,adminLedgerSearch,adminLedgerDate]);
+    const adminVisibleLedger=useMemo(()=>adminFilteredLedger.slice(0,adminLedgerVisibleLimit),[adminFilteredLedger,adminLedgerVisibleLimit]);
+    useEffect(()=>{setAdminLedgerVisibleLimit(30)},[adminLedgerFilter,adminLedgerSearch,adminLedgerDate]);
     // El admin puede registrar una confirmación manual para seguimiento comercial.
     // NO se marca paid=true ni se otorgan tokens de descarga del Worker.
     const updateManualWhatsappStatus=async(o,next)=>{
@@ -7511,8 +7510,9 @@ En breve te las preparo y te las envío por acá 😊
         if(ordersLoading||mpAdminOrdersBusy)return;
         setOrdersLoading(true);
         try{
-            const list=await loadOrdersRemote(partial=>setOrders(partial));
+            const list=await loadOrdersRemote();
             setOrders(list);
+            setAdminOrdersReady(true);
             saveLocalOrders(list);
         }catch(err){console.warn('Revisión del historial general:',err)}
         finally{setOrdersLoading(false)}
@@ -8208,65 +8208,47 @@ En breve te las preparo y te las envío por acá 😊
     useEffect(() => { if (!adminMessage)
         return; const t = setTimeout(() => setAdminMessage(''), 2500); return () => clearTimeout(t); }, [adminMessage]);
     useEffect(() => {
-        if (route !== "#/admin" || !admin)
-            return;
-        setOrdersLoading(true);
-        const resetOldQueue = async (incoming, persist = false) => {
-            const merged = mergeOrders(incoming || []);
-            const now = new Date().toISOString();
-            const changed = [];
-            const next = merged.map(o => {
-                const ts = Date.parse((o && o.date) || 0);
-                const status = norm((o && (o.status || o.estado)) || '');
-                const resolved = isTruthyStatus(o && o.delivered) || isTruthyStatus(o && o.rejected) || isTruthyStatus(o && o.cancelled) || ['entregado','rechazado','cancelado','anulado','no pagado','no_pagado'].includes(status);
-                if (!Number.isFinite(ts) || ts >= ADMIN_HISTORY_RESET_AT || resolved) return o;
-                const updated = { ...o, delivered:false, rejected:true, cancelled:true, status:'anulado', paid:false, paymentStatus:'no_pagado', cancelledAt:now, rejectedAt:o.rejectedAt || now, resolvedAt:now, historyResetCancelled:true };
-                changed.push(updated);
-                return updated;
-            });
-            const normalized = mergeOrders(next);
-            saveLocalOrders(normalized);
-            setOrders(normalized);
-            if (persist && changed.length) {
-                await Promise.allSettled(changed.flatMap(o => [
-                    apiAction({ action:'updateOrder', orderId:o.id, delivered:'false', rejected:'true', cancelled:'true', status:'anulado', decision:'rejected', paid:'false', paymentStatus:'no_pagado' }),
-                    apiAction({ action:'createOrder', order:JSON.stringify(o) }),
-                    sessionStorage.getItem('LA_FIRESTORE_QUOTA_EXHAUSTED') !== '1' ? updateOrderFirebase(o.id, { delivered:false, rejected:true, cancelled:true, status:'anulado', paid:false, paymentStatus:'no_pagado', cancelledAt:o.cancelledAt, rejectedAt:o.rejectedAt, resolvedAt:o.resolvedAt, historyResetCancelled:true }) : Promise.resolve(false)
-                ]));
-            }
-        };
-        let alive = true;
-        let refreshBusy = false;
-        const refreshOrdersAcrossDevices = async (persist = false) => {
-            if (!alive || refreshBusy) return;
-            refreshBusy = true;
-            try {
-                const list = await loadOrdersRemote(partial => {
-                    if (alive) resetOldQueue(partial, false).catch(e=>console.warn('Vista parcial de pedidos:',e));
-                });
-                if (alive) await resetOldQueue(list, persist);
-            } catch (e) {
-                console.warn('No se pudieron refrescar los pedidos compartidos.', e);
-            } finally {
-                refreshBusy = false;
-                if (alive) setOrdersLoading(false);
+        if(route!=="#/admin"||!admin)return;
+        let alive=true;
+        let inFlight=false;
+        let lastRequested=0;
+        // Nunca alterar/cancelar pedidos antiguos al abrir el listado.
+        // Un único resultado confirmado reemplaza la vista anterior.
+        const refreshOrdersAcrossDevices=async(force=false)=>{
+            if(!alive||inFlight||(!force&&Date.now()-lastRequested<120000))return;
+            inFlight=true;
+            lastRequested=Date.now();
+            setOrdersLoading(true);
+            try{
+                const list=await loadOrdersRemote();
+                if(!alive)return;
+                setOrders(list);
+                saveLocalOrders(list);
+                setAdminOrdersReady(true);
+            }catch(err){
+                console.warn('Error consultando pedidos:',err);
+                if(alive){
+                    setOrders(mergeOrders(readLocalOrders(),readPendingOrders()));
+                    setAdminOrdersReady(true);
+                }
+            }finally{
+                inFlight=false;
+                if(alive)setOrdersLoading(false);
             }
         };
         refreshOrdersAcrossDevices(true);
-        const unsub = subscribeOrders(list => { if (alive) resetOldQueue(list, false); });
-        const onFocus = () => refreshOrdersAcrossDevices(false);
-        const onVisibility = () => { if (document.visibilityState !== 'hidden') refreshOrdersAcrossDevices(false); };
-        window.addEventListener('focus', onFocus);
-        document.addEventListener('visibilitychange', onVisibility);
-        const timer = setInterval(() => refreshOrdersAcrossDevices(false), 30000);
-        return () => {
-            alive = false;
-            unsub && unsub();
-            window.removeEventListener('focus', onFocus);
-            document.removeEventListener('visibilitychange', onVisibility);
+        const onFocus=()=>refreshOrdersAcrossDevices(false);
+        const onVisibility=()=>{if(document.visibilityState==='visible')refreshOrdersAcrossDevices(false)};
+        window.addEventListener('focus',onFocus);
+        document.addEventListener('visibilitychange',onVisibility);
+        const timer=setInterval(()=>refreshOrdersAcrossDevices(false),180000);
+        return ()=>{
+            alive=false;
+            window.removeEventListener('focus',onFocus);
+            document.removeEventListener('visibilitychange',onVisibility);
             clearInterval(timer);
         };
-    }, [route, admin]);
+    },[route,admin]);
     useEffect(() => {
         if (route !== "#/admin" || !admin)
             return;
@@ -8733,15 +8715,16 @@ React.createElement("div", { id: "order-search-panel", hidden:adminPanelTab!=='p
                         onChange:e=>setAdminLedgerSearch(e.target.value),placeholder:"Buscar cliente, equipo, foto o pedido","aria-label":"Buscar pedidos"}),
                     React.createElement("select",{className:"la-ledger-select",value:adminLedgerFilter,
                         onChange:e=>setAdminLedgerFilter(e.target.value),"aria-label":"Filtrar por estado"},
-                        [["all","Todos"],["paid","Pagados"],["pending","Pendiente de pago"],
+                        [["recent","Últimos 30 días"],["all","Historial completo"],["paid","Pagados"],["pending","Pendiente de pago"],
                          ["whatsapp","Consultas WhatsApp"],["agreed","Pago acordado"],
                          ["manual_paid","Pagado otro medio"],["cancelled","Cancelados"]].map(([value,label])=>
                             React.createElement("option",{key:value,value},label))),
                     React.createElement("input",{type:"date",className:"la-ledger-date",value:adminLedgerDate,
                         onChange:e=>setAdminLedgerDate(e.target.value),"aria-label":"Filtrar fecha"}),
                     React.createElement("button",{type:"button",className:"la-ledger-clear",
-                        onClick:()=>{setAdminLedgerSearch('');setAdminLedgerFilter('all');setAdminLedgerDate('')}},"Limpiar")),
-                React.createElement("div", { className:"la-ledger-rows" }, adminFilteredLedger.map(o => {
+                        onClick:()=>{setAdminLedgerSearch('');setAdminLedgerFilter('recent');setAdminLedgerDate('')}},"Limpiar")),
+                React.createElement("div", { className:"la-ledger-rows" }, !adminOrdersReady&&React.createElement("p",{className:"text-neutral-400 text-sm py-4"},"Cargando los pedidos de las fuentes conectadas…"),
+                    adminOrdersReady&&adminVisibleLedger.map(o => {
                     const isRedemption = o.type === 'benefit_redemption' || o.benefitRedemption === true;
                     const printCount = orderPrintInfo(o).count;
                     return React.createElement("div", { key:o.id, className:"la-ledger-entry"+(printCount>0?" la-ledger-with-print":"") },
@@ -8783,7 +8766,11 @@ React.createElement("div", { id: "order-search-panel", hidden:adminPanelTab!=='p
                                 React.createElement("button",{type:"button",
                                     onClick:()=>updateManualWhatsappStatus(o,'manual_paid')},"Confirmar otro medio")),
                         !isResolvedOrder(o)&&!(o.paid||o.paymentStatus==='accredited') && React.createElement("button", { onClick:() => { if (confirm(isRedemption ? '¿Anular este canje y devolver los puntos?' : '¿Marcar este pedido como cancelado/no pagado?')) setOrderDecisionAndClose(o,'rejected'); }, className:"bg-red-500/15 border border-red-500/30 text-red-200 px-3 py-2 rounded-xl text-xs font-black" }, isRedemption ? "Anular canje" : "Anular / no pagado"));
-                })))),
+                }))),
+                adminOrdersReady&&adminFilteredLedger.length>adminLedgerVisibleLimit&&React.createElement("button",{
+                    type:"button",onClick:()=>setAdminLedgerVisibleLimit(v=>v+30),
+                    className:"w-full mt-3 px-4 py-3 rounded-xl border border-sky-400/25 bg-sky-500/10 text-sky-100 text-sm font-black"},
+                    "Mostrar 30 pedidos más (",adminFilteredLedger.length-adminLedgerVisibleLimit," restantes)")),
             React.createElement("div", { hidden:adminPanelTab!=='configuracion', className: "bg-neutral-900 border border-neutral-800 rounded-3xl p-5 mb-6" },
                 React.createElement("div", { className: "flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4" },
                     React.createElement("div", null,
@@ -8941,36 +8928,7 @@ React.createElement("div", { id: "order-search-panel", hidden:adminPanelTab!=='p
                                 React.createElement("i", { className: "fas fa-trash-can mr-2" }),
                                 "Quitar car\u00E1tula personalizada"))));
             })),
-            admin && React.createElement("section",{hidden:adminPanelTab!=='pedidos',className:"rounded-3xl border border-emerald-400/25 bg-neutral-900 p-4 sm:p-5 mb-6","aria-label":"Historial unificado de pedidos"},
-                React.createElement("h3",{className:"font-black text-lg text-white"},"Historial unificado de todas las órdenes"),
-                React.createElement("p",{className:"text-xs text-neutral-400 mt-1 mb-3"},
-                    "Pedidos registrados y recuperados de Firebase, Apps Script y Cloudflare (pagados, pendientes y entregados)."),
-                React.createElement("button",{type:"button",onClick:()=>fetchMpAdminOrders(false),disabled:mpAdminOrdersBusy,
-                    className:"px-5 py-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-black text-sm mb-3"},
-                    React.createElement("i",{className:"fas fa-arrows-rotate mr-2"}),
-                    mpAdminOrdersBusy?"Recuperando pedidos…":"Recuperar pedidos de hoy y todas las ventas MP"),
-                React.createElement("p",{className:"text-xs text-neutral-400 mb-3"},
-                    mpAdminOrders.length+" órdenes de Cloudflare consultadas · "+adminOrderLedger.length+" registros visibles."),
-                mpAdminOrdersError&&React.createElement("p",{className:"text-xs text-amber-200 mb-3",role:"alert"},mpAdminOrdersError),
-                mpAdminOrdersHasMore&&React.createElement("button",{type:"button",onClick:()=>fetchMpAdminOrders(true),
-                    className:"mb-3 px-4 py-2 rounded-lg bg-neutral-700 text-white text-xs font-bold"},"Cargar más órdenes"),
-                React.createElement("div",{className:"grid gap-2 max-h-[550px] overflow-auto"},
-                    adminOrderLedger.map(o=>React.createElement("article",{key:o.id,className:"p-3 bg-black/40 border border-white/10 rounded-xl"},
-                        React.createElement("div",{className:"flex flex-wrap items-center justify-between gap-2"},
-                            React.createElement("b",{className:"text-sm text-white break-all"},"#"+o.id),
-                            React.createElement("span",{className:o.paid||o.paymentStatus==='accredited'?"text-emerald-300 text-xs font-bold":"text-amber-200 text-xs font-bold"},
-                                o.paid||o.paymentStatus==='accredited'?"PAGADO":o.delivered?"Entregado":['created','pending','action_required','processing'].includes(String(o.paymentStatus||'').toLowerCase())?"Pendiente de pago":o.paymentStatus||"Pendiente")),
-                        React.createElement("p",{className:"text-xs text-neutral-300 mt-1"},
-                            (o.customerName||"Sin nombre")+" · "+(o.phone||"Sin teléfono")+" · "+formatPrice(o.total)),
-                        React.createElement("p",{className:"text-xs text-neutral-500 mt-1"},
-                            o.date?new Date(o.date).toLocaleString('es-AR'):"Sin fecha", " · ",(o.items||[]).length," fotos"),
-                        React.createElement("div",{className:"admin-order-links"},
-                            (o.items||[]).map((p,i)=>{
-                                const link=orderDriveLink(p);
-                                return link&&React.createElement("a",{key:i,href:link,target:"_blank",rel:"noopener noreferrer"},
-                                    React.createElement("i",{className:"fas fa-download"})," ",p.name||"Foto "+(i+1));
-                            })))))),
-                        admin && React.createElement("section",{id:"la-admin-payments",hidden:adminPanelTab!=='pagos',className:"rounded-3xl border border-sky-400/25 bg-neutral-900 p-4 sm:p-5 mb-6","aria-label":"Historial Mercado Pago"},
+            admin && React.createElement("section",{id:"la-admin-payments",hidden:adminPanelTab!=='pagos',className:"rounded-3xl border border-sky-400/25 bg-neutral-900 p-4 sm:p-5 mb-6","aria-label":"Historial Mercado Pago"},
                 React.createElement("div",{className:"flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3"},
                     React.createElement("div",null,
                         React.createElement("h3",{className:"font-black text-lg text-white"},React.createElement("i",{className:"fas fa-file-invoice-dollar text-sky-300 mr-2"}),"Ventas Mercado Pago · todas las órdenes"),
