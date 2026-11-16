@@ -2247,6 +2247,7 @@ img{-webkit-user-drag:none;}
   <link rel="stylesheet" href="./premier-cards-related-v6.css?v=20261116-7" />
   <link rel="stylesheet" href="./branding-premier-v8.css?v=20261116-9" />
   <link rel="stylesheet" href="./album-categories-mobile-v10.css?v=20261116-10" />
+  <link rel="stylesheet" href="./admin-mobile-picker-v11.css?v=20261116-11" />
   <script src="./admin-recordatorios.js?v=20261101-3"></script>
 <script defer src="./premium-ux-v132.js?v=135"></script>
 </head>
@@ -4771,11 +4772,36 @@ catch (_a) {
     return {};
 } }
 function saveCoverOverrides(data) { localStorage.setItem(LS_COVER_KEY, JSON.stringify(data)); }
-const Modal = ({ children, onClose, max = 'max-w-5xl' }) => React.createElement("div", { className: "fixed inset-0 bg-black/80 backdrop-blur-md z-[80] flex items-center justify-center p-4 fade" },
-    React.createElement("div", { className: `w-full ${max} bg-neutral-900 border border-neutral-800 rounded-3xl p-5 up max-h-[92vh] overflow-y-auto relative` },
-        React.createElement("button", { onClick: onClose, className: "absolute top-4 right-4 w-9 h-9 rounded-full bg-neutral-800 hover:bg-neutral-700" },
-            React.createElement("i", { className: "fas fa-times" })),
-        children));
+const Modal = ({ children, onClose, max = 'max-w-5xl', modalType = '' }) => {
+    React.useEffect(() => {
+        if (!modalType) return;
+        const previousOverflow = document.body.style.overflow;
+        document.body.style.overflow = 'hidden';
+        const onEscape = e => {
+            if (e.key === 'Escape') { e.preventDefault(); onClose(); }
+        };
+        document.addEventListener('keydown', onEscape);
+        return () => {
+            document.removeEventListener('keydown', onEscape);
+            document.body.style.overflow = previousOverflow;
+        };
+    }, [modalType, onClose]);
+    return React.createElement("div", {
+            className: "la-modal-overlay fixed inset-0 bg-black/80 backdrop-blur-md z-[80] flex items-center justify-center p-4 fade",
+            "data-modal-type": modalType || undefined,
+            onMouseDown: e => { if (e.target === e.currentTarget) onClose(); }
+        },
+        React.createElement("div", {
+                className: `la-modal-panel w-full ${max} bg-neutral-900 border border-neutral-800 rounded-3xl p-5 up max-h-[92vh] overflow-y-auto relative`,
+                role:"dialog", "aria-modal":true
+            },
+            React.createElement("button", {
+                type:"button", onClick:onClose,
+                className:"la-modal-close absolute top-4 right-4 w-9 h-9 rounded-full bg-neutral-800 hover:bg-neutral-700",
+                "aria-label":"Cerrar ventana"
+            }, React.createElement("i", { className:"fas fa-times" })),
+            children));
+};
 const WATERMARK_LOGO = BRAND_LOGO_URL;
 const PhotoLicenseReminder = ({ overlay = false } = {}) => React.createElement("div", {
     className: overlay
@@ -4944,11 +4970,11 @@ function PriceAdminModal({ onClose, priceSettings, setPriceSettings, setAdminMes
     const p = normalizePriceSettings(priceSettings);
     const update = React.useCallback((k, v) => setPriceSettings(x => ({ ...normalizePriceSettings(x), [k]: v })), [setPriceSettings]);
     const download = async () => { try { const dataUrl = await buildPricesStoryImage(p); const fileMonth = currentMonthLabel().toLowerCase().replace(/\s+/g, '-'); downloadDataUrl(`precios-vigentes-${fileMonth}.png`, dataUrl); setAdminMessage('Historia de precios descargada correctamente.'); } catch (e) { console.warn(e); setAdminMessage('No se pudo generar la historia de precios.'); } };
-    return React.createElement(Modal, { onClose: onClose, max: "max-w-5xl" },
-        React.createElement("div", { className: "booking-hero rounded-3xl p-4 sm:p-6 -m-1" },
+    return React.createElement(Modal, { onClose: onClose, max: "max-w-5xl", modalType:"price-admin" },
+        React.createElement("div", { className: "booking-hero la-price-admin-form rounded-3xl p-4 sm:p-6 -m-1" },
             React.createElement("div", { className: "flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 mb-5" },
                 React.createElement("div", null, React.createElement("p", { className: "inline-flex items-center gap-2 px-3 py-1 rounded-full bg-sky-400/15 border border-sky-300/35 text-[11px] font-black uppercase tracking-[0.16em] mb-3" }, React.createElement("i", { className: "fas fa-tags" }), " Admin precios"), React.createElement("h2", { className: "text-2xl sm:text-3xl font-black leading-tight" }, "Editar precios vigentes"), React.createElement("p", { className: "text-sky-100/75 text-sm mt-2 leading-relaxed" }, "Estos valores se muestran en Consultar precios y en la historia descargable.")),
-                React.createElement("div", { className: "flex gap-2" }, React.createElement("button", { onClick: () => setPriceSettings(defaultPriceSettings()), className: "bg-neutral-800 px-4 py-3 rounded-xl font-bold" }, "Restaurar"), React.createElement("button", { onClick: download, className: "booking-btn px-4 py-3 rounded-xl font-black" }, React.createElement("i", { className: "fas fa-download mr-2" }), "Descargar historia"))),
+                React.createElement("div", { className: "la-price-admin-actions flex gap-2" }, React.createElement("button", { onClick: () => setPriceSettings(defaultPriceSettings()), className: "bg-neutral-800 px-4 py-3 rounded-xl font-bold" }, "Restaurar"), React.createElement("button", { onClick: download, className: "booking-btn px-4 py-3 rounded-xl font-black" }, React.createElement("i", { className: "fas fa-download mr-2" }), "Descargar historia"))),
             React.createElement("div", { className: "grid sm:grid-cols-2 gap-3 sm:gap-4" },
                 React.createElement(PriceAdminField, { fieldKey: "photoAppPrice", label: "Foto por la app", value: p["photoAppPrice"], onChange: update }), React.createElement(PriceAdminField, { fieldKey: "photoAppNote", label: "Aclaración foto por app", value: p["photoAppNote"], onChange: update, big: true }),
                 React.createElement(PriceAdminField, { fieldKey: "albumCordobaPrice", label: "Álbum completo · Córdoba Capital", value: p["albumCordobaPrice"], onChange: update }), React.createElement(PriceAdminField, { fieldKey: "albumCordobaNote", label: "Aclaración Córdoba Capital", value: p["albumCordobaNote"], onChange: update, big: true }),
@@ -5407,8 +5433,12 @@ function MatchPickerModal({ albums, onClose, onSelect }) {
             }) : null);
     };
 
-    return React.createElement(Modal, { onClose, max: 'max-w-4xl' },
-        React.createElement('div', { className: 'match-picker-shell' },
+    return React.createElement(Modal, { onClose, max: 'max-w-4xl', modalType:'match-picker' },
+        React.createElement('div', { className: 'match-picker-shell la-premier-picker-shell' },
+            React.createElement('button',{
+                type:'button', className:'la-picker-close-inline',onClick:onClose,
+                'aria-label':'Cerrar selector de partidos'
+            },React.createElement('i',{className:'fas fa-xmark','aria-hidden':true}),' Cerrar'),
             React.createElement('div', { className: 'match-picker-head' },
                 React.createElement('span', { className: 'match-picker-kicker' }, React.createElement('i', { className: 'fas fa-bolt' }), 'Selector de partidos'),
                 React.createElement('h2', { className: 'match-picker-title' }, 'Elegí el partido'),
@@ -5484,18 +5514,24 @@ function MatchPickerModal({ albums, onClose, onSelect }) {
                     const photoCount = Array.isArray(album.photos) ? album.photos.length : 0;
                     const preferredSub = selectedCategory === 'todas' ? null : (Array.isArray(album.subalbums) ? album.subalbums.find(sa => norm(canonicalMatchPickerCategory(sa && sa.name)) === norm(selectedCategory)) : null);
                     const preferredSubId = preferredSub && preferredSub.id ? preferredSub.id : '';
-                    return React.createElement('button', { key: album.id, type: 'button', className: 'match-picker-card', onClick: () => onSelect(album, preferredSubId) },
-                        crest(home, false),
-                        React.createElement('div', { className: 'match-picker-center' },
-                            React.createElement('div', { className: 'match-picker-code-row' }, React.createElement('span', { className: 'match-picker-code' }, homeCode), React.createElement('span', { className: 'match-picker-vs' }, 'VS'), React.createElement('span', { className: 'match-picker-code' }, awayCode)),
-                            React.createElement('div', { className: 'match-picker-names' }, `${home.name || 'Local'} · ${away.name || 'Visitante'}`),
-                            React.createElement('div', { className: 'match-picker-meta' },
-                                matchPickerDateLabel(album) ? React.createElement('span', { className: 'match-picker-chip' }, React.createElement('i', { className: 'far fa-calendar' }), matchPickerDateLabel(album)) : null,
-                                React.createElement('span', { className: 'match-picker-chip' }, React.createElement('i', { className: 'fas fa-layer-group' }), category),
-                                photoCount ? React.createElement('span', { className: 'match-picker-chip' }, React.createElement('i', { className: 'far fa-image' }), `${photoCount} fotos`) : null,
-                                albumDirectDiscountInfo(album) && React.createElement('span',{className:'match-picker-chip la-direct-off-chip'}, React.createElement('i',{className:'fas fa-tags'}),albumDirectDiscountInfo(album).all ? albumDirectDiscountInfo(album).percent+'% OFF en fotos' : 'Hasta '+albumDirectDiscountInfo(album).percent+'% OFF en fotos'),
-                                album.archived ? React.createElement('span', { className: 'match-picker-chip archive' }, React.createElement('i', { className: 'fas fa-box-archive' }), 'Archivo') : null)),
-                        crest(away, true));
+                    return React.createElement('button', {
+                        key:album.id,type:'button',className:'match-picker-card la-picker-premier-card',
+                        onClick:()=>onSelect(album,preferredSubId),
+                        'aria-label':'Abrir '+(album.name||home.name+' contra '+away.name)
+                    },
+                        React.createElement('span',{className:'la-picker-duel-frame'},
+                            renderVersusScene(home,away,{compact:false})),
+                        React.createElement('span',{className:'la-picker-card-info'},
+                            React.createElement('span',{className:'la-picker-card-name'},
+                                (home.name||'Local')+' vs '+(away.name||'Visitante')),
+                            React.createElement('span',{className:'la-picker-card-tags'},
+                                matchPickerDateLabel(album)?React.createElement('span',{className:'la-picker-card-tag'},matchPickerDateLabel(album)):null,
+                                React.createElement('span',{className:'la-picker-card-tag'},category),
+                                photoCount?React.createElement('span',{className:'la-picker-card-tag'},photoCount+' fotos'):null,
+                                album.archived?React.createElement('span',{className:'la-picker-card-tag'},'Archivo'):null,
+                                albumDirectDiscountInfo(album)?React.createElement('span',{className:'la-picker-card-tag la-picker-off'},
+                                    albumDirectDiscountInfo(album).percent+'% OFF'):null)));
+
                 }) : React.createElement('div', { className: 'match-picker-empty' }, React.createElement('i', { className: 'fas fa-magnifying-glass mb-2' }), React.createElement('div', null, 'No encontré partidos con esos filtros.'))),
 
             hasMoreMatches ? React.createElement('div', { className: 'match-picker-more-wrap' },
@@ -8988,26 +9024,6 @@ React.createElement("div", { id: "order-search-panel", hidden:adminPanelTab!=='p
                         React.createElement("span",null,"Firebase: ",window.LA_LAST_ORDER_LOAD?(window.LA_LAST_ORDER_LOAD.firebase?"consultado":"sin respuesta"):"pendiente"),
                         React.createElement("span",null,"Apps Script: ",window.LA_LAST_ORDER_LOAD?(window.LA_LAST_ORDER_LOAD.script?"consultado":"sin respuesta"):"pendiente"),
                         React.createElement("span",null,"Cloudflare: ",mpAdminConnected?"consultado":"sin conectar"))),
-                React.createElement("div",{className:"mb-5 rounded-2xl border border-white/10 bg-black/25 p-3 sm:p-4"},
-                    React.createElement("div",{className:"flex flex-wrap gap-2 items-center justify-between mb-3"},
-                        React.createElement("h3",{className:"text-lg font-black text-white"},"Últimos pedidos registrados"),
-                        React.createElement("span",{className:"text-xs text-neutral-400"},"Últimos 30 días · hasta 8 pedidos")),
-                    React.createElement("div",{className:"grid gap-2"},
-                        adminOrderLedger.filter(o=>Number.isFinite(Date.parse(o.date||o.createdAt||''))&&
-                            Date.parse(o.date||o.createdAt||'')>=Date.now()-30*24*60*60*1000).slice(0,8).map(o=>
-                            React.createElement("button",{key:o.id,type:"button",onClick:()=>openOrderFromQueue(o),
-                                className:"w-full flex flex-wrap items-center justify-between gap-2 rounded-xl border border-white/10 bg-neutral-950 p-3 text-left hover:border-sky-400/40"},
-                                React.createElement("div",{className:"min-w-0"},
-                                    React.createElement("b",{className:"block text-sm text-white"},"#"+o.id+" · "+(o.customerName||"Cliente sin nombre")),
-                                    React.createElement("span",{className:"block text-xs text-neutral-400 mt-1"},
-                                        new Date(o.date||o.createdAt).toLocaleDateString("es-AR")+" · "+(o.items||[]).length+" fotos")),
-                                React.createElement("div",{className:"flex items-center gap-2"},
-                                    React.createElement("b",{className:"text-xs text-sky-200"},formatPrice(o.total)),
-                                    React.createElement("span",{className:"text-[10px] text-neutral-400"},"Abrir")))),
-                        !adminOrderLedger.some(o=>Date.parse(o.date||o.createdAt||'')>=Date.now()-30*24*60*60*1000)&&
-                            React.createElement("p",{className:"text-sm text-amber-100/80 py-3"},
-                                ordersLoading?"Buscando pedidos recientes…":"No hay pedidos recientes recuperados de las fuentes conectadas. Si fueron por Mercado Pago, conectá Cloudflare arriba."))),
-
                 React.createElement("div", { className: "flex flex-col lg:flex-row lg:items-end gap-4 lg:justify-between" },
                     React.createElement("div", null,
                         React.createElement("h2", { className: "text-xl font-black mb-1" }, "Buscar operaci\u00F3n y obtener links de Drive"),
@@ -9138,7 +9154,27 @@ React.createElement("div", { id: "order-search-panel", hidden:adminPanelTab!=='p
                                         o.rejected ? 'Rechazado' : o.delivered ? 'Cargado y entregado' : 'Pendiente'),
                                     React.createElement("button", { onClick: () => openOrderFromQueue(o), className: "bg-neutral-800 hover:bg-neutral-700 px-3 py-2 rounded-xl text-xs font-black" }, "Abrir")));
                         })))),
-            React.createElement("div", { hidden:adminPanelTab!=='pedidos', className: "bg-neutral-900 border border-neutral-800 rounded-3xl p-5 mb-6" },
+            React.createElement("div",{className:"mb-5 rounded-2xl border border-white/10 bg-black/25 p-3 sm:p-4"},
+                    React.createElement("div",{className:"flex flex-wrap gap-2 items-center justify-between mb-3"},
+                        React.createElement("h3",{className:"text-lg font-black text-white"},"Últimos pedidos registrados"),
+                        React.createElement("span",{className:"text-xs text-neutral-400"},"Últimos 30 días · hasta 8 pedidos")),
+                    React.createElement("div",{className:"grid gap-2"},
+                        adminOrderLedger.filter(o=>Number.isFinite(Date.parse(o.date||o.createdAt||''))&&
+                            Date.parse(o.date||o.createdAt||'')>=Date.now()-30*24*60*60*1000).slice(0,8).map(o=>
+                            React.createElement("button",{key:o.id,type:"button",onClick:()=>openOrderFromQueue(o),
+                                className:"w-full flex flex-wrap items-center justify-between gap-2 rounded-xl border border-white/10 bg-neutral-950 p-3 text-left hover:border-sky-400/40"},
+                                React.createElement("div",{className:"min-w-0"},
+                                    React.createElement("b",{className:"block text-sm text-white"},"#"+o.id+" · "+(o.customerName||"Cliente sin nombre")),
+                                    React.createElement("span",{className:"block text-xs text-neutral-400 mt-1"},
+                                        new Date(o.date||o.createdAt).toLocaleDateString("es-AR")+" · "+(o.items||[]).length+" fotos")),
+                                React.createElement("div",{className:"flex items-center gap-2"},
+                                    React.createElement("b",{className:"text-xs text-sky-200"},formatPrice(o.total)),
+                                    React.createElement("span",{className:"text-[10px] text-neutral-400"},"Abrir")))),
+                        !adminOrderLedger.some(o=>Date.parse(o.date||o.createdAt||'')>=Date.now()-30*24*60*60*1000)&&
+                            React.createElement("p",{className:"text-sm text-amber-100/80 py-3"},
+                                ordersLoading?"Buscando pedidos recientes…":"No hay pedidos recientes recuperados de las fuentes conectadas. Si fueron por Mercado Pago, conectá Cloudflare arriba."))),
+
+                React.createElement("div", { hidden:adminPanelTab!=='pedidos', className: "bg-neutral-900 border border-neutral-800 rounded-3xl p-5 mb-6" },
                 CLUB_ENABLED && React.createElement("div", { className:"flex flex-col lg:flex-row lg:items-start lg:justify-between gap-3 mb-4" },
                     React.createElement("div", null,
                         React.createElement("h2", { className: "text-xl font-black" }, React.createElement("i", { className:"fas fa-gift mr-2 text-orange-300" }), "Club de beneficios"),
@@ -10195,8 +10231,8 @@ React.createElement("div", { id: "order-search-panel", hidden:adminPanelTab!=='p
             className:"fixed bottom-28 right-3 z-[81] bg-sky-700 text-white text-xs font-black px-4 py-3 rounded-2xl shadow-xl border border-sky-200/25"
         }, "Ver mi compra"),
         mpReceipts.length>0&&!checkoutOpen&&route!=='#/admin'&&React.createElement("button",{
-            type:"button",onClick:()=>setMpHistoryOpen(true),className:"fixed bottom-44 right-3 z-[80] bg-neutral-900 border border-sky-300/30 text-sky-100 text-xs font-black px-4 py-3 rounded-2xl shadow-xl"},
-            React.createElement("i",{className:"fas fa-receipt mr-2"}),"Mis compras"),
+            type:"button",onClick:()=>setMpHistoryOpen(true),className:"la-my-purchases-tab"},
+            React.createElement("i",{className:"fas fa-receipt","aria-hidden":true}),React.createElement("span",null,"Mis compras")),
         mpHistoryOpen&&React.createElement(Modal,{onClose:()=>setMpHistoryOpen(false),max:"max-w-lg"},
             React.createElement("section",{className:"bg-neutral-950 border border-sky-300/25 rounded-3xl p-5"},
                 React.createElement("div",{className:"flex justify-between items-center gap-3 mb-4"},
