@@ -2244,6 +2244,7 @@ img{-webkit-user-drag:none;}
   <link rel="stylesheet" href="./premier-album-stories.css?v=20261115-2" />
   <link rel="stylesheet" href="./premier-clean-v3.css?v=20261116-5" />
   <link rel="stylesheet" href="./premier-stories-fix-v4.css?v=20261116-5" />
+  <link rel="stylesheet" href="./premier-cards-related-v6.css?v=20261116-6" />
   <script src="./admin-recordatorios.js?v=20261101-3"></script>
 <script defer src="./premium-ux-v132.js?v=135"></script>
 </head>
@@ -4371,32 +4372,54 @@ function renderCompactCoverMark(team, side, fallbackName) {
             : null,
         React.createElement("div", { className: `duel-cover-fallback${teamLogo ? '' : ' show'}` }, specialFallback.color ? specialFallback.label : teamInitials(teamName || fallbackName || 'Equipo')));
 }
-function renderVersusScene(teamA, teamB, options = {}) {
-    const compact = Boolean(options.compact);
-    const leftName = String((teamA && teamA.name) || (options.leftName || 'Equipo local')).trim();
-    const rightName = String((teamB && teamB.name) || (options.rightName || 'Equipo visitante')).trim();
-    const leftLogo = String((teamA && (teamA.logo || teamA.appLogo)) || findAppTeamLogo((teamA && teamA.name) || '') || '').trim();
-    const rightLogo = String((teamB && (teamB.logo || teamB.appLogo)) || findAppTeamLogo((teamB && teamB.name) || '') || '').trim();
-    const sideNode = (name, logo, side, color) => React.createElement("div", { className: `versus-side ${side}`.trim(), style: { "--team-glow": hexToRgba(validHexColor(color) || "#ffffff", 0.62) } },
-        React.createElement("div", { className: `versus-ghost ${responsiveNameClass(name)}`.trim() }, name),
-        React.createElement("div", { className: "versus-mark" },
-            React.createElement("span", { className: "sight-corner tl" }),
-            React.createElement("span", { className: "sight-corner tr" }),
-            React.createElement("span", { className: "sight-corner bl" }),
-            React.createElement("span", { className: "sight-corner br" }),
-            logo ? React.createElement("img", { src: logo, alt: name || 'Equipo', className: "versus-logo", loading: "lazy", referrerPolicy: "no-referrer", onError: e => { e.currentTarget.style.display = 'none'; const next = e.currentTarget.nextElementSibling; if (next)
-                    next.style.display = 'block'; } }) : null,
-            React.createElement("div", { className: "versus-fallback", style: { display: logo ? 'none' : 'block' } }, name || 'Equipo')),
-        React.createElement("div", { className: `versus-name ${responsiveNameClass(name)}`.trim() }, name));
-    return React.createElement("div", { className: `versus-universal ${compact ? 'compact' : 'hero'}`.trim(), style: { background: duelSceneGradient(teamA, teamB) } },
-        React.createElement("div", { className: "versus-grid" },
-            sideNode(leftName, leftLogo, 'left', (teamA && teamA.color) || ''),
-            sideNode(rightName, rightLogo, 'right', (teamB && teamB.color) || '')),
-        compact && React.createElement("div", { className: "versus-view-photos" },
-            React.createElement("i", { className: "fas fa-images" }),
-            React.createElement("span", null, "Ver fotos")));
+function albumRecencyTsForRelated(album) {
+    return Number(album&&album.dateTs)||Date.parse(album&&album.dateLabel||'')||0;
 }
-
+function laPremierTeamTheme(team, side) {
+    const name=String((team&&team.name)||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase();
+    const key=canonicalAppTeamKey(team&&team.name)||'';
+    const yellow=key==='union_florida'||name.includes('union florida');
+    const boys=name.includes('all boys');
+    const calera=name.includes('calera central');
+    let bg=yellow?'#edc21b':boys?'#171a1e':(validHexColor(team&&team.color)||dominantTeamColor(team&&team.name,team&&team.logo)|| (calera?'#b81127':side==='left'?'#173c64':'#164b68'));
+    const ink=yellow?'#101b23':laCrestContrast(bg,'#ffffff')>=4.5?'#fff':'#061725';
+    return {bg,deep:laShadeHex(bg,-.3),ink};
+}
+function renderVersusScene(teamA, teamB, options = {}) {
+    const compact=Boolean(options.compact);
+    const titleA=String((teamA&&teamA.name)||'Equipo local').trim();
+    const titleB=String((teamB&&teamB.name)||'Equipo visitante').trim();
+    const badgeA=String((teamA&&(teamA.logo||teamA.appLogo))||findAppTeamLogo(titleA)||'').trim();
+    const badgeB=String((teamB&&(teamB.logo||teamB.appLogo))||findAppTeamLogo(titleB)||'').trim();
+    const sideNode=(team,title,badge,position)=>{
+        const palette=laPremierTeamTheme(team,position);
+        const initials=matchPickerInitials(title).slice(0,3);
+        return React.createElement('div',{
+            className:'la-premier-duel-side '+position,
+            style:{'--duel-bg':palette.bg,'--duel-deep':palette.deep,'--duel-ink':palette.ink}
+        },
+            React.createElement('span',{className:'la-premier-duel-initials','aria-hidden':true},initials),
+            badge?React.createElement('img',{
+                className:'la-premier-duel-crest',src:badge,alt:'Escudo de '+title,
+                loading:'lazy',referrerPolicy:'no-referrer'
+            }):React.createElement('span',{className:'la-premier-duel-fallback','aria-hidden':true},initials),
+            React.createElement('strong',{className:'la-premier-duel-name'},title));
+    };
+    return React.createElement('div',{
+        className:'la-premier-duel'+(compact?' compact':' full'),
+        'aria-label':titleA+' versus '+titleB
+    },
+        React.createElement('div',{className:'la-premier-duel-halves'},
+            sideNode(teamA,titleA,badgeA,'left'),
+            sideNode(teamB,titleB,badgeB,'right')),
+        React.createElement('span',{className:'la-premier-duel-brand'},
+            React.createElement('img',{src:BRAND_LOGO_URL,alt:'',loading:'lazy'}),
+            React.createElement('span',null,'lucasabraham.ph')),
+        React.createElement('span',{className:'la-premier-duel-vs'},'VS'),
+        compact&&React.createElement('span',{className:'la-premier-duel-cta'},
+            React.createElement('i',{className:'fas fa-images','aria-hidden':true}),
+            ' Ver fotos'));
+}
 
 function getRowColumnValue(row, letter, zeroBasedIndex) {
     if (!row || typeof row !== 'object') return '';
@@ -5508,7 +5531,8 @@ function laDefaultTeamColors(team,side) {
     const n=String((team&&team.name)||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase();
     let bg=validHexColor(team&&team.color)||dominantTeamColor(team&&team.name,team&&team.logo)||'';
     let accent='#cde9f9';
-    if (n.includes('all boys')) { bg='#191919';accent='#f5f5f5'; }
+    if (n.includes('union florida')) { bg='#edc21b';accent='#473506'; }
+    else if (n.includes('all boys')) { bg='#191919';accent='#f5f5f5'; }
     else if (n.includes('malvinas')) { bg='#12529a';accent='#dd273d'; }
     else if (!bg) bg=side==='home'?'#163c59':'#204b70';
     const text=laCrestContrast(bg,accent)>=4.5?accent:(laCrestContrast(bg,'#ffffff')>=4.5?'#ffffff':'#061829');
@@ -5577,7 +5601,11 @@ function PremierAlbumMatchHeader({album, subalbum, home, away, photoCount, onOpe
     useEffect(()=>{
         let alive=true;
         setPalettes({home:baseHome,away:baseAway});
-        Promise.all([laPaletteFromLogo(homeLogo,baseHome),laPaletteFromLogo(awayLogo,baseAway)])
+        const keptPalette=(team,logo,base)=>{
+            const name=String(team&&team.name||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase();
+            return name.includes('union florida')?Promise.resolve(base):laPaletteFromLogo(logo,base);
+        };
+        Promise.all([keptPalette(homeTeam,homeLogo,baseHome),keptPalette(awayTeam,awayLogo,baseAway)])
             .then(([left,right])=>{if(alive)setPalettes({home:left,away:right});});
         return ()=>{alive=false;};
     },[homeLogo,awayLogo,homeTeam.color,awayTeam.color,homeTeam.name,awayTeam.name]);
@@ -5619,9 +5647,6 @@ function PremierAlbumMatchHeader({album, subalbum, home, away, photoCount, onOpe
             sideNode(awayTeam,awayLogo,'away',palettes.away),
             React.createElement('span',{className:'la-pl-vs','aria-label':'versus'},'VS')),
         React.createElement('div',{className:'la-pl-details'},
-            React.createElement('span',{className:'la-pl-league'},'Cobertura fotográfica','　•　',subLabel),
-            React.createElement('span',{className:'la-pl-meta'},dateLabel||'Fecha no informada'),
-            React.createElement('span',{className:'la-pl-album-title'},matchName),
             photoCount>0?React.createElement('button',{
                 type:'button',className:'la-pl-story-trigger',onClick:onOpenStories,
                 'aria-label':'Ver '+Math.min(10,photoCount)+' fotos al azar del álbum en historias'
@@ -6540,6 +6565,31 @@ ${clone.outerHTML}`;
     const currentSubAlbums = useMemo(() => sortSubAlbums((currentAlbum && currentAlbum.subalbums) || []), [currentAlbum === null || currentAlbum === void 0 ? void 0 : currentAlbum.id, currentAlbum === null || currentAlbum === void 0 ? void 0 : currentAlbum.subalbums]);
     const currentSubAlbum = currentSubAlbums.find(sa => sa.id === activeSubAlbum) || null;
     const albumPhotos = currentSubAlbum ? currentSubAlbum.photos : (currentAlbum && (!currentAlbum.subalbums || currentAlbum.subalbums.length === 0) && Array.isArray(currentAlbum.photos) ? currentAlbum.photos : []);
+
+    // Sugerencias reales: otro álbum, mismo rival específico o misma categoría.
+    // No se considera All Boys como coincidencia de rival porque aparece en numerosas galerías.
+    const relatedMatchAlbums=useMemo(()=>{
+        if(!currentAlbum)return [];
+        const currentSides=matchPickerSides(currentAlbum);
+        const names=[currentSides.home.name,currentSides.away.name].map(v=>matchPickerTeamFilterKey({name:v})).filter(Boolean);
+        const special=names.filter(v=>v!=='all_boys' && v!=='allboys');
+        const activeCategory=norm(canonicalMatchPickerCategory(currentSubAlbum&&currentSubAlbum.name||''));
+        const available=normalizedMatchPickerCategories(currentAlbum).map(v=>norm(v)).filter(Boolean);
+        const categoryKeys=activeCategory&&activeCategory!=='galeria'?[activeCategory]:available.filter(v=>v!=='galeria');
+        return displayAlbums.filter(a=>a&&a.id!==currentAlbum.id).map(a=>{
+            const sides=matchPickerSides(a);
+            const otherNames=[sides.home.name,sides.away.name].map(v=>matchPickerTeamFilterKey({name:v})).filter(Boolean);
+            const sameRival=special.some(v=>otherNames.includes(v));
+            const subalbums=Array.isArray(a.subalbums)?a.subalbums:[];
+            const matchingSub=subalbums.find(sa=>categoryKeys.includes(norm(canonicalMatchPickerCategory(sa&&sa.name))));
+            const sameCategory=!!matchingSub || normalizedMatchPickerCategories(a).some(v=>categoryKeys.includes(norm(v)));
+            if(!sameRival&&!sameCategory)return null;
+            const targetSub=matchingSub||subalbums[0]||null;
+            return {album:a,subId:targetSub&&targetSub.id||'',sameRival,sameCategory,
+                reason:sameRival&&sameCategory?'Mismo rival y categoría':sameRival?'Mismo rival':'Misma categoría',
+                score:(sameRival?100:0)+(sameCategory?35:0)};
+        }).filter(Boolean).sort((a,b)=>b.score-a.score||albumRecencyTsForRelated(b.album)-albumRecencyTsForRelated(a.album)).slice(0,3);
+    },[displayAlbums,currentAlbum,currentSubAlbum]);
 
     const albumStoryPool = useMemo(() => {
         if (!currentAlbum) return [];
@@ -9820,7 +9870,30 @@ React.createElement("div", { id: "order-search-panel", hidden:adminPanelTab!=='p
                         React.createElement("button", { disabled: safeAlbumPage >= totalAlbumPages, onClick: () => { window.scrollTo({ top: 0, behavior: 'smooth' }); setAlbumPage(p => Math.min(totalAlbumPages, p + 1)); }, className: "disabled:opacity-40 buy-btn px-4 py-2.5 rounded-xl font-black text-sm shrink-0" },
                             "Siguiente",
                             React.createElement("i", { className: "fas fa-chevron-right ml-2" })))),
-                React.createElement(PromoBanners, { bannerSettings: bannerSettings }))),
+                React.createElement(PromoBanners, { bannerSettings: bannerSettings }),
+                relatedMatchAlbums.length>0&&React.createElement('section',{
+                    className:'la-related-matches','aria-label':'Otros partidos relacionados'
+                },
+                    React.createElement('div',{className:'la-related-head'},
+                        React.createElement('h3',null,'Seguí viendo partidos'),
+                        React.createElement('p',null,'Más fotografías del mismo rival o categoría')),
+                    React.createElement('div',{className:'la-related-grid'},
+                        relatedMatchAlbums.map(item=>{
+                            const teams=matchPickerSides(item.album);
+                            return React.createElement('button',{
+                                key:item.album.id,type:'button',className:'la-related-card',
+                                'aria-label':'Ver partido '+item.album.name+' · '+item.reason,
+                                onClick:()=>{
+                                    location.hash=albumHash(item.album.id,item.subId);
+                                    setActiveAlbum(item.album.id);
+                                    setActiveSubAlbum(item.subId);
+                                    setAlbumPage(1);
+                                    window.scrollTo(0,0);
+                                }
+                            },
+                                renderVersusScene(teams.home,teams.away,{compact:true}),
+                                React.createElement('span',{className:'la-related-reason'},item.reason));
+                        }))))),
         matchStories.length > 0 && React.createElement(PremierAlbumStoryViewer, {
             photos:matchStories, index:matchStoryIndex,
             albumName:(currentAlbum && currentAlbum.name) || 'Partido',
