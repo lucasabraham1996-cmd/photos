@@ -1,0 +1,79 @@
+
+/* Premier-inspired match header + Instagram-style album stories (2026-11). */
+.la-pl-match{width:100%;max-width:100%;min-width:0;overflow:hidden;isolation:isolate;border:1px solid rgba(255,255,255,.09);border-radius:19px;background:#27002e;box-shadow:0 18px 38px rgba(0,0,0,.27);margin:0 0 17px}
+.la-pl-top{height:154px;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);position:relative;overflow:hidden}
+.la-pl-team{min-width:0;position:relative;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:9px;padding:12px 15px 14px;isolation:isolate}
+.la-pl-team::after{content:"";position:absolute;inset:0;z-index:-1;pointer-events:none;background:repeating-linear-gradient(48deg,transparent 0 28px,rgba(255,255,255,.055) 28px 47px,transparent 47px 85px)}
+.la-pl-team--home{background:linear-gradient(120deg,#9ec7e9,#b9dcf2);color:#230029}
+.la-pl-team--away{background:linear-gradient(120deg,#08070e,#17161d);color:#fff}
+.la-pl-team--home::before{content:"";position:absolute;top:0;bottom:0;left:0;width:5px;background:var(--la-pl-color,#85c3e8)}
+.la-pl-team--away::before{content:"";position:absolute;top:0;bottom:0;right:0;width:5px;background:var(--la-pl-color,#111)}
+.la-pl-team--away::after{background:repeating-linear-gradient(48deg,transparent 0 28px,rgba(255,255,255,.034) 28px 47px,transparent 47px 85px)}
+.la-pl-crest{width:59px;height:59px;min-height:0;flex:0 0 auto;display:grid;place-items:center;position:relative}
+.la-pl-crest img{width:100%;height:100%;object-fit:contain;object-position:center;filter:drop-shadow(0 2px 2px rgba(0,0,0,.2));display:block}
+.la-pl-crest-fallback{font-size:31px}
+.la-pl-name{display:block;min-width:0;max-width:100%;font-family:Inter,system-ui,sans-serif;font-size:clamp(13px,1.9vw,19px);font-weight:750;line-height:1.14;letter-spacing:-.025em;text-align:center;overflow-wrap:anywhere;text-wrap:balance}
+.la-pl-vs{position:absolute;z-index:4;top:28px;left:50%;transform:translateX(-50%);min-width:79px;height:57px;padding:0 11px;display:grid;place-items:center;border-radius:18px;background:#330040;color:#fff;border:2px solid rgba(255,255,255,.14);font-weight:950;font-size:22px;box-shadow:0 7px 20px rgba(0,0,0,.24);font-variant-numeric:tabular-nums}
+.la-pl-details{background:#27002e;min-height:217px;color:#eac9ea;text-align:center;padding:23px 14px 20px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px}
+.la-pl-league{font-size:12px;font-weight:750;letter-spacing:.02em;color:#f0d5f4}
+.la-pl-meta{font-size:12px;color:#d5bad8;line-height:1.5;overflow-wrap:anywhere}
+.la-pl-album-title{font-size:11px;color:#b69bbe;max-width:100%;overflow-wrap:anywhere}
+.la-pl-story-trigger{appearance:none;background:transparent;border:0;margin:9px 0 0;padding:0 10px 3px;display:flex;flex-direction:column;align-items:center;gap:4px;color:#fff;cursor:pointer;min-height:120px;max-width:100%;touch-action:manipulation}
+.la-pl-story-trigger:hover .la-pl-story-ring,.la-pl-story-trigger:focus-visible .la-pl-story-ring{transform:scale(1.055);box-shadow:0 0 0 4px rgba(255,255,255,.12)}
+.la-pl-story-trigger:focus-visible{outline:2px solid #fff;outline-offset:5px;border-radius:15px}
+.la-pl-story-ring{width:89px;height:89px;padding:4px;border-radius:50%;border:3px solid #ce69f8;background:#fff;transition:transform .2s,box-shadow .2s;display:block;box-shadow:0 0 0 2px #27002e}
+.la-pl-story-disc{width:100%;height:100%;position:relative;display:flex;overflow:hidden;border-radius:50%;background:#e8e8f4}
+.la-pl-story-half{flex:1 1 50%;min-width:0;display:grid;place-items:center;padding:6px 2px}
+.la-pl-story-half:first-child{background:#a9cee9}.la-pl-story-half:last-child{background:#f9f7fc}
+.la-pl-story-half img{width:100%;height:51px;max-width:100%;object-fit:contain}
+.la-pl-story-half span{color:#28002f;font-size:22px}
+.la-pl-story-trigger strong{font-size:14px;font-weight:850;line-height:1.2}
+.la-pl-story-trigger small{font-size:11px;color:#d7badd;line-height:1.3}
+.la-pl-stories-overlay{position:fixed;inset:0;z-index:2147482000;display:grid;place-items:center;padding:8px;background:rgba(1,1,5,.94);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);overscroll-behavior:contain}
+.la-pl-stories-shell{width:min(100%,440px);height:min(94dvh,795px);max-height:calc(100dvh - 16px);min-height:0;position:relative;overflow:hidden;background:#07070b;border-radius:15px;box-shadow:0 20px 65px #000b;display:flex;flex-direction:column;color:#fff;isolation:isolate}
+.la-pl-stories-progress{position:absolute;z-index:16;left:10px;right:10px;top:9px;display:grid;grid-auto-columns:minmax(0,1fr);grid-auto-flow:column;gap:3px;height:3px}
+.la-pl-story-segment{height:3px;border-radius:99px;background:rgba(255,255,255,.38);overflow:hidden}
+.la-pl-story-segment-fill{display:block;width:0;height:100%;background:#fff}
+.la-pl-story-segment.done .la-pl-story-segment-fill{width:100%}
+.la-pl-story-segment.active .la-pl-story-segment-fill{animation:la-pl-story-time 5.5s linear both}
+@keyframes la-pl-story-time{from{width:0}to{width:100%}}
+.la-pl-story-topline{position:absolute;z-index:19;top:21px;left:13px;right:12px;display:flex;align-items:center;gap:9px;min-width:0}
+.la-pl-story-logo{width:28px;height:28px;border-radius:50%;background:#fff;object-fit:contain;padding:4px}
+.la-pl-story-topline b{font-size:12px;min-width:0;flex:1;text-shadow:0 2px 8px #000}
+.la-pl-story-topline button{appearance:none;background:#0008;border:1px solid #fff3;border-radius:50%;color:#fff;width:37px;height:37px;display:grid;place-items:center;cursor:pointer;font-size:18px}
+.la-pl-story-stage{position:relative;flex:1;min-height:0;background:#09090d;overflow:hidden;display:flex;align-items:center;justify-content:center}
+.la-pl-story-image{display:block;width:100%;height:100%;object-fit:contain;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none}
+.la-pl-story-stage::after{content:"";position:absolute;pointer-events:none;inset:0;background:linear-gradient(to bottom,rgba(0,0,0,.37) 0,transparent 18%,transparent 75%,rgba(0,0,0,.4) 100%)}
+.la-pl-story-stage>.absolute{z-index:3}
+.la-pl-story-tap{position:absolute;z-index:8;top:78px;bottom:62px;width:29%;background:transparent;border:0;cursor:pointer}
+.la-pl-story-tap.prev{left:0}.la-pl-story-tap.next{right:0}
+.la-pl-story-footer{position:absolute;z-index:14;left:0;right:0;bottom:0;padding:23px 17px 17px;background:linear-gradient(transparent,rgba(0,0,0,.86));display:flex;align-items:center;justify-content:space-between;gap:12px}
+.la-pl-story-footer p{font-size:12px;color:#fff;font-weight:750;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.la-pl-story-footer span{font-size:11px;color:#eee;white-space:nowrap}
+.la-pl-story-empty{padding:12px;color:#ddd;text-align:center}
+@media(max-width:600px){
+  .la-pl-match{border-radius:16px;margin-bottom:12px}
+  .la-pl-top{height:134px}
+  .la-pl-team{gap:7px;padding:12px 8px 10px}
+  .la-pl-crest{width:53px;height:53px}
+  .la-pl-name{font-size:clamp(12px,3.6vw,15px);line-height:1.13;font-weight:800}
+  .la-pl-vs{min-width:60px;height:45px;font-size:17px;top:25px;border-radius:13px}
+  .la-pl-details{min-height:215px;padding:18px 11px 17px}
+  .la-pl-league,.la-pl-meta{font-size:11px}
+  .la-pl-album-title{font-size:10px}
+  .la-pl-story-ring{width:80px;height:80px}
+  .la-pl-story-half img{height:43px}
+  .la-pl-story-trigger{margin-top:7px;min-height:109px}
+  .la-pl-stories-overlay{padding:0}
+  .la-pl-stories-shell{width:100%;height:100dvh;max-height:100dvh;border-radius:0}
+  .la-pl-story-tap{top:74px;bottom:65px}
+}
+@media(max-width:360px){
+  .la-pl-team{padding-left:5px;padding-right:5px}
+  .la-pl-crest{width:46px;height:46px}
+  .la-pl-name{font-size:11px}
+  .la-pl-vs{min-width:53px;height:41px;font-size:15px}
+}
+@media(prefers-reduced-motion:reduce){
+ .la-pl-story-segment.active .la-pl-story-segment-fill{animation:none;width:100%}
+}
