@@ -1,0 +1,156 @@
+/* v8 · Branding, iniciales y watermark, noviembre 2026.
+   Coco Sharp de prueba NO se aloja ni redistribuye. La familia local
+   se activará solo si el usuario posee Coco Sharp legítimamente instalada.
+   Outfit es una alternativa libre visualmente próxima. */
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800;900&display=swap');
+@font-face{
+  font-family:'LA Coco Sharp Local';
+  src:local('CocoSharp Extrabold'),local('Coco Sharp Extrabold'),local('CocoSharp-Extrabold');
+  font-style:normal;font-weight:600 900;font-display:swap;
+  unicode-range:U+0041-005A,U+0061-007A,U+00C0-00FF,U+0100-024F,U+1E00-1EFF;
+}
+:root{
+  --la-letters-font:'LA Coco Sharp Local','Outfit','Inter',system-ui,sans-serif;
+  --la-numeric-font:'Inter',system-ui,sans-serif;
+}
+html,body,#root{
+  font-family:var(--la-letters-font)!important;
+}
+body :is(h1,h2,h3,h4,h5,h6,p,small,strong,b,label,summary,button,input,textarea,select,option,a,li,th,td,blockquote,figcaption,legend),
+body :is(.la-premier-duel-name,.la-premier-duel-cta,.la-premier-duel-brand,.la-related-head,.la-related-reason,.la-profile-card,.la-insta-title,.la-insta-sub,.la-pl-name,.la-pl-story-trigger,.la-pl-story-topline,.la-pl-story-footer,.la-premier-duel-vs) {
+  font-family:var(--la-letters-font)!important;
+}
+/* Los valores numéricos usan las tipografías tradicionales de la aplicación. */
+body :is(input[type=number],input[type=date],input[type=time],input[type=tel],.page-number-btn,.page-current-badge,[class*="price"],[class*="amount"],[class*="counter"],[class*="count"],[class*="stat-value"],[class*="score"]){
+  font-family:var(--la-numeric-font)!important;
+  font-variant-numeric:tabular-nums!important;
+}
+body :is(.fas,.far,.fab,.fa,.fa-solid,.fa-regular,.fa-brands,[class^="fa-"],[class*=" fa-"]){
+  font-family:'Font Awesome 6 Free','Font Awesome 6 Brands'!important;
+}
+/* Retener otros conjuntos especiales de iconos, códigos y cifras. */
+body :is(code,pre,kbd,samp){font-family:ui-monospace,SFMono-Regular,Consolas,monospace!important}
+
+/* Abreviaciones GIGANTES al pie de las tarjetas, como el referente Premier.
+   Quedan por detrás de los nombres y no pisan los escudos. */
+.la-premier-duel .la-premier-duel-side>.la-premier-duel-initials{
+  position:absolute!important;
+  top:auto!important;bottom:-6%!important;
+  left:-17%!important;
+  width:134%!important;height:auto!important;
+  transform:none!important;
+  font-family:'Outfit',Inter,system-ui,sans-serif!important;
+  font-weight:900!important;
+  font-size:clamp(60px,28cqi,180px)!important;
+  letter-spacing:-.10em!important;
+  line-height:.86!important;
+  text-align:center!important;
+  white-space:nowrap!important;
+  overflow:visible!important;
+  opacity:.28!important;
+  z-index:1!important;
+  pointer-events:none!important;
+  color:var(--duel-ink,#fff)!important;
+  text-shadow:none!important;
+}
+.la-premier-duel .la-premier-duel-side>.la-premier-duel-name{
+  position:relative!important;z-index:5!important;
+  text-shadow:0 2px 6px rgba(0,0,0,.55)!important;
+}
+.la-premier-duel .la-premier-duel-crest-frame{z-index:4!important}
+.la-premier-duel .la-premier-duel-cta{z-index:10!important}
+/* La abreviación se muestra también en los tres partidos recomendados. */
+.la-related-card .la-premier-duel-side>.la-premier-duel-initials{
+  bottom:-6%!important;
+  font-size:clamp(68px,27cqi,170px)!important;
+  opacity:.24!important;
+}
+.modern-album-card:hover .la-premier-duel-side>.la-premier-duel-initials,
+.modern-album-card.team-open .la-premier-duel-side>.la-premier-duel-initials{
+  transform:translateY(-3px) scale(1.04)!important;
+}
+@media(max-width:520px){
+  .la-premier-duel .la-premier-duel-side>.la-premier-duel-initials{
+    font-size:clamp(64px,32cqi,118px)!important;
+    bottom:-7%!important;
+  }
+  .la-related-card .la-premier-duel-side>.la-premier-duel-initials{
+    font-size:clamp(70px,30cqi,140px)!important;
+    bottom:-8%!important;
+  }
+}
+
+/* Tarjeta principal de portada: diagonales azul-negro definidas y elegantes. */
+.la-profile-card{
+  position:relative!important;
+  isolation:isolate!important;
+  overflow:hidden!important;
+  background:
+    linear-gradient(140deg,rgba(9,29,51,.97) 0%,rgba(3,13,26,.98) 70%,rgba(4,22,42,.98) 100%)!important;
+  border:1px solid rgba(70,155,204,.28)!important;
+  box-shadow:inset 0 1px 0 rgba(154,207,244,.08),0 18px 38px rgba(0,0,0,.35)!important;
+}
+.la-profile-card::before{
+  content:""!important;
+  position:absolute!important;
+  inset:0!important;
+  z-index:0!important;
+  background-image:url("./assets/premier-pattern-from-upload.webp")!important;
+  background-size:cover!important;
+  background-position:center center!important;
+  background-repeat:no-repeat!important;
+  filter:grayscale(1) contrast(1.35) brightness(.58)!important;
+  mix-blend-mode:screen!important;
+  opacity:.28!important;
+  pointer-events:none!important;
+}
+.la-profile-card::after{
+  content:""!important;
+  position:absolute!important;
+  inset:0!important;
+  z-index:0!important;
+  background:
+    linear-gradient(129deg,transparent 0%,rgba(9,36,65,.25) 42%,transparent 62%),
+    linear-gradient(137deg,transparent 0%,rgba(2,10,21,.26) 57%,transparent 83%)!important;
+  pointer-events:none!important;
+}
+.la-profile-card>*{
+  position:relative!important;
+  z-index:1!important;
+}
+.la-profile-card :is(h1,h2,h3,p,b,strong,span,small){
+  color:#f3f9ff;
+}
+.la-profile-card .profile-home-btn{
+  box-shadow:0 0 0 1px rgba(76,181,239,.22),0 4px 18px rgba(0,0,0,.33)!important;
+}
+
+/* Historias: protección repartida por toda la fotografía. */
+.la-pl-stories-shell .la-pl-story-watermarks{
+  inset:38px 0 42px!important;
+  grid-template-columns:repeat(4,minmax(0,1fr))!important;
+  grid-template-rows:repeat(7,minmax(0,1fr))!important;
+  justify-items:center!important;
+  align-items:center!important;
+  row-gap:0!important;column-gap:0!important;
+  padding:0 5px!important;
+  overflow:hidden!important;
+  pointer-events:none!important;
+}
+.la-pl-stories-shell .la-pl-story-watermarks .la-pl-story-wm-item{
+  display:block!important;
+  width:min(70px,85%)!important;
+  height:min(70px,85%)!important;
+  max-width:70px!important;max-height:70px!important;
+  object-fit:contain!important;
+  opacity:.33!important;
+  transform:rotate(-12deg)!important;
+  filter:drop-shadow(0 2px 2px rgba(0,0,0,.38))!important;
+}
+@media(max-width:600px){
+  .la-pl-stories-shell .la-pl-story-watermarks .la-pl-story-wm-item{
+    width:min(58px,90%)!important;height:min(58px,90%)!important;
+    max-width:58px!important;max-height:58px!important;
+    opacity:.32!important;
+  }
+}
