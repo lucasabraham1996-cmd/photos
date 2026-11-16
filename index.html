@@ -2247,7 +2247,7 @@ img{-webkit-user-drag:none;}
   <link rel="stylesheet" href="./premier-cards-related-v6.css?v=20261116-7" />
   <link rel="stylesheet" href="./branding-premier-v8.css?v=20261116-9" />
   <link rel="stylesheet" href="./album-categories-mobile-v10.css?v=20261116-10" />
-  <link rel="stylesheet" href="./admin-mobile-picker-v11.css?v=20261116-11" />
+  <link rel="stylesheet" href="./admin-mobile-picker-v11.css?v=20261116-12" />
   <script src="./admin-recordatorios.js?v=20261101-3"></script>
 <script defer src="./premium-ux-v132.js?v=135"></script>
 </head>
@@ -3930,6 +3930,7 @@ const TEAM_DOMINANT_COLORS = Object.freeze({
     cibi: '#facc15',
     lasallano: '#2563eb',
     union_florida: '#facc15',
+    union_san_vicente: '#ee7e1a',
     juvenil_barrio_comercial: '#dc2626',
     escuela_parque_velez_sarsfield: '#16a34a'
 });
@@ -4382,10 +4383,11 @@ function laPremierTeamTheme(team, side) {
     const name=String((team&&team.name)||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase();
     const key=canonicalAppTeamKey(team&&team.name)||'';
     const yellow=key==='union_florida'||name.includes('union florida');
+    const orange=key==='union_san_vicente'||name.includes('union san vicente')||name==='usv';
     const boys=name.includes('all boys');
     const calera=name.includes('calera central');
-    let bg=yellow?'#edc21b':boys?'#20242a':(validHexColor(team&&team.color)||dominantTeamColor(team&&team.name,team&&team.logo)|| (calera?'#b81127':side==='left'?'#173c64':'#164b68'));
-    const ink=yellow?'#101b23':laCrestContrast(bg,'#ffffff')>=4.5?'#fff':'#061725';
+    let bg=yellow?'#edc21b':orange?'#ee7e1a':boys?'#20242a':(validHexColor(team&&team.color)||dominantTeamColor(team&&team.name,team&&team.logo)|| (calera?'#b81127':side==='left'?'#173c64':'#164b68'));
+    const ink=yellow||orange?'#101b23':laCrestContrast(bg,'#ffffff')>=4.5?'#fff':'#061725';
     return {bg,deep:laShadeHex(bg,boys?-.12:-.3),ink};
 }
 function renderVersusScene(teamA, teamB, options = {}) {
@@ -5573,6 +5575,7 @@ function laDefaultTeamColors(team,side) {
     let bg=validHexColor(team&&team.color)||dominantTeamColor(team&&team.name,team&&team.logo)||'';
     let accent='#cde9f9';
     if (n.includes('union florida')) { bg='#edc21b';accent='#473506'; }
+    else if (n.includes('union san vicente') || n==='usv' || canonicalAppTeamKey(team&&team.name)==='union_san_vicente') { bg='#ee7e1a';accent='#74340a'; }
     else if (n.includes('all boys')) { bg='#20242a';accent='#f5f5f5'; }
     else if (n.includes('malvinas')) { bg='#12529a';accent='#dd273d'; }
     else if (!bg) bg=side==='home'?'#163c59':'#204b70';
@@ -5644,7 +5647,7 @@ function PremierAlbumMatchHeader({album, subalbum, home, away, photoCount, onOpe
         setPalettes({home:baseHome,away:baseAway});
         const keptPalette=(team,logo,base)=>{
             const name=String(team&&team.name||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase();
-            return (name.includes('union florida')||name.includes('all boys'))?Promise.resolve(base):laPaletteFromLogo(logo,base);
+            return (name.includes('union florida')||name.includes('all boys')||name.includes('union san vicente')||name==='usv'||canonicalAppTeamKey(team&&team.name)==='union_san_vicente')?Promise.resolve(base):laPaletteFromLogo(logo,base);
         };
         Promise.all([keptPalette(homeTeam,homeLogo,baseHome),keptPalette(awayTeam,awayLogo,baseAway)])
             .then(([left,right])=>{if(alive)setPalettes({home:left,away:right});});
