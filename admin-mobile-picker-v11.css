@@ -377,3 +377,52 @@
   .la-price-admin-form .la-price-admin-actions{grid-template-columns:1fr!important}
   .la-price-admin-form .la-price-admin-actions button{min-height:42px!important}
 }
+
+
+/* v12 — ESCUDOS CENTRADOS. El estilo global del hover desplaza el
+   escudo visitante 30% hacia afuera; en el selector ambos deben estar
+   centrados y completamente visibles en el medio de su mitad. */
+.la-premier-picker-shell .la-picker-premier-card .la-premier-duel .la-premier-duel-side .la-premier-duel-crest-frame {
+  position:relative!important;
+  box-sizing:border-box!important;
+  display:flex!important;
+  justify-content:center!important;
+  align-items:center!important;
+  width:100%!important;
+  min-width:0!important;
+  height:100%!important;
+  margin:0!important;
+  padding:0 8px!important;
+  overflow:hidden!important;
+}
+.la-premier-picker-shell .la-picker-premier-card .la-premier-duel .la-premier-duel-side.left .la-premier-duel-crest-frame > .la-premier-duel-crest,
+.la-premier-picker-shell .la-picker-premier-card .la-premier-duel .la-premier-duel-side.right .la-premier-duel-crest-frame > .la-premier-duel-crest {
+  position:relative!important;
+  display:block!important;
+  inset:auto!important;
+  left:auto!important;
+  right:auto!important;
+  top:auto!important;
+  bottom:auto!important;
+  transform:none!important;
+  width:100%!important;
+  height:100%!important;
+  min-width:0!important;
+  min-height:0!important;
+  max-width:100%!important;
+  max-height:100%!important;
+  margin:0 auto!important;
+  object-fit:contain!important;
+  object-position:50% 50%!important;
+  flex:0 1 auto!important;
+}
+.la-premier-picker-shell .la-picker-premier-card:hover .la-premier-duel-crest,
+.la-premier-picker-shell .la-picker-premier-card:focus-visible .la-premier-duel-crest {
+  transform:scale(1.03)!important;
+  transform-origin:center!important;
+}
+@media(max-width:650px){
+  .la-premier-picker-shell .la-picker-premier-card .la-premier-duel .la-premier-duel-side .la-premier-duel-crest-frame {
+    padding:0 10px!important;
+  }
+}
