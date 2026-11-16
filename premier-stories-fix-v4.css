@@ -222,3 +222,31 @@
     animation-duration:5.5s!important;
   }
 }
+
+
+/* v5 — la fotografía ocupa TODA la historia vertical.
+   El encuadre se recorta en los extremos si no es 9:16, como Instagram. */
+.la-pl-stories-shell .la-pl-story-stage{
+  background:#000!important;
+}
+.la-pl-stories-shell .la-pl-story-stage .la-pl-story-backdrop{
+  display:none!important;
+}
+.la-pl-stories-shell .la-pl-story-stage .la-pl-story-image{
+  display:block!important;
+  position:absolute!important;
+  inset:0!important;
+  width:100%!important;
+  height:100%!important;
+  max-width:100%!important;
+  max-height:100%!important;
+  min-width:0!important;
+  min-height:0!important;
+  aspect-ratio:auto!important;
+  object-fit:cover!important;
+  object-position:center center!important;
+  margin:0!important;
+  padding:0!important;
+  border:0!important;
+  transform:none!important;
+}
