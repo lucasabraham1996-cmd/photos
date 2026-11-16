@@ -2243,6 +2243,7 @@ img{-webkit-user-drag:none;}
   <link rel="stylesheet" href="./premium-ux-v132.css?v=138.0" />
   <link rel="stylesheet" href="./premier-album-stories.css?v=20261115-2" />
   <link rel="stylesheet" href="./premier-clean-v3.css?v=20261115-3" />
+  <link rel="stylesheet" href="./premier-stories-fix-v4.css?v=20261116-1" />
   <script src="./admin-recordatorios.js?v=20261101-3"></script>
 <script defer src="./premium-ux-v132.js?v=135"></script>
 </head>
@@ -5595,12 +5596,16 @@ function PremierAlbumMatchHeader({album, subalbum, home, away, photoCount, onOpe
     const matchName=String(album&&album.name||'').trim();
     const dateLabel=String((subalbum&&subalbum.dateLabel)||(album&&album.dateLabel)||'').trim();
     const subLabel=subalbum&&subalbum.name?subalbum.name:(album&&Array.isArray(album.subalbums)&&album.subalbums.length?'Todas las categorías':'Galería completa');
+    // Dos escudos centrados en un círculo neutro: sin recortes diagonales ni deformaciones.
     const storyCircle=React.createElement('span',{className:'la-pl-story-ring'},
-        React.createElement('span',{className:'la-pl-story-disc'},
-            React.createElement('span',{className:'la-pl-story-half'},
-                homeLogo?React.createElement('img',{src:homeLogo,alt:'',referrerPolicy:'no-referrer'}):React.createElement('span',{'aria-hidden':true},'⚽')),
-            React.createElement('span',{className:'la-pl-story-half'},
-                awayLogo?React.createElement('img',{src:awayLogo,alt:'',referrerPolicy:'no-referrer'}):React.createElement('span',{'aria-hidden':true},'⚽'))));
+        React.createElement('span',{className:'la-pl-story-disc la-pl-story-emblems'},
+            React.createElement('span',{className:'la-pl-story-emblem'},
+                homeLogo?React.createElement('img',{className:'la-pl-story-emblem-logo',src:homeLogo,alt:'',loading:'eager',referrerPolicy:'no-referrer'})
+                    :React.createElement('span',{className:'la-pl-story-emblem-fallback','aria-hidden':true},'⚽')),
+            React.createElement('span',{className:'la-pl-story-divider','aria-hidden':true}),
+            React.createElement('span',{className:'la-pl-story-emblem'},
+                awayLogo?React.createElement('img',{className:'la-pl-story-emblem-logo',src:awayLogo,alt:'',loading:'eager',referrerPolicy:'no-referrer'})
+                    :React.createElement('span',{className:'la-pl-story-emblem-fallback','aria-hidden':true},'⚽'))));
     return React.createElement('section',{
         className:'la-pl-match','aria-label':'Partido: '+matchName,
         style:{
@@ -5660,7 +5665,7 @@ function PremierAlbumStoryViewer({photos,index,albumName,onClose,onPrevious,onNe
         className:'la-pl-stories-overlay',role:'presentation',
         onClick:e=>{if(e.target===e.currentTarget)onClose();}
     },React.createElement('div',{
-        className:'la-pl-stories-shell photo-viewer-lock'+(paused?' paused':''),
+        className:'la-pl-stories-shell la-pl-story-protected'+(paused?' paused':''),
         role:'dialog','aria-modal':'true','aria-label':'Historias con marca de agua: '+albumName
     },
         React.createElement('div',{className:'la-pl-stories-progress','aria-label':'Historia '+(index+1)+' de '+photos.length},
@@ -5680,13 +5685,18 @@ function PremierAlbumStoryViewer({photos,index,albumName,onClose,onPrevious,onNe
                 style:{width:'auto',height:'auto',maxWidth:'100%',maxHeight:'100%',aspectRatio:'auto',objectFit:'contain',objectPosition:'center'},
                 draggable:false,onContextMenu:e=>e.preventDefault()
             }),
-            React.createElement(PreviewWatermark,{visible:true,opacity:.29,darkness:.05}),
+            React.createElement('div',{className:'la-pl-story-watermarks','aria-hidden':true},
+                Array.from({length:15},(_,i)=>React.createElement('img',{
+                    key:i,className:'la-pl-story-wm-item',src:WATERMARK_LOGO,alt:'',draggable:false
+                }))),
             React.createElement('button',{type:'button',className:'la-pl-story-tap prev',
                 onClick:()=>safeNavigate(-1),'aria-label':'Historia anterior'}),
             React.createElement('button',{type:'button',className:'la-pl-story-tap next',
                 onClick:()=>safeNavigate(1),'aria-label':'Historia siguiente'})),
         React.createElement('div',{className:'la-pl-story-topline'},
-            React.createElement('img',{className:'la-pl-story-logo',src:BRAND_LOGO_URL,alt:''}),
+            React.createElement('img',{className:'la-pl-story-logo',src:BRAND_LOGO_URL,alt:'',
+                style:{display:'block',flex:'0 0 30px',width:'30px',height:'30px',
+                    maxWidth:'30px',maxHeight:'30px',objectFit:'contain',borderRadius:'50%',padding:'3px'}}),
             React.createElement('b',null,'lucasabraham.ph · Historias'),
             React.createElement('button',{type:'button',onClick:onClose,'aria-label':'Cerrar historias'},
                 React.createElement('i',{className:'fas fa-xmark','aria-hidden':true}))),
@@ -10232,7 +10242,7 @@ if (rootEl && window.React && window.ReactDOM && ReactDOM.createRoot) {
   'use strict';
 
   function protectedArea(target){
-    return !!(target && target.closest && target.closest('.photo-viewer-lock,.mosaic-tile'));
+    return !!(target && target.closest && target.closest('.photo-viewer-lock,.mosaic-tile,.la-pl-story-protected'));
   }
 
   /* Context menu / long-click desktop and Android */
