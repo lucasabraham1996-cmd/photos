@@ -1,0 +1,255 @@
+/* v6 · Duelo interactivo estilo Premier inspirado en el patrón aportado.
+   Escudos existentes del repositorio, colores por club, sin marcas de Premier League. */
+.la-premier-duel{
+  --la-cyan:#39c3fb;
+  position:relative!important;
+  display:block!important;
+  width:100%!important;height:100%!important;
+  min-width:0!important;min-height:0!important;
+  border-radius:inherit!important;
+  overflow:hidden!important;
+  isolation:isolate!important;
+  background:#051624!important;
+  color:#fff!important;
+}
+.la-premier-duel-halves{
+  position:absolute;inset:0;
+  display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);
+  gap:0;
+}
+.la-premier-duel-side{
+  position:relative;
+  min-width:0;min-height:0;
+  overflow:hidden;
+  display:block;
+  background:linear-gradient(138deg,var(--duel-bg,#1b3147),var(--duel-deep,#0d2032));
+  color:var(--duel-ink,#fff)!important;
+}
+.la-premier-duel-side::before{
+  content:"";position:absolute;inset:0;z-index:0;
+  background:url("./assets/premier-pattern-from-upload.webp") center center / cover no-repeat;
+  mix-blend-mode:soft-light;opacity:.96;pointer-events:none;
+  filter:grayscale(1) contrast(1.12) brightness(.90);
+}
+.la-premier-duel-side.left::before{background-position:25% center}
+.la-premier-duel-side.right::before{background-position:75% center}
+.la-premier-duel-side::after{
+  content:"";position:absolute;inset:0;z-index:1;
+  background:linear-gradient(to bottom,rgba(1,7,13,.12) 0%,transparent 42%,rgba(1,7,13,.42) 85%);
+  pointer-events:none;
+}
+.la-premier-duel-initials{
+  position:absolute!important;top:5%;left:-8%;z-index:1;
+  display:block;width:120%;
+  font-family:Inter,system-ui,sans-serif;
+  font-size:clamp(57px,6vw,132px);line-height:1;
+  font-weight:950;letter-spacing:-.09em;
+  white-space:nowrap;text-align:center;
+  color:var(--duel-ink,#fff)!important;
+  opacity:.20;
+  user-select:none;
+  pointer-events:none;
+  transition:transform .35s ease;
+}
+.la-premier-duel-crest{
+  position:absolute!important;
+  z-index:3!important;top:14%!important;
+  display:block!important;
+  height:46%!important;width:139%!important;max-width:none!important;max-height:none!important;
+  object-fit:contain!important;object-position:center!important;
+  filter:drop-shadow(0 5px 8px rgba(0,0,0,.36))!important;
+  border:0!important;background:none!important;box-shadow:none!important;
+  transition:transform .5s cubic-bezier(.16,1,.3,1)!important;
+  pointer-events:none;
+}
+.la-premier-duel-side.left .la-premier-duel-crest{left:-37%!important}
+.la-premier-duel-side.right .la-premier-duel-crest{right:-37%!important}
+.la-premier-duel-fallback{
+  position:absolute;top:21%;left:0;right:0;z-index:3;
+  color:var(--duel-ink,#fff)!important;opacity:.8;
+  font-weight:1000;font-size:32px;text-align:center;
+}
+.la-premier-duel-name{
+  position:absolute!important;
+  z-index:4!important;
+  top:61%!important;left:5px!important;right:5px!important;
+  min-width:0!important;max-width:calc(100% - 10px)!important;
+  display:block!important;
+  margin:0!important;padding:0 1px!important;
+  text-align:center!important;text-wrap:balance!important;
+  font-family:Inter,system-ui,sans-serif!important;
+  font-size:clamp(11px,1.65vw,18px)!important;
+  font-weight:900!important;
+  line-height:1.09!important;
+  letter-spacing:-.03em!important;
+  overflow-wrap:break-word!important;
+  word-break:normal!important;
+  white-space:normal!important;
+  text-overflow:clip!important;
+  color:var(--duel-ink,#fff)!important;
+  text-shadow:0 1px 3px rgba(0,0,0,.42)!important;
+}
+.la-premier-duel-brand{
+  position:absolute!important;
+  left:50%;top:3.5%;
+  z-index:7;
+  transform:translateX(-50%);
+  display:inline-flex;align-items:center;justify-content:center;
+  max-width:88%;min-width:0;gap:3px;
+  padding:3px 5px;border-radius:999px;
+  border:1px solid rgba(138,224,253,.22);
+  background:rgba(3,19,33,.88);
+  box-shadow:0 3px 10px rgba(0,0,0,.18);
+}
+.la-premier-duel-brand img{
+  display:block!important;
+  width:17px!important;height:17px!important;
+  min-width:17px!important;max-width:17px!important;
+  min-height:17px!important;max-height:17px!important;
+  padding:2px!important;margin:0!important;
+  object-fit:contain!important;
+  background:#071421!important;border-radius:50%!important;
+}
+.la-premier-duel-brand span{
+  color:#e5f7ff!important;
+  font:800 clamp(7px,.75vw,9px)/1.1 Inter,system-ui,sans-serif!important;
+  letter-spacing:-.025em!important;
+  white-space:nowrap;
+}
+.la-premier-duel-vs{
+  position:absolute!important;z-index:8!important;
+  left:50%!important;top:51%!important;
+  transform:translate(-50%,-50%)!important;
+  display:grid!important;place-items:center!important;
+  min-width:43px!important;height:31px!important;
+  padding:0 8px!important;border-radius:11px!important;
+  border:1.5px solid rgba(146,222,255,.95)!important;
+  background:linear-gradient(135deg,#03689c,#013654)!important;
+  box-shadow:0 5px 14px #021527a8!important;
+  font:950 12px/1 Inter,system-ui,sans-serif!important;
+  color:#fff!important;letter-spacing:.03em!important;
+}
+.la-premier-duel-cta{
+  position:absolute!important;z-index:9!important;
+  left:50%!important;bottom:7%!important;transform:translateX(-50%)!important;
+  display:inline-flex!important;align-items:center;justify-content:center;
+  gap:5px!important;max-width:90%;
+  padding:7px 12px!important;
+  border:1px solid #fff!important;border-radius:999px!important;
+  background:#fff!important;color:#091322!important;
+  box-shadow:0 5px 19px rgba(0,0,0,.34)!important;
+  font:900 10px/1 Inter,system-ui,sans-serif!important;
+  white-space:nowrap!important;text-transform:uppercase!important;
+}
+.la-premier-duel-cta i{color:#091322!important;font-size:10px}
+.modern-album-card:hover .la-premier-duel-crest,
+.modern-album-card.team-open .la-premier-duel-crest{
+  transform:scale(1.10)!important;
+}
+.modern-album-card:hover .la-premier-duel-initials,
+.modern-album-card.team-open .la-premier-duel-initials{transform:translateX(-4px) scale(1.06)}
+.modern-album-card .team-album-reveal{border-radius:inherit!important}
+.team-album-reveal>.la-premier-duel{border-radius:inherit!important}
+.modern-album-card:focus-visible{outline:2px solid #70d7ff;outline-offset:3px}
+
+/* Footer de galerías: solo partidos relacionados, sin inventar coincidencias. */
+.la-related-matches{
+  margin:18px 0 30px;
+  padding:18px 17px 20px;
+  border:1px solid rgba(62,180,236,.28);
+  border-radius:21px;
+  background:linear-gradient(160deg,#071e30,#020d19);
+}
+.la-related-head{margin:0 0 13px}
+.la-related-head h3{margin:0;font-size:clamp(17px,2.2vw,23px);line-height:1.2;font-weight:950;color:#fff}
+.la-related-head p{margin:5px 0 0;font-size:12px;line-height:1.4;color:#a3c9df}
+.la-related-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+.la-related-card{
+  appearance:none;display:block;position:relative;
+  width:100%;min-width:0;
+  aspect-ratio:5/4;min-height:204px;
+  overflow:hidden;
+  padding:0;border:1px solid rgba(101,192,232,.38);
+  border-radius:16px;
+  color:#fff;background:#061a2a;
+  text-align:left;
+  cursor:pointer;
+  box-shadow:0 10px 26px rgba(0,0,0,.22);
+  transition:transform .22s,border-color .22s,box-shadow .22s;
+}
+.la-related-card>.la-premier-duel{
+  height:calc(100% - 27px)!important;
+  border-radius:15px 15px 0 0!important;
+}
+.la-related-card .la-premier-duel-crest{height:49%!important}
+.la-related-card .la-premier-duel-name{top:62%!important}
+.la-related-reason{
+  display:flex;align-items:center;justify-content:center;
+  position:relative;z-index:3;
+  height:27px;
+  padding:5px 6px;
+  background:#07314e;
+  color:#aee9ff;
+  text-align:center;
+  font-size:10px;
+  font-weight:850;
+  line-height:1.2;
+}
+.la-related-card:hover,.la-related-card:focus-visible{
+  transform:translateY(-3px);
+  border-color:#5dccff;
+  box-shadow:0 12px 31px rgba(0,143,223,.17);
+}
+.la-related-card:hover .la-premier-duel-crest,
+.la-related-card:focus-visible .la-premier-duel-crest{transform:scale(1.09)!important}
+.la-related-card:focus-visible{outline:2px solid #97e2ff;outline-offset:2px}
+
+/* Tras retirar fecha/categoría repetidas, dejar compacto el sector de historias. */
+.la-pl-details{
+  min-height:0!important;
+  padding:10px 10px 12px!important;
+  gap:0!important;
+}
+.la-pl-details .la-pl-story-trigger{margin:3px 0 0!important}
+.la-pl-details .la-pl-story-ring{width:74px!important;height:74px!important;flex-basis:74px!important}
+
+/* Historias: marca de agua más evidente y avatar oscuro para el logo blanco. */
+.la-pl-stories-shell .la-pl-story-topline .la-pl-story-logo{
+  background:#061724!important;
+  border:1px solid #264b61!important;
+  border-radius:50%!important;
+  padding:3px!important;
+}
+.la-pl-stories-shell .la-pl-story-watermarks .la-pl-story-wm-item{
+  width:53px!important;height:53px!important;
+  max-width:53px!important;max-height:53px!important;
+  opacity:.34!important;
+  filter:drop-shadow(0 1px 1px #0007);
+}
+@media(max-width:760px){
+ .la-premier-duel-initials{font-size:clamp(50px,18vw,112px)!important}
+ .la-premier-duel-name{font-size:clamp(11px,3.15vw,17px)!important}
+ .la-premier-duel-brand span{font-size:8px!important}
+ .la-related-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+ .la-related-card{aspect-ratio:4/5;min-height:207px}
+ .la-related-card .la-premier-duel-name{font-size:clamp(10px,2.5vw,14px)!important}
+}
+@media(max-width:520px){
+ .la-related-matches{padding:14px 12px 17px;margin:14px 0 22px}
+ .la-related-grid{grid-template-columns:1fr;gap:10px}
+ .la-related-card{aspect-ratio:1.75/1;min-height:190px}
+ .la-related-card .la-premier-duel-crest{top:6%!important;height:54%!important;width:119%!important}
+ .la-related-card .la-premier-duel-name{top:60%!important;font-size:clamp(12px,3.2vw,16px)!important}
+ .la-related-card .la-premier-duel-initials{font-size:clamp(67px,17vw,110px)!important}
+ .la-related-card .la-premier-duel-cta{bottom:4%!important}
+ .la-premier-duel-brand span{font-size:7px!important}
+ .la-pl-stories-shell .la-pl-story-watermarks .la-pl-story-wm-item{
+   width:48px!important;height:48px!important;max-width:48px!important;max-height:48px!important;
+   opacity:.33!important;
+ }
+}
+@media(max-width:360px){
+ .la-premier-duel-brand span{display:none!important}
+ .la-premier-duel-crest{height:43%!important}
+ .la-premier-duel-name{font-size:11px!important}
+}
