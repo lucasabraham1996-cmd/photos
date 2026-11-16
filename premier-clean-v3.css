@@ -154,3 +154,91 @@
  .la-pl-team .la-pl-crest{width:56px!important;height:56px!important}
  .la-pl-team .la-pl-name{font-size:12px!important}
 }
+
+
+/* v5 — panel inferior compacto + trama original con tintes del equipo.
+   Se conserva la imagen de franjas, pero el blanco se convierte en
+   variantes del color base gracias a soft-light, no a screen. */
+.la-pl-team::after{
+  background-image:url("./assets/premier-pattern-from-upload.webp")!important;
+  background-color:transparent!important;
+  background-size:cover!important;
+  background-repeat:no-repeat!important;
+  filter:grayscale(1) contrast(1.14) brightness(.85)!important;
+  mix-blend-mode:soft-light!important;
+  opacity:1!important;
+}
+.la-pl-team--home::after{background-position:27% center!important}
+.la-pl-team--away::after{background-position:73% center!important}
+
+.la-pl-details{
+  position:relative!important;
+  isolation:isolate!important;
+  height:auto!important;
+  min-height:0!important;
+  padding:12px 12px 13px!important;
+  gap:3px!important;
+  overflow:hidden!important;
+  background:linear-gradient(150deg,#0a3455,#05243f)!important;
+}
+.la-pl-details::before{
+  content:""!important;
+  position:absolute!important;
+  display:block!important;
+  inset:0!important;
+  z-index:0!important;
+  pointer-events:none!important;
+  background-image:url("./assets/premier-pattern-from-upload.webp")!important;
+  background-position:center!important;
+  background-repeat:no-repeat!important;
+  background-size:cover!important;
+  filter:grayscale(1) contrast(1.08) brightness(.82)!important;
+  mix-blend-mode:soft-light!important;
+  opacity:.68!important;
+}
+.la-pl-details > *{
+  position:relative!important;
+  z-index:1!important;
+}
+.la-pl-details .la-pl-league,
+.la-pl-details .la-pl-meta,
+.la-pl-details .la-pl-album-title{
+  line-height:1.22!important;
+}
+.la-pl-details .la-pl-story-trigger{
+  margin:5px 0 0!important;
+  padding:0 6px!important;
+  min-height:0!important;
+  gap:3px!important;
+}
+.la-pl-details .la-pl-story-ring{
+  width:76px!important;
+  height:76px!important;
+  flex:0 0 76px!important;
+}
+.la-pl-details .la-pl-story-emblem .la-pl-story-emblem-logo{
+  max-width:29px!important;
+  max-height:37px!important;
+  height:37px!important;
+}
+.la-pl-details .la-pl-story-trigger strong{
+  line-height:1.1!important;
+}
+.la-pl-details .la-pl-story-trigger small{
+  line-height:1.15!important;
+}
+@media(max-width:600px){
+  .la-pl-details{
+    min-height:0!important;
+    padding:11px 10px 12px!important;
+    gap:3px!important;
+  }
+  .la-pl-details .la-pl-story-ring{
+    width:73px!important;
+    height:73px!important;
+    flex-basis:73px!important;
+  }
+  .la-pl-details .la-pl-story-emblem .la-pl-story-emblem-logo{
+    max-width:27px!important;height:35px!important;max-height:35px!important;
+  }
+}
