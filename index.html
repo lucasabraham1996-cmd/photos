@@ -2242,9 +2242,9 @@ img{-webkit-user-drag:none;}
 </style>
   <link rel="stylesheet" href="./premium-ux-v132.css?v=138.0" />
   <link rel="stylesheet" href="./premier-album-stories.css?v=20261115-2" />
-  <link rel="stylesheet" href="./premier-clean-v3.css?v=20261116-5" />
+  <link rel="stylesheet" href="./premier-clean-v3.css?v=20261116-7" />
   <link rel="stylesheet" href="./premier-stories-fix-v4.css?v=20261116-5" />
-  <link rel="stylesheet" href="./premier-cards-related-v6.css?v=20261116-6" />
+  <link rel="stylesheet" href="./premier-cards-related-v6.css?v=20261116-7" />
   <script src="./admin-recordatorios.js?v=20261101-3"></script>
 <script defer src="./premium-ux-v132.js?v=135"></script>
 </head>
@@ -4381,9 +4381,9 @@ function laPremierTeamTheme(team, side) {
     const yellow=key==='union_florida'||name.includes('union florida');
     const boys=name.includes('all boys');
     const calera=name.includes('calera central');
-    let bg=yellow?'#edc21b':boys?'#171a1e':(validHexColor(team&&team.color)||dominantTeamColor(team&&team.name,team&&team.logo)|| (calera?'#b81127':side==='left'?'#173c64':'#164b68'));
+    let bg=yellow?'#edc21b':boys?'#20242a':(validHexColor(team&&team.color)||dominantTeamColor(team&&team.name,team&&team.logo)|| (calera?'#b81127':side==='left'?'#173c64':'#164b68'));
     const ink=yellow?'#101b23':laCrestContrast(bg,'#ffffff')>=4.5?'#fff':'#061725';
-    return {bg,deep:laShadeHex(bg,-.3),ink};
+    return {bg,deep:laShadeHex(bg,boys?-.12:-.3),ink};
 }
 function renderVersusScene(teamA, teamB, options = {}) {
     const compact=Boolean(options.compact);
@@ -4395,14 +4395,15 @@ function renderVersusScene(teamA, teamB, options = {}) {
         const palette=laPremierTeamTheme(team,position);
         const initials=matchPickerInitials(title).slice(0,3);
         return React.createElement('div',{
-            className:'la-premier-duel-side '+position,
+            className:'la-premier-duel-side '+position+(title.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().includes('all boys')?' is-all-boys':''),
             style:{'--duel-bg':palette.bg,'--duel-deep':palette.deep,'--duel-ink':palette.ink}
         },
             React.createElement('span',{className:'la-premier-duel-initials','aria-hidden':true},initials),
-            badge?React.createElement('img',{
-                className:'la-premier-duel-crest',src:badge,alt:'Escudo de '+title,
-                loading:'lazy',referrerPolicy:'no-referrer'
-            }):React.createElement('span',{className:'la-premier-duel-fallback','aria-hidden':true},initials),
+            React.createElement('span',{className:'la-premier-duel-crest-frame'},
+                badge?React.createElement('img',{
+                    className:'la-premier-duel-crest',src:badge,alt:'Escudo de '+title,
+                    loading:'lazy',referrerPolicy:'no-referrer'
+                }):React.createElement('span',{className:'la-premier-duel-fallback','aria-hidden':true},initials)),
             React.createElement('strong',{className:'la-premier-duel-name'},title));
     };
     return React.createElement('div',{
@@ -5532,7 +5533,7 @@ function laDefaultTeamColors(team,side) {
     let bg=validHexColor(team&&team.color)||dominantTeamColor(team&&team.name,team&&team.logo)||'';
     let accent='#cde9f9';
     if (n.includes('union florida')) { bg='#edc21b';accent='#473506'; }
-    else if (n.includes('all boys')) { bg='#191919';accent='#f5f5f5'; }
+    else if (n.includes('all boys')) { bg='#20242a';accent='#f5f5f5'; }
     else if (n.includes('malvinas')) { bg='#12529a';accent='#dd273d'; }
     else if (!bg) bg=side==='home'?'#163c59':'#204b70';
     const text=laCrestContrast(bg,accent)>=4.5?accent:(laCrestContrast(bg,'#ffffff')>=4.5?'#ffffff':'#061829');
@@ -5603,14 +5604,14 @@ function PremierAlbumMatchHeader({album, subalbum, home, away, photoCount, onOpe
         setPalettes({home:baseHome,away:baseAway});
         const keptPalette=(team,logo,base)=>{
             const name=String(team&&team.name||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase();
-            return name.includes('union florida')?Promise.resolve(base):laPaletteFromLogo(logo,base);
+            return (name.includes('union florida')||name.includes('all boys'))?Promise.resolve(base):laPaletteFromLogo(logo,base);
         };
         Promise.all([keptPalette(homeTeam,homeLogo,baseHome),keptPalette(awayTeam,awayLogo,baseAway)])
             .then(([left,right])=>{if(alive)setPalettes({home:left,away:right});});
         return ()=>{alive=false;};
     },[homeLogo,awayLogo,homeTeam.color,awayTeam.color,homeTeam.name,awayTeam.name]);
     const sideNode=(team,logo,position,pal)=>React.createElement('div',{
-        className:'la-pl-team la-pl-team--'+position,
+        className:'la-pl-team la-pl-team--'+position+(String(team.name||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().includes('all boys')?' la-pl-team--all-boys':''),
         style:{
             '--la-team-bg':pal.bg,
             '--la-team-deep':pal.deep,
