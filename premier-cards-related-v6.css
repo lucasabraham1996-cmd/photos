@@ -253,3 +253,181 @@
  .la-premier-duel-crest{height:43%!important}
  .la-premier-duel-name{font-size:11px!important}
 }
+
+
+/* v7 · ESCUDOS Y NOMBRES EN ZONAS SEPARADAS (PC + MÓVIL)
+   Se deja de superponer una imagen gigante sobre el nombre. La imagen
+   puede recortarse hacia los costados, pero NUNCA hacia la zona del texto. */
+.la-premier-duel {
+  container-type:inline-size;
+}
+.la-premier-duel .la-premier-duel-side{
+  display:grid!important;
+  grid-template-columns:minmax(0,1fr)!important;
+  grid-template-rows:13% 41% 27% 19%!important;
+  justify-items:center!important;
+  align-items:stretch!important;
+  min-width:0!important;
+  min-height:0!important;
+  padding:0!important;
+  overflow:hidden!important;
+}
+.la-premier-duel .la-premier-duel-crest-frame{
+  box-sizing:border-box!important;
+  position:relative!important;
+  display:block!important;
+  grid-row:2!important;
+  grid-column:1!important;
+  align-self:stretch!important;
+  width:100%!important;
+  height:100%!important;
+  min-width:0!important;
+  min-height:0!important;
+  overflow:hidden!important;
+  z-index:3!important;
+  pointer-events:none!important;
+}
+.la-premier-duel .la-premier-duel-crest-frame>.la-premier-duel-crest{
+  position:absolute!important;
+  top:0!important;
+  bottom:auto!important;
+  left:-30%!important;
+  right:auto!important;
+  width:130%!important;
+  height:100%!important;
+  min-width:0!important;
+  min-height:0!important;
+  max-width:none!important;
+  max-height:100%!important;
+  display:block!important;
+  object-fit:contain!important;
+  object-position:center!important;
+  margin:0!important;
+  border:0!important;
+  background:transparent!important;
+  transform:none;
+  pointer-events:none!important;
+}
+.la-premier-duel .la-premier-duel-side.right .la-premier-duel-crest-frame>.la-premier-duel-crest{
+  left:auto!important;
+  right:-30%!important;
+}
+.la-premier-duel .la-premier-duel-crest-frame>.la-premier-duel-fallback{
+  position:absolute!important;
+  top:0!important;left:0!important;right:0!important;
+  height:100%!important;
+  display:grid!important;
+  place-items:center!important;
+  font-size:clamp(22px,9cqi,52px)!important;
+}
+.la-premier-duel .la-premier-duel-side>.la-premier-duel-name{
+  box-sizing:border-box!important;
+  position:relative!important;
+  grid-row:3!important;grid-column:1!important;
+  top:auto!important;bottom:auto!important;
+  left:auto!important;right:auto!important;
+  z-index:5!important;
+  display:flex!important;
+  align-items:center!important;
+  justify-content:center!important;
+  text-align:center!important;
+  text-wrap:balance!important;
+  white-space:normal!important;
+  overflow-wrap:anywhere!important;
+  word-break:normal!important;
+  overflow:hidden!important;
+  width:100%!important;
+  max-width:100%!important;
+  height:100%!important;
+  min-width:0!important;min-height:0!important;
+  margin:0!important;
+  padding:2px 7px!important;
+  font-family:Inter,system-ui,sans-serif!important;
+  font-weight:900!important;
+  font-size:clamp(10px,3.6cqi,17px)!important;
+  line-height:1.1!important;
+  letter-spacing:-.02em!important;
+  color:var(--duel-ink,#fff)!important;
+  text-shadow:0 1px 3px rgba(0,0,0,.42)!important;
+}
+.la-premier-duel .la-premier-duel-cta{
+  bottom:4%!important;
+  z-index:10!important;
+  padding:6px 11px!important;
+  min-height:23px!important;
+}
+.la-premier-duel .la-premier-duel-vs{
+  top:45%!important;
+}
+.modern-album-card:hover .la-premier-duel-crest-frame>.la-premier-duel-crest,
+.modern-album-card.team-open .la-premier-duel-crest-frame>.la-premier-duel-crest{
+  transform:scale(1.08)!important;
+}
+/* En sugerencias los escudos deben estar CENTRADOS, visibles y sin recortes.
+   Los nombres se muestran completos y ocupan su propio renglón inferior. */
+.la-related-card .la-premier-duel-side{
+  grid-template-rows:12% 39% 32% 17%!important;
+}
+.la-related-card .la-premier-duel-crest-frame>.la-premier-duel-crest,
+.la-related-card .la-premier-duel-side.right .la-premier-duel-crest-frame>.la-premier-duel-crest{
+  left:0!important;
+  right:0!important;
+  top:2%!important;
+  width:100%!important;
+  height:94%!important;
+  max-width:100%!important;
+  max-height:94%!important;
+  margin:0 auto!important;
+  object-fit:contain!important;
+  object-position:center!important;
+}
+.la-related-card .la-premier-duel-side>.la-premier-duel-name{
+  top:auto!important;
+  bottom:auto!important;
+  font-size:clamp(11px,3.65cqi,17px)!important;
+  line-height:1.12!important;
+  padding:2px 9px!important;
+}
+.la-related-card .la-premier-duel-vs{top:43%!important}
+.la-related-card .la-premier-duel-cta{bottom:3%!important;min-height:24px!important}
+.la-related-card:hover .la-premier-duel-crest-frame>.la-premier-duel-crest,
+.la-related-card:focus-visible .la-premier-duel-crest-frame>.la-premier-duel-crest{
+  transform:scale(1.04)!important;
+}
+/* El negro de All Boys NO es plano: dos tonos de grafito, con la trama
+   diagonal de la referencia a baja intensidad para mantener identidad. */
+.la-premier-duel-side.is-all-boys{
+  background:linear-gradient(130deg,#20242b,#14171b)!important;
+}
+.la-premier-duel-side.is-all-boys::before{
+  background-image:url("./assets/premier-pattern-from-upload.webp")!important;
+  mix-blend-mode:screen!important;
+  opacity:.31!important;
+  filter:grayscale(1) contrast(1.13) brightness(.54)!important;
+}
+.la-premier-duel-side.is-all-boys::after{
+  background:linear-gradient(180deg,transparent 5%,rgba(3,6,9,.08) 65%,rgba(3,6,9,.22) 100%)!important;
+}
+@media(max-width:760px){
+  .la-premier-duel .la-premier-duel-side>.la-premier-duel-name{
+    font-size:clamp(10px,3.5cqi,15px)!important;
+    padding:2px 5px!important;
+  }
+  .la-related-card .la-premier-duel-side>.la-premier-duel-name{
+    font-size:clamp(11px,3.5cqi,15px)!important;
+    padding:2px 8px!important;
+  }
+}
+@media(max-width:520px){
+  .la-related-card .la-premier-duel-side{
+    grid-template-rows:9% 38% 37% 16%!important;
+  }
+  .la-related-card .la-premier-duel-side>.la-premier-duel-name{
+    font-size:clamp(11px,3.3cqi,15px)!important;
+    line-height:1.1!important;
+  }
+  .la-premier-duel .la-premier-duel-cta{
+    padding:5px 9px!important;
+    font-size:9px!important;
+  }
+}
