@@ -2241,6 +2241,7 @@ img{-webkit-user-drag:none;}
 @media(max-width:380px){.checkout-payment-options{padding:12px}.mp-pay-button{padding:12px;gap:9px}.mp-pay-button strong{font-size:18px}.mp-pay-button>img{width:44px;height:44px;flex-basis:44px}.other-payment-button{padding:11px;font-size:14px;gap:9px}}
 </style>
   <link rel="stylesheet" href="./premium-ux-v132.css?v=138.0" />
+  <link rel="stylesheet" href="./premier-album-stories.css?v=20261115-1" />
   <script src="./admin-recordatorios.js?v=20261101-3"></script>
 <script defer src="./premium-ux-v132.js?v=135"></script>
 </head>
@@ -5474,6 +5475,89 @@ function MatchPickerModal({ albums, onClose, onSelect }) {
             React.createElement('div', { className: 'match-picker-count' }, `${visibleAlbums.length} de ${filtered.length} ${filtered.length === 1 ? 'partido' : 'partidos'}`)));
 }
 
+
+/* Vista de partido inspirada en el panel de la Premier League; conserva los escudos de cada club. */
+function PremierAlbumMatchHeader({album, subalbum, home, away, photoCount, onOpenStories}) {
+    const homeTeam = home || {};
+    const awayTeam = away || {};
+    const crest = side => String(side.logo || side.appLogo || findAppTeamLogo(side.name || '') || '').trim();
+    const homeLogo = crest(homeTeam);
+    const awayLogo = crest(awayTeam);
+    const teamSide = (team, logo, position) => React.createElement("div", {
+        className: "la-pl-team la-pl-team--" + position,
+        style: { "--la-pl-color": validHexColor(team.color) || (position === 'home' ? '#ffffff' : '#a62038') }
+    }, React.createElement("span", { className: "la-pl-crest" },
+            logo ? React.createElement("img", { src:logo, alt:"Escudo de " + (team.name || 'equipo'), loading:"eager", referrerPolicy:"no-referrer" })
+                : React.createElement("span", { className:"la-pl-crest-fallback", "aria-hidden":true }, "⚽")),
+        React.createElement("strong", { className:"la-pl-name" }, team.name || (position === "home" ? "Local" : "Visitante")));
+    const matchName = String(album && album.name || '').trim();
+    const dateLabel = String((subalbum && subalbum.dateLabel) || (album && album.dateLabel) || '').trim();
+    const subLabel = subalbum && subalbum.name ? subalbum.name :
+        (album && Array.isArray(album.subalbums) && album.subalbums.length ? "Todas las categorías" : "Galería completa");
+    const storyCircle = React.createElement("span", { className:"la-pl-story-ring" },
+        React.createElement("span", { className:"la-pl-story-disc" },
+            React.createElement("span", { className:"la-pl-story-half" },
+                homeLogo ? React.createElement("img", { src:homeLogo, alt:"", referrerPolicy:"no-referrer" }) :
+                    React.createElement("span", { "aria-hidden":true }, "⚽")),
+            React.createElement("span", { className:"la-pl-story-half" },
+                awayLogo ? React.createElement("img", { src:awayLogo, alt:"", referrerPolicy:"no-referrer" }) :
+                    React.createElement("span", { "aria-hidden":true }, "⚽"))));
+    return React.createElement("section", { className:"la-pl-match", "aria-label":"Partido: " + matchName },
+        React.createElement("div", { className:"la-pl-top" },
+            teamSide(homeTeam, homeLogo, "home"),
+            teamSide(awayTeam, awayLogo, "away"),
+            React.createElement("span", { className:"la-pl-vs", "aria-label":"versus" }, "VS")),
+        React.createElement("div", { className:"la-pl-details" },
+            React.createElement("span", { className:"la-pl-league" }, "Cobertura fotográfica", "　•　", subLabel),
+            React.createElement("span", { className:"la-pl-meta" }, dateLabel || "Fecha no informada"),
+            React.createElement("span", { className:"la-pl-album-title" }, matchName),
+            photoCount > 0 ? React.createElement("button", {
+                type:"button", className:"la-pl-story-trigger", onClick:onOpenStories,
+                "aria-label":"Ver " + Math.min(10,photoCount) + " fotos al azar del álbum en historias"
+            }, storyCircle,
+                React.createElement("strong", null, "Ver historias"),
+                React.createElement("small", null, Math.min(10,photoCount) + " fotos al azar · Con marca de agua"))
+                : React.createElement("span", { className:"la-pl-story-empty" }, "Próximamente: historias del álbum")));
+}
+
+function PremierAlbumStoryViewer({photos, index, albumName, onClose, onPrevious, onNext}) {
+    const photo = photos[index];
+    if (!photo) return null;
+    const raw = photo.rawUrl || photo.fullUrl || photo.url || '';
+    const imageUrl = toImgUrl(raw, 1200) || photo.url;
+    return React.createElement("div", {
+        className:"la-pl-stories-overlay", role:"presentation",
+        onClick:e => { if (e.target === e.currentTarget) onClose(); }
+    }, React.createElement("div", {
+        className:"la-pl-stories-shell photo-viewer-lock", role:"dialog",
+        "aria-modal":"true", "aria-label":"Historias con marca de agua: " + albumName
+    },
+        React.createElement("div", { className:"la-pl-stories-progress", "aria-label":"Historia " + (index+1) + " de " + photos.length },
+            photos.map((entry, i) => React.createElement("span", {
+                key:entry.id || i,
+                className:"la-pl-story-segment " + (i < index ? "done" : i === index ? "active" : "")
+            }, React.createElement("span", { key:i === index ? "playing-" + index : "idle", className:"la-pl-story-segment-fill" })))),
+        React.createElement("div", { className:"la-pl-story-stage",
+            onContextMenu:e=>e.preventDefault(), onDragStart:e=>e.preventDefault() },
+            React.createElement("img", {
+                key:photo.id || index, src:imageUrl, alt:photo.name || "Foto del partido", className:"la-pl-story-image protected-photo",
+                loading:"eager", decoding:"async", draggable:false, onContextMenu:e=>e.preventDefault()
+            }),
+            React.createElement(PreviewWatermark, { visible:true, opacity:.29, darkness:.05 }),
+            React.createElement("button", { type:"button", className:"la-pl-story-tap prev",
+                onClick:onPrevious, "aria-label":"Historia anterior" }),
+            React.createElement("button", { type:"button", className:"la-pl-story-tap next",
+                onClick:onNext, "aria-label":"Historia siguiente" })),
+        React.createElement("div", { className:"la-pl-story-topline" },
+            React.createElement("img", { className:"la-pl-story-logo", src:BRAND_LOGO_URL, alt:"" }),
+            React.createElement("b", null, "lucasabraham.ph · Historias"),
+            React.createElement("button", { type:"button", onClick:onClose, "aria-label":"Cerrar historias" },
+                React.createElement("i", { className:"fas fa-xmark", "aria-hidden":true }))),
+        React.createElement("div", { className:"la-pl-story-footer" },
+            React.createElement("p", null, photo.name || albumName),
+            React.createElement("span", null, (index+1) + " / " + photos.length))));
+}
+
 function App() {
     var _a, _b, _c, _d, _e;
     useEffect(() => {
@@ -5698,6 +5782,8 @@ function App() {
     const transferOrderRef=useRef({signature:'',id:''});
     const [transferSyncNotice,setTransferSyncNotice]=useState('');
     const [albumConsultOpen,setAlbumConsultOpen] = useState(false);
+    const [matchStories,setMatchStories] = useState([]);
+    const [matchStoryIndex,setMatchStoryIndex] = useState(0);
     const [checkoutSaveError, setCheckoutSaveError] = useState("");
     const orderSavingRef = useRef(false);
     const [adminNotificationsOpen, setAdminNotificationsOpen] = useState(false);
@@ -6304,6 +6390,55 @@ ${clone.outerHTML}`;
     const currentSubAlbums = useMemo(() => sortSubAlbums((currentAlbum && currentAlbum.subalbums) || []), [currentAlbum === null || currentAlbum === void 0 ? void 0 : currentAlbum.id, currentAlbum === null || currentAlbum === void 0 ? void 0 : currentAlbum.subalbums]);
     const currentSubAlbum = currentSubAlbums.find(sa => sa.id === activeSubAlbum) || null;
     const albumPhotos = currentSubAlbum ? currentSubAlbum.photos : (currentAlbum && (!currentAlbum.subalbums || currentAlbum.subalbums.length === 0) && Array.isArray(currentAlbum.photos) ? currentAlbum.photos : []);
+
+    const albumStoryPool = useMemo(() => {
+        if (!currentAlbum) return [];
+        const subs = Array.isArray(currentAlbum.subalbums) ? currentAlbum.subalbums : [];
+        const source = currentSubAlbum ? (currentSubAlbum.photos || [])
+            : subs.length ? subs.flatMap(sa => sa.photos || []) : (currentAlbum.photos || []);
+        const seen = new Set();
+        return source.filter(photo => {
+            if (!photo || !(photo.rawUrl || photo.fullUrl || photo.url)) return false;
+            const key = String(photo.id || photo.rawUrl || photo.fullUrl || photo.url);
+            if (seen.has(key)) return false;
+            seen.add(key);
+            return true;
+        });
+    }, [currentAlbum, currentSubAlbum]);
+    const openMatchStories = () => {
+        if (!albumStoryPool.length) return;
+        const shuffled = albumStoryPool.slice();
+        for (let i = shuffled.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            const temp = shuffled[i]; shuffled[i] = shuffled[j]; shuffled[j] = temp;
+        }
+        setMatchStoryIndex(0);
+        setMatchStories(shuffled.slice(0, 10));
+    };
+    const goMatchStory = dir => {
+        const next = matchStoryIndex + dir;
+        if (next >= matchStories.length) setMatchStories([]);
+        else setMatchStoryIndex(Math.max(0, next));
+    };
+    useEffect(() => { setMatchStories([]); setMatchStoryIndex(0); }, [activeAlbum,activeSubAlbum]);
+    useEffect(() => {
+        if (!matchStories.length) return;
+        const prevOverflow = document.body.style.overflow;
+        document.body.style.overflow = 'hidden';
+        const keyHandler = e => {
+            if (e.key === 'Escape') { e.preventDefault(); setMatchStories([]); }
+            else if (e.key === 'ArrowRight') { e.preventDefault(); goMatchStory(1); }
+            else if (e.key === 'ArrowLeft') { e.preventDefault(); goMatchStory(-1); }
+        };
+        document.addEventListener('keydown', keyHandler);
+        const timer = window.setTimeout(() => goMatchStory(1), 5500);
+        return () => {
+            window.clearTimeout(timer);
+            document.removeEventListener('keydown', keyHandler);
+            document.body.style.overflow = prevOverflow;
+        };
+    }, [matchStories, matchStoryIndex]);
+
     const totalAlbumPages = Math.max(1, Math.ceil(albumPhotos.length / 60));
     const safeAlbumPage = Math.min(Math.max(1, albumPage), totalAlbumPages);
     const pagedPhotos = useMemo(() => albumPhotos.slice((safeAlbumPage - 1) * 60, safeAlbumPage * 60), [albumPhotos, safeAlbumPage]);
@@ -9355,12 +9490,12 @@ React.createElement("div", { id: "order-search-panel", hidden:adminPanelTab!=='p
                 React.createElement("button", { onClick: () => { location.hash = "#/galeria"; setActiveAlbum(null); }, className: "inline-flex items-center gap-2 bg-neutral-900/90 border border-neutral-800 hover:border-neutral-700 px-4 py-2.5 rounded-full mb-4 text-sm font-semibold shadow-[0_8px_22px_rgba(0,0,0,.2)]" },
                     React.createElement("i", { className: "fas fa-arrow-left text-xs" }),
                     "Volver"),
-                React.createElement("div", { className: "match-versus-hero la-match-duel-v133 mb-4" },
-                    React.createElement("div",{className:"la-match-duel-bar"},
-                        React.createElement("span",null,React.createElement("i",{className:"fas fa-calendar-days","aria-hidden":true})," ",currentAlbum.dateLabel||"Fecha no informada"),
-                        React.createElement("span",null,React.createElement("i",{className:"fas fa-layer-group","aria-hidden":true})," ",currentSubAlbum&&currentSubAlbum.name||((currentAlbum.subalbums||[]).length+" categorías"))),
-                    renderVersusScene(albumTeamSide(currentAlbum, 0, true), albumTeamSide(currentAlbum, 1, true), {}),
-                    React.createElement("div",{className:"la-match-duel-footer"},currentAlbum.name)),
+                React.createElement(PremierAlbumMatchHeader, {
+                    album:currentAlbum, subalbum:currentSubAlbum,
+                    home:albumTeamSide(currentAlbum, 0, true),
+                    away:albumTeamSide(currentAlbum, 1, true),
+                    photoCount:albumStoryPool.length, onOpenStories:openMatchStories
+                }),
                 React.createElement("div",{className:"la-album-consult-entry"},
                     React.createElement("button",{type:"button",className:"la-album-consult-trigger",
                         onClick:()=>setAlbumConsultOpen(true)},
@@ -9516,6 +9651,13 @@ React.createElement("div", { id: "order-search-panel", hidden:adminPanelTab!=='p
                             "Siguiente",
                             React.createElement("i", { className: "fas fa-chevron-right ml-2" })))),
                 React.createElement(PromoBanners, { bannerSettings: bannerSettings }))),
+        matchStories.length > 0 && React.createElement(PremierAlbumStoryViewer, {
+            photos:matchStories, index:matchStoryIndex,
+            albumName:(currentAlbum && currentAlbum.name) || 'Partido',
+            onClose:()=>setMatchStories([]),
+            onPrevious:()=>goMatchStory(-1),
+            onNext:()=>goMatchStory(1)
+        }),
         introOpen && !loading && allPhotos.length > 0 && route !== "#/admin" && React.createElement(PurchaseIntro, { photos: allPhotos, onClose: () => setIntroOpen(false) }),
         currentAlbum && React.createElement("button", { onClick: () => setIntroOpen(true), className: "purchase-help-floating" },
             React.createElement("i", { className: "fas fa-circle-question" }),
