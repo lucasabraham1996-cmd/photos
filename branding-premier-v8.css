@@ -2,15 +2,22 @@
    Coco Sharp de prueba NO se aloja ni redistribuye. La familia local
    se activará solo si el usuario posee Coco Sharp legítimamente instalada.
    Outfit es una alternativa libre visualmente próxima. */
-@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800;900&display=swap');
+/* Outfit (SIL OFL) se carga solo para letras, nunca para números.
+   Fuente abierta oficial: google/fonts/ofl/outfit/Outfit[wght].ttf */
+@font-face{
+  font-family:'LA Outfit Letters';
+  src:url('https://raw.githubusercontent.com/google/fonts/main/ofl/outfit/Outfit%5Bwght%5D.ttf') format('truetype');
+  font-style:normal;font-weight:100 900;font-display:swap;
+  unicode-range:U+0041-005A,U+0061-007A,U+00C0-00FF,U+0100-024F,U+1E00-1EFF;
+}
 @font-face{
   font-family:'LA Coco Sharp Local';
   src:local('CocoSharp Extrabold'),local('Coco Sharp Extrabold'),local('CocoSharp-Extrabold');
-  font-style:normal;font-weight:600 900;font-display:swap;
+  font-style:normal;font-weight:100 900;font-display:swap;
   unicode-range:U+0041-005A,U+0061-007A,U+00C0-00FF,U+0100-024F,U+1E00-1EFF;
 }
 :root{
-  --la-letters-font:'LA Coco Sharp Local','Outfit','Inter',system-ui,sans-serif;
+  --la-letters-font:'LA Coco Sharp Local','LA Outfit Letters','Inter',system-ui,sans-serif;
   --la-numeric-font:'Inter',system-ui,sans-serif;
 }
 html,body,#root{
@@ -39,7 +46,7 @@ body :is(code,pre,kbd,samp){font-family:ui-monospace,SFMono-Regular,Consolas,mon
   left:-17%!important;
   width:134%!important;height:auto!important;
   transform:none!important;
-  font-family:'Outfit',Inter,system-ui,sans-serif!important;
+  font-family:'LA Outfit Letters','Inter',system-ui,sans-serif!important;
   font-weight:900!important;
   font-size:clamp(60px,28cqi,180px)!important;
   letter-spacing:-.10em!important;
