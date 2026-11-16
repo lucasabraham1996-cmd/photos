@@ -2246,6 +2246,7 @@ img{-webkit-user-drag:none;}
   <link rel="stylesheet" href="./premier-stories-fix-v4.css?v=20261116-5" />
   <link rel="stylesheet" href="./premier-cards-related-v6.css?v=20261116-7" />
   <link rel="stylesheet" href="./branding-premier-v8.css?v=20261116-9" />
+  <link rel="stylesheet" href="./album-categories-mobile-v10.css?v=20261116-10" />
   <script src="./admin-recordatorios.js?v=20261101-3"></script>
 <script defer src="./premium-ux-v132.js?v=135"></script>
 </head>
@@ -9756,9 +9757,37 @@ React.createElement("div", { id: "order-search-panel", hidden:adminPanelTab!=='p
                                 albumPhotos.length,
                                 " fotos)")),
                         React.createElement("p", { className: "text-neutral-400 text-sm" }, "Elegí una cobertura dentro del álbum con una vista más visual y profesional. Cada categoría conserva su propio link."),
-                        currentSubAlbums.length > 0 && React.createElement("div", { className: "subalbum-panel mt-3" },
-                            React.createElement("p", { className: "text-[11px] uppercase tracking-[0.18em] text-sky-200/70 font-black mb-3" }, "Categorías del álbum"),
-                            React.createElement("div", { className: "subalbum-showcase la-category-tabs-v134", role:"tablist", "aria-label":"Categorías del partido" }, currentSubAlbums.map(sa => React.createElement("button", { key: sa.id,type:"button",role:"tab", "aria-selected":activeSubAlbum === sa.id, "aria-label":sa.name+" · "+(sa.photos||[]).length+" fotografías", onClick: () => { location.hash = albumHash(currentAlbum.id, sa.id); setActiveSubAlbum(sa.id); }, className: `subalbum-visual-card la-category-tab-v134 ${activeSubAlbum === sa.id ? 'active' : ''}` },
+                        currentSubAlbums.length > 0 && React.createElement("div", { className: "subalbum-panel la-category-panel-v10 mt-3" },
+                            React.createElement("p", { className: "la-category-heading-v10" },
+                                React.createElement("i", { className:"fas fa-layer-group la-category-heading-icon-v10", "aria-hidden":true }),
+                                "Elegí una categoría"),
+                            React.createElement("div", {
+                                className: "subalbum-showcase la-category-tabs-v134 la-category-grid-v10",
+                                role:"tablist", "aria-label":"Categorías del partido",
+                                style:{
+                                    "--la-category-columns":Math.min(currentSubAlbums.length,3),
+                                    "--la-category-mobile-columns":currentSubAlbums.length===4?2:Math.min(currentSubAlbums.length,3)
+                                }
+                            }, currentSubAlbums.map(sa => React.createElement("button", {
+                                key:sa.id,type:"button",role:"tab",
+                                "aria-selected":activeSubAlbum === sa.id,
+                                "aria-label":sa.name+" · "+(sa.photos||[]).length+" fotografías",
+                                tabIndex:activeSubAlbum === sa.id?0:-1,
+                                onClick:() => { location.hash = albumHash(currentAlbum.id,sa.id); setActiveSubAlbum(sa.id); },
+                                onKeyDown:e=>{
+                                    const keys=['ArrowLeft','ArrowRight','ArrowUp','ArrowDown','Home','End'];
+                                    if(!keys.includes(e.key))return;
+                                    const tabs=Array.from(e.currentTarget.parentElement.querySelectorAll('[role="tab"]'));
+                                    const index=tabs.indexOf(e.currentTarget);
+                                    if(index<0||!tabs.length)return;
+                                    e.preventDefault();
+                                    const delta=e.key==='ArrowLeft'||e.key==='ArrowUp'?-1:1;
+                                    const next=e.key==='Home'?0:e.key==='End'?tabs.length-1:(index+delta+tabs.length)%tabs.length;
+                                    tabs[next].focus();
+                                    tabs[next].click();
+                                },
+                                className:`subalbum-visual-card la-category-tab-v134 ${activeSubAlbum === sa.id ? 'active' : ''}`
+                            },
                                 React.createElement("div", { className: "subalbum-thumb-wrap" },
                                     React.createElement("img", { src: sa.cover || (((sa.photos || [])[0] || {}).url) || currentAlbum.cover, loading: "lazy", decoding: "async", alt: sa.name }),
                                     React.createElement("div", { className: "subalbum-thumb-overlay" }),
