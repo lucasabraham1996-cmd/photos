@@ -2242,6 +2242,7 @@ img{-webkit-user-drag:none;}
 </style>
   <link rel="stylesheet" href="./premium-ux-v132.css?v=138.0" />
   <link rel="stylesheet" href="./premier-album-stories.css?v=20261115-2" />
+  <link rel="stylesheet" href="./premier-clean-v3.css?v=20261115-3" />
   <script src="./admin-recordatorios.js?v=20261101-3"></script>
 <script defer src="./premium-ux-v132.js?v=135"></script>
 </head>
@@ -5611,7 +5612,6 @@ function PremierAlbumMatchHeader({album, subalbum, home, away, photoCount, onOpe
     },React.createElement('div',{className:'la-pl-top'},
             sideNode(homeTeam,homeLogo,'home',palettes.home),
             sideNode(awayTeam,awayLogo,'away',palettes.away),
-            React.createElement('span',{className:'la-pl-score-lines','aria-hidden':true}),
             React.createElement('span',{className:'la-pl-vs','aria-label':'versus'},'VS')),
         React.createElement('div',{className:'la-pl-details'},
             React.createElement('span',{className:'la-pl-league'},'Cobertura fotográfica','　•　',subLabel),
@@ -5677,6 +5677,7 @@ function PremierAlbumStoryViewer({photos,index,albumName,onClose,onPrevious,onNe
             React.createElement('img',{
                 key:photo.id||index,src:imageUrl,alt:photo.name||'Foto del partido',
                 className:'la-pl-story-image protected-photo',loading:'eager',decoding:'async',
+                style:{width:'auto',height:'auto',maxWidth:'100%',maxHeight:'100%',aspectRatio:'auto',objectFit:'contain',objectPosition:'center'},
                 draggable:false,onContextMenu:e=>e.preventDefault()
             }),
             React.createElement(PreviewWatermark,{visible:true,opacity:.29,darkness:.05}),
