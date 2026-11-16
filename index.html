@@ -4773,19 +4773,21 @@ catch (_a) {
 } }
 function saveCoverOverrides(data) { localStorage.setItem(LS_COVER_KEY, JSON.stringify(data)); }
 const Modal = ({ children, onClose, max = 'max-w-5xl', modalType = '' }) => {
+    const closeRef = React.useRef(onClose);
+    closeRef.current = onClose;
     React.useEffect(() => {
         if (!modalType) return;
         const previousOverflow = document.body.style.overflow;
         document.body.style.overflow = 'hidden';
         const onEscape = e => {
-            if (e.key === 'Escape') { e.preventDefault(); onClose(); }
+            if (e.key === 'Escape') { e.preventDefault(); closeRef.current(); }
         };
         document.addEventListener('keydown', onEscape);
         return () => {
             document.removeEventListener('keydown', onEscape);
             document.body.style.overflow = previousOverflow;
         };
-    }, [modalType, onClose]);
+    }, [modalType]);
     return React.createElement("div", {
             className: "la-modal-overlay fixed inset-0 bg-black/80 backdrop-blur-md z-[80] flex items-center justify-center p-4 fade",
             "data-modal-type": modalType || undefined,
@@ -9154,7 +9156,7 @@ React.createElement("div", { id: "order-search-panel", hidden:adminPanelTab!=='p
                                         o.rejected ? 'Rechazado' : o.delivered ? 'Cargado y entregado' : 'Pendiente'),
                                     React.createElement("button", { onClick: () => openOrderFromQueue(o), className: "bg-neutral-800 hover:bg-neutral-700 px-3 py-2 rounded-xl text-xs font-black" }, "Abrir")));
                         })))),
-            React.createElement("div",{className:"mb-5 rounded-2xl border border-white/10 bg-black/25 p-3 sm:p-4"},
+            React.createElement("div",{hidden:adminPanelTab!=='pedidos',className:"mb-5 rounded-2xl border border-white/10 bg-black/25 p-3 sm:p-4"},
                     React.createElement("div",{className:"flex flex-wrap gap-2 items-center justify-between mb-3"},
                         React.createElement("h3",{className:"text-lg font-black text-white"},"Últimos pedidos registrados"),
                         React.createElement("span",{className:"text-xs text-neutral-400"},"Últimos 30 días · hasta 8 pedidos")),
