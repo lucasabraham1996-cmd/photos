@@ -242,3 +242,21 @@
     max-width:27px!important;height:35px!important;max-height:35px!important;
   }
 }
+
+
+/* v7 · Negro grafito con franjas diferenciadas para All Boys.
+   Sobre el negro liso, la textura plata se mezcla suavemente y queda
+   en negro/gris oscuro, visible también en pantallas de celular. */
+.la-pl-team.la-pl-team--all-boys{
+  background:linear-gradient(125deg,#252930,#171b20)!important;
+  color:#fff!important;
+}
+.la-pl-team.la-pl-team--all-boys::after{
+  background-image:url("./assets/premier-pattern-from-upload.webp")!important;
+  background-size:cover!important;
+  background-repeat:no-repeat!important;
+  mix-blend-mode:screen!important;
+  opacity:.31!important;
+  filter:grayscale(1) contrast(1.12) brightness(.54)!important;
+}
+.la-pl-team.la-pl-team--all-boys .la-pl-name{color:#fff!important}
