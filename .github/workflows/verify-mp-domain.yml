@@ -1,0 +1,21 @@
+name: Verify Mercado Pago domain CORS
+on:
+  push:
+    paths:
+      - 'cloudflare/worker-mp.js'
+      - 'cloudflare/worker-mp-trial.js'
+      - 'cloudflare/worker-mp-recuperacion.mjs'
+      - 'tests/mercadopago-domain.test.mjs'
+      - '.github/workflows/verify-mp-domain.yml'
+  pull_request:
+  workflow_dispatch:
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: node --check cloudflare/worker-mp-recuperacion.mjs
+      - run: node --test tests/mercadopago-domain.test.mjs
