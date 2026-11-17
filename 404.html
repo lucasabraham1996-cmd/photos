@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Lucas Abraham · Fotografía</title>
+<meta name="description" content="Galería de fotografías deportivas.">
+<meta property="og:title" content="lucasabraham.ph · Fotografía deportiva">
+<meta property="og:image" content="https://lucasabrahamph.com/social-preview-la.png">
+<style>html,body{min-height:100%;background:#050505;color:white;margin:0;font-family:-apple-system,BlinkMacSystemFont,Arial,sans-serif}main{max-width:440px;margin:18vh auto;padding:24px;text-align:center}a{color:#7dd3fc}</style>
+</head>
+<body>
+<main id="status"><h1>lucasabraham.ph</h1><p>Abriendo galería...</p></main>
+<script>
+(async function() {
+  // GitHub Pages doesn't have server-side rewrites. Boot the same site on short URLs.
+  // Keep pathname untouched so copy/share and browser navigation stay short.
+  try {
+    const path=decodeURIComponent(location.pathname||'/').replace(/^\/+|\/+$/g,'').toLowerCase();
+    if(!/^[a-z0-9_-]+$/.test(path))throw new Error('Ruta desconocida');
+    const target=path==='contrataciones'?'/contrataciones.html':(path==='como-comprar'||path==='como-pedir')?'/como-pedir.html':'/index.html';
+    const response=await fetch(target,{cache:'no-cache'});
+    if(!response.ok)throw new Error('No se pudo abrir la galería');
+    let html=await response.text();
+    // Relative stylesheet, script and image URLs always resolve from the domain root.
+    html=html.replace(/<head([^>]*)>/i,'<head$1><base href="/">');
+    document.open();
+    document.write(html);
+    document.close();
+  }catch(err){
+    document.getElementById('status').innerHTML='<h1>Enlace no disponible</h1><p>Revisá la dirección o volvé a la galería.</p><p><a href="/">Ir a lucasabrahamph.com</a></p>';
+  }
+})();
+</script>
+</body>
+</html>
