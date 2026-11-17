@@ -5951,7 +5951,7 @@ function App() {
         if(!mpReturnRequested)return null;
         try {
             const saved=JSON.parse(localStorage.getItem(MP_TRIAL_ENABLED?'LA_MP_TRIAL_PURCHASE':'LA_MP_LIVE_PURCHASE')||'null');
-            const valid= saved&&saved.order_id&&/^[a-f\\d-]{36}$/i.test(saved.checkout_id||'')&&/^[a-f\\d]{64}$/i.test(saved.receipt_token||'');
+            const valid= saved&&saved.order_id&&/^[0-9a-f-]{36}$/i.test(saved.checkout_id||'')&&/^[0-9a-f]{64}$/i.test(saved.receipt_token||'');
             const recent=valid&&Number.isFinite(Date.parse(saved.created_at||''))&&
                 Date.now()-Date.parse(saved.created_at)>=0&&Date.now()-Date.parse(saved.created_at)<72*3600000;
             return valid&&(recent||(mpReturnedCheckout&&mpReturnedCheckout.order_id===saved.order_id))?saved:null;
