@@ -665,12 +665,35 @@ function returnURL(input, request, env, mode) {
   const configured = new URL(env.MP_APP_URL || APP_URL);
   if (configured.origin !== APP_ORIGIN && !(configured.origin === LEGACY_APP_ORIGIN && configured.pathname.startsWith('/photos/')))
     throw new HttpError(503, 'La URL de la aplicación no está configurada');
-  const url = new URL(APP_URL);
-  url.search = '?mp_live=1&mp_return=1';
-  // El fragmento contiene un comprobante de alta entropía, no se envía en la petición HTTP.
-  // Permite recuperar el ticket cuando Mercado Pago vuelve a otro navegador del celular.
-  url.hash = '#/compra/' + input.request_id + '/' + input.receipt_token;
-  return url.href;
+  // Mercado Pago puede descartar el fragmento #/compra en el retorno desde su app.
+  // La URL de vuelta apunta al Worker: valida el ticket y redirige a la galería
+  // con el comprobante en el fragmento, incluso si abre otro navegador.
+  // No acepta direcciones de retorno introducidas por el comprador.
+  return new URL('/api/mp-return/' + input.request_id + '/' + input.receipt_token, request.url).href;
+}
+// Puente de retorno de Mercado Pago: solo un comprobante firmado mediante token
+// de 256 bits ya almacenado como hash en D1 permite acceder al ticket.
+// No acredita pagos ni permite descargar sin la verificación posterior del servidor.
+async function redirectMpReturn(env, path) {
+  const match = path.match(/^\/api\/mp-return\/([a-f0-9-]{36})\/([a-f0-9]{64})$/i);
+  if (!match || !UUID.test(match[1]) || !TOKEN.test(match[2]))
+    throw new HttpError(404, 'Enlace de compra inválido');
+  const row = await receipt(env, match[1], match[2]);
+  if (!row || !row.mp_order_id)
+    throw new HttpError(404, 'No se encontró el comprobante de esta compra');
+  const target = new URL(APP_URL);
+  target.search = '?mp_live=1&mp_return=1';
+  target.hash = '#/compra/' + row.checkout_id + '/' + match[2].toLowerCase();
+  return new Response(null, {
+    status: 303,
+    headers: {
+      Location: target.href,
+      'Cache-Control': 'private, no-store, max-age=0',
+      'Referrer-Policy': 'no-referrer',
+      'X-Content-Type-Options': 'nosniff',
+      'X-Robots-Tag': 'noindex, nofollow'
+    }
+  });
 }
 async function ensureBuyerColumns(env) {
   if (!env.LA_ORDERS_DB) return;
@@ -1031,7 +1054,7 @@ export default {
         'Content-Security-Policy': "default-src 'self'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; connect-src 'self'; img-src 'self' blob:; object-src 'none'; base-uri 'none'; frame-ancestors 'none'",
         'X-Frame-Options': 'DENY' }
     });
-    const livePath = path.startsWith('/api/live-') || path === '/api/admin-orders' || path === '/api/payment-config' || path === '/webhook/mp/live';
+    const livePath = path.startsWith('/api/live-') || path.startsWith('/api/mp-return/') || path === '/api/admin-orders' || path === '/api/payment-config' || path === '/webhook/mp/live';
     if (!livePath && path !== '/health') return trial.fetch(request, env);
     if (request.method === 'OPTIONS') return json({}, 200, origin);
     try {
@@ -1039,6 +1062,12 @@ export default {
         throw new HttpError(403, 'Origen no autorizado');
       if (path === '/health') return json({ ok: true, trial: true, database: Boolean(env.LA_ORDERS_DB),
         live_configured: liveReady(env), public_payments: (await paymentConfig(env)).public_enabled });
+      // GET de navegación desde Mercado Pago: sin CORS ni información del pago.
+      if (path.startsWith('/api/mp-return/')) {
+        if (request.method !== 'GET') throw new HttpError(405, 'Método no permitido');
+        if (!env.LA_ORDERS_DB) throw new HttpError(503, 'No se pudo consultar el comprobante');
+        return await redirectMpReturn(env, path);
+      }
       if (path === '/api/payment-config' && request.method === 'GET')
         return json(await paymentConfig(env), 200, origin);
       if (!env.LA_ORDERS_DB || !env.MP_ACCESS_TOKEN_PROD)
