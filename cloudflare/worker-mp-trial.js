@@ -1,6 +1,8 @@
 /* lucasabraham.ph — Checkout Pro de PRUEBA; no apto para ventas reales ni facturación. */
 const MP = "https://api.mercadopago.com/v1/orders";
-const ORIGIN = "https://lucasabraham1996-cmd.github.io";
+const ORIGIN = "https://lucasabrahamph.com";
+const LEGACY_ORIGIN = "https://lucasabraham1996-cmd.github.io";
+const ALLOWED_ORIGINS = new Set([ORIGIN, LEGACY_ORIGIN]);
 const PRICE = 2000;
 // El panel de Mercado Pago expone el USUARIO de prueba, NO su correo.
 // Orders sandbox requiere un payer.email con dominio @testuser.com cuando se envía payer.
@@ -12,7 +14,7 @@ function getTestBuyerEmail(env) {
 }
 function result(data, status=200, origin="") {
   const h = {"Content-Type":"application/json; charset=utf-8","Cache-Control":"no-store","X-Content-Type-Options":"nosniff"};
-  if(origin===ORIGIN){h["Access-Control-Allow-Origin"]=ORIGIN;h["Access-Control-Allow-Methods"]="POST, OPTIONS";h["Access-Control-Allow-Headers"]="Content-Type, X-Setup-Key";h.Vary="Origin";}
+  if(ALLOWED_ORIGINS.has(origin)){h["Access-Control-Allow-Origin"]=origin;h["Access-Control-Allow-Methods"]="POST, OPTIONS";h["Access-Control-Allow-Headers"]="Content-Type, X-Setup-Key";h.Vary="Origin";}
   return new Response(JSON.stringify(data),{status,headers:h});
 }
 const hex=bytes=>Array.from(bytes,x=>x.toString(16).padStart(2,"0")).join("");
@@ -311,8 +313,8 @@ export default {
     const origin=request.headers.get("Origin")||"";
     const path=url.pathname;
     if(request.method==="OPTIONS"&&path.startsWith("/api/")){
-      if(origin!==ORIGIN)return result({error:"Origen no autorizado"},403);
-      return new Response(null,{status:204,headers:{"Access-Control-Allow-Origin":ORIGIN,"Access-Control-Allow-Methods":"POST, OPTIONS","Access-Control-Allow-Headers":"Content-Type, X-Setup-Key","Access-Control-Max-Age":"600"}});
+      if(!ALLOWED_ORIGINS.has(origin))return result({error:"Origen no autorizado"},403);
+      return new Response(null,{status:204,headers:{"Access-Control-Allow-Origin":origin,"Access-Control-Allow-Methods":"POST, OPTIONS","Access-Control-Allow-Headers":"Content-Type, X-Setup-Key","Access-Control-Max-Age":"600"}});
     }
     if(path==="/health")return result({ok:true,trial:true,database:Boolean(env.LA_ORDERS_DB),test_buyer_email_configured:Boolean(getTestBuyerEmail(env))});
     if(!env.LA_ORDERS_DB||!env.MP_ACCESS_TOKEN_TEST)return result({error:"Faltan D1 o credenciales de prueba"},503,origin);
