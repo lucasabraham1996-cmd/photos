@@ -5945,11 +5945,16 @@ function App() {
     const mpReturnRequested=new URLSearchParams(location.search).get('mp_return')==='1'||Boolean(mpAccessFromLink);
     const [mpTrialPurchase, setMpTrialPurchase] = useState(() => {
         if(mpAccessFromLink)return mpAccessFromLink;
-        // Una compra anterior guardada no debe reaparecer sola al visitar la galería.
-        if(!mpReturnRequested||!mpReturnedCheckout)return null;
+        // En la vuelta de Mercado Pago, aceptar un comprobante local reciente aunque
+        // la pestaña de pago haya perdido el estado del carrito. El Worker siempre
+        // vuelve a verificar el token y la acreditación antes de permitir descargas.
+        if(!mpReturnRequested)return null;
         try {
             const saved=JSON.parse(localStorage.getItem(MP_TRIAL_ENABLED?'LA_MP_TRIAL_PURCHASE':'LA_MP_LIVE_PURCHASE')||'null');
-            return saved&&saved.order_id&&saved.receipt_token&&saved.checkout_id?saved:null;
+            const valid= saved&&saved.order_id&&/^[a-f\\d-]{36}$/i.test(saved.checkout_id||'')&&/^[a-f\\d]{64}$/i.test(saved.receipt_token||'');
+            const recent=valid&&Number.isFinite(Date.parse(saved.created_at||''))&&
+                Date.now()-Date.parse(saved.created_at)>=0&&Date.now()-Date.parse(saved.created_at)<72*3600000;
+            return valid&&(recent||(mpReturnedCheckout&&mpReturnedCheckout.order_id===saved.order_id))?saved:null;
         }catch(_){return null}
     });
     const [mpReturnMissing,setMpReturnMissing]=useState(Boolean(mpReturnRequested&&!mpAccessFromLink&&
@@ -8236,7 +8241,7 @@ En breve te las preparo y te las envío por acá 😊
         if(!mpVerifiedReceipt||!purchase||!purchase.checkout_id||
             mpVerifiedCheckoutRef.current!==purchase.checkout_id||
             !/^[a-f\d]{64}$/i.test(purchase.receipt_token||''))return '';
-        const url=new URL(location.pathname,location.origin);
+        const url=new URL('/',location.origin);
         url.hash='#/compra/'+purchase.checkout_id+'/'+purchase.receipt_token;
         return url.href;
     };
