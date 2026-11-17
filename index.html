@@ -10085,7 +10085,7 @@ React.createElement("div", { id: "order-search-panel", hidden:adminPanelTab!=='p
                         React.createElement("p",{className:"text-xs text-sky-100/80 break-all"},"Orden: "+(mpTrialPurchase.order_id||mpTrialPurchase.checkout_id)),
                         React.createElement("p",{className:"text-sm font-black text-white mt-2"},"Total pagado: "+formatPrice(mpTrialPurchase.amount||0)),
                         mpTrialPurchase.created_at&&React.createElement("p",{className:"text-xs text-sky-100/70 mt-1"},"Fecha: "+new Date(mpTrialPurchase.created_at).toLocaleString('es-AR')),
-                        React.createElement("p",{className:"text-xs text-sky-100/80 mt-2"},"Cada foto está disponible abajo con sus botones de vista y descarga. Este comprobante no sustituye la factura fiscal.")),
+                        React.createElement("p",{className:"text-xs text-sky-100/80 mt-2"},"Cada foto está disponible abajo con sus botones de vista y descarga.")),
                     (orderPrintInfo(mpTrialPurchase&&mpTrialPurchase.order_data||mpTrialPurchase).has||
                         Boolean(mpTrialPurchase&&mpTrialPurchase.printRequested))&&
                         React.createElement("div",{className:"la-print-delivery-banner"},
@@ -10248,8 +10248,7 @@ React.createElement("div", { id: "order-search-panel", hidden:adminPanelTab!=='p
                         React.createElement("input", { value: checkoutCoupon, onChange: e => setCheckoutCoupon(e.target.value), placeholder: "Código de descuento", "aria-label":"Código de cupón", className: "bg-black/55 border border-sky-300/40 rounded-xl px-3 py-3 outline-none uppercase text-white" }),
                         React.createElement("button", { onClick: applyCoupon, className: "buy-btn px-4 py-3 rounded-xl font-black text-sm transition-all" }, "Aplicar")),
                     couponMessage && React.createElement("p", { className: `text-xs mt-2 ${appliedCoupon ? 'text-sky-200' : 'text-amber-300'}` }, couponMessage)),
-                !mpReceiptView&&React.createElement("p", { className: "text-center text-[11px] text-sky-100/65 leading-relaxed mt-3" }, "Las fotos digitales se habilitan al aprobarse el pago en Mercado Pago. Otros medios se acuerdan con Lucas por WhatsApp."),
-                mpVerifiedReceipt&&React.createElement("a",{className:"inline-flex items-center justify-center gap-2 text-xs font-bold text-sky-200 border border-sky-400/25 rounded-xl px-3 py-3 mt-3",target:"_blank",rel:"noopener noreferrer",href:'https://wa.me/'+SELLER_PHONE+'?text='+encodeURIComponent('Hola Lucas, necesito la factura fiscal de mi compra '+mpTrialPurchase.order_id+' por '+formatPrice(mpTrialPurchase.amount)+'.')},React.createElement("i",{className:"fas fa-file-invoice"}),"Solicitar factura fiscal"))),
+                !mpReceiptView&&React.createElement("p", { className: "text-center text-[11px] text-sky-100/65 leading-relaxed mt-3" }, "Las fotos digitales se habilitan al aprobarse el pago en Mercado Pago. Otros medios se acuerdan con Lucas por WhatsApp."))),
         MP_PAYMENT_VISIBLE && mpTrialPurchase && !checkoutOpen && !mpReceiptDismissed && React.createElement("button", {
             type:"button", onClick:()=>{setMpReceiptView(true);setCheckoutOpen(true)},
             className:"fixed bottom-28 right-3 z-[81] bg-sky-700 text-white text-xs font-black px-4 py-3 rounded-2xl shadow-xl border border-sky-200/25"
