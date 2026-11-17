@@ -10249,9 +10249,6 @@ React.createElement("div", { id: "order-search-panel", hidden:adminPanelTab!=='p
             type:"button", onClick:()=>{setMpReceiptView(true);setCheckoutOpen(true)},
             className:"fixed bottom-28 right-3 z-[81] bg-sky-700 text-white text-xs font-black px-4 py-3 rounded-2xl shadow-xl border border-sky-200/25"
         }, "Ver mi compra"),
-        mpReceipts.length>0&&!checkoutOpen&&route!=='#/admin'&&React.createElement("button",{
-            type:"button",onClick:()=>setMpHistoryOpen(true),className:"la-my-purchases-tab"},
-            React.createElement("i",{className:"fas fa-receipt","aria-hidden":true}),React.createElement("span",null,"Mis compras")),
         mpHistoryOpen&&React.createElement(Modal,{onClose:()=>setMpHistoryOpen(false),max:"max-w-lg"},
             React.createElement("section",{className:"bg-neutral-950 border border-sky-300/25 rounded-3xl p-5"},
                 React.createElement("div",{className:"flex justify-between items-center gap-3 mb-4"},

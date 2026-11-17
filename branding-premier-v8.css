@@ -18,24 +18,28 @@
 }
 :root{
   --la-letters-font:'LA Coco Sharp Local','LA Outfit Letters','Inter',system-ui,sans-serif;
+  --la-body-font:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif;
   --la-numeric-font:'Inter',system-ui,sans-serif;
 }
-html,body,#root{
-  font-family:var(--la-letters-font)!important;
-}
+/* Restablecer fuente original para cabeceras, navegación, fotos, formularios y precios. */
+html,body,#root{font-family:var(--la-body-font)!important}
 body :is(h1,h2,h3,h4,h5,h6,p,small,strong,b,label,summary,button,input,textarea,select,option,a,li,th,td,blockquote,figcaption,legend),
-body :is(.la-premier-duel-name,.la-premier-duel-cta,.la-premier-duel-brand,.la-related-head,.la-related-reason,.la-profile-card,.la-insta-title,.la-insta-sub,.la-pl-name,.la-pl-story-trigger,.la-pl-story-topline,.la-pl-story-footer,.la-premier-duel-vs) {
+body :is(.la-related-head,.la-related-reason,.la-profile-card,.la-insta-title,.la-insta-sub,.la-premier-duel-cta,.la-premier-duel-brand,.la-pl-story-trigger,.la-pl-story-topline,.la-pl-story-footer,.la-premier-duel-vs){
+  font-family:var(--la-body-font)!important;
+}
+/* Reservar la fuente Premier/Coco solamente para nombres de equipos
+   en tarjetas, bandas, escudos y selector de partidos. */
+body :is(.la-premier-duel-name,.la-pl-name,.team-reveal-name,.match-picker-names,.match-picker-code,.match-versus-team-name){
   font-family:var(--la-letters-font)!important;
 }
-/* Los valores numéricos usan las tipografías tradicionales de la aplicación. */
-body :is(input[type=number],input[type=date],input[type=time],input[type=tel],.page-number-btn,.page-current-badge,[class*="price"],[class*="amount"],[class*="counter"],[class*="count"],[class*="stat-value"],[class*="score"]){
+/* Números y etiquetas de foto siempre mantienen la tipografía original. */
+body :is(input[type=number],input[type=date],input[type=time],input[type=tel],.page-number-btn,.page-current-badge,[class*="photo-number"],[class*="photo-name"],[class*="price"],[class*="amount"],[class*="counter"],[class*="count"],[class*="stat-value"],[class*="score"]){
   font-family:var(--la-numeric-font)!important;
   font-variant-numeric:tabular-nums!important;
 }
 body :is(.fas,.far,.fab,.fa,.fa-solid,.fa-regular,.fa-brands,[class^="fa-"],[class*=" fa-"]){
   font-family:'Font Awesome 6 Free','Font Awesome 6 Brands'!important;
 }
-/* Retener otros conjuntos especiales de iconos, códigos y cifras. */
 body :is(code,pre,kbd,samp){font-family:ui-monospace,SFMono-Regular,Consolas,monospace!important}
 
 /* Abreviaciones GIGANTES al pie de las tarjetas, como el referente Premier.
