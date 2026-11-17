@@ -11,7 +11,7 @@
       const params = new URLSearchParams(location.search);
       const standalone = (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches) || navigator.standalone === true;
       const savedAdminRoute = localStorage.getItem('LA_INSTALL_START_ROUTE') === '#/admin';
-      const requestedAdmin = location.hash === '#/admin' || params.get('admin') === '1' || (standalone && savedAdminRoute);
+      const requestedAdmin = location.hash === '#/admin' || (params.has('admin') && params.get('admin') !== '0') || (standalone && savedAdminRoute);
       if (requestedAdmin) {
         if (standalone && savedAdminRoute && location.hash !== '#/admin') location.hash = '#/admin';
         if (params.get('build') !== 'v136-reminders-cloudflare') {
