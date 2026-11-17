@@ -63,3 +63,11 @@ test('el enlace de Mercado Pago apunta al puente, no a un hash que MP puede desc
   assert.match(source, /const target = new URL\(APP_URL\);/);
   assert.match(source, /target.hash = '#\/compra\/' \+ row.checkout_id/);
 });
+
+test('la galería conserva el recibo aun si se pierde la memoria del carrito', () => {
+  const html=readFileSync(new URL('../index.html',import.meta.url),'utf8');
+  assert.match(html, /if\(!mpReturnRequested\)return null;/);
+  assert.match(html, /const recent=valid&&Number\.isFinite\(Date\.parse/);
+  assert.match(html, /mpReturnedCheckout&&mpReturnedCheckout\.order_id===saved\.order_id/);
+  assert.match(html, /const url=new URL\('\/',location\.origin\);/);
+});
