@@ -528,7 +528,7 @@ export default {
     if (!livePath && path !== '/health') return trial.fetch(request, env);
     if (request.method === 'OPTIONS') return json({}, 200, origin);
     try {
-      if (origin && !APP_ALLOWED_ORIGINS.has(origin) && origin !== url.origin
+      if (origin && !APP_ALLOWED_ORIGINS.has(origin) && origin !== url.origin)
         throw new HttpError(403, 'Origen no autorizado');
       if (path === '/health') return json({ ok: true, trial: true, database: Boolean(env.LA_ORDERS_DB),
         live_configured: liveReady(env), public_payments: (await paymentConfig(env)).public_enabled });
