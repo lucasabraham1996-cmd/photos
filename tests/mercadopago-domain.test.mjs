@@ -35,7 +35,8 @@ test('origen desconocido nunca recibe permiso de CORS', async () => {
 test('el retorno de pagos se fija al dominio nuevo y no acepta URLs arbitrarias', () => {
   const source = readFileSync(new URL('../cloudflare/worker-mp-recuperacion.mjs', import.meta.url), 'utf8');
   assert.match(source, /const APP_URL = APP_ORIGIN \+ '\/';/);
-  assert.match(source, /const url = new URL\(APP_URL\);/);
+  assert.match(source, /const target = new URL\(APP_URL\);/);
+  assert.match(source, /api\/mp-return/);
   assert.match(source, /configured\.origin !== APP_ORIGIN/);
   assert.match(source, /LEGACY_APP_ORIGIN/);
 });

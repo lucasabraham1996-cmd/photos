@@ -1,0 +1,22 @@
+name: Verify Mercado Pago receipt return
+on:
+  push:
+    paths:
+      - 'cloudflare/worker-mp.js'
+      - 'cloudflare/worker-mp-recuperacion.mjs'
+      - 'tests/mercadopago-return.test.mjs'
+      - '.github/workflows/verify-mp-return.yml'
+  pull_request:
+  workflow_dispatch:
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Check Worker syntax
+        run: node --check cloudflare/worker-mp-recuperacion.mjs
+      - name: Test cross-browser Mercado Pago return and token validation
+        run: node --test tests/mercadopago-return.test.mjs
