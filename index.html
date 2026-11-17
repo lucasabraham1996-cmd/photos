@@ -4,6 +4,7 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8" />
+  <script src="/short-links.js"></script>
   <script>
   (() => {
     // Acceso admin unificado: misma pantalla y misma lógica en PC, iPhone y Android.
@@ -3540,7 +3541,7 @@ function albumDirectDiscountInfo(album) {
 }
 const safeCode = (name) => String(name || "").split(".")[0].slice(0, 20).toUpperCase().replace(/[^A-Z0-9]+/g, "").slice(-6) || Math.random().toString(36).slice(2, 8).toUpperCase();
 const albumHash = (albumId, subAlbumId = '') => subAlbumId ? `#/album/${encodeURIComponent(albumId)}/sub/${encodeURIComponent(subAlbumId)}` : `#/album/${encodeURIComponent(albumId)}`;
-const albumUrl = (albumId, subAlbumId = '') => `${location.origin}${location.pathname}${albumHash(albumId, subAlbumId)}`;
+const albumUrl = (albumId, subAlbumId = '') => LAShortLinks.albumUrl(albumId, subAlbumId);
 const getAlbumRouteFromHash = (hash) => { const h = String(hash || ""); const m = h.match(/^#\/album\/([^/]+)(?:\/sub\/(.+))?$/); return m ? { albumId: decodeURIComponent(m[1]), subAlbumId: m[2] ? decodeURIComponent(m[2]) : '' } : { albumId: null, subAlbumId: '' }; };
 const getAlbumIdFromHash = (hash) => getAlbumRouteFromHash(hash).albumId;
 const getSubAlbumIdFromHash = (hash) => getAlbumRouteFromHash(hash).subAlbumId;
@@ -6294,7 +6295,7 @@ function App() {
     const goToGallery = () => {
         try { localStorage.setItem('LA_INSTALL_START_ROUTE', '#/galeria'); } catch(e) {}
         try {
-            const cleanUrl = `${location.pathname || '/'}#/galeria`;
+            const cleanUrl = '/';
             history.replaceState(null, '', cleanUrl);
         } catch(e) {
             try { location.href = `${location.pathname || '/'}#/galeria`; } catch(_e) { location.hash = '#/galeria'; }
@@ -6310,12 +6311,9 @@ function App() {
         const adminInstall = route === '#/admin';
         const target = adminInstall ? '#/admin' : '#/galeria';
         try { localStorage.setItem('LA_INSTALL_START_ROUTE', target); } catch(e) {}
-        return adminInstall ? new URL('admin-login.html?build=20260922-1617', location.href).href : `${base || (location.href || '').split('#')[0]}#/galeria`;
+        return adminInstall ? new URL('/admin-login.html?build=20260922-1617', location.origin).href : `${location.origin}/`;
     };
-    const getClubUrl = () => {
-        const base = `${location.origin && location.origin !== 'null' ? location.origin : ''}${location.pathname || ''}`;
-        return `${base || (location.href || '').split('#')[0]}#/club`;
-    };
+    const getClubUrl = () => `${location.origin}/club`;
     const openClub = () => {
         if (!CLUB_ENABLED) return;
         setClubPointsOpen(Boolean(clubSessionPhone));
@@ -6325,7 +6323,7 @@ function App() {
     };
     const closeClub = () => {
         setClubModalOpen(false);
-        if (location.hash === '#/club') location.hash = '#/galeria';
+        if (route === '#/club') location.hash = '#/galeria';
     };
     const shareClubLink = async () => {
         if (!CLUB_ENABLED) return;
@@ -6399,7 +6397,7 @@ ${clone.outerHTML}`;
             alert('No se pudo descargar la app para iPhone.');
         }
     };
-    useEffect(() => { const h = () => { let hash = location.hash || "#/galeria"; try { const standalone = (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches) || navigator.standalone === true; const saved = localStorage.getItem('LA_INSTALL_START_ROUTE'); const adminQuery = new URLSearchParams(location.search).get('admin') === '1'; const recoverAdminShortcut = (adminQuery && !location.hash) || (standalone && saved === '#/admin' && (!location.hash || location.hash === '#/galeria')); if (recoverAdminShortcut) { if (hash !== '#/admin') location.hash = '#/admin'; hash = '#/admin'; } if (hash === '#/admin') localStorage.setItem('LA_INSTALL_START_ROUTE','#/admin'); } catch(e) {} setRoute(hash); setActiveAlbum(getAlbumIdFromHash(hash)); setActiveSubAlbum(getSubAlbumIdFromHash(hash)); }; addEventListener('hashchange', h); h(); return () => removeEventListener('hashchange', h); }, []);
+    useEffect(() => { const h = () => { let hash = location.hash || LAShortLinks.resolve() || "#/galeria"; try { const standalone = (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches) || navigator.standalone === true; const saved = localStorage.getItem('LA_INSTALL_START_ROUTE'); const adminQuery = new URLSearchParams(location.search).get('admin') === '1'; const recoverAdminShortcut = (adminQuery && !location.hash && !LAShortLinks.segment()) || (standalone && saved === '#/admin' && (!location.hash || location.hash === '#/galeria')); if (recoverAdminShortcut) { if (hash !== '#/admin') location.hash = '#/admin'; hash = '#/admin'; } if (hash === '#/admin') localStorage.setItem('LA_INSTALL_START_ROUTE','#/admin'); } catch(e) {} if (location.hash) LAShortLinks.sync(hash); setRoute(hash); setActiveAlbum(getAlbumIdFromHash(hash)); setActiveSubAlbum(getSubAlbumIdFromHash(hash)); }; addEventListener('hashchange', h); addEventListener('popstate', h); h(); return () => { removeEventListener('hashchange', h); removeEventListener('popstate', h); }; }, []);
     useEffect(() => {
         if (route !== '#/club') return;
         if (!CLUB_ENABLED) { setClubModalOpen(false); location.hash = '#/galeria'; return; }
@@ -6571,6 +6569,22 @@ ${clone.outerHTML}`;
     }, [firebaseReady]);
     const sourceDisplayAlbums = useMemo(() => albums.map(a => applyAlbumLogoSource({ ...a, cover: coverOverrides[a.id] || a.cover }, albumLogoSources)).sort((a, b) => albumRecencyTs(b) - albumRecencyTs(a) || a.name.localeCompare(b.name)), [albums, coverOverrides, albumLogoSources]);
     const displayAlbums = useMemo(() => groupNearbyCategoryAlbumsForDisplay(sourceDisplayAlbums), [sourceDisplayAlbums]);
+    LAShortLinks.setAlbums(displayAlbums);
+    useEffect(() => {
+        // Deep links work on a new device as soon as the album list is loaded.
+        if (LAShortLinks.segment() && !location.hash) {
+            const target = LAShortLinks.resolve();
+            if (target && target !== route) {
+                setRoute(target);
+                setActiveAlbum(getAlbumIdFromHash(target));
+                setActiveSubAlbum(getSubAlbumIdFromHash(target));
+            }
+        } else if (location.hash && LAShortLinks.pathForHash(location.hash)) {
+            // Existing #/album/ links remain valid but display the short address.
+            LAShortLinks.sync(location.hash);
+        }
+    }, [displayAlbums, loading]);
+
     const activeAlbums = useMemo(() => displayAlbums.filter(a => !a.archived), [displayAlbums]);
     const archivedAlbums = useMemo(() => displayAlbums.filter(a => a.archived), [displayAlbums]);
     const newestAlbum = activeAlbums[0] || null;
@@ -6733,7 +6747,7 @@ ${clone.outerHTML}`;
             if (next !== activeSubAlbum)
                 setActiveSubAlbum(next);
             if ((!location.hash.includes('/sub/') || !exists) && next)
-                history.replaceState(null, '', albumHash(currentAlbum.id, next));
+                history.replaceState(null, '', LAShortLinks.pathForAlbum(currentAlbum.id,next) || ('/'+albumHash(currentAlbum.id, next)));
         }
         else if (activeSubAlbum) {
             setActiveSubAlbum('');
@@ -7081,7 +7095,7 @@ ${clone.outerHTML}`;
     };
     const markAdminBookingReviewed = (id) => { const clean=String(id||'').trim(); if(!clean)return; setAdminReviewedBookingIds(prev => prev.includes(clean) ? prev : [...prev,clean].slice(-1200)); };
     const markAllAdminReviewed = () => { setAdminReviewedIds(prev => Array.from(new Set([...prev, ...unseenAdminOrders.map(o => normalizeOrderCode(o.id))])).slice(-1200)); setAdminReviewedBookingIds(prev => Array.from(new Set([...prev, ...unseenAdminBookingRequests.map(b => String(b.id))])).slice(-1200)); };
-    const openBookingRequestFromNotification = (b) => { if(!b)return; markAdminBookingReviewed(b.id); try { sessionStorage.setItem('la_booking_admin','1'); } catch(e) {} window.location.href=new URL('contrataciones.html#/admin',location.href).href; };
+    const openBookingRequestFromNotification = (b) => { if(!b)return; markAdminBookingReviewed(b.id); try { sessionStorage.setItem('la_booking_admin','1'); } catch(e) {} window.location.href=new URL('/contrataciones#/admin',location.origin).href; };
     useEffect(() => { try { localStorage.setItem('LA_ADMIN_REVIEWED_ORDERS', JSON.stringify(adminReviewedIds)); } catch(e) {} }, [adminReviewedIds]);
     useEffect(() => { try { localStorage.setItem('LA_ADMIN_RESOLVED_ORDERS', JSON.stringify(adminResolvedIds)); } catch(e) {} }, [adminResolvedIds]);
     useEffect(() => { try { localStorage.setItem('LA_ADMIN_REVIEWED_BOOKING_REQUESTS', JSON.stringify(adminReviewedBookingIds)); } catch(e) {} }, [adminReviewedBookingIds]);
@@ -8826,7 +8840,7 @@ En breve te las preparo y te las envío por acá 😊
                         React.createElement("i", { className: "fas fa-rotate-right mr-2" }),
                         "Actualizar"),
                     React.createElement("button", { onClick: () => setPriceAdminOpen(true), className: "bg-emerald-500 text-black px-4 py-3 rounded-xl font-black" }, React.createElement("i", { className: "fas fa-tags mr-2" }), "Precios"),
-                    React.createElement("button", { onClick: async () => { const link='https://lucasabrahamph.com/contrataciones.html#/solicitar'; try { await navigator.clipboard.writeText(link); setAdminMessage('Link público de solicitudes copiado.'); } catch(e) { window.prompt('Copiá el link público de solicitudes:', link); } }, className: "bg-sky-600 px-4 py-3 rounded-xl font-bold" }, React.createElement("i", { className: "fas fa-link mr-2" }), "Copiar link solicitudes"),
+                    React.createElement("button", { onClick: async () => { const link='https://lucasabrahamph.com/contrataciones#/solicitar'; try { await navigator.clipboard.writeText(link); setAdminMessage('Link público de solicitudes copiado.'); } catch(e) { window.prompt('Copiá el link público de solicitudes:', link); } }, className: "bg-sky-600 px-4 py-3 rounded-xl font-bold" }, React.createElement("i", { className: "fas fa-link mr-2" }), "Copiar link solicitudes"),
                     React.createElement("button", { onClick: goToGallery, className: "bg-indigo-600 px-4 py-3 rounded-xl font-bold" }, "Ver galer\u00EDa"),
                     React.createElement("button", { type:"button",onClick:logoutAdmin,className:"bg-neutral-800 border border-white/15 px-4 py-3 rounded-xl text-sm font-bold text-neutral-200" },
                         React.createElement("i",{className:"fas fa-right-from-bracket mr-2"}),"Cerrar sesión"))),
@@ -9001,7 +9015,7 @@ En breve te las preparo y te las envío por acá 😊
                     React.createElement("h2", { className: "text-xl font-black" }, "Contrataciones / Agenda"),
                     React.createElement("span", { className: "px-2 py-1 rounded-full bg-sky-400/15 text-sky-200 border border-sky-300/20 text-[9px] font-black uppercase tracking-[.14em]" }, "Nuevo")),
                 React.createElement("p", { className: "text-sm text-neutral-300 leading-relaxed max-w-2xl" }, "Creá formularios para clientes, recibí los datos de cada partido y organizá tus coberturas con acceso directo a Google Calendar."))),
-        React.createElement("button", { onClick: () => { try { sessionStorage.setItem('la_booking_admin', '1'); } catch (e) {} location.href = 'contrataciones.html#/admin'; }, className: "w-full md:w-auto bg-gradient-to-r from-sky-400 to-blue-600 text-white px-5 py-3.5 rounded-2xl font-black shadow-[0_16px_40px_rgba(37,99,235,.25)] hover:brightness-110 transition" },
+        React.createElement("button", { onClick: () => { try { sessionStorage.setItem('la_booking_admin', '1'); } catch (e) {} location.href = '/contrataciones#/admin'; }, className: "w-full md:w-auto bg-gradient-to-r from-sky-400 to-blue-600 text-white px-5 py-3.5 rounded-2xl font-black shadow-[0_16px_40px_rgba(37,99,235,.25)] hover:brightness-110 transition" },
             React.createElement("i", { className: "fas fa-calendar-days mr-2" }),
             "Abrir contrataciones"))),
 React.createElement("div", { id: "order-search-panel", hidden:adminPanelTab!=='pedidos', className: "bg-neutral-900 border border-neutral-800 rounded-3xl p-5 mb-6" },
