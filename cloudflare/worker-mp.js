@@ -6,8 +6,10 @@ import trial, { computePriceBasket, hash } from './worker-mp-trial.js';
 import validationPage from './mp-validation-page.js';
 
 const API = 'https://api.mercadopago.com/v1/orders';
-const APP_ORIGIN = 'https://lucasabraham1996-cmd.github.io';
-const APP_URL = APP_ORIGIN + '/photos/';
+const APP_ORIGIN = 'https://lucasabrahamph.com';
+const LEGACY_APP_ORIGIN = 'https://lucasabraham1996-cmd.github.io';
+const APP_ALLOWED_ORIGINS = new Set([APP_ORIGIN, LEGACY_APP_ORIGIN]);
+const APP_URL = APP_ORIGIN + '/';
 const UUID = /^[a-f0-9]{8}-[a-f0-9]{4}-4[a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/i;
 const TOKEN = /^[a-f0-9]{64}$/;
 const ORDER = /^ORD(?!TST)[A-Z0-9]{10,100}$/;
@@ -21,8 +23,8 @@ function json(data, status = 200, origin = '') {
     'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store',
     'X-Content-Type-Options': 'nosniff', 'Referrer-Policy': 'no-referrer'
   };
-  if (origin === APP_ORIGIN) {
-    headers['Access-Control-Allow-Origin'] = APP_ORIGIN;
+  if (APP_ALLOWED_ORIGINS.has(origin)) {
+    headers['Access-Control-Allow-Origin'] = origin;
     headers['Access-Control-Allow-Methods'] = 'GET, POST, OPTIONS';
     headers['Access-Control-Allow-Headers'] = 'Content-Type, X-Setup-Key, X-Receipt-Token';
     headers.Vary = 'Origin';
@@ -153,9 +155,10 @@ function returnURL(input, request, env, mode) {
   // El navegador no puede introducir una URL de retorno arbitraria.
   if (mode === 'validation' && input.return_to === 'validation')
     return new URL('/validation?mp_return=1', request.url).href;
-  const url = new URL(env.MP_APP_URL || APP_URL);
-  if (url.origin !== APP_ORIGIN || !url.pathname.startsWith('/photos/'))
+  const configured = new URL(env.MP_APP_URL || APP_URL);
+  if (configured.origin !== APP_ORIGIN && !(configured.origin === LEGACY_APP_ORIGIN && configured.pathname.startsWith('/photos/')))
     throw new HttpError(503, 'La URL de la aplicación no está configurada');
+  const url = new URL(APP_URL);
   url.search = '?mp_live=1&mp_return=1';
   // El fragmento contiene un comprobante de alta entropía, no se envía en la petición HTTP.
   // Permite recuperar el ticket cuando Mercado Pago vuelve a otro navegador del celular.
@@ -525,7 +528,7 @@ export default {
     if (!livePath && path !== '/health') return trial.fetch(request, env);
     if (request.method === 'OPTIONS') return json({}, 200, origin);
     try {
-      if (origin && origin !== APP_ORIGIN && origin !== url.origin)
+      if (origin && !APP_ALLOWED_ORIGINS.has(origin) && origin !== url.origin
         throw new HttpError(403, 'Origen no autorizado');
       if (path === '/health') return json({ ok: true, trial: true, database: Boolean(env.LA_ORDERS_DB),
         live_configured: liveReady(env), public_payments: (await paymentConfig(env)).public_enabled });
@@ -543,8 +546,8 @@ export default {
         return json(await recoverValidation(request, env), 200, origin);
       if (path.startsWith('/api/live-download/') && request.method === 'GET') {
         const res = await download(request, env, url);
-        if (origin === APP_ORIGIN) {
-          res.headers.set('Access-Control-Allow-Origin', APP_ORIGIN);
+        if (APP_ALLOWED_ORIGINS.has(origin)) {
+          res.headers.set('Access-Control-Allow-Origin', origin);
           res.headers.set('Vary', 'Origin');
         }
         return res;
