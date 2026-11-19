@@ -6751,8 +6751,15 @@ ${clone.outerHTML}`;
             const next = exists ? activeSubAlbum : subs[0].id;
             if (next !== activeSubAlbum)
                 setActiveSubAlbum(next);
-            if ((!location.hash.includes('/sub/') || !exists) && next)
+            // Abrir /ALBMAL muestra la primera categoría sin cambiar la URL base.
+            // El selector sí utiliza /ALBMAL/Primera, /ALBMAL/Cebollitas, etc.
+            const basePath = LAShortLinks.pathForAlbum(currentAlbum.id);
+            const openedBase = Boolean(basePath && location.pathname.replace(/\/+$/, '').toLowerCase() === basePath.toLowerCase());
+            if (openedBase) {
+                if (location.pathname !== basePath) history.replaceState(null, '', basePath);
+            } else if ((!location.hash.includes('/sub/') || !exists) && next) {
                 history.replaceState(null, '', LAShortLinks.pathForAlbum(currentAlbum.id,next) || ('/'+albumHash(currentAlbum.id, next)));
+            }
         }
         else if (activeSubAlbum) {
             setActiveSubAlbum('');
