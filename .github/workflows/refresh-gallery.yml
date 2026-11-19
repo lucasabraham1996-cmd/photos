@@ -7,6 +7,7 @@ on:
     paths:
       - scripts/export-public-gallery.py
       - scripts/gallery-source-manifest.json
+      - scripts/build-social-routes.py
       - .github/workflows/refresh-gallery.yml
   workflow_dispatch:
 permissions:
@@ -61,11 +62,14 @@ jobs:
           PY
       - name: Read all verified public photo tabs
         run: python3 scripts/export-public-gallery.py
+      - name: Generate WhatsApp and social link previews
+        run: python3 scripts/build-social-routes.py
       - name: Publish only complete changed gallery files
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add gallery-snapshot.json index.html
+          git add -A -- '*/index.html'
           if ! git diff --cached --quiet; then
             git commit -m "Refresh public gallery and loader"
             pushed=false
