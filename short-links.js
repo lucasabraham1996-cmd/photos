@@ -16,7 +16,7 @@
     defensoresjuveniles:'DJU', centralcordoba:'CCO',
     atleticocarlospaz:'ACP', elcarmen:'CAR',
     dief:'DIE', medea:'MED', cibi:'CIB',
-    deportivoalberdi:'DAL', vill asiburu:'VSI',
+    deportivoalberdi:'DAL',
     villasiburu:'VSI', barrioparque:'BPA',
     parquevelez:'PVE', lasallano:'LAS',
     racing:'RAC', talleres:'TAL', sanlorenzo:'SLO',
