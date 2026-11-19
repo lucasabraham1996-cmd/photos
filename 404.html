@@ -30,7 +30,7 @@
   // Keep pathname untouched so copy/share and browser navigation stay short.
   try {
     const path=decodeURIComponent(location.pathname||'/').replace(/^\/+|\/+$/g,'').toLowerCase();
-    if(!/^[a-z0-9_-]+$/.test(path))throw new Error('Ruta desconocida');
+    if(!/^[a-z0-9_-]+(?:\/[a-z0-9_-]+)?$/.test(path))throw new Error('Ruta desconocida');
     const target=path==='contrataciones'?'/contrataciones.html':(path==='como-comprar'||path==='como-pedir')?'/como-pedir.html':'/index.html';
     const response=await fetch(target,{cache:'no-cache'});
     if(!response.ok)throw new Error('No se pudo abrir la galería');
