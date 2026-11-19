@@ -7,6 +7,57 @@
   let reg = {bySlug:new Map(),byAlbum:new Map(),bySub:new Map()};
   const ascii = value => String(value || '').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase();
   const token = value => ascii(value).replace(/[^a-z0-9]/g,'');
+  // Tres letras por equipo; All Boys siempre ALB.
+  // Los nombres alternativos apuntan al mismo código en cualquier partido.
+  const teamCodes=Object.freeze({
+    allboys:'ALB', unionmalvinas:'MAL', malvinas:'MAL',
+    unionflorida:'UFL', unionsanvicente:'USV', usv:'USV',
+    caleracentral:'CAL', defensorescentralcordoba:'DCC',
+    defensoresjuveniles:'DJU', centralcordoba:'CCO',
+    atleticocarlospaz:'ACP', elcarmen:'CAR',
+    dief:'DIE', medea:'MED', cibi:'CIB',
+    deportivoalberdi:'DAL', vill asiburu:'VSI',
+    villasiburu:'VSI', barrioparque:'BPA',
+    parquevelez:'PVE', lasallano:'LAS',
+    racing:'RAC', talleres:'TAL', sanlorenzo:'SLO',
+    comercial:'COM', universitario:'UNI'
+  });
+  function codeForTeam(value) {
+    const plain=ascii(value).trim();
+    const key=token(plain);
+    if(teamCodes[key]) return teamCodes[key];
+    const words=plain.replace(/[^a-z0-9]+/g,' ').trim().split(/\s+/)
+      .filter(w=>w && !['club','de','del','la','las','los','el','fc','ca'].includes(w));
+    if(!words.length) return 'EQP';
+    let code=words.length===1 ? words[0].slice(0,3)
+      : words.length===2 ? words[0].slice(0,2)+words[1].slice(0,1)
+      : words.slice(0,3).map(w=>w.charAt(0)).join('');
+    return code.toUpperCase().padEnd(3,'X').slice(0,3);
+  }
+  function matchCode(name, album) {
+    let title=String(name||'').split(':')[0].trim();
+    const parts=title.split(/\s+(?:vs\.?|versus|contra)\s+|\s+[-–—]\s+/i)
+      .map(s=>s.trim()).filter(Boolean);
+    while(parts.length>2 && /^(primera|reserva|cebollitas|festejos|escuelita|galeria|participando|cuarta|quinta|sexta|septima|octava|inferiores)$/i.test(ascii(parts[parts.length-1]))) parts.pop();
+    const teams=parts.length===2 ? parts
+      : Array.isArray(album&&album.teamNames)&&album.teamNames.length>=2 ? album.teamNames.slice(0,2) : [];
+    return teams.length===2 ? codeForTeam(teams[0])+codeForTeam(teams[1])
+      : codeForTeam(title || (album&&album.id) || 'album');
+  }
+  function categorySegment(value) {
+    const t=ascii(value).replace(/[^a-z0-9]+/g,' ').trim();
+    if(!t) return 'Galeria';
+    const labels={
+      primera:'Primera', reserva:'Reserva', cebollitas:'Cebollitas',
+      escuelita:'Escuelita', festejos:'Festejos',
+      cuarta:'Cuarta', '4ta':'Cuarta', '4to':'Cuarta',
+      quinta:'Quinta', '5ta':'Quinta', '5to':'Quinta',
+      sexta:'Sexta', '6ta':'Sexta', '6to':'Sexta',
+      septima:'Septima', '7ma':'Septima', octava:'Octava', '8va':'Octava',
+      inferiores:'Inferiores', participando:'Participando', galeria:'Galeria'
+    };
+    return t.split(/\s+/).map(w=>labels[w]||w[0].toUpperCase()+w.slice(1)).join('-');
+  }
   function albumBase(value) {
     const source=ascii(value).trim();
     const teams=source.split(/\s+(?:vs\.?|versus|contra)\s+|\s+[-–—]\s+/).map(token).filter(Boolean);
@@ -25,27 +76,44 @@
   }
   function setAlbums(albums) {
     const bySlug=new Map(),byAlbum=new Map(),bySub=new Map();
-    const items=[...(albums || [])].sort((a,b) => (Number(a.publishedTs||a.dateTs)||0)-(Number(b.publishedTs||b.dateTs)||0) || String(a.id||'').localeCompare(String(b.id||'')));
-    const alloc = raw => {
-      const base=raw || 'album';
-      let slug=base, n=2;
-      while(reserved.has(slug)||bySlug.has(slug)) slug=base+'-'+(n++);
-      return slug;
+    const items=[...(albums||[])].sort((a,b)=>(Number(a.publishedTs||a.dateTs)||0)-(Number(b.publishedTs||b.dateTs)||0)||String(a.id||'').localeCompare(String(b.id||'')));
+    // Canonical URLs are short uppercase match codes, with a category directory.
+    const allocCode=raw=>{
+      const seed=raw||'ALBUM',key=()=>candidate.toLowerCase();
+      let candidate=seed,n=2;
+      while(reserved.has(key())||bySlug.has(key())) candidate=seed+(n++);
+      return candidate;
+    };
+    const legacyAlloc=raw=>{
+      const seed=raw||'album';
+      let candidate=seed,n=2;
+      while(reserved.has(candidate)||bySlug.has(candidate.toLowerCase())) candidate=seed+'-'+(n++);
+      return candidate;
     };
     for(const a of items) {
-      if(!a || !a.id) continue;
+      if(!a||!a.id)continue;
       const id=String(a.id);
-      const base=alloc(albumBase(a.name || id));
-      const subs=[...(a.subalbums || [])].filter(sa=>sa&&sa.id).sort((a,b)=>subWeight(a.name)-subWeight(b.name)||String(a.name||'').localeCompare(String(b.name||''),'es',{numeric:true,sensitivity:'base'}));
-      const primary=subs.length ? String(subs[0].id) : '';
-      byAlbum.set(id,base);
-      bySlug.set(base,{albumId:id,subAlbumId:primary});
-      for(let i=0;i<subs.length;i++) {
-        const subid=String(subs[i].id);
-        const suffix=i===0?base:alloc(base+'-'+category(subs[i].name || subid));
-        if(i>0) bySlug.set(suffix,{albumId:id,subAlbumId:subid});
-        bySub.set(id+'\u0000'+subid,suffix);
+      const base=allocCode(matchCode(a.name||id,a));
+      const subs=[...(a.subalbums||[])].filter(sa=>sa&&sa.id)
+        .sort((x,y)=>subWeight(x.name)-subWeight(y.name)||String(x.name||'').localeCompare(String(y.name||''),'es',{numeric:true,sensitivity:'base'}));
+      const primary=subs.length?String(subs[0].id):'';
+      byAlbum.set(id,'/'+base);
+      bySlug.set(base.toLowerCase(),{albumId:id,subAlbumId:primary});
+      for(const sub of subs) {
+        const subid=String(sub.id),categoryBase=categorySegment(sub.name||subid);
+        let path=base+'/'+categoryBase,n=2;
+        while(bySlug.has(path.toLowerCase()))path=base+'/'+categoryBase+(n++);
+        bySub.set(id+'\u0000'+subid,'/'+path);
+        bySlug.set(path.toLowerCase(),{albumId:id,subAlbumId:subid});
       }
+      // Keep all pre-existing links valid, including old /team_team-reserva paths.
+      const legacyBase=legacyAlloc(albumBase(a.name||id));
+      bySlug.set(legacyBase,{albumId:id,subAlbumId:primary});
+      subs.forEach((sub,i)=>{
+        if(i===0)return;
+        const alias=legacyAlloc(legacyBase+'-'+category(sub.name||sub.id));
+        bySlug.set(alias,{albumId:id,subAlbumId:String(sub.id)});
+      });
     }
     reg={bySlug,byAlbum,bySub};
     return reg;
@@ -53,7 +121,7 @@
   function pathForAlbum(albumId,subAlbumId) {
     const id=String(albumId||'');
     const slug=subAlbumId?reg.bySub.get(id+'\u0000'+String(subAlbumId)):reg.byAlbum.get(id);
-    return slug ? '/'+slug : '';
+    return slug || '';
   }
   function pathForHash(hash) {
     const h=String(hash||'');
@@ -69,7 +137,7 @@
   function segment() {
     try {
       const v=decodeURIComponent(location.pathname||'/').replace(/^\/+|\/+$/g,'').toLowerCase();
-      return /^[a-z0-9_-]+$/.test(v)?v:'';
+      return /^[a-z0-9_-]+(?:\/[a-z0-9_-]+)?$/.test(v)?v:'';
     } catch(e) { return ''; }
   }
   function resolve() {
