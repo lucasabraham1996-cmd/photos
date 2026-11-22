@@ -4,6 +4,8 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8" />
+  <!-- Las rutas de recursos siempre parten de la raiz, incluso en /ALBDAL/Primera -->
+  <base href="/" />
   <script src="/short-links.js"></script>
   <script>
   (() => {
@@ -2307,7 +2309,7 @@ const FIRESTORE_FREE_DAILY_LIMITS = {
     writes: 20000,
     deletes: 20000
 };
-const BRAND_LOGO_URL = "./brand-logo.png?v=105";
+const BRAND_LOGO_URL = "/brand-logo.png?v=137";
 
 function adminBytesToBase64Url(bytes) {
     let binary = "";
@@ -2484,57 +2486,57 @@ async function authenticateAdminPasskey(ids) {
 
 // v106: escudos APP por club + selector APP/Hoja por álbum
 const TEAM_APP_LOGOS = Object.freeze({
-    "all_boys": "assets/lcf-v2/all-boys.png?v=108",
-    "almirante_brown": "assets/lcf-v2/almirante-brown.png?v=108",
-    "amsurbac": "assets/lcf-v2/amsurbac.png?v=108",
-    "argentino_penarol": "assets/lcf-v2/argentino-penarol.png?v=108",
-    "atalaya": "assets/lcf-v2/atalaya.png?v=108",
-    "atletico_carlos_paz": "assets/lcf-v2/atletico-carlos-paz.png?v=108",
-    "avellaneda": "assets/lcf-v2/avellaneda.png?v=108",
-    "banfield": "assets/lcf-v2/banfield.png?v=108",
-    "barrio_parque": "assets/lcf-v2/barrio-parque.png?v=108",
-    "belgrano": "assets/lcf-v2/belgrano.png?v=108",
-    "bella_vista": "assets/lcf-v2/bella-vista.png?v=108",
-    "calera_central": "assets/lcf-v2/calera-central.png?v=108",
-    "cambioneros": "assets/lcf-v2/camioneros.png?v=108",
-    "cibi": "assets/lcf-v2/cibi.png?v=108",
-    "club_coronel_olmedo": "assets/lcf-v2/club-coronel-olmedo.png?v=108",
-    "defensores_central_cordoba": "assets/lcf-v2/defensores-central-cordoba.png?v=108",
-    "deportivo_alberdi": "assets/lcf-v2/deportivo-alberdi.png?v=108",
-    "deportivo_defensores_juveniles": "assets/lcf-v2/deportivo-defensores-juveniles.png?v=108",
-    "deportivo_norte": "assets/lcf-v2/deportivo-norte.png?v=108",
-    "dief": "assets/lcf-v2/dief.png?v=108",
-    "el_carmen": "assets/lcf-v2/el-carmen.png?v=108",
-    "escuela_presidente_roca": "assets/lcf-v2/escuela-presidente-roca.png?v=108",
-    "general_paz_junior": "assets/lcf-v2/general-paz-junior.png?v=108",
-    "huracan": "assets/lcf-v2/huracan.png?v=108",
-    "independiente": "assets/lcf-v2/independiente.png?v=108",
-    "instituto": "assets/lcf-v2/instituto.png?v=108",
-    "juvenil_barrio_comercial": "assets/lcf-v2/juvenil-barrio-comercial.png?v=108",
-    "union_florida": "assets/lcf-v2/union-florida.png?v=115",
+    "all_boys": "/assets/lcf-v2/all-boys.png?v=108",
+    "almirante_brown": "/assets/lcf-v2/almirante-brown.png?v=108",
+    "amsurbac": "/assets/lcf-v2/amsurbac.png?v=108",
+    "argentino_penarol": "/assets/lcf-v2/argentino-penarol.png?v=108",
+    "atalaya": "/assets/lcf-v2/atalaya.png?v=108",
+    "atletico_carlos_paz": "/assets/lcf-v2/atletico-carlos-paz.png?v=108",
+    "avellaneda": "/assets/lcf-v2/avellaneda.png?v=108",
+    "banfield": "/assets/lcf-v2/banfield.png?v=108",
+    "barrio_parque": "/assets/lcf-v2/barrio-parque.png?v=108",
+    "belgrano": "/assets/lcf-v2/belgrano.png?v=108",
+    "bella_vista": "/assets/lcf-v2/bella-vista.png?v=108",
+    "calera_central": "/assets/lcf-v2/calera-central.png?v=108",
+    "cambioneros": "/assets/lcf-v2/camioneros.png?v=108",
+    "cibi": "/assets/lcf-v2/cibi.png?v=108",
+    "club_coronel_olmedo": "/assets/lcf-v2/club-coronel-olmedo.png?v=108",
+    "defensores_central_cordoba": "/assets/lcf-v2/defensores-central-cordoba.png?v=108",
+    "deportivo_alberdi": "/assets/lcf-v2/deportivo-alberdi.png?v=108",
+    "deportivo_defensores_juveniles": "/assets/lcf-v2/deportivo-defensores-juveniles.png?v=108",
+    "deportivo_norte": "/assets/lcf-v2/deportivo-norte.png?v=108",
+    "dief": "/assets/lcf-v2/dief.png?v=108",
+    "el_carmen": "/assets/lcf-v2/el-carmen.png?v=108",
+    "escuela_presidente_roca": "/assets/lcf-v2/escuela-presidente-roca.png?v=108",
+    "general_paz_junior": "/assets/lcf-v2/general-paz-junior.png?v=108",
+    "huracan": "/assets/lcf-v2/huracan.png?v=108",
+    "independiente": "/assets/lcf-v2/independiente.png?v=108",
+    "instituto": "/assets/lcf-v2/instituto.png?v=108",
+    "juvenil_barrio_comercial": "/assets/lcf-v2/juvenil-barrio-comercial.png?v=108",
+    "union_florida": "/assets/lcf-v2/union-florida.png?v=115",
     "escuela_parque_velez_sarsfield": "https://sp-ao.shortpixel.ai/client/to_webp,q_glossy,ret_img,w_500,h_500/https://acbb.ar/wp-content/uploads/2023/11/velez.png",
-    "la_union_malvinas": "assets/lcf-v2/la-union-malvinas.png?v=108",
-    "las_flores": "assets/lcf-v2/las-flores.png?v=108",
-    "las_palmas": "assets/lcf-v2/las-palmas.png?v=108",
-    "lasallano": "assets/lcf-v2/lasallano.png?v=108",
-    "libertad": "assets/lcf-v2/libertad.png?v=108",
-    "lobos_del_sur": "assets/lcf-v2/lobos-del-sur.png?v=108",
-    "los_andes": "assets/lcf-v2/los-andes.png?v=108",
-    "medea": "assets/lcf-v2/medea.png?v=108",
-    "quilmes": "assets/lcf-v2/quilmes.png?v=108",
-    "racing": "assets/lcf-v2/racing.png?v=108",
-    "rancagua": "assets/lcf-v2/rancagua.png?v=108",
-    "recreativo_municipalidad": "assets/lcf-v2/recreativo-municipalidad.png?v=108",
-    "san_lorenzo": "assets/lcf-v2/san-lorenzo.png?v=108",
-    "san_nicolas": "assets/lcf-v2/san-nicolas.png?v=108",
-    "talleres": "assets/lcf-v2/talleres.png?v=108",
-    "union_florida": "assets/lcf-v2/union-florida.png?v=108",
-    "union_san_vicente": "assets/lcf-v2/union-san-vicente.png?v=108",
-    "union_serrana": "assets/lcf-v2/union-serrana.png?v=108",
-    "universitario": "assets/lcf-v2/universitario.png?v=108",
-    "valores": "assets/lcf-v2/valores.png?v=108",
-    "villa_azalaiz": "assets/lcf-v2/villa-azalaiz.png?v=108",
-    "villa_siburu": "assets/lcf-v2/villa-siburu.png?v=108"
+    "la_union_malvinas": "/assets/lcf-v2/la-union-malvinas.png?v=108",
+    "las_flores": "/assets/lcf-v2/las-flores.png?v=108",
+    "las_palmas": "/assets/lcf-v2/las-palmas.png?v=108",
+    "lasallano": "/assets/lcf-v2/lasallano.png?v=108",
+    "libertad": "/assets/lcf-v2/libertad.png?v=108",
+    "lobos_del_sur": "/assets/lcf-v2/lobos-del-sur.png?v=108",
+    "los_andes": "/assets/lcf-v2/los-andes.png?v=108",
+    "medea": "/assets/lcf-v2/medea.png?v=108",
+    "quilmes": "/assets/lcf-v2/quilmes.png?v=108",
+    "racing": "/assets/lcf-v2/racing.png?v=108",
+    "rancagua": "/assets/lcf-v2/rancagua.png?v=108",
+    "recreativo_municipalidad": "/assets/lcf-v2/recreativo-municipalidad.png?v=108",
+    "san_lorenzo": "/assets/lcf-v2/san-lorenzo.png?v=108",
+    "san_nicolas": "/assets/lcf-v2/san-nicolas.png?v=108",
+    "talleres": "/assets/lcf-v2/talleres.png?v=108",
+    "union_florida": "/assets/lcf-v2/union-florida.png?v=108",
+    "union_san_vicente": "/assets/lcf-v2/union-san-vicente.png?v=108",
+    "union_serrana": "/assets/lcf-v2/union-serrana.png?v=108",
+    "universitario": "/assets/lcf-v2/universitario.png?v=108",
+    "valores": "/assets/lcf-v2/valores.png?v=108",
+    "villa_azalaiz": "/assets/lcf-v2/villa-azalaiz.png?v=108",
+    "villa_siburu": "/assets/lcf-v2/villa-siburu.png?v=108"
 });
 const TEAM_APP_LOGO_ALIASES = Object.freeze({
     "caab": "all_boys",
