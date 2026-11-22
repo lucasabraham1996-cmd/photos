@@ -4,6 +4,8 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8" />
+  <!-- Todas las galerías /ALBDAL/Primera y similares comparten assets de la raíz. -->
+  <base href="/" />
   <!-- Las rutas de recursos siempre parten de la raiz, incluso en /ALBDAL/Primera -->
   <base href="/" />
   <script src="/short-links.js"></script>
@@ -3482,10 +3484,39 @@ const extractDriveId = (url) => { const s = String(url || ""); const patterns = 
     if (m && m[1])
         return decodeURIComponent(m[1]);
 } return ""; };
-const toImgUrl = (url, size = 500) => { const raw = String(url || "").trim(); if (!raw)
-    return ""; if (raw.startsWith("data:image/"))
-    return raw; const id = extractDriveId(raw); if (id)
-    return `https://drive.google.com/thumbnail?id=${id}&sz=w${size}`; return raw; };
+const toImgUrl = (url, size = 500) => {
+    const raw = String(url || "").trim();
+    if (!raw) return "";
+    if (/^(?:data:image\\/|blob:)/i.test(raw)) return raw;
+    const id = extractDriveId(raw);
+    if (id) return `https://drive.google.com/thumbnail?id=${encodeURIComponent(id)}&sz=w${size}`;
+    // No depender de la ruta /ALBDAL/Primera: imágenes públicas siempre desde la raíz.
+    if (/^(?:\\.\\.?\\/|assets\\/|brand-logo\\.png|site-icon|social-preview)/i.test(raw)) {
+        try { return new URL(raw.replace(/^(?:\\.\\/|\\.\\.\\/)+/, ""), location.origin + "/").href; }
+        catch (_e) { return "/" + raw.replace(/^\\.?\\/?/, ""); }
+    }
+    if (raw.startsWith("//")) return location.protocol + raw;
+    return raw;
+};
+function retryStoryPhotoImage(event, photo, size = 1200) {
+    const image = event && event.currentTarget;
+    if (!image || !photo) return;
+    const original = String(photo.rawUrl || photo.fullUrl || photo.url || "").trim();
+    const driveId = extractDriveId(original);
+    const alternatives = [
+        driveId ? `https://lh3.googleusercontent.com/d/${encodeURIComponent(driveId)}=w${size}` : "",
+        driveId ? `https://drive.google.com/uc?export=view&id=${encodeURIComponent(driveId)}` : "",
+        photo.fullUrl && photo.fullUrl !== original ? toImgUrl(photo.fullUrl, size) : "",
+        photo.url && photo.url !== original ? toImgUrl(photo.url, size) : ""
+    ].filter(Boolean);
+    const next = Number(image.dataset.laFallbackIndex || "0");
+    if (next < alternatives.length) {
+        image.dataset.laFallbackIndex = String(next + 1);
+        image.src = alternatives[next];
+    } else {
+        image.style.visibility = "hidden";
+    }
+}
 const cleanOperationCode = (v) => normalizeOrderCode(v);
 function toDriveViewLink(url) {
     const raw = String(url || "").trim();
@@ -3961,10 +3992,10 @@ function isParqueVelezTeamName(name) {
 function exactOpponentForAlbum(album) {
     const id = String((album && album.id) || '').trim();
     if (id === 'all_boys_union_florida_1784948400000') {
-        return { name:'Unión Florida', appLogo:TEAM_APP_LOGOS.union_florida || 'assets/lcf-v2/union-florida.png?v=115', color:'#facc15' };
+        return { name:'Unión Florida', appLogo:TEAM_APP_LOGOS.union_florida || '/assets/lcf-v2/union-florida.png?v=115', color:'#facc15' };
     }
     if (id === 'all_boys_comercial_1784430000000') {
-        return { name:'Juvenil Comercial', appLogo:TEAM_APP_LOGOS.juvenil_barrio_comercial || 'assets/lcf-v2/juvenil-barrio-comercial.png?v=108', color:'#dc2626' };
+        return { name:'Juvenil Comercial', appLogo:TEAM_APP_LOGOS.juvenil_barrio_comercial || '/assets/lcf-v2/juvenil-barrio-comercial.png?v=108', color:'#dc2626' };
     }
     if (id === 'all_boys_parque_velez_1784948400000') {
         return { name:'Escuela Parque Vélez Sarsfield', appLogo:'https://sp-ao.shortpixel.ai/client/to_webp,q_glossy,ret_img,w_500,h_500/https://acbb.ar/wp-content/uploads/2023/11/velez.png', color:'#16a34a', initials:'EPV' };
@@ -5750,12 +5781,12 @@ function PremierAlbumStoryViewer({photos,index,albumName,onClose,onPrevious,onNe
             onMouseDown:()=>onHold(true),onMouseUp:()=>onHold(false),onMouseLeave:()=>onHold(false)
         },
             React.createElement('img',{key:'back-'+(photo.id||index),src:imageUrl,alt:'',className:'la-pl-story-backdrop',
-                draggable:false,'aria-hidden':true}),
+                draggable:false,'aria-hidden':true,onError:e=>retryStoryPhotoImage(e,photo,1200)}),
             React.createElement('img',{
                 key:photo.id||index,src:imageUrl,alt:photo.name||'Foto del partido',
                 className:'la-pl-story-image protected-photo',loading:'eager',decoding:'async',
                 style:{width:'100%',height:'100%',maxWidth:'100%',maxHeight:'100%',aspectRatio:'auto',objectFit:'cover',objectPosition:'center center'},
-                draggable:false,onContextMenu:e=>e.preventDefault()
+                draggable:false,onError:e=>retryStoryPhotoImage(e,photo,1200),onContextMenu:e=>e.preventDefault()
             }),
             React.createElement('div',{className:'la-pl-story-watermarks','aria-hidden':true},
                 Array.from({length:28},(_,i)=>React.createElement('img',{
