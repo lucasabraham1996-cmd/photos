@@ -3487,13 +3487,13 @@ const extractDriveId = (url) => { const s = String(url || ""); const patterns = 
 const toImgUrl = (url, size = 500) => {
     const raw = String(url || "").trim();
     if (!raw) return "";
-    if (/^(?:data:image\\/|blob:)/i.test(raw)) return raw;
+    if (/^(?:data:image\/|blob:)/i.test(raw)) return raw;
     const id = extractDriveId(raw);
-    if (id) return `https://drive.google.com/thumbnail?id=${encodeURIComponent(id)}&sz=w${size}`;
-    // No depender de la ruta /ALBDAL/Primera: imágenes públicas siempre desde la raíz.
-    if (/^(?:\\.\\.?\\/|assets\\/|brand-logo\\.png|site-icon|social-preview)/i.test(raw)) {
-        try { return new URL(raw.replace(/^(?:\\.\\/|\\.\\.\\/)+/, ""), location.origin + "/").href; }
-        catch (_e) { return "/" + raw.replace(/^\\.?\\/?/, ""); }
+    if (id) return "https://drive.google.com/thumbnail?id=" + encodeURIComponent(id) + "&sz=w" + size;
+    // Las galerías anidadas deben buscar los recursos en la raíz del dominio.
+    if (/^(?:\.\.?\/|assets\/|brand-logo\.png|site-icon|social-preview)/i.test(raw)) {
+        try { return new URL(raw.replace(/^(?:\.\/|\.\.\/)+/, ""), location.origin + "/").href; }
+        catch (_e) { return "/" + raw.replace(/^\.?\/?/, ""); }
     }
     if (raw.startsWith("//")) return location.protocol + raw;
     return raw;
@@ -3504,8 +3504,8 @@ function retryStoryPhotoImage(event, photo, size = 1200) {
     const original = String(photo.rawUrl || photo.fullUrl || photo.url || "").trim();
     const driveId = extractDriveId(original);
     const alternatives = [
-        driveId ? `https://lh3.googleusercontent.com/d/${encodeURIComponent(driveId)}=w${size}` : "",
-        driveId ? `https://drive.google.com/uc?export=view&id=${encodeURIComponent(driveId)}` : "",
+        driveId ? "https://lh3.googleusercontent.com/d/" + encodeURIComponent(driveId) + "=w" + size : "",
+        driveId ? "https://drive.google.com/uc?export=view&id=" + encodeURIComponent(driveId) : "",
         photo.fullUrl && photo.fullUrl !== original ? toImgUrl(photo.fullUrl, size) : "",
         photo.url && photo.url !== original ? toImgUrl(photo.url, size) : ""
     ].filter(Boolean);
