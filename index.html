@@ -2287,6 +2287,23 @@ img{-webkit-user-drag:none;}
   .la-story-follow i{font-size:17px}
   .la-story-follow:focus-visible,.la-story-reaction-button:focus-visible{outline:2px solid #fff;outline-offset:2px}
   @media(max-width:380px){.la-story-footer-actions{gap:6px}.la-story-reaction-actions{gap:5px}.la-story-reaction-button{min-width:40px;height:40px}.la-story-follow{font-size:10px!important;padding:9px 10px;min-height:40px}}
+
+  /* v146: mismos colores de escudo para selector, recomendaciones y dos portadas. */
+  .la-album-team-gradient{position:absolute!important;inset:0!important;z-index:1!important;
+    display:block!important;pointer-events:none!important;opacity:.35!important;mix-blend-mode:color!important}
+  .new-gallery-hero .la-album-team-gradient{opacity:.4!important;mix-blend-mode:color!important}
+  .modern-album-card:hover .la-album-team-gradient,
+  .modern-album-card.team-open .la-album-team-gradient{opacity:.5!important}
+  .la-selected-review-compact{padding:14px!important}
+  .la-checkout-view-order{display:inline-flex;align-items:center;justify-content:center;gap:8px;flex:0 0 auto;
+    border-radius:12px;padding:11px 13px;color:#fff;font-size:12px;font-weight:900;cursor:pointer;
+    background:linear-gradient(120deg,#116caa,#0891b2);border:1px solid rgba(186,230,253,.4)}
+  .la-checkout-view-order:hover{filter:brightness(1.16)}
+  .la-modal-overlay[data-modal-type="checkout-order"]{z-index:120!important}
+  .la-modal-overlay[data-modal-type="checkout-order"]>.la-modal-panel{background:#071522!important;
+    border-color:rgba(125,211,252,.3)!important}
+  .la-order-edit-shell{padding-top:6px!important}
+  .la-checkout-view-order:focus-visible,.la-order-back-to-checkout:focus-visible{outline:2px solid #fff;outline-offset:2px}
 </style>
 </head>
 <body style="background:#050505;color:#fff;">
@@ -4446,30 +4463,44 @@ function renderCompactCoverMark(team, side, fallbackName) {
 function albumRecencyTsForRelated(album) {
     return Number(album&&album.dateTs)||Date.parse(album&&album.dateLabel||'')||0;
 }
-function laPremierTeamTheme(team, side) {
-    const name=String((team&&team.name)||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase();
-    const key=canonicalAppTeamKey(team&&team.name)||'';
-    const yellow=key==='union_florida'||name.includes('union florida');
-    const orange=key==='union_san_vicente'||name.includes('union san vicente')||name==='usv';
-    const unionMalvinas=key==='la_union_malvinas'||name.includes('union malvinas')||name.includes('la union malvinas');
-    const boys=name.includes('all boys');
-    const calera=name.includes('calera central');
-    let bg=yellow?'#edc21b':orange?'#ee7e1a':boys?'#20242a':unionMalvinas?'#12529a':(validHexColor(team&&team.color)||dominantTeamColor(team&&team.name,team&&team.logo)|| (calera?'#b81127':side==='left'?'#173c64':'#164b68'));
-    const ink=yellow||orange?'#101b23':laCrestContrast(bg,'#ffffff')>=4.5?'#fff':'#061725';
-    return {bg,deep:unionMalvinas?'#dd273d':laShadeHex(bg,boys?-.12:-.3),ink};
+
+/* Paleta única por club: los mismos dos colores rigen el selector, relacionados y portadas. */
+const LA_FIXED_TEAM_PALETTES=Object.freeze({
+    all_boys:['#20242a','#f5f5f5'],
+    deportivo_alberdi:['#1768ad','#f3f6fc'],
+    la_union_malvinas:['#12529a','#dd273d'],
+    union_florida:['#edc21b','#473506'],
+    union_san_vicente:['#ee7e1a','#74340a']
+});
+function laUnifiedTeamPalette(team,side='home') {
+    const name=String(team&&team.name||'').trim();
+    const key=canonicalAppTeamKey(name)||'';
+    const fixed=LA_FIXED_TEAM_PALETTES[key]||null;
+    const base=laDefaultTeamColors(team,side);
+    const logo=String((team&&(team.logo||team.appLogo))||findAppTeamLogo(name)||'').trim();
+    const detected=(!fixed&&logo&&laCrestPaletteCache.has(logo))?laCrestPaletteCache.get(logo):null;
+    const bg=validHexColor(fixed?fixed[0]:(detected&&detected.bg))||validHexColor(base.bg)||'#193c5b';
+    const accent=validHexColor(fixed?fixed[1]:(detected&&detected.accent))||validHexColor(base.accent)||laShadeHex(bg,-.3);
+    const ink=laCrestContrast(bg,'#ffffff')>=4.5?'#ffffff':'#091a29';
+    return {bg,accent,deep:accent,ink,text:ink};
 }
-function renderVersusScene(teamA, teamB, options = {}) {
+function laPremierTeamTheme(team,side) {
+    return laUnifiedTeamPalette(team,side==='right'?'away':'home');
+}
+/* Componente con paletas reactivas: evita que la detección del escudo quede en otra vista. */
+function LaPremierDuel({teamA,teamB,options={}}) {
     const compact=Boolean(options.compact);
     const titleA=String((teamA&&teamA.name)||'Equipo local').trim();
     const titleB=String((teamB&&teamB.name)||'Equipo visitante').trim();
     const badgeA=String((teamA&&(teamA.logo||teamA.appLogo))||findAppTeamLogo(titleA)||'').trim();
     const badgeB=String((teamB&&(teamB.logo||teamB.appLogo))||findAppTeamLogo(titleB)||'').trim();
-    const sideNode=(team,title,badge,position)=>{
-        const palette=laPremierTeamTheme(team,position);
+    const leftPalette=useLaCrestTeamPalette(teamA,'home');
+    const rightPalette=useLaCrestTeamPalette(teamB,'away');
+    const sideNode=(team,title,badge,position,palette)=>{
         const initials=matchPickerInitials(title).slice(0,3);
         return React.createElement('div',{
             className:'la-premier-duel-side '+position+(title.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().includes('all boys')?' is-all-boys':''),
-            style:{'--duel-bg':palette.bg,'--duel-deep':palette.deep,'--duel-ink':palette.ink}
+            style:{'--duel-bg':palette.bg,'--duel-deep':palette.accent,'--duel-ink':palette.ink}
         },
             React.createElement('span',{className:'la-premier-duel-initials','aria-hidden':true},initials),
             React.createElement('span',{className:'la-premier-duel-crest-frame'},
@@ -4484,8 +4515,8 @@ function renderVersusScene(teamA, teamB, options = {}) {
         'aria-label':titleA+' versus '+titleB
     },
         React.createElement('div',{className:'la-premier-duel-halves'},
-            sideNode(teamA,titleA,badgeA,'left'),
-            sideNode(teamB,titleB,badgeB,'right')),
+            sideNode(teamA,titleA,badgeA,'left',leftPalette),
+            sideNode(teamB,titleB,badgeB,'right',rightPalette)),
         React.createElement('span',{className:'la-premier-duel-brand'},
             React.createElement('img',{src:BRAND_LOGO_URL,alt:'',loading:'lazy'}),
             React.createElement('span',null,'lucasabraham.ph')),
@@ -4493,6 +4524,9 @@ function renderVersusScene(teamA, teamB, options = {}) {
         compact&&React.createElement('span',{className:'la-premier-duel-cta'},
             React.createElement('i',{className:'fas fa-images','aria-hidden':true}),
             ' Ver fotos'));
+}
+function renderVersusScene(teamA,teamB,options={}) {
+    return React.createElement(LaPremierDuel,{teamA,teamB,options});
 }
 
 function getRowColumnValue(row, letter, zeroBasedIndex) {
@@ -5674,7 +5708,7 @@ function laPaletteFromLogo(src,fallback) {
                 const groups=new Map();
                 for(let i=0;i<pixels.length;i+=4) {
                     const r=pixels[i],g=pixels[i+1],b=pixels[i+2],a=pixels[i+3];
-                    if(a<165 || (r>239&&g>239&&b>239))continue;
+                    if(a<165)continue;
                     const max=Math.max(r,g,b),min=Math.min(r,g,b);
                     const sat=max? (max-min)/max:0;
                     const bright=(r*.2126+g*.7152+b*.0722)/255;
@@ -5692,7 +5726,7 @@ function laPaletteFromLogo(src,fallback) {
                     primary=top.find(v=>v.bright<.75&&v.weight>primary.weight*.21)||primary;
                 const secondary=top.find(v=>{
                     const d=primary.rgb.map((c,i)=>Math.abs(c-v.rgb[i])).reduce((a,b)=>a+b,0);
-                    return d>125 && v.weight>top[0].weight*.035 && (v.sat>.17 || v.bright>.78);
+                    return d>110 && v.weight>top[0].weight*.035 && (v.sat>.12 || v.bright>.78 || v.bright<.24);
                 });
                 const bg=laHexFromRgb(primary.rgb),ac=secondary?laHexFromRgb(secondary.rgb):fallback.accent;
                 const txt=laCrestContrast(bg,ac)>=4.5?ac:(laCrestContrast(bg,'#ffffff')>=4.5?'#ffffff':'#071827');
@@ -5703,24 +5737,62 @@ function laPaletteFromLogo(src,fallback) {
         img.src=src;
     });
 }
+
+/* Una única lectura del escudo alimenta todas las superficies, sin alterar colores por pantalla. */
+function useLaCrestTeamPalette(team,side) {
+    const name=String((team&&team.name)||'').trim();
+    const logo=String((team&&(team.logo||team.appLogo))||findAppTeamLogo(name)||'').trim();
+    const color=String((team&&team.color)||'');
+    const [palette,setPalette]=React.useState(()=>laUnifiedTeamPalette(team,side));
+    React.useEffect(()=>{
+        let alive=true;
+        setPalette(laUnifiedTeamPalette(team,side));
+        const key=canonicalAppTeamKey(name)||'';
+        if(!logo||LA_FIXED_TEAM_PALETTES[key])return ()=>{alive=false;};
+        laPaletteFromLogo(logo,laDefaultTeamColors(team,side)).then(()=>{
+            if(alive)setPalette(laUnifiedTeamPalette(team,side));
+        });
+        return ()=>{alive=false;};
+    },[name,logo,color,side]);
+    return palette;
+}
+function LaGalleryCoverCrests({album,compact=false}) {
+    const sides=matchPickerSides(album);
+    const home=sides.home,away=sides.away;
+    const left=useLaCrestTeamPalette(home,'home');
+    const right=useLaCrestTeamPalette(away,'away');
+    const renderOne=(team,palette)=>{
+        const name=String((team&&team.name)||'Equipo').trim();
+        const logo=String((team&&(team.appLogo||team.logo))||findAppTeamLogo(name)||'').trim();
+        return React.createElement('span',{
+            className:'gallery-cover-crest'+(compact?' compact':''),
+            title:name,
+            style:{background:'linear-gradient(145deg,'+palette.bg+','+palette.accent+')',borderColor:'rgba(255,255,255,.24)'}
+        },
+            logo?React.createElement('img',{src:logo,alt:name,loading:'lazy',referrerPolicy:'no-referrer',
+                onError:e=>{e.currentTarget.style.display='none';const next=e.currentTarget.nextElementSibling;if(next)next.style.display='flex';}}):null,
+            React.createElement('span',{className:'gallery-cover-crest-fallback',style:{display:logo?'none':'flex'}},teamInitials(name)));
+    };
+    return React.createElement('div',{
+        className:'gallery-cover-crests'+(compact?' compact':''),
+        'aria-label':(home.name||'Local')+' versus '+(away.name||'Visitante')
+    },renderOne(home,left),React.createElement('span',{className:'gallery-cover-vs'},'VS'),renderOne(away,right));
+}
+function LaAlbumCoverGradient({album}) {
+    const sides=matchPickerSides(album);
+    const left=useLaCrestTeamPalette(sides.home,'home');
+    const right=useLaCrestTeamPalette(sides.away,'away');
+    return React.createElement('span',{
+        className:'la-album-team-gradient',
+        'aria-hidden':true,
+        style:{background:'linear-gradient(115deg,'+left.bg+' 0%,'+left.accent+' 39%,'+right.bg+' 61%,'+right.accent+' 100%)'}
+    });
+}
 function PremierAlbumMatchHeader({album, subalbum, home, away, photoCount, onOpenStories}) {
     const homeTeam=home||{},awayTeam=away||{};
     const crest=t=>String(t.logo||t.appLogo||findAppTeamLogo(t.name||'')||'').trim();
     const homeLogo=crest(homeTeam),awayLogo=crest(awayTeam);
-    const baseHome=laDefaultTeamColors(homeTeam,'home');
-    const baseAway=laDefaultTeamColors(awayTeam,'away');
-    const [palettes,setPalettes]=useState({home:baseHome,away:baseAway});
-    useEffect(()=>{
-        let alive=true;
-        setPalettes({home:baseHome,away:baseAway});
-        const keptPalette=(team,logo,base)=>{
-            const name=String(team&&team.name||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase();
-            return (name.includes('union florida')||name.includes('all boys')||name.includes('union san vicente')||name.includes('union malvinas')||name==='usv'||canonicalAppTeamKey(team&&team.name)==='union_san_vicente'||canonicalAppTeamKey(team&&team.name)==='la_union_malvinas')?Promise.resolve(base):laPaletteFromLogo(logo,base);
-        };
-        Promise.all([keptPalette(homeTeam,homeLogo,baseHome),keptPalette(awayTeam,awayLogo,baseAway)])
-            .then(([left,right])=>{if(alive)setPalettes({home:left,away:right});});
-        return ()=>{alive=false;};
-    },[homeLogo,awayLogo,homeTeam.color,awayTeam.color,homeTeam.name,awayTeam.name]);
+    const palettes={home:useLaCrestTeamPalette(homeTeam,'home'),away:useLaCrestTeamPalette(awayTeam,'away')};
     const sideNode=(team,logo,position,pal)=>React.createElement('div',{
         className:'la-pl-team la-pl-team--'+position+(String(team.name||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().includes('all boys')?' la-pl-team--all-boys':''),
         style:{
@@ -5962,6 +6034,7 @@ function App() {
     const [highlightIds, setHighlightIds] = useState(readHighlightIds());
     const [albumPage, setAlbumPage] = useState(1);
     const [checkoutOpen, setCheckoutOpen] = useState(false);
+    const [checkoutOrderModalOpen, setCheckoutOrderModalOpen] = useState(false);
     const [checkoutOrderCode, setCheckoutOrderCode] = useState("");
     const [checkoutCoupon, setCheckoutCoupon] = useState("");
     const [appliedCoupon, setAppliedCoupon] = useState(null);
@@ -7393,35 +7466,7 @@ ${clone.outerHTML}`;
         const phone=normalizeClubPhone(adminGeneratorPhone);
         return phone.length>=10&&adminGeneratorMessage?'https://wa.me/549'+phone+'?text='+encodeURIComponent(adminGeneratorMessage):'';
     };
-    const renderGalleryCoverCrests = (album, compact = false) => {
-        if (!album) return null;
-        const matchSides = matchPickerSides(album);
-        const home = matchSides.home;
-        const away = matchSides.away;
-        const renderOne = (team, side) => {
-            const name = String((team && team.name) || (side === 'home' ? 'Local' : 'Visitante')).trim();
-            const logo = String((team && (team.appLogo || team.logo)) || findAppTeamLogo(name) || '').trim();
-            const palette = laPremierTeamTheme(team,side === 'home' ? 'left' : 'right');
-            return React.createElement("span", { className:`gallery-cover-crest ${compact ? 'compact' : ''}`.trim(), title:name,
-                style:{background:'linear-gradient(145deg, '+palette.bg+', '+palette.deep+')',borderColor:'rgba(255,255,255,.24)'} },
-                logo ? React.createElement("img", {
-                    src:logo,
-                    alt:name,
-                    loading:"lazy",
-                    referrerPolicy:"no-referrer",
-                    onError:e => {
-                        e.currentTarget.style.display = 'none';
-                        const fallback = e.currentTarget.nextElementSibling;
-                        if (fallback) fallback.style.display = 'flex';
-                    }
-                }) : null,
-                React.createElement("span", { className:"gallery-cover-crest-fallback", style:{ display:logo ? 'none' : 'flex' } }, teamInitials(name)));
-        };
-        return React.createElement("div", { className:`gallery-cover-crests ${compact ? 'compact' : ''}`.trim(), "aria-label":`${(home && home.name) || 'Local'} versus ${(away && away.name) || 'Visitante'}` },
-            renderOne(home, 'home'),
-            React.createElement("span", { className:"gallery-cover-vs" }, "VS"),
-            renderOne(away, 'away'));
-    };
+    const renderGalleryCoverCrests = (album, compact = false) => album ? React.createElement(LaGalleryCoverCrests,{album,compact}) : null;
     const renderNewestGalleryHero = () => {
         const a = newestAlbum;
         if (!a) return null;
@@ -7431,6 +7476,7 @@ ${clone.outerHTML}`;
             React.createElement("button", { type:"button", "data-album-card-id":a.id, onClick:e=>handleAlbumCardTap(e,a), className:"new-gallery-hero", "aria-label":`Abrir ${a.name}` },
                 React.createElement("div", { className:"new-gallery-hero-bg" },
                     a.cover ? React.createElement("img", { src:a.cover, decoding:"async", fetchPriority:"high", alt:"" }) : React.createElement("div", { className:"w-full h-full bg-gradient-to-br from-sky-950 via-neutral-950 to-black" })),
+                React.createElement(LaAlbumCoverGradient,{album:a}),
                 React.createElement("div", { className:"new-gallery-hero-shade" }),
                 React.createElement("div", { className:"new-gallery-hero-content" },
                     React.createElement("span", { className:"new-gallery-hero-kicker" }, React.createElement("i", { className:"fas fa-bolt" }), " Última galería"),
@@ -7466,6 +7512,7 @@ ${clone.outerHTML}`;
                 React.createElement("div", { className:`modern-album-card aspect-[4/5] ${mobileRevealedAlbumId === a.id ? 'team-open' : ''}`.trim() },
                     React.createElement("div", { className:"absolute inset-0 bg-neutral-900" },
                         a.cover ? React.createElement("img", { src:a.cover, loading:"lazy", decoding:"async", className:"modern-album-img w-full h-full object-cover" }) : React.createElement("div", { className:"w-full h-full flex items-center justify-center text-neutral-600" }, React.createElement("i", { className:"fas fa-image text-3xl" }))),
+                    React.createElement(LaAlbumCoverGradient,{album:a}),
                     React.createElement("div", { className:"absolute inset-0 bg-gradient-to-t from-black via-black/38 to-transparent z-[2]" }),
                     React.createElement("div", { className:"modern-album-corner-fade" }),
                     React.createElement("div", { className:"team-album-reveal" }, renderVersusScene(matchPickerSides(a).home,matchPickerSides(a).away,{compact:true})),
@@ -7618,6 +7665,7 @@ ${clone.outerHTML}`;
         }catch(_){}
     };
     const closeMpCheckout=()=>{
+        setCheckoutOrderModalOpen(false);
         closeMpMobilePreview();
         setCheckoutOpen(false);
         if(mpReceiptView){
@@ -7652,6 +7700,7 @@ ${clone.outerHTML}`;
         setCheckoutOpen(true);
     };
     const openCheckout = () => {
+        setCheckoutOrderModalOpen(false);
         // Nunca enseñar una compra anterior en el checkout de una selección nueva.
         setMpReceiptView(false);
         setMpTrialMessage('');
@@ -9893,8 +9942,8 @@ React.createElement("div", { id: "order-search-panel", hidden:adminPanelTab!=='p
                     "Volver"),
                 React.createElement(PremierAlbumMatchHeader, {
                     album:currentAlbum, subalbum:currentSubAlbum,
-                    home:albumTeamSide(currentAlbum, 0, true),
-                    away:albumTeamSide(currentAlbum, 1, true),
+                    home:matchPickerSides(currentAlbum).home,
+                    away:matchPickerSides(currentAlbum).away,
                     photoCount:albumStoryPool.length, onOpenStories:openMatchStories
                 }),
                 React.createElement("div",{className:"la-album-consult-entry"},
@@ -10180,25 +10229,22 @@ React.createElement("div", { id: "order-search-panel", hidden:adminPanelTab!=='p
                         mpVerifiedReceipt?"¡Gracias por tu compra!":mpReceiptView?"Estado de tu compra":"Confirmá tu compra"),
                     React.createElement("p", { className: "text-sky-100/75 text-sm leading-relaxed" },
                         mpVerifiedReceipt?"Pago acreditado y verificado. Descargá tus fotos desde acá.":mpReceiptView?"Estamos verificando con Mercado Pago. Las descargas no se habilitan hasta que se confirme el pago.":"Pagá con Mercado Pago o consultá otro medio de pago por WhatsApp.")),
-                !mpReceiptView&&React.createElement("section",{className:"checkout-simple-card la-selected-review mb-3","aria-label":"Revisar las fotos seleccionadas"},
-                    React.createElement("div",{className:"flex justify-between items-center gap-2 mb-3"},
-                        React.createElement("h3",{className:"text-sm font-black text-white"},
-                            React.createElement("i",{className:"fas fa-images text-sky-300 mr-2","aria-hidden":true}),"Tus fotos seleccionadas"),
-                        React.createElement("span",{className:"text-xs font-black text-sky-200"},selectedPhotos.length+" foto"+(selectedPhotos.length===1?"":"s"))),
-                    selectedPhotos.length?React.createElement("div",{className:"grid gap-2 max-h-[280px] overflow-y-auto pr-1"},
-                        selectedPhotos.map(p=>React.createElement("div",{key:p.id,className:"flex items-center gap-3 rounded-xl bg-black/50 border border-white/10 p-2"},
-                            React.createElement("img",{src:toImgUrl(p.rawUrl||p.fullUrl||p.url,180),alt:p.name||"Foto seleccionada",loading:"lazy",className:"w-[62px] h-[62px] shrink-0 rounded-lg object-cover protected-photo"}),
-                            React.createElement("div",{className:"min-w-0 flex-1"},
-                                React.createElement("strong",{className:"block truncate text-xs text-white"},p.name||("Foto "+(p.code||""))),
-                                React.createElement("span",{className:"block truncate text-[11px] text-sky-100/75"},(p.albumName||"")+(p.subAlbumName?" · "+p.subAlbumName:"")),
-                                React.createElement("span",{className:"block text-[11px] text-sky-200 font-bold"},formatPrice(discountLinePrice(p)))),
-                            React.createElement("button",{type:"button",onClick:()=>toggle(p.id),
-                                className:"shrink-0 px-3 py-2 rounded-lg border border-red-300/30 bg-red-950/40 text-red-100 text-xs font-black hover:bg-red-900/60",
-                                "aria-label":"Quitar "+(p.name||"foto")+" del pedido",title:"Eliminar foto seleccionada"},
-                                React.createElement("i",{className:"fas fa-trash-can mr-1","aria-hidden":true}),"Quitar"))))
-                    :React.createElement("div",{className:"text-center text-sm text-neutral-300 py-3"},
-                        React.createElement("p",null,"Ya no hay fotos en tu carrito."),
-                        React.createElement("button",{type:"button",onClick:closeMpCheckout,className:"mt-3 rounded-xl bg-sky-600 px-4 py-2 font-black text-white"},"Volver a la galería"))),
+                !mpReceiptView&&React.createElement('section',{
+                    className:'checkout-simple-card la-selected-review la-selected-review-compact mb-3',
+                    'aria-label':'Resumen del pedido'
+                },
+                    React.createElement('div',{className:'flex justify-between items-center gap-3'},
+                        React.createElement('div',{className:'min-w-0'},
+                            React.createElement('h3',{className:'text-sm font-black text-white'},
+                                React.createElement('i',{className:'fas fa-images text-sky-300 mr-2','aria-hidden':true}),'Tu pedido'),
+                            React.createElement('p',{className:'text-xs text-sky-100/75 mt-1'},
+                                selectedPhotos.length+' foto'+(selectedPhotos.length===1?'':'s')+' seleccionada'+(selectedPhotos.length===1?'':'s'))),
+                        React.createElement('button',{
+                            type:'button',
+                            className:'la-checkout-view-order',
+                            onClick:()=>setCheckoutOrderModalOpen(true),
+                            'aria-label':'Ver y editar las fotos del pedido'
+                        },React.createElement('i',{className:'fas fa-eye','aria-hidden':true}),' Ver pedido'))),
                 mpReceiptView&&!mpVerifiedReceipt&&React.createElement("section",{className:"mb-4 bg-sky-950/70 border border-sky-300/30 rounded-2xl p-4"},
                     React.createElement("p",{className:"text-sm text-white font-black"},
                         mpReturnMissing?"No pudimos identificar la compra en este navegador":"Verificando el pago con Mercado Pago"),
@@ -10386,6 +10432,38 @@ React.createElement("div", { id: "order-search-panel", hidden:adminPanelTab!=='p
                         React.createElement("button", { onClick: applyCoupon, className: "buy-btn px-4 py-3 rounded-xl font-black text-sm transition-all" }, "Aplicar")),
                     couponMessage && React.createElement("p", { className: `text-xs mt-2 ${appliedCoupon ? 'text-sky-200' : 'text-amber-300'}` }, couponMessage)),
                 !mpReceiptView&&React.createElement("p", { className: "text-center text-[11px] text-sky-100/65 leading-relaxed mt-3" }, "Las fotos digitales se habilitan al aprobarse el pago en Mercado Pago. Otros medios se acuerdan con Lucas por WhatsApp."))),
+
+        checkoutOpen&&!mpReceiptView&&checkoutOrderModalOpen&&React.createElement(Modal,{
+            onClose:()=>setCheckoutOrderModalOpen(false),
+            max:'max-w-xl',modalType:'checkout-order'
+        },
+            React.createElement('section',{className:'checkout-simple-shell la-order-edit-shell rounded-3xl p-3 sm:p-4 -m-1','aria-label':'Editar fotos del pedido'},
+                React.createElement('div',{className:'pr-8 mb-4'},
+                    React.createElement('p',{className:'text-[11px] uppercase tracking-[.14em] font-black text-sky-200 mb-1'},'Revisar selección'),
+                    React.createElement('h2',{className:'text-xl sm:text-2xl font-black text-white'},'Tu pedido'),
+                    React.createElement('p',{className:'text-xs text-sky-100/75 mt-1'},'Podés quitar fotos. Los cambios se guardan automáticamente en el carrito.')),
+                selectedPhotos.length
+                    ?React.createElement('div',{className:'la-order-edit-list grid gap-2 max-h-[56vh] overflow-y-auto pr-1'},
+                        selectedPhotos.map(p=>React.createElement('div',{key:p.id,className:'flex items-center gap-3 rounded-xl bg-black/50 border border-white/10 p-2'},
+                            React.createElement('img',{src:toImgUrl(p.rawUrl||p.fullUrl||p.url,180),alt:p.name||'Foto seleccionada',
+                                loading:'lazy',className:'w-[62px] h-[62px] shrink-0 rounded-lg object-cover protected-photo'}),
+                            React.createElement('div',{className:'min-w-0 flex-1'},
+                                React.createElement('strong',{className:'block truncate text-xs text-white'},p.name||('Foto '+(p.code||''))),
+                                React.createElement('span',{className:'block truncate text-[11px] text-sky-100/75'},
+                                    (p.albumName||'')+(p.subAlbumName?' · '+p.subAlbumName:'')),
+                                React.createElement('span',{className:'block text-[11px] text-sky-200 font-bold'},formatPrice(discountLinePrice(p)))),
+                            React.createElement('button',{type:'button',onClick:()=>toggle(p.id),
+                                className:'shrink-0 px-3 py-2 rounded-lg border border-red-300/30 bg-red-950/40 text-red-100 text-xs font-black hover:bg-red-900/60',
+                                'aria-label':'Quitar '+(p.name||'foto')+' del pedido'},
+                                React.createElement('i',{className:'fas fa-trash-can mr-1','aria-hidden':true}),'Quitar'))))
+                    :React.createElement('div',{className:'text-center text-sm text-sky-100/80 py-8'},'Tu pedido está vacío. Volvé a la galería para elegir más fotos.'),
+                React.createElement('div',{className:'la-order-edit-summary mt-4 pt-3 border-t border-sky-300/20 flex flex-wrap items-center justify-between gap-3'},
+                    React.createElement('span',{className:'text-xs text-sky-100/75'},
+                        selectedPhotos.length+' foto'+(selectedPhotos.length===1?'':'s')),
+                    React.createElement('strong',{className:'text-xl text-white'},formatPrice(checkoutTotal))),
+                React.createElement('button',{type:'button',className:'la-order-back-to-checkout mt-4 w-full rounded-xl bg-sky-600 hover:bg-sky-500 py-3 text-white font-black',
+                    onClick:()=>{setCheckoutOrderModalOpen(false);if(!selectedPhotos.length)closeMpCheckout();}},
+                    selectedPhotos.length?'Guardar cambios y volver a la compra':'Volver a la galería'))),
         MP_PAYMENT_VISIBLE && mpTrialPurchase && !checkoutOpen && !mpReceiptDismissed && React.createElement("button", {
             type:"button", onClick:()=>{setMpReceiptView(true);setCheckoutOpen(true)},
             className:"fixed bottom-28 right-3 z-[81] bg-sky-700 text-white text-xs font-black px-4 py-3 rounded-2xl shadow-xl border border-sky-200/25"
