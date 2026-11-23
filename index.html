@@ -2253,6 +2253,41 @@ img{-webkit-user-drag:none;}
   <link rel="stylesheet" href="./admin-mobile-picker-v11.css?v=20261116-12" />
   <script src="./admin-recordatorios.js?v=20261101-3"></script>
 <script defer src="./premium-ux-v132.js?v=135"></script>
+
+<style id="la-v145-shop-story-experience">
+  .la-selected-review{border:1px solid rgba(125,211,252,.24)!important;background:linear-gradient(160deg,rgba(9,35,54,.9),rgba(5,11,22,.95))!important}
+  .gallery-cover-crest{box-shadow:0 8px 19px rgba(0,0,0,.32),inset 0 1px 0 rgba(255,255,255,.15)!important}
+  .gallery-cover-crests.compact{background:rgba(0,0,0,.72)!important}
+  .modern-album-card .gallery-cover-crests.compact{margin:0!important}
+  .la-pl-story-footer.la-story-footer-interactive{
+    display:flex!important;flex-direction:column!important;align-items:stretch!important;
+    justify-content:flex-end!important;gap:10px!important;z-index:35!important;
+    padding:35px 14px max(13px,env(safe-area-inset-bottom))!important;
+    background:linear-gradient(0deg,rgba(0,0,0,.92) 0%,rgba(0,0,0,.66) 62%,transparent 100%)!important;
+    pointer-events:none!important;
+  }
+  .la-story-footer-meta{display:flex;justify-content:space-between;align-items:center;gap:10px;min-width:0}
+  .la-story-footer-meta p{margin:0!important;font-size:12px!important;min-width:0;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+  .la-story-footer-meta span{flex:0 0 auto;color:#fff!important;font-size:11px}
+  .la-story-footer-actions{display:flex;justify-content:space-between;align-items:center;gap:10px;pointer-events:auto!important}
+  .la-story-reaction-actions{display:flex;gap:8px;align-items:center}
+  .la-story-reaction-button{
+    appearance:none;border:1px solid rgba(255,255,255,.4);background:rgba(9,24,35,.8);
+    color:white;border-radius:15px;min-width:47px;height:43px;display:grid;place-items:center;
+    cursor:pointer;font-size:21px;transition:transform .15s,border-color .15s,background .15s
+  }
+  .la-story-reaction-button.active{border-color:#7dd3fc;background:#0c4268;transform:scale(1.08);box-shadow:0 0 0 2px rgba(125,211,252,.19)}
+  .la-story-follow{
+    display:inline-flex;align-items:center;justify-content:center;gap:7px;
+    border:1px solid rgba(255,255,255,.42);border-radius:13px;padding:10px 13px;
+    background:linear-gradient(115deg,#a21caf,#db2777,#f97316);color:#fff!important;
+    font-size:11px!important;font-weight:900!important;line-height:1.15;text-decoration:none!important;
+    white-space:nowrap;min-height:43px;box-shadow:0 5px 20px rgba(0,0,0,.24)
+  }
+  .la-story-follow i{font-size:17px}
+  .la-story-follow:focus-visible,.la-story-reaction-button:focus-visible{outline:2px solid #fff;outline-offset:2px}
+  @media(max-width:380px){.la-story-footer-actions{gap:6px}.la-story-reaction-actions{gap:5px}.la-story-reaction-button{min-width:40px;height:40px}.la-story-follow{font-size:10px!important;padding:9px 10px;min-height:40px}}
+</style>
 </head>
 <body style="background:#050505;color:#fff;">
   <div id="boot-overlay" style="position:fixed;inset:0;z-index:99999;background:#050505;color:#fff;display:flex;align-items:center;justify-content:center;padding:24px;">
@@ -2301,7 +2336,7 @@ const LS_SHARED_STATE_KEY = "la_shared_admin_state_v2";
 const LS_BANNERS_KEY = "la_banner_settings_v1";
 const LS_INTRO_KEY = "la_purchase_intro_seen_v2";
 const PHOTOS_PER_PAGE = 70;
-const APP_VERSION = "v144-no-stale-retry";
+const APP_VERSION = "v145-orders-checkout-stories";
 const LS_ALBUM_CACHE_META_KEY = "la_album_cache_meta_v1";
 const ALBUM_CACHE_MAX_AGE_MS = 1000 * 60 * 60 * 12;
 const FIRESTORE_FREE_DAILY_LIMITS = {
@@ -4416,11 +4451,12 @@ function laPremierTeamTheme(team, side) {
     const key=canonicalAppTeamKey(team&&team.name)||'';
     const yellow=key==='union_florida'||name.includes('union florida');
     const orange=key==='union_san_vicente'||name.includes('union san vicente')||name==='usv';
+    const unionMalvinas=key==='la_union_malvinas'||name.includes('union malvinas')||name.includes('la union malvinas');
     const boys=name.includes('all boys');
     const calera=name.includes('calera central');
-    let bg=yellow?'#edc21b':orange?'#ee7e1a':boys?'#20242a':(validHexColor(team&&team.color)||dominantTeamColor(team&&team.name,team&&team.logo)|| (calera?'#b81127':side==='left'?'#173c64':'#164b68'));
+    let bg=yellow?'#edc21b':orange?'#ee7e1a':boys?'#20242a':unionMalvinas?'#12529a':(validHexColor(team&&team.color)||dominantTeamColor(team&&team.name,team&&team.logo)|| (calera?'#b81127':side==='left'?'#173c64':'#164b68'));
     const ink=yellow||orange?'#101b23':laCrestContrast(bg,'#ffffff')>=4.5?'#fff':'#061725';
-    return {bg,deep:laShadeHex(bg,boys?-.12:-.3),ink};
+    return {bg,deep:unionMalvinas?'#dd273d':laShadeHex(bg,boys?-.12:-.3),ink};
 }
 function renderVersusScene(teamA, teamB, options = {}) {
     const compact=Boolean(options.compact);
@@ -5609,7 +5645,7 @@ function laDefaultTeamColors(team,side) {
     if (n.includes('union florida')) { bg='#edc21b';accent='#473506'; }
     else if (n.includes('union san vicente') || n==='usv' || canonicalAppTeamKey(team&&team.name)==='union_san_vicente') { bg='#ee7e1a';accent='#74340a'; }
     else if (n.includes('all boys')) { bg='#20242a';accent='#f5f5f5'; }
-    else if (n.includes('malvinas')) { bg='#12529a';accent='#dd273d'; }
+    else if (n.includes('malvinas')||canonicalAppTeamKey(team&&team.name)==='la_union_malvinas') { bg='#12529a';accent='#dd273d'; }
     else if (!bg) bg=side==='home'?'#163c59':'#204b70';
     const text=laCrestContrast(bg,accent)>=4.5?accent:(laCrestContrast(bg,'#ffffff')>=4.5?'#ffffff':'#061829');
     return {bg,accent,text,deep:laShadeHex(bg,-.13)};
@@ -5679,7 +5715,7 @@ function PremierAlbumMatchHeader({album, subalbum, home, away, photoCount, onOpe
         setPalettes({home:baseHome,away:baseAway});
         const keptPalette=(team,logo,base)=>{
             const name=String(team&&team.name||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase();
-            return (name.includes('union florida')||name.includes('all boys')||name.includes('union san vicente')||name==='usv'||canonicalAppTeamKey(team&&team.name)==='union_san_vicente')?Promise.resolve(base):laPaletteFromLogo(logo,base);
+            return (name.includes('union florida')||name.includes('all boys')||name.includes('union san vicente')||name.includes('union malvinas')||name==='usv'||canonicalAppTeamKey(team&&team.name)==='union_san_vicente'||canonicalAppTeamKey(team&&team.name)==='la_union_malvinas')?Promise.resolve(base):laPaletteFromLogo(logo,base);
         };
         Promise.all([keptPalette(homeTeam,homeLogo,baseHome),keptPalette(awayTeam,awayLogo,baseAway)])
             .then(([left,right])=>{if(alive)setPalettes({home:left,away:right});});
@@ -5735,6 +5771,23 @@ function PremierAlbumMatchHeader({album, subalbum, home, away, photoCount, onOpe
 function PremierAlbumStoryViewer({photos,index,albumName,onClose,onPrevious,onNext,onHold,paused}) {
     const photo=photos[index];
     const touchStartRef=useRef(null),lastSwipeRef=useRef(0);
+    const [storyReactions,setStoryReactions]=useState(()=>{
+        try {const saved=JSON.parse(localStorage.getItem('la_story_reactions_v1')||'{}');return saved&&typeof saved==='object'&&!Array.isArray(saved)?saved:{};}catch(_){return {};}
+    });
+    useEffect(()=>{try{localStorage.setItem('la_story_reactions_v1',JSON.stringify(storyReactions));}catch(_){}},[storyReactions]);
+    const storyPhotoKey=photo?String(albumName||'')+'|'+String(photo.id||photo.code||photo.url||index):'';
+    const storyReaction=storyReactions[storyPhotoKey]||'';
+    const toggleStoryReaction=type=>{
+        if(!storyPhotoKey)return;
+        setStoryReactions(prev=>{
+            const next={...prev};
+            if(next[storyPhotoKey]===type)delete next[storyPhotoKey];
+            else next[storyPhotoKey]=type;
+            const keys=Object.keys(next);
+            if(keys.length>800)delete next[keys[0]];
+            return next;
+        });
+    };
     if(!photo)return null;
     const raw=photo.rawUrl||photo.fullUrl||photo.url||'';
     const imageUrl=toImgUrl(raw,1200)||photo.url;
@@ -5801,9 +5854,21 @@ function PremierAlbumStoryViewer({photos,index,albumName,onClose,onPrevious,onNe
             React.createElement('b',null,'lucasabraham.ph · Historias'),
             React.createElement('button',{type:'button',onClick:onClose,'aria-label':'Cerrar historias'},
                 React.createElement('i',{className:'fas fa-xmark','aria-hidden':true}))),
-        React.createElement('div',{className:'la-pl-story-footer'},
-            React.createElement('p',null,photo.name||albumName),
-            React.createElement('span',null,(index+1)+' / '+photos.length))));
+        React.createElement('div',{className:'la-pl-story-footer la-story-footer-interactive'},
+            React.createElement('div',{className:'la-story-footer-meta'},
+                React.createElement('p',null,photo.name||albumName),
+                React.createElement('span',null,(index+1)+' / '+photos.length)),
+            React.createElement('div',{className:'la-story-footer-actions'},
+                React.createElement('div',{className:'la-story-reaction-actions',role:'group','aria-label':'Reaccionar a esta foto'},
+                    ['like','heart'].map(type=>React.createElement('button',{
+                        key:type,type:'button',className:'la-story-reaction-button'+(storyReaction===type?' active':''),
+                        'aria-pressed':storyReaction===type,'aria-label':type==='like'?'Me gusta':'Me encanta',
+                        onClick:e=>{e.stopPropagation();toggleStoryReaction(type);}
+                    },type==='like'?'👍':'❤️'))),
+                React.createElement('a',{href:'https://www.instagram.com/lucasabraham.ph',target:'_blank',
+                    rel:'noopener noreferrer',className:'la-story-follow',onClick:e=>e.stopPropagation()},
+                    React.createElement('i',{className:'fab fa-instagram','aria-hidden':true}),
+                    ' Seguir en Instagram')))));
 }
 
 function App() {
@@ -7226,6 +7291,7 @@ ${clone.outerHTML}`;
         const items=nums.map(n=>({number:n,photo:list[list.length-n]})).filter(x=>x.photo);
         return {album,category,list,items,missing};
     };
+    const adminGeneratorPreview=adminGeneratorSelections();
     const toggleAdminGeneratorPhoto=id=>{
         setAdminGeneratorSelectedIds(ids=>ids.includes(id)?ids.filter(v=>v!==id):[...ids,id]);
         setAdminGeneratorMessage('');
@@ -7329,12 +7395,15 @@ ${clone.outerHTML}`;
     };
     const renderGalleryCoverCrests = (album, compact = false) => {
         if (!album) return null;
-        const home = albumTeamSide(album, 0);
-        const away = albumTeamSide(album, 1);
+        const matchSides = matchPickerSides(album);
+        const home = matchSides.home;
+        const away = matchSides.away;
         const renderOne = (team, side) => {
             const name = String((team && team.name) || (side === 'home' ? 'Local' : 'Visitante')).trim();
             const logo = String((team && (team.appLogo || team.logo)) || findAppTeamLogo(name) || '').trim();
-            return React.createElement("span", { className:`gallery-cover-crest ${compact ? 'compact' : ''}`.trim(), title:name },
+            const palette = laPremierTeamTheme(team,side === 'home' ? 'left' : 'right');
+            return React.createElement("span", { className:`gallery-cover-crest ${compact ? 'compact' : ''}`.trim(), title:name,
+                style:{background:'linear-gradient(145deg, '+palette.bg+', '+palette.deep+')',borderColor:'rgba(255,255,255,.24)'} },
                 logo ? React.createElement("img", {
                     src:logo,
                     alt:name,
@@ -7399,7 +7468,8 @@ ${clone.outerHTML}`;
                         a.cover ? React.createElement("img", { src:a.cover, loading:"lazy", decoding:"async", className:"modern-album-img w-full h-full object-cover" }) : React.createElement("div", { className:"w-full h-full flex items-center justify-center text-neutral-600" }, React.createElement("i", { className:"fas fa-image text-3xl" }))),
                     React.createElement("div", { className:"absolute inset-0 bg-gradient-to-t from-black via-black/38 to-transparent z-[2]" }),
                     React.createElement("div", { className:"modern-album-corner-fade" }),
-                    React.createElement("div", { className:"team-album-reveal" }, renderVersusScene(albumTeamSide(a,0),albumTeamSide(a,1),{compact:true})),
+                    React.createElement("div", { className:"team-album-reveal" }, renderVersusScene(matchPickerSides(a).home,matchPickerSides(a).away,{compact:true})),
+                    React.createElement("div", { className:"absolute top-12 right-2 sm:right-3 z-[5] pointer-events-none" },renderGalleryCoverCrests(a,true)),
                     React.createElement("div", { className:"absolute top-2 left-2 sm:top-3 sm:left-3 z-[3] bg-black/55 backdrop-blur-md border border-white/15 px-2.5 py-1.5 rounded-full text-[9px] sm:text-[10px] text-white album-date-chip shadow-lg" },
                         React.createElement("i", { className:"fas fa-calendar-days mr-1 text-sky-300" }), a.dateLabel || "Sin fecha"),
                     a.archived && React.createElement("div", { className:"absolute top-2 right-2 sm:top-3 sm:right-3 z-[4] bg-amber-400 text-black rounded-full px-2.5 py-1 text-[8px] font-black uppercase tracking-wider" }, "Archivo"),
@@ -8910,7 +8980,7 @@ En breve te las preparo y te las envío por acá 😊
                     React.createElement("div",{className:"flex flex-wrap gap-2 items-start justify-between mb-4"},
                         React.createElement("div",null,
                             React.createElement("h2",{className:"text-xl font-black text-white"},"Armar pedido con fotos"),
-                            React.createElement("p",{className:"text-sm text-neutral-300 mt-1"},"Elegí el partido y tocá las fotos. También podés escribir sus números celestes.")),
+                            React.createElement("p",{className:"text-sm text-neutral-300 mt-1"},"Elegí el partido y la categoría, pegá una lista de números y generá el pedido. También podés elegir fotos tocando las miniaturas.")),
                         React.createElement("button",{type:"button",onClick:resetAdminGeneratorSelection,
                             className:"px-4 py-2 rounded-xl bg-neutral-800 text-neutral-200 text-xs font-bold"},"Limpiar selección")),
                     React.createElement("div",{className:"grid gap-3 sm:grid-cols-2"},
@@ -8925,8 +8995,21 @@ En breve te las preparo y te las envío por acá 😊
                             },className:"w-full mt-2 bg-black border border-white/20 text-white p-3 rounded-xl"},
                                 adminGeneratorCategories.length?adminGeneratorCategories.map(sa=>React.createElement("option",{key:sa.id,value:sa.id},sa.name+" · "+(sa.photos||[]).length+" fotos")):
                                     React.createElement("option",{value:""},"Galería general")))),
+                    React.createElement("div",{className:"mt-4 rounded-2xl border border-sky-300/30 bg-sky-950/25 p-4","aria-label":"Pegar números para el pedido"},
+                        React.createElement("label",{className:"block text-sm font-black text-sky-100"},"Pegá los números de las fotos",
+                            React.createElement("textarea",{value:adminGeneratorNumbers,
+                                onChange:e=>{setAdminGeneratorNumbers(e.target.value);setAdminGeneratorMessage('');},
+                                placeholder:"Ejemplo: 15, 68, 89, 124, 128\nTambién: 15 68 89 124 128\nO un texto que diga Foto 15, foto 68...",
+                                rows:4,className:"w-full mt-2 bg-black/80 border border-sky-300/35 text-white p-3 rounded-xl resize-y outline-none focus:border-sky-300",
+                                "aria-label":"Números de foto separados por espacios, comas o saltos de línea"})),
+                        React.createElement("p",{className:"text-[11px] text-neutral-300 mt-2"},"Acepta números solos, con comas, espacios, saltos de línea o dentro de un mensaje. No repite números duplicados."),
+                        React.createElement("p",{className:"text-sm font-black text-sky-200 mt-3",role:"status"},
+                            adminGeneratorPreview.items.length+" foto"+(adminGeneratorPreview.items.length===1?"":"s")+" lista"+(adminGeneratorPreview.items.length===1?"":"s")+" para el pedido"+
+                            (adminGeneratorPreview.items.length?" · Nº "+adminGeneratorPreview.items.map(x=>x.number).sort((a,b)=>a-b).join(", "):"")),
+                        adminGeneratorPreview.missing.length>0&&React.createElement("p",{className:"mt-2 text-xs font-bold text-amber-300",role:"alert"},
+                            "Revisá los números fuera de esta categoría: "+adminGeneratorPreview.missing.join(", "))),
                     React.createElement("div",{className:"flex flex-wrap gap-3 items-center justify-between mt-5 mb-3"},
-                        React.createElement("p",{className:"text-sky-200 text-sm font-black"},adminGeneratorSelectedIds.length+" fotos seleccionadas"),
+                        React.createElement("p",{className:"text-sky-200 text-sm font-black"},adminGeneratorPreview.items.length+" fotos seleccionadas · "+adminGeneratorSelectedIds.length+" elegidas desde las miniaturas"),
                         React.createElement("input",{type:"search",value:adminGeneratorSearch,onChange:e=>{setAdminGeneratorSearch(e.target.value);setAdminGeneratorPage(1);},
                             placeholder:"Buscar número o nombre",className:"bg-black border border-white/20 text-white px-3 py-2 rounded-xl text-sm w-full sm:w-64","aria-label":"Buscar fotos para seleccionar"})),
                     React.createElement("div",{className:"grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-2 max-h-[600px] overflow-y-auto pr-1","aria-label":"Seleccionar fotos del pedido"},
@@ -8951,9 +9034,6 @@ En breve te las preparo y te las envío por acá 😊
                         React.createElement("button",{type:"button",disabled:adminGeneratorPageSafe===adminGeneratorPageCount,onClick:()=>setAdminGeneratorPage(p=>Math.min(adminGeneratorPageCount,p+1)),
                             className:"bg-neutral-800 text-white rounded-lg px-3 py-2 disabled:opacity-30"},"Siguiente")),
                     React.createElement("div",{className:"grid gap-3 sm:grid-cols-2 mt-4"},
-                        React.createElement("label",{className:"block text-sm font-bold text-sky-100 sm:col-span-2"},"Números adicionales (opcional)",
-                            React.createElement("textarea",{value:adminGeneratorNumbers,onChange:e=>{setAdminGeneratorNumbers(e.target.value);setAdminGeneratorMessage('');},
-                                placeholder:"238, 236, 221",rows:2,className:"w-full mt-2 bg-black border border-white/20 text-white p-3 rounded-xl resize-y"})),
                         React.createElement("label",{className:"block text-sm font-bold text-sky-100"},"Nombre y apellido del cliente",
                             React.createElement("input",{value:adminGeneratorCustomer,onChange:e=>setAdminGeneratorCustomer(e.target.value),placeholder:"Nombre y apellido",className:"w-full mt-2 bg-black border border-white/20 text-white p-3 rounded-xl"})),
                         React.createElement("label",{className:"block text-sm font-bold text-sky-100"},"WhatsApp del cliente",
@@ -8966,7 +9046,7 @@ En breve te las preparo y te las envío por acá 😊
                         React.createElement("button",{type:"button",className:"bg-neutral-800 border border-white/20 text-white font-black px-4 py-3 rounded-xl",
                             onClick:()=>generateAdminClientOrder('entrega')},
                             React.createElement("i",{className:"fas fa-link mr-2","aria-hidden":true}),"Preparar entrega con enlaces")),
-                    React.createElement("p",{className:"text-xs text-amber-200/85 mt-3"},"Los enlaces originales son privados: prepará la entrega únicamente cuando el pago esté confirmado."),
+                    React.createElement("p",{className:"text-xs text-amber-200/85 mt-3"},"El pedido se registra como pendiente. Los enlaces originales son privados: prepará la entrega únicamente cuando el pago esté confirmado."),
                     adminGeneratorMessage&&React.createElement("div",{className:"mt-4"},
                         React.createElement("textarea",{readOnly:true,value:adminGeneratorMessage,rows:12,className:"w-full bg-black border border-sky-400/25 text-white p-3 rounded-xl text-sm resize-y"}),
                         React.createElement("div",{className:"flex flex-wrap gap-2 mt-3"},
@@ -10100,6 +10180,25 @@ React.createElement("div", { id: "order-search-panel", hidden:adminPanelTab!=='p
                         mpVerifiedReceipt?"¡Gracias por tu compra!":mpReceiptView?"Estado de tu compra":"Confirmá tu compra"),
                     React.createElement("p", { className: "text-sky-100/75 text-sm leading-relaxed" },
                         mpVerifiedReceipt?"Pago acreditado y verificado. Descargá tus fotos desde acá.":mpReceiptView?"Estamos verificando con Mercado Pago. Las descargas no se habilitan hasta que se confirme el pago.":"Pagá con Mercado Pago o consultá otro medio de pago por WhatsApp.")),
+                !mpReceiptView&&React.createElement("section",{className:"checkout-simple-card la-selected-review mb-3","aria-label":"Revisar las fotos seleccionadas"},
+                    React.createElement("div",{className:"flex justify-between items-center gap-2 mb-3"},
+                        React.createElement("h3",{className:"text-sm font-black text-white"},
+                            React.createElement("i",{className:"fas fa-images text-sky-300 mr-2","aria-hidden":true}),"Tus fotos seleccionadas"),
+                        React.createElement("span",{className:"text-xs font-black text-sky-200"},selectedPhotos.length+" foto"+(selectedPhotos.length===1?"":"s"))),
+                    selectedPhotos.length?React.createElement("div",{className:"grid gap-2 max-h-[280px] overflow-y-auto pr-1"},
+                        selectedPhotos.map(p=>React.createElement("div",{key:p.id,className:"flex items-center gap-3 rounded-xl bg-black/50 border border-white/10 p-2"},
+                            React.createElement("img",{src:toImgUrl(p.rawUrl||p.fullUrl||p.url,180),alt:p.name||"Foto seleccionada",loading:"lazy",className:"w-[62px] h-[62px] shrink-0 rounded-lg object-cover protected-photo"}),
+                            React.createElement("div",{className:"min-w-0 flex-1"},
+                                React.createElement("strong",{className:"block truncate text-xs text-white"},p.name||("Foto "+(p.code||""))),
+                                React.createElement("span",{className:"block truncate text-[11px] text-sky-100/75"},(p.albumName||"")+(p.subAlbumName?" · "+p.subAlbumName:"")),
+                                React.createElement("span",{className:"block text-[11px] text-sky-200 font-bold"},formatPrice(discountLinePrice(p)))),
+                            React.createElement("button",{type:"button",onClick:()=>toggle(p.id),
+                                className:"shrink-0 px-3 py-2 rounded-lg border border-red-300/30 bg-red-950/40 text-red-100 text-xs font-black hover:bg-red-900/60",
+                                "aria-label":"Quitar "+(p.name||"foto")+" del pedido",title:"Eliminar foto seleccionada"},
+                                React.createElement("i",{className:"fas fa-trash-can mr-1","aria-hidden":true}),"Quitar"))))
+                    :React.createElement("div",{className:"text-center text-sm text-neutral-300 py-3"},
+                        React.createElement("p",null,"Ya no hay fotos en tu carrito."),
+                        React.createElement("button",{type:"button",onClick:closeMpCheckout,className:"mt-3 rounded-xl bg-sky-600 px-4 py-2 font-black text-white"},"Volver a la galería"))),
                 mpReceiptView&&!mpVerifiedReceipt&&React.createElement("section",{className:"mb-4 bg-sky-950/70 border border-sky-300/30 rounded-2xl p-4"},
                     React.createElement("p",{className:"text-sm text-white font-black"},
                         mpReturnMissing?"No pudimos identificar la compra en este navegador":"Verificando el pago con Mercado Pago"),
@@ -10246,7 +10345,7 @@ React.createElement("div", { id: "order-search-panel", hidden:adminPanelTab!=='p
                     React.createElement("p",{className:"mp-payment-hint",role:"status"},
                         !MP_PAYMENT_VISIBLE?(mpPaymentConfig.loading?"Comprobando disponibilidad de Mercado Pago…":"Mercado Pago no está disponible ahora. Podés consultar por WhatsApp."):
                         MP_TRIAL_ENABLED?"Compra ficticia con la cuenta de prueba.":"Pago seguro. Tus fotos se habilitan al aprobarse el pago."),
-                    React.createElement("button",{type:"button",onClick:startOtherPaymentWhatsapp,disabled:!checkoutBuyerComplete||transferWhatsappBusy,className:"other-payment-button"},
+                    React.createElement("button",{type:"button",onClick:startOtherPaymentWhatsapp,disabled:!checkoutBuyerComplete||transferWhatsappBusy||!selectedPhotos.length,className:"other-payment-button"},
                         React.createElement("i",{className:"fab fa-whatsapp","aria-hidden":true}),
                         React.createElement("span",null,transferWhatsappBusy?"Abriendo WhatsApp…":"Hablar con Lucas para abonar por transferencia"),
                         React.createElement("i",{className:"fas fa-arrow-up-right-from-square","aria-hidden":true})),
