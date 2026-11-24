@@ -20,7 +20,7 @@ test('El carrito y la cabecera no muestran el Club aunque haya una sesión anter
 test('La administración conserva los pedidos comunes y oculta movimientos y controles del Club', () => {
   const redemption={id:'CB-OLD',date:'2026-09-01T12:00:00Z',type:'benefit_redemption',rewardName:'Premio',redeemedPoints:5,items:[],total:0};
   const pending={id:'LA-PENDING',date:'2026-09-01T12:00:00Z',items:[photo],total:2000};
-  const h=appHarness({...base,route:'#/admin',admin:true,adminPanelTab:'pedidos',orders:[oldOrder,redemption,pending],checkoutOpen:false}), tree=h.render();
+  const h=appHarness({...base,route:'#/admin',admin:true,adminPanelTab:'pedidos',adminLedgerFilter:'all',adminOrdersReady:true,orders:[oldOrder,redemption,pending],checkoutOpen:false}), tree=h.render();
   assert.doesNotMatch(textContent(tree), /puntos|club de beneficios|canjes|CANJE CLUB/i);
   assert.match(textContent(tree), /LA-PENDING/);
   assert.doesNotMatch(textContent(tree), /CB-OLD/);
