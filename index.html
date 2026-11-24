@@ -4527,6 +4527,7 @@ function albumTeamSide(album, index, useFullName = false) {
     const fallbackName = parsedAlbumNames[index] || parsedSourceNames[index] || '';
     const rawDisplayName = (useFullName && entry.fullName) || entry.name || names[index] || fallbackName || (index === 0 ? albumName : '') || '';
     const displayName = cleanTeamDisplayName(rawDisplayName, album, index);
+    if(isTalleresSanLorenzoAlbum(album) && /san_lorenzo/.test(norm(displayName+' '+fallbackName+' '+entry.name))) { const crest='https://commons.wikimedia.org/wiki/Special:FilePath/Escudo_San_Lorenzo_2026.svg'; return {name:'San Lorenzo de Almagro',logo:crest,appLogo:crest,color:'#10244b'}; }
 
     const logoCandidates = [
         entry.fullName,
@@ -4671,7 +4672,7 @@ const LA_FIXED_TEAM_PALETTES=Object.freeze({
 function laUnifiedTeamPalette(team,side='home') {
     const name=String(team&&team.name||'').trim();
     const key=canonicalAppTeamKey(name)||'';
-    const fixed=LA_FIXED_TEAM_PALETTES[key]||null;
+    const fixed=norm(name)==='san_lorenzo_de_almagro'?['#10244b','#c8102e']:(LA_FIXED_TEAM_PALETTES[key]||null);
     const base=laDefaultTeamColors(team,side);
     const logo=String((team&&(team.logo||team.appLogo))||findAppTeamLogo(name)||'').trim();
     const detected=(!fixed&&logo&&laCrestPaletteCache.has(logo))?laCrestPaletteCache.get(logo):null;
@@ -5122,41 +5123,10 @@ const PhotoLicenseReminder = ({ overlay = false } = {}) => React.createElement("
         : "" },
         React.createElement("i", { className: "fas fa-lock text-amber-300 shrink-0" }),
         React.createElement("span", null, "Foto con licencia. Debe ser adquirida para su uso y no puede utilizarse con la marca de agua.")));
-const PreviewWatermark = ({ visible = true, opacity = 0.22, darkness = 0.06, compact = false } = {}) => {
-    if (!visible) return null;
-
-    const safeOpacity = compact
-        ? Math.min(0.24, Math.max(0.14, Number(opacity) * 0.82))
-        : Math.min(0.30, Math.max(0.17, Number(opacity) * 0.96));
-    const safeDarkness = compact
-        ? Math.min(0.08, Math.max(0.024, Number(darkness) * 0.82))
-        : Math.min(0.11, Math.max(0.03, Number(darkness) * 1.05));
-    const total = compact ? 48 : 130;
-    const cols = compact ? 4 : 6;
-
-    return React.createElement("div", { className: "absolute inset-0 pointer-events-none overflow-hidden" },
-        React.createElement("div", {
-            className: compact
-                ? "absolute inset-[-6%] grid grid-cols-4 gap-x-1.5 gap-y-2 place-items-center content-center"
-                : "absolute inset-[-6%] grid grid-cols-6 sm:grid-cols-7 md:grid-cols-8 gap-x-2 gap-y-3 place-items-center content-center",
-            style: { opacity: safeOpacity }
-        }, Array.from({ length: total }).map((_, i) => React.createElement("div", {
-            key: i,
-            className: compact
-                ? "relative flex items-center justify-center rounded-full bg-black/72 border border-white/12 shadow-[0_2px_10px_rgba(0,0,0,.48)]"
-                : "relative flex items-center justify-center rounded-full bg-black/74 border border-white/12 shadow-[0_4px_14px_rgba(0,0,0,.52)]",
-            style: {
-                width: compact ? (i % cols === 0 ? 34 : 30) : (i % cols === 0 ? 54 : 46),
-                height: compact ? (i % cols === 0 ? 34 : 30) : (i % cols === 0 ? 54 : 46),
-                transform: `rotate(${((i % 5) - 2) * 6}deg)`
-            }
-        }, React.createElement("img", {
-            src: WATERMARK_LOGO,
-            className: compact
-                ? "w-[68%] h-[68%] object-contain max-w-none opacity-95"
-                : "w-[70%] h-[70%] object-contain max-w-none opacity-95"
-        })))),
-        React.createElement("div", { className: "absolute inset-0", style: { background: `rgba(0,0,0,${safeDarkness})` } }));
+const PreviewWatermark = ({visible=true,opacity=0.22,darkness=0.06,compact=false}={})=>{
+ if(!visible)return null;
+ return React.createElement("div",{className:"absolute inset-0 pointer-events-none overflow-hidden",style:{backgroundColor:"rgba(0,0,0,"+Math.max(.06,Number(darkness)||0)+")"}},
+ React.createElement("div",{style:{position:"absolute",inset:"-40%",transform:"rotate(-18deg)",backgroundImage:'url("'+WATERMARK_LOGO+'")',backgroundRepeat:"repeat",backgroundSize:compact?"54px 54px":"76px 76px",opacity:Math.min(.68,Math.max(.42,Number(opacity)*1.8)),filter:"drop-shadow(0 1px 2px #000)"}}));
 };
 const ProtectionNotice = () => React.createElement(PhotoLicenseReminder, null);
 const MissingPhotosBanner = () => React.createElement("div", { className: "missing-photos-banner rounded-3xl p-4 sm:p-6 mt-5 sm:mt-7" },
@@ -7032,7 +7002,8 @@ ${clone.outerHTML}`;
     const currentAlbum = displayAlbums.find(a => a.id === activeAlbum) || null;
     const currentSubAlbums = useMemo(() => sortSubAlbums((currentAlbum && currentAlbum.subalbums) || []), [currentAlbum === null || currentAlbum === void 0 ? void 0 : currentAlbum.id, currentAlbum === null || currentAlbum === void 0 ? void 0 : currentAlbum.subalbums]);
     const currentSubAlbum = currentSubAlbums.find(sa => sa.id === activeSubAlbum) || null;
-    const albumPhotos = currentSubAlbum ? currentSubAlbum.photos : (currentAlbum && (!currentAlbum.subalbums || currentAlbum.subalbums.length === 0) && Array.isArray(currentAlbum.photos) ? currentAlbum.photos : []);
+    const rawAlbumPhotos = currentSubAlbum ? currentSubAlbum.photos : (currentAlbum && (!currentAlbum.subalbums || currentAlbum.subalbums.length === 0) && Array.isArray(currentAlbum.photos) ? currentAlbum.photos : []);
+    const albumPhotos = useMemo(()=>[...(rawAlbumPhotos||[])].reverse(),[rawAlbumPhotos]);
     const toggleFavorite=id=>setFavoriteIds(prev=>prev.includes(id)?prev.filter(x=>x!==id):[id,...prev].slice(0,400));
     useEffect(()=>{try{localStorage.setItem('LA_PHOTO_FAVORITES_V1',JSON.stringify(favoriteIds));}catch(_e){}},[favoriteIds]);
     const favoritePhotos=useMemo(()=>allPhotos.filter(p=>favoriteIds.includes(p.id)),[allPhotos,favoriteIds]);
@@ -7041,7 +7012,7 @@ ${clone.outerHTML}`;
         return albumPhotos.filter((p,i)=>{
             if(favoritesOnly&&!favoriteIds.includes(p.id))return false;
             if(!q)return true;
-            const number=String(albumPhotos.length-i);
+            const number=String(i+1);
             const fields=[p.name,p.code,p.subAlbumName,p.albumName,currentAlbum&&currentAlbum.name].filter(Boolean).join(' ');
             return number.includes(q)||norm(fields).includes(q);
         });
@@ -7159,7 +7130,7 @@ ${clone.outerHTML}`;
         const list = albumPhotos.some(p => p.id === photo.id) ? albumPhotos :
             ((displayAlbums.find(a => a.id === photo.albumId) || {}).photos || []);
         const index = list.findIndex(p => p.id === photo.id);
-        return index >= 0 ? list.length - index : 0;
+        return index >= 0 ? (list === albumPhotos ? index + 1 : list.length - index) : 0;
     };
     useEffect(() => { if (!loading && activeAlbum && displayAlbums.length && !displayAlbums.find(a => a.id === activeAlbum)) {
         setActiveAlbum(null);
@@ -7909,7 +7880,7 @@ ${clone.outerHTML}`;
         return; const i = albumPhotos.findIndex(p => p.id === focusPhoto.id); const next = albumPhotos[(i + dir + albumPhotos.length) % albumPhotos.length]; setFocusPhoto(next); };
     const moveViewer = (dir) => { if (!viewer)
         return; const list = albumPhotos.some(p => p.id === viewer.id) ? albumPhotos :
-            allPhotos.filter(p => p.albumId === viewer.albumId);
+            allPhotos.filter(p => p.albumId === viewer.albumId).reverse();
         if (!list.length) return;
         const i = list.findIndex(p => p.id === viewer.id);
         setViewer(list[(i + dir + list.length) % list.length]); };
@@ -10954,6 +10925,7 @@ React.createElement("div", { id: "order-search-panel", hidden:adminPanelTab!=='p
                 React.createElement("div", { onContextMenu: e => e.preventDefault(), onDragStart: e => e.preventDefault(), onTouchStart: e => { var _a, _b; return touchStartX.current = (_b = (_a = e.touches) === null || _a === void 0 ? void 0 : _a[0]) === null || _b === void 0 ? void 0 : _b.clientX; }, onTouchEnd: handleSwipeEnd(moveViewer), className: "photo-viewer-lock rounded-3xl overflow-hidden bg-black border border-neutral-800 relative" },
                     React.createElement("img", { src: viewer.url, loading: "eager", decoding: "async", draggable: false, onContextMenu: e => e.preventDefault(), className: "protected-photo w-full max-h-[80vh] object-contain mx-auto" }),
                     React.createElement(PreviewWatermark, { ...wmProps(viewer.albumId) }),
+                    React.createElement('button',{type:'button',onClick:e=>{e.stopPropagation();toggleFavorite(viewer.id);},className:'absolute top-3 right-3 z-30 w-11 h-11 rounded-full bg-black/70 border border-white/30 flex items-center justify-center text-xl '+(favoriteIds.includes(viewer.id)?'text-red-500':'text-white'),'aria-pressed':favoriteIds.includes(viewer.id),'aria-label':favoriteIds.includes(viewer.id)?'Quitar de favoritas':'Guardar en favoritas'},React.createElement('i',{className:favoriteIds.includes(viewer.id)?'fas fa-heart':'far fa-heart'})),
                     // Sin cartel superpuesto: la licencia se informa debajo del carrito.
                     React.createElement("button", { onClick: () => moveViewer(-1), className: "absolute left-2 sm:left-3 top-1/2 -translate-y-1/2 px-3 h-10 rounded-full bg-black/70 border border-white/20 text-white font-bold text-xs" },
                         React.createElement("i", { className: "fas fa-chevron-left sm:mr-1" }),
@@ -10974,11 +10946,6 @@ React.createElement("div", { id: "order-search-panel", hidden:adminPanelTab!=='p
                       viewer.directDiscountPercent>0 && React.createElement("s",{className:"la-old-unit-price la-old-unit-price-large"},formatPrice(viewer.price)),
                       " ",formatPrice(Math.round(viewer.price*(1-(viewer.directDiscountPercent||0)/100)))),
                     !viewer.free && viewer.directDiscountPercent>0 && React.createElement("div",{className:"la-photo-discount-badge la-photo-discount-viewer"},React.createElement("i",{className:"fas fa-tag mr-2","aria-hidden":true}),viewer.directDiscountPercent,"% OFF · Se aplica automáticamente"),
-                    React.createElement('button',{type:'button',onClick:()=>toggleFavorite(viewer.id),
-                        className:'w-full rounded-xl border border-pink-300/25 bg-pink-500/10 py-3 mb-3 text-sm font-black '+(favoriteIds.includes(viewer.id)?'text-pink-200':'text-white'),
-                        'aria-pressed':favoriteIds.includes(viewer.id)},
-                        React.createElement('i',{className:'fas fa-heart mr-2'}),
-                        favoriteIds.includes(viewer.id)?'Guardada en favoritas · Quitar':'Guardar en favoritas'),
                     React.createElement('p',{className:'text-xs text-sky-100/65 mb-3'},'En el celular, deslizá para pasar de foto.'),
                     React.createElement("button", { onClick: () => viewer.free ? downloadFreePhoto(viewer) : bulkQuoteMode ? toggleBulkQuotePhoto(viewer.id) : toggle(viewer.id), className: "w-full " + (viewer.free ? "la-photo-free-cta" : bulkQuoteMode ? "bulk-quote-photo-btn" : "buy-btn") + " font-black py-4 rounded-xl mb-3" },
                         viewer.free ? React.createElement(React.Fragment,null,React.createElement("i",{className:"fas fa-download mr-2","aria-hidden":true}),"Descargar foto gratuita") : bulkQuoteMode ? (bulkQuoteIds.includes(viewer.id) ? "Quitar de la negociación" : "Seleccionar para negociar") : (cart.includes(viewer.id) ? "Quitar del carrito" : "Agregar al carrito")),
