@@ -3,13 +3,27 @@
 "use strict";
 const h=(tag,props,...children)=>React.createElement(tag,props,...children);
 const money=v=>'$'+new Intl.NumberFormat('es-AR').format(Number(v)||0);
+function exportCsv(filename,columns,records){
+  // BOM facilita Excel en español. Evitar fórmulas que podrían ejecutarse al abrirlo.
+  const csvValue=input=>{
+    let value=String(input??'').replace(/[\r\n\u0000-\u001f]+/g,' ').trim();
+    if(/^[=+\-@]/.test(value))value="'"+value;
+    return '"'+value.replace(/"/g,'""')+'"';
+  };
+  const rows=[columns,...records].map(row=>row.map(csvValue).join(';')).join('\r\n');
+  const blob=new Blob(['\ufeff'+rows],{type:'text/csv;charset=utf-8'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  a.href=url;a.download=filename;document.body.appendChild(a);a.click();a.remove();
+  setTimeout(()=>URL.revokeObjectURL(url),60000);
+}
 function Sales({orders=[],allPhotos=[],views={},mpOrders=[],mpConnected=false,orderState}){
   const [period,setPeriod]=React.useState('30');
   const cutoff=period==='all'?0:Date.now()-Number(period)*86400000;
   const scope=orders.filter(o=>o&&o.type!=='benefit_redemption'&&(!cutoff||Date.parse(o.date||o.createdAt||'')>=cutoff));
   const paid=scope.filter(o=>['paid','manual_paid'].includes(orderState(o)));
   const amount=paid.reduce((total,o)=>total+(Number(orderState(o)==='manual_paid'?(o.manualPaymentAmount??o.total):o.total)||0),0);
-  const byAlbum=new Map(),byCategory=new Map(),byPhoto=new Map();
+  const byAlbum=new Map(),byCategory=new Map(),byPhoto=new Map(),byPhotoInfo=new Map();
   for(const o of paid)for(const p of o.items||[]){
     if(!p)continue;
     const album=String(p.albumName||o.albumName||'Sin identificar');
@@ -17,7 +31,11 @@ function Sales({orders=[],allPhotos=[],views={},mpOrders=[],mpConnected=false,or
     byAlbum.set(album,(byAlbum.get(album)||0)+1);
     byCategory.set(category,(byCategory.get(category)||0)+1);
     const key=album+'|'+String(p.id||p.code||p.name||'');
-    if(!key.endsWith('|'))byPhoto.set(key,(byPhoto.get(key)||0)+1);
+    if(!key.endsWith('|')){
+      byPhoto.set(key,(byPhoto.get(key)||0)+1);
+      if(!byPhotoInfo.has(key))byPhotoInfo.set(key,{album,category,
+        name:String(p.name||p.code||'Foto'),code:String(p.code||'')});
+    }
   }
   const best=map=>[...map.entries()].sort((a,b)=>b[1]-a[1]).slice(0,5);
   const metric=(label,value)=>h('div',{className:'la-ops-stat',key:label},h('span',null,label),h('strong',null,value));
@@ -55,6 +73,24 @@ function Sales({orders=[],allPhotos=[],views={},mpOrders=[],mpConnected=false,or
   children.push(h('div',{className:'la-ops-ranks'},
     rank('Álbumes con más ventas',best(byAlbum)),rank('Categorías vendidas',best(byCategory)),
     rank('Fotos más vendidas',best(byPhoto))));
+  children.push(h('div',{className:'la-ops-export'},
+    h('button',{type:'button',onClick:()=>{
+      const rows=paid.map(o=>[String(o.id||''),String(o.date||o.createdAt||''),
+        String(orderState(o)),String(o.paymentProvider||o.channel||''),
+        Number(orderState(o)==='manual_paid'?(o.manualPaymentAmount??o.total):o.total)||0,
+        (o.items||[]).length]);
+      exportCsv('lucasabraham-ventas-'+period+'-dias.csv',
+        ['Pedido','Fecha','Estado','Canal','Total ARS','Fotos'],rows);
+    }},'Exportar ventas CSV'),
+    h('button',{type:'button',onClick:()=>{
+      const rows=[...byPhoto.entries()].sort((a,b)=>b[1]-a[1]).map(([key,count])=>{
+        const p=byPhotoInfo.get(key)||{};
+        return [p.album||'',p.category||'',p.name||'',p.code||'',count];
+      });
+      exportCsv('lucasabraham-fotos-vendidas-'+period+'-dias.csv',
+        ['Album','Categoria','Foto','Codigo','Veces vendida'],rows);
+    }},'Exportar fotos vendidas CSV'),
+    h('small',null,'Archivos generados con los pedidos acreditados consultados. No incluyen claves de acceso ni enlaces privados.')));
   children.push(h('details',{className:'la-ops-details'},h('summary',null,'Aperturas de fotos en este dispositivo (no globales)'),
     ...local.map(([name,count],i)=>h('p',{className:'la-ops-muted',key:i},name+': '+count+' aperturas'))));
   if(missingDownloads)children.push(h('p',{className:'la-ops-warning'},'Revisar '+missingDownloads+' compras pagadas de Mercado Pago: la fuente no informa algún enlace de descarga.'));
