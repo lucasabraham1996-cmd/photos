@@ -2305,23 +2305,30 @@ img{-webkit-user-drag:none;}
   .la-order-edit-shell{padding-top:6px!important}
   .la-checkout-view-order:focus-visible,.la-order-back-to-checkout:focus-visible{outline:2px solid #fff;outline-offset:2px}
 
-  /* v147 mobile: degradados y escudos visibles sin tocar la tarjeta. */
+  /* v148 mobile: la foto y el título se ven inicialmente; el duelo aparece al primer toque. */
   @media(max-width:768px),(hover:none),(pointer:coarse){
-    .home-album-card-wrap .modern-album-card .team-album-reveal,
+    .home-album-card-wrap .modern-album-card:not(.team-open) .team-album-reveal,
     .home-album-card-wrap .modern-album-card:not(.team-open):active .team-album-reveal,
     .home-album-card-wrap .modern-album-card:not(.team-open):focus-within .team-album-reveal{
-      opacity:1!important;visibility:visible!important;transform:none!important;
+      opacity:0!important;visibility:hidden!important;transform:scale(.985)!important;
+      pointer-events:none!important;
+    }
+    .home-album-card-wrap .modern-album-card.team-open .team-album-reveal,
+    .home-album-card-wrap .modern-album-card.team-open:active .team-album-reveal{
+      opacity:1!important;visibility:visible!important;transform:scale(1)!important;
       inset:0!important;padding:0!important;z-index:4!important;
       border-radius:inherit!important;pointer-events:none!important;
     }
     .home-album-card-wrap .modern-album-card .team-album-reveal>.la-premier-duel{
       display:block!important;width:100%!important;height:100%!important;
-      opacity:1!important;visibility:visible!important;border-radius:inherit!important;
-      background:transparent!important;
+      border-radius:inherit!important;background:transparent!important;
     }
-    .home-album-card-wrap .modern-album-card .album-info-panel,
+    .home-album-card-wrap .modern-album-card:not(.team-open) .album-info-panel,
     .home-album-card-wrap .modern-album-card:not(.team-open):active .album-info-panel,
     .home-album-card-wrap .modern-album-card:not(.team-open):focus-within .album-info-panel{
+      opacity:1!important;visibility:visible!important;transform:none!important;pointer-events:none!important;
+    }
+    .home-album-card-wrap .modern-album-card.team-open .album-info-panel{
       opacity:0!important;visibility:hidden!important;pointer-events:none!important;
     }
     .home-album-card-wrap .modern-album-card .gallery-cover-crests.compact{
@@ -2357,8 +2364,11 @@ img{-webkit-user-drag:none;}
     .home-album-card-wrap .modern-album-card .la-premier-duel-cta{
       display:none!important;
     }
-    .modern-album-card .la-album-team-gradient{
-      opacity:.70!important;mix-blend-mode:normal!important;display:block!important;
+    .home-album-card-wrap .modern-album-card:not(.team-open) .la-album-team-gradient{
+      opacity:0!important;visibility:hidden!important;
+    }
+    .home-album-card-wrap .modern-album-card.team-open .la-album-team-gradient{
+      opacity:.70!important;visibility:visible!important;mix-blend-mode:normal!important;display:block!important;
     }
     .new-gallery-hero .la-album-team-gradient{
       opacity:.42!important;mix-blend-mode:normal!important;display:block!important;
@@ -6532,8 +6542,14 @@ function App() {
     const handleAlbumCardTap = (event, album) => {
         if (!album)
             return;
-        // Los escudos y degradés ya están visibles en móviles: un toque abre la galería.
-        // En escritorio se conserva el efecto de hover.
+        // Móvil: primer toque revela escudos + degradés; segundo toque abre la galería.
+        // En escritorio se mantiene el comportamiento de hover y clic directo.
+        const isCover=Boolean(event&&event.currentTarget&&event.currentTarget.querySelector('.modern-album-card'));
+        const isTouch=Boolean(window.matchMedia&&window.matchMedia('(max-width: 768px), (hover: none), (pointer: coarse)').matches);
+        if(isCover&&isTouch&&mobileRevealedAlbumId!==album.id){
+            setMobileRevealedAlbumId(album.id);
+            return;
+        }
         const firstSubAlbumId = (((album.subalbums || [])[0] || {}).id) || '';
         setMobileRevealedAlbumId('');
         location.hash = albumHash(album.id, firstSubAlbumId);
