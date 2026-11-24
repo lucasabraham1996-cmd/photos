@@ -229,9 +229,16 @@ test('Regreso público de Mercado Pago contiene ticket privado para el navegador
   f.env.MP_LIVE_MODE='public';
   const p=await f.create(f.input(3)),payload=f.state.posts.at(-1).payload;
   const returnURL=new URL(payload.config.online.success_url);
-  assert.equal(returnURL.origin,ORIGIN);
-  assert.equal(returnURL.searchParams.get('mp_return'),'1');
-  assert.equal(returnURL.hash,'#/compra/'+p.checkout_id+'/'+p.receipt_token);
+  // Mercado Pago vuelve al puente seguro del Worker; allí se valida el ticket
+  // y solo después se redirige a lucasabrahamph.com con el comprobante en el hash.
+  assert.equal(returnURL.origin,BASE);
+  assert.equal(returnURL.pathname,'/api/mp-return/'+p.checkout_id+'/'+p.receipt_token);
+  const bridge=await f.request(returnURL.pathname,undefined,{},'GET');
+  assert.equal(bridge.status,303);
+  const target=new URL(bridge.headers.get('Location'));
+  assert.equal(target.origin,'https://lucasabrahamph.com');
+  assert.equal(target.searchParams.get('mp_return'),'1');
+  assert.equal(target.hash,'#/compra/'+p.checkout_id+'/'+p.receipt_token);
   assert.equal(payload.config.online.failure_url,payload.config.online.success_url);
   assert.equal(payload.config.online.pending_url,payload.config.online.success_url);
 }));
@@ -531,7 +538,7 @@ test('La página conserva el botón de descarga para reintentar después de una 
 
 function appHarness(f,config={mode:'validation',available:true,validation_amount:200,public_enabled:false}) {
   const storage=new Map(),effects=[],downloads=[],remoteOrders=[];
-  const context={admin:true,CLUB_ENABLED:false,mpTrialBusy:false,MP_TRIAL_ENABLED:false,MP_PAYMENT_VISIBLE:true,
+  const context={admin:true,adminPanelTab:'pagos',CLUB_ENABLED:false,mpTrialBusy:false,MP_TRIAL_ENABLED:false,MP_PAYMENT_VISIBLE:true,
     MP_TRIAL_BASE:BASE,mpPaymentConfig:config,mpTrialPurchase:null,mpTrialDownloads:[],
     MP_RECEIPTS_STORAGE_KEY:'LA_MP_PURCHASE_RECEIPTS_V1',
     readMpReceipts:()=>{try{return JSON.parse(storage.get('LA_MP_PURCHASE_RECEIPTS_V1')||'[]')}catch(_){return []}},
