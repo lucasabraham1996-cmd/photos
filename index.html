@@ -2253,6 +2253,7 @@ img{-webkit-user-drag:none;}
   <link rel="stylesheet" href="./admin-mobile-picker-v11.css?v=20261116-12" />
   <script src="./admin-recordatorios.js?v=20261101-3"></script>
 <script defer src="./premium-ux-v132.js?v=135"></script>
+<script src="./admin-ops-v150.js?v=150"></script>
 
 <style id="la-v145-shop-story-experience">
   .la-selected-review{border:1px solid rgba(125,211,252,.24)!important;background:linear-gradient(160deg,rgba(9,35,54,.9),rgba(5,11,22,.95))!important}
@@ -2304,6 +2305,46 @@ img{-webkit-user-drag:none;}
     border-color:rgba(125,211,252,.3)!important}
   .la-order-edit-shell{padding-top:6px!important}
   .la-checkout-view-order:focus-visible,.la-order-back-to-checkout:focus-visible{outline:2px solid #fff;outline-offset:2px}
+
+  /* v150: sales stats + publication audit + order workflows. */
+  .la-ops-panel{padding:18px;margin:0 0 18px;border:1px solid #305477;border-radius:22px;
+    background:linear-gradient(150deg,#102033,#080e18);color:#fff}
+  .la-ops-head{margin-bottom:14px}.la-ops-head h3{font-size:19px;font-weight:900}
+  .la-ops-head p,.la-ops-muted{font-size:11px;color:#a3b9ca;line-height:1.5;margin-top:4px}
+  .la-ops-period{display:flex;align-items:center;gap:9px;margin:10px 0;font-size:12px;color:#b9c9da}
+  .la-ops-period select,.la-ops-field select{border:1px solid #345c77;background:#071726;color:#fff;
+    padding:9px 11px;border-radius:10px;font-size:12px}
+  .la-ops-kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin:12px 0}
+  .la-ops-stat{background:#071827;border:1px solid #254c63;border-radius:13px;padding:12px;min-width:0}
+  .la-ops-stat span{display:block;font-size:10px;color:#a8cadc}.la-ops-stat strong{display:block;font-size:19px;font-weight:950;margin-top:8px;color:#fff}
+  .la-ops-ranks{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px}
+  .la-ops-rank{padding:12px;border:1px solid #294b65;border-radius:13px;min-width:0;background:#071523}
+  .la-ops-rank h4{font-size:12px;color:#bdeaff;font-weight:900;margin-bottom:7px}
+  .la-ops-rank-row{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:7px 0;border-bottom:1px solid #273f50;font-size:11px}
+  .la-ops-rank-row span{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .la-ops-rank-row b{flex:0 0 auto}
+  .la-ops-details{margin-top:12px;padding:10px 0;border-top:1px solid #29455d}
+  .la-ops-details summary{color:#c7e7fa;font-weight:800;font-size:12px;cursor:pointer}
+  .la-ops-warning{padding:11px;border:1px solid #b45309;background:#78350f55;border-radius:11px;font-size:12px;color:#fde68a;margin:11px 0}
+  .la-ops-yellow{color:#fde68a;font-size:13px}.la-ops-green{color:#86efac;font-size:12px}
+  .la-ops-issue{font-size:11px;color:#fde68a;margin-top:5px}
+  .la-ops-audit{padding:12px;background:#051321;border:1px solid #33516c;border-radius:12px;margin:11px 0}
+  .la-ops-field{display:flex;flex-direction:column;gap:6px;min-width:0;font-size:12px;font-weight:800;color:#bcd7e8}
+  .la-ops-buttons{display:flex;flex-wrap:wrap;gap:8px;margin:12px 0}
+  .la-ops-buttons button,.la-ops-transfer>button{background:#075985;border:1px solid #38bdf8;border-radius:11px;padding:10px 12px;font-size:12px;font-weight:900;color:#fff}
+  .la-ops-buttons button:disabled,.la-ops-transfer>button:disabled{opacity:.4;cursor:not-allowed}
+  .la-ops-transfer{margin:16px 0;border-top:1px solid #34536d;padding-top:14px}
+  .la-ops-transfer h4{font-size:14px;font-weight:900;margin-bottom:8px}
+  .la-ops-copy{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin:12px 0}
+  .la-ops-stage-board{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px;margin:14px 0}
+  .la-ops-stage{display:flex;flex-direction:column;gap:6px;align-items:center;justify-content:center;padding:10px;min-height:72px;
+    border-radius:12px;border:1px solid #30516c;background:#0a2233;color:#c7deef}
+  .la-ops-stage strong{font-size:23px;font-weight:950;color:#fff}.la-ops-stage span{font-size:10px;font-weight:800}
+  .la-ops-stage.active{background:#0369a1;border-color:#7dd3fc}
+  .la-ops-stage-select{display:flex;flex-direction:column;gap:3px;color:#afc4d4;font-size:10px;font-weight:800}
+  .la-ops-stage-select select{background:#071724;color:#fff;border:1px solid #315575;border-radius:8px;padding:7px;font-size:11px;max-width:150px}
+  @media(max-width:700px){.la-ops-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}.la-ops-ranks{grid-template-columns:1fr}.la-ops-copy{grid-template-columns:1fr}.la-ops-stage-board{grid-template-columns:repeat(3,minmax(0,1fr))}}
+
 
   .la-customer-quick-links{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0 16px}
   .la-customer-quick-links button{display:inline-flex;align-items:center;gap:7px;padding:10px 14px;border:1px solid #36516b;border-radius:13px;background:#0c1c2c;color:#e9f6ff;font-size:12px;font-weight:850}
@@ -6149,6 +6190,11 @@ function App() {
     const [adminGeneratorPhone,setAdminGeneratorPhone] = useState('');
     const [adminGeneratorMessage,setAdminGeneratorMessage] = useState('');
     const [adminLedgerFilter,setAdminLedgerFilter] = useState('recent');
+    const [adminWorkflowTags,setAdminWorkflowTags]=useState(()=>{
+        try {const x=JSON.parse(localStorage.getItem('LA_ADMIN_WORKFLOW_TAGS_V1')||'{}');
+            return x&&typeof x==='object'&&!Array.isArray(x)?x:{};}catch(_){return {};}
+    });
+    useEffect(()=>{try{localStorage.setItem('LA_ADMIN_WORKFLOW_TAGS_V1',JSON.stringify(adminWorkflowTags));}catch(_e){}},[adminWorkflowTags]);
     const [adminLedgerVisibleLimit,setAdminLedgerVisibleLimit]=useState(30);
     const [adminOrdersReady,setAdminOrdersReady]=useState(false);
     const [adminOrdersLastUpdatedAt,setAdminOrdersLastUpdatedAt]=useState('');
@@ -7374,6 +7420,9 @@ ${clone.outerHTML}`;
                 (adminLedgerFilter==='recent'&&(Boolean(needle)||Boolean(adminLedgerDate)||Date.parse(o.date||o.createdAt||'')>=recentCutoff))||
                 (adminLedgerFilter==='month'&&Date.parse(o.date||o.createdAt||'')>=monthCutoff)||
                 (adminLedgerFilter==='paid'&&['paid','manual_paid'].includes(state))||
+                (adminLedgerFilter==='delivered'&&Boolean(o.delivered))||
+                (adminLedgerFilter==='preparing'&&adminWorkflowTags[normalizeOrderCode(o.id)]==='preparing')||
+                (adminLedgerFilter==='claims'&&adminWorkflowTags[normalizeOrderCode(o.id)]==='claims')||
                 (adminLedgerFilter==='whatsapp'&&channel==='whatsapp')||
                 state===adminLedgerFilter;
             const dateOk=!adminLedgerDate||String(o.date||o.createdAt||'').slice(0,10)===adminLedgerDate;
@@ -7382,7 +7431,7 @@ ${clone.outerHTML}`;
                 ...items.flatMap(p=>[p&&p.name,p&&p.albumName,p&&p.code])].filter(Boolean).join(' ');
             return filterOk&&dateOk&&(!needle||norm(haystack).includes(needle));
         });
-    },[adminOrderLedger,adminLedgerFilter,adminLedgerSearch,adminLedgerDate]);
+    },[adminOrderLedger,adminLedgerFilter,adminLedgerSearch,adminLedgerDate,adminWorkflowTags]);
     const adminVisibleLedger=useMemo(()=>adminFilteredLedger.slice(0,adminLedgerVisibleLimit),[adminFilteredLedger,adminLedgerVisibleLimit]);
     useEffect(()=>{setAdminLedgerVisibleLimit(30)},[adminLedgerFilter,adminLedgerSearch,adminLedgerDate]);
     // El admin puede registrar una confirmación manual para seguimiento comercial.
@@ -9290,7 +9339,11 @@ En breve te las preparo y te las envío por acá 😊
                                 React.createElement("small",{className:"la-admin-kpi-note"},note))))),
                 React.createElement("p",{className:"la-admin-hub-note"},
                     "Indicadores calculados sobre las órdenes disponibles de Firebase, Apps Script y Cloudflare. Actualizá y recuperá pedidos para consultar la información más reciente; no reemplazan una conciliación contable.")),
-            React.createElement("section",{id:"la-admin-orders-today",hidden:adminPanelTab!=='inicio',className:"mb-5 rounded-3xl border border-emerald-400/25 bg-neutral-900 p-4 sm:p-5"},
+            window.LAPhotoOps && React.createElement('div',{hidden:adminPanelTab!=='inicio'},
+                 React.createElement(window.LAPhotoOps.Sales,{
+                    orders:adminOrderLedger,allPhotos,views:photoDeviceViews,
+                    mpConnected:mpAdminConnected,mpOrders:mpAdminOrders,orderState:adminOrderState})),
+             React.createElement("section",{id:"la-admin-orders-today",hidden:adminPanelTab!=='inicio',className:"mb-5 rounded-3xl border border-emerald-400/25 bg-neutral-900 p-4 sm:p-5"},
                 React.createElement("h2",{className:"text-lg font-black text-white"},"Pedidos de hoy"),
                 React.createElement("p",{className:"text-sm text-neutral-300 mt-1"},
                     adminTodayOrders.length+" pedidos encontrados en las fuentes consultadas · "+adminTodayOrders.filter(o=>['paid','manual_paid'].includes(adminOrderState(o))).length+" pagados · "+
@@ -9586,13 +9639,28 @@ React.createElement("div", { id: "order-search-panel", hidden:adminPanelTab!=='p
                 React.createElement("p",{className:"text-xs text-neutral-400 mb-3"},adminOrderLedger.length+" pedidos disponibles · "+adminFilteredLedger.length+" coincidencias"+(mpAdminOrdersHasMore?" · más ventas MP por recuperar":"")+"."),
                 mpAdminOrdersError&&React.createElement("p",{role:"alert",className:"text-xs text-amber-200 mb-3"},mpAdminOrdersError),
                 mpAdminOrdersHasMore&&React.createElement("button",{type:"button",onClick:()=>fetchMpAdminOrders(true),className:"mb-3 px-4 py-2 rounded-xl bg-neutral-700 text-white text-xs font-bold"},"Recuperar más órdenes"),
+                React.createElement('div',{className:'la-ops-stage-board'},
+                    [['pending','Pendientes'],['paid','Pagados'],['preparing','En preparación'],['delivered','Entregados'],['claims','Reclamos']].map(([value,label])=>{
+                        const num=adminOrderLedger.filter(o=>
+                            value==='pending'?['pending','agreed'].includes(adminOrderState(o)):
+                            value==='paid'?['paid','manual_paid'].includes(adminOrderState(o)):
+                            value==='preparing'?adminWorkflowTags[normalizeOrderCode(o.id)]==='preparing':
+                            value==='claims'?adminWorkflowTags[normalizeOrderCode(o.id)]==='claims':
+                            Boolean(o.delivered)).length;
+                        return React.createElement('button',{type:'button',key:value,
+                            className:'la-ops-stage'+(adminLedgerFilter===value?' active':''),
+                            onClick:()=>{setAdminLedgerFilter(value);setAdminLedgerDate('');setAdminLedgerSearch('');}},
+                            React.createElement('strong',null,num),React.createElement('span',null,label));
+                    })),
+                React.createElement('p',{className:'text-[11px] text-neutral-400 mb-3'},
+                    'Preparación y reclamos se guardan en este navegador: no cambian el estado del pago ni habilitan descargas.'),
                 React.createElement("div",{className:"la-ledger-filterbar"},
                     React.createElement("input",{type:"search",className:"la-ledger-search",value:adminLedgerSearch,
                         onChange:e=>setAdminLedgerSearch(e.target.value),placeholder:"Buscar cliente, equipo, foto o pedido","aria-label":"Buscar pedidos"}),
                     React.createElement("select",{className:"la-ledger-select",value:adminLedgerFilter,
                         onChange:e=>setAdminLedgerFilter(e.target.value),"aria-label":"Filtrar por estado"},
                         [["recent","Últimos 7 días"],["month","Últimos 30 días"],["all","Historial disponible"],["paid","Pagados"],["pending","Pendiente de pago"],
-                         ["whatsapp","Consultas WhatsApp"],["agreed","Pago acordado"],
+                         ["whatsapp","Consultas WhatsApp"],["agreed","Pago acordado"],["delivered","Entregados"],["preparing","En preparación (local)"],["claims","Reclamos (local)"],
                          ["manual_paid","Pagado otro medio"],["cancelled","Cancelados"]].map(([value,label])=>
                             React.createElement("option",{key:value,value},label))),
                     React.createElement("input",{type:"date",className:"la-ledger-date",value:adminLedgerDate,
@@ -9616,6 +9684,13 @@ React.createElement("div", { id: "order-search-panel", hidden:adminPanelTab!=='p
                                 ` · ${formatPrice(adminOrderState(o)==='manual_paid'?(o.manualPaymentAmount??o.total):o.total)}`),
                             React.createElement("div",{className:"la-ledger-summary"},
                                 (o.items||[]).length+" fotos · "+(o.albumName||o.items&&o.items[0]&&o.items[0].albumName||"Sin galería"))),
+                        React.createElement('label',{className:'la-ops-stage-select'},'Seguimiento',
+                            React.createElement('select',{value:adminWorkflowTags[normalizeOrderCode(o.id)]||'',onChange:e=>{
+                                const key=normalizeOrderCode(o.id),value=e.target.value;
+                                setAdminWorkflowTags(prev=>{const next={...prev};if(value)next[key]=value;else delete next[key];return next;});
+                            }},
+                                [['','Sin etiqueta'],['preparing','En preparación'],['claims','Reclamo']].map(([v,t])=>
+                                    React.createElement('option',{key:v,value:v},t)))),
                         React.createElement("details",{className:"la-ledger-details"},
                             React.createElement("summary",null,"Ver fotos y movimientos"),
                             React.createElement("div",{className:"la-ledger-expanded"},
@@ -9728,7 +9803,23 @@ React.createElement("div", { id: "order-search-panel", hidden:adminPanelTab!=='p
                 React.createElement("div", { className: "flex flex-col sm:flex-row gap-2 mt-4" },
                     React.createElement("button", { onClick: () => setBannerSettings({ visible: false, items: [] }), className: "bg-neutral-800 px-4 py-3 rounded-xl font-bold" }, "Ocultar y borrar banners"),
                     React.createElement("button", { onClick: () => setBannerSettings(bs => ({ ...bs, items: [...(bs.items || []), { src: '', title: 'Nuevo banner', text: 'Descripción del banner', msg: 'Hola Lucas! Quiero consultar por este servicio.' }] })), className: "bg-indigo-600 px-4 py-3 rounded-xl font-bold" }, "Agregar banner"))),
-            admin && React.createElement("div", { id:"la-admin-mp-sync",
+            admin&&window.LAPhotoOps&&React.createElement('div',{hidden:adminPanelTab!=='galerias'},
+                 React.createElement(window.LAPhotoOps.Publisher,{
+                    albums:displayAlbums,sides:matchPickerSides,
+                    toThumb:url=>toImgUrl(url,240),
+                    albumLink:a=>albumUrl(a.id,((a.subalbums||[])[0]||{}).id||''),
+                    onCopy:(src,dst)=>{
+                        if(!src||!dst||src===dst)return;
+                        const fromAlbum=displayAlbums.find(a=>a.id===src);
+                        if(!fromAlbum)return;
+                        setAlbumLogoSources(prev=>({...prev,[dst]:getAlbumLogoSource(fromAlbum,albumLogoSources)}));
+                        setWatermarkSettings(prev=>({...prev,disabledAlbums:{
+                            ...(prev.disabledAlbums||{}),[dst]:Boolean((prev.disabledAlbums||{})[src])}}));
+                        setDiscountSettings(prev=>({...prev,excludedAlbums:{
+                            ...(prev.excludedAlbums||{}),[dst]:Boolean((prev.excludedAlbums||{})[src])}}));
+                    }
+                 })),
+             admin && React.createElement("div", { id:"la-admin-mp-sync",
                 hidden:adminPanelTab!=='galerias',
                 className:"rounded-2xl border border-sky-400/30 bg-sky-500/10 px-5 py-4 mb-6"
             },
