@@ -9720,7 +9720,7 @@ React.createElement("div", { id: "order-search-panel", hidden:adminPanelTab!=='p
                             product.imageUrl ? React.createElement("img", { src:product.imageUrl, className:"w-12 h-12 rounded-lg object-cover" }) : React.createElement("div", { className:"w-12 h-12 rounded-lg bg-orange-500/10 flex items-center justify-center text-orange-300" }, React.createElement("i", { className:"fas fa-gift" })),
                             React.createElement("div", { className:"min-w-0 flex-1" }, React.createElement("b", { className:"text-xs block truncate" }, product.name), React.createElement("span", { className:"text-[10px] text-orange-300" }, `${product.points} puntos · ${product.active === false ? 'Pausado' : 'Activo'}`)),
                             React.createElement("button", { onClick:() => toggleClubProduct(product.id), className:"bg-neutral-800 px-2 py-2 rounded-lg text-[10px] font-black" }, product.active === false ? "Activar" : "Pausar"),
-                            React.createElement("button", { onClick:() => deleteClubProduct(product.id), className:"bg-red-500/15 text-red-200 px-2 py-2 rounded-lg text-[10px]" }, React.createElement("i", { className:"fas fa-trash" }))))),
+                            React.createElement("button", { onClick:() => deleteClubProduct(product.id), className:"bg-red-500/15 text-red-200 px-2 py-2 rounded-lg text-[10px]" }, React.createElement("i", { className:"fas fa-trash" })))))),
                 CLUB_ENABLED && React.createElement("div", { className:"bg-black/30 border border-emerald-500/20 rounded-2xl p-4 mb-5" },
                     React.createElement("h3", { className:"font-black text-sm mb-3" }, React.createElement("i", { className:"fas fa-coins mr-2 text-emerald-300" }), "Gestión de puntos por celular"),
                     React.createElement("div", { className:"grid sm:grid-cols-[1fr,110px,auto] gap-2 mb-3" },
@@ -9840,7 +9840,7 @@ React.createElement("div", { id: "order-search-panel", hidden:adminPanelTab!=='p
                                 React.createElement("button",{type:"button",
                                     onClick:()=>updateManualWhatsappStatus(o,'manual_paid')},"Confirmar otro medio")),
                         !isResolvedOrder(o)&&!(o.paid||o.paymentStatus==='accredited') && React.createElement("button", { onClick:() => { if (confirm(isRedemption ? '¿Anular este canje y devolver los puntos?' : '¿Marcar este pedido como cancelado/no pagado?')) setOrderDecisionAndClose(o,'rejected'); }, className:"bg-red-500/15 border border-red-500/30 text-red-200 px-3 py-2 rounded-xl text-xs font-black" }, isRedemption ? "Anular canje" : "Anular / no pagado"));
-                }))),
+                })),
                 adminOrdersReady&&adminFilteredLedger.length>adminLedgerVisibleLimit&&React.createElement("button",{
                     type:"button",onClick:()=>setAdminLedgerVisibleLimit(v=>v+30),
                     className:"w-full mt-3 px-4 py-3 rounded-xl border border-sky-400/25 bg-sky-500/10 text-sky-100 text-sm font-black"},
