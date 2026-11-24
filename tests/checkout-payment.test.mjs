@@ -17,11 +17,9 @@ test('El carrito ofrece pago directo y consulta al WhatsApp personal sin registr
   const actions=nodes(card).filter(n=>n.type==='button'||n.type==='a');
   assert.equal(actions.length,2);assert.equal(actions[0].props.disabled,false);
   assert.match(textContent(actions[0]),/Pagar con Mercado Pago/);
-  const url=new URL(actions[1].props.href);
-  assert.equal(url.hostname,'wa.me');assert.equal(url.pathname,'/5493515580770');
-  assert.match(url.searchParams.get('text'),/consultar otros medios de pago/);
-  assert.match(url.searchParams.get('text'),/All Boys · Foto 1.jpg/);
-  assert.doesNotMatch(url.searchParams.get('text'),/comprobante|transferí|puntos|club/i);
+  assert.equal(actions[1].type,'button','La consulta se inicia desde un botón, sin enviar todavía un pedido');
+  assert.match(textContent(actions[1]),/transferencia|hablar con Lucas/i);
+  assert.equal(typeof actions[1].props.onClick,'function','El botón abre el flujo de contacto al pulsarlo');
   assert.equal(nodes(tree).some(n=>/checkout-floating-cta|checkout-simple-cta/.test(n.props.className||'')),false);
   assert.equal(h.ctx.requests.length,0);assert.equal(h.storage.size,0);
 });
@@ -195,14 +193,16 @@ test('Tickets anteriores se abren voluntariamente sin regalar enlaces antes de r
 test('El álbum completo se acuerda únicamente por WhatsApp y no abre Mercado Pago',async()=>{
   const h=appHarness({...base,activeAlbum:'album-01',route:'#/album/album-01',checkoutOpen:false,purchaseHelpOpen:true});
   const tree=h.render();
-  const card=nodes(tree).find(n=>n.props.id==='album-payment-options');
-  assert.ok(card,'La oferta del álbum está visible');
-  const options=nodes(card).filter(n=>n.type==='a'||n.type==='button');
-  assert.equal(options.length,1,'Solo hay un medio de contacto para álbum completo');
-  assert.equal(options[0].type,'button');
-  assert.equal(typeof options[0].props.onClick,'function','La consulta primero registra un pedido antes de abrir WhatsApp');
-  assert.match(textContent(options[0]),/Hablar con Lucas por WhatsApp/i);
-  assert.doesNotMatch(textContent(card),/Pagar con Mercado Pago/i);
+  const entry=nodes(tree).find(n=>n.props.className==='la-album-consult-trigger');
+  assert.ok(entry,'La consulta por álbum completo está visible');
+  assert.match(textContent(entry),/Consultar por álbum completo/i);
+  assert.equal(typeof entry.props.onClick,'function');
+  const modal=appHarness({...base,activeAlbum:'album-01',route:'#/album/album-01',checkoutOpen:false,albumConsultOpen:true}).render();
+  const dialog=nodes(modal).find(n=>n.props.className==='la-album-consult-modal');
+  assert.ok(dialog,'La consulta abre un cuadro con los datos del álbum');
+  const whatsapp=nodes(dialog).find(n=>n.props.className==='la-album-consult-whatsapp');
+  assert.ok(whatsapp,'Solo se ofrece WhatsApp para el álbum completo');
+  assert.doesNotMatch(textContent(dialog),/Pagar con Mercado Pago/i);
 });
 
 test('El historial principal muestra órdenes D1 pagadas y pendientes aunque Firebase no las tenga',()=>{
@@ -217,8 +217,8 @@ test('El historial principal muestra órdenes D1 pagadas y pendientes aunque Fir
       photos:[{photo_id:'p2',name:'Dos.jpg',download_url:'https://drive.google.com/uc?export=download&id=validDriveId12346'}]}
   ]});
   const tree=h.render(),body=textContent(tree);
-  assert.match(body,/Historial unificado de todas las órdenes/);
-  assert.match(body,/Recuperar pedidos de hoy y todas las ventas MP/);
+  assert.match(body,/Pedidos · historial unificado/);
+  assert.match(body,/Actualizar y recuperar todos los pedidos/);
   assert.match(body,/Cliente Uno/);
   assert.match(body,/Cliente Dos/);
   assert.match(body,/Pago acreditado/);
