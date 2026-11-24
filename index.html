@@ -2304,6 +2304,91 @@ img{-webkit-user-drag:none;}
     border-color:rgba(125,211,252,.3)!important}
   .la-order-edit-shell{padding-top:6px!important}
   .la-checkout-view-order:focus-visible,.la-order-back-to-checkout:focus-visible{outline:2px solid #fff;outline-offset:2px}
+
+  /* v147 mobile: degradados y escudos visibles sin tocar la tarjeta. */
+  @media(max-width:768px),(hover:none),(pointer:coarse){
+    .home-album-card-wrap .modern-album-card .team-album-reveal,
+    .home-album-card-wrap .modern-album-card:not(.team-open):active .team-album-reveal,
+    .home-album-card-wrap .modern-album-card:not(.team-open):focus-within .team-album-reveal{
+      opacity:1!important;visibility:visible!important;transform:none!important;
+      inset:0!important;padding:0!important;z-index:4!important;
+      border-radius:inherit!important;pointer-events:none!important;
+    }
+    .home-album-card-wrap .modern-album-card .team-album-reveal>.la-premier-duel{
+      display:block!important;width:100%!important;height:100%!important;
+      opacity:1!important;visibility:visible!important;border-radius:inherit!important;
+      background:transparent!important;
+    }
+    .home-album-card-wrap .modern-album-card .album-info-panel,
+    .home-album-card-wrap .modern-album-card:not(.team-open):active .album-info-panel,
+    .home-album-card-wrap .modern-album-card:not(.team-open):focus-within .album-info-panel{
+      opacity:0!important;visibility:hidden!important;pointer-events:none!important;
+    }
+    .home-album-card-wrap .modern-album-card .gallery-cover-crests.compact{
+      display:none!important;
+    }
+    .home-album-card-wrap .modern-album-card .la-premier-duel-side,
+    .la-picker-premier-card .la-premier-duel-side,
+    .la-related-card .la-premier-duel-side{
+      background:linear-gradient(135deg,var(--duel-bg,#173c64) 0%,var(--duel-deep,#0c2746) 100%)!important;
+      opacity:1!important;visibility:visible!important;
+    }
+    .home-album-card-wrap .modern-album-card .la-premier-duel-side.is-all-boys,
+    .la-picker-premier-card .la-premier-duel-side.is-all-boys,
+    .la-related-card .la-premier-duel-side.is-all-boys{
+      background:linear-gradient(135deg,var(--duel-bg,#20242a) 0%,var(--duel-deep,#e5e7eb) 100%)!important;
+    }
+    .home-album-card-wrap .modern-album-card .la-premier-duel-crest-frame,
+    .la-picker-premier-card .la-premier-duel-crest-frame,
+    .la-related-card .la-premier-duel-crest-frame{
+      display:block!important;opacity:1!important;visibility:visible!important;
+      z-index:3!important;min-width:0!important;
+    }
+    .home-album-card-wrap .modern-album-card .la-premier-duel .la-premier-duel-crest-frame>.la-premier-duel-crest,
+    .home-album-card-wrap .modern-album-card .la-premier-duel .la-premier-duel-side.right .la-premier-duel-crest-frame>.la-premier-duel-crest,
+    .la-picker-premier-card .la-premier-duel .la-premier-duel-crest-frame>.la-premier-duel-crest,
+    .la-picker-premier-card .la-premier-duel .la-premier-duel-side.right .la-premier-duel-crest-frame>.la-premier-duel-crest,
+    .la-related-card .la-premier-duel .la-premier-duel-crest-frame>.la-premier-duel-crest,
+    .la-related-card .la-premier-duel .la-premier-duel-side.right .la-premier-duel-crest-frame>.la-premier-duel-crest{
+      left:0!important;right:0!important;top:0!important;width:100%!important;
+      height:100%!important;max-width:100%!important;max-height:100%!important;
+      object-fit:contain!important;object-position:center!important;
+    }
+    .home-album-card-wrap .modern-album-card .la-premier-duel-cta{
+      display:none!important;
+    }
+    .modern-album-card .la-album-team-gradient{
+      opacity:.70!important;mix-blend-mode:normal!important;display:block!important;
+    }
+    .new-gallery-hero .la-album-team-gradient{
+      opacity:.42!important;mix-blend-mode:normal!important;display:block!important;
+    }
+    .new-gallery-hero-content>.gallery-cover-crests,
+    .new-gallery-hero-content>.gallery-cover-crests .gallery-cover-crest,
+    .la-pl-team .la-pl-crest,
+    .la-pl-team .la-pl-crest img{
+      opacity:1!important;visibility:visible!important;
+    }
+    .new-gallery-hero-content>.gallery-cover-crests .gallery-cover-crest{
+      background:linear-gradient(145deg,var(--la-crest-bg,#173c64),var(--la-crest-accent,#0c2746))!important;
+    }
+    .la-pl-team{
+      background:linear-gradient(130deg,var(--la-team-bg,#173c64),var(--la-team-deep,#0c2746))!important;
+    }
+    .la-pl-team.la-pl-team--all-boys{
+      background:linear-gradient(130deg,var(--la-team-bg,#20242a),var(--la-team-deep,#e5e7eb))!important;
+    }
+    .la-pl-team .la-pl-crest{display:grid!important;place-items:center!important;z-index:3!important}
+    .la-pl-team .la-pl-crest img{
+      display:block!important;max-width:100%!important;max-height:100%!important;
+      object-fit:contain!important;filter:drop-shadow(0 3px 7px rgba(0,0,0,.48))!important;
+    }
+  }
+  @media(max-width:380px){
+    .home-album-card-wrap .modern-album-card .la-premier-duel-side>.la-premier-duel-name{
+      font-size:clamp(9px,2.9cqi,12px)!important;
+    }
+  }
 </style>
 </head>
 <body style="background:#050505;color:#fff;">
@@ -4492,8 +4577,8 @@ function LaPremierDuel({teamA,teamB,options={}}) {
     const compact=Boolean(options.compact);
     const titleA=String((teamA&&teamA.name)||'Equipo local').trim();
     const titleB=String((teamB&&teamB.name)||'Equipo visitante').trim();
-    const badgeA=String((teamA&&(teamA.logo||teamA.appLogo))||findAppTeamLogo(titleA)||'').trim();
-    const badgeB=String((teamB&&(teamB.logo||teamB.appLogo))||findAppTeamLogo(titleB)||'').trim();
+    const badgeA=String((teamA&&(teamA.appLogo||teamA.logo))||findAppTeamLogo(titleA)||'').trim();
+    const badgeB=String((teamB&&(teamB.appLogo||teamB.logo))||findAppTeamLogo(titleB)||'').trim();
     const leftPalette=useLaCrestTeamPalette(teamA,'home');
     const rightPalette=useLaCrestTeamPalette(teamB,'away');
     const sideNode=(team,title,badge,position,palette)=>{
@@ -4506,8 +4591,15 @@ function LaPremierDuel({teamA,teamB,options={}}) {
             React.createElement('span',{className:'la-premier-duel-crest-frame'},
                 badge?React.createElement('img',{
                     className:'la-premier-duel-crest',src:badge,alt:'Escudo de '+title,
-                    loading:'lazy',referrerPolicy:'no-referrer'
-                }):React.createElement('span',{className:'la-premier-duel-fallback','aria-hidden':true},initials)),
+                    loading:compact?'eager':'lazy',referrerPolicy:'no-referrer',
+                    onError:e=>{e.currentTarget.style.setProperty('display','none','important');
+                        const fallback=e.currentTarget.nextElementSibling;
+                        if(fallback)fallback.style.visibility='visible';}
+                }):null,
+                React.createElement('span',{
+                    className:'la-premier-duel-fallback','aria-hidden':true,
+                    style:{visibility:badge?'hidden':'visible'}
+                },initials)),
             React.createElement('strong',{className:'la-premier-duel-name'},title));
     };
     return React.createElement('div',{
@@ -5767,7 +5859,8 @@ function LaGalleryCoverCrests({album,compact=false}) {
         return React.createElement('span',{
             className:'gallery-cover-crest'+(compact?' compact':''),
             title:name,
-            style:{background:'linear-gradient(145deg,'+palette.bg+','+palette.accent+')',borderColor:'rgba(255,255,255,.24)'}
+            style:{'--la-crest-bg':palette.bg,'--la-crest-accent':palette.accent,
+                background:'linear-gradient(145deg,'+palette.bg+','+palette.accent+')',borderColor:'rgba(255,255,255,.24)'}
         },
             logo?React.createElement('img',{src:logo,alt:name,loading:'lazy',referrerPolicy:'no-referrer',
                 onError:e=>{e.currentTarget.style.display='none';const next=e.currentTarget.nextElementSibling;if(next)next.style.display='flex';}}):null,
@@ -5790,7 +5883,7 @@ function LaAlbumCoverGradient({album}) {
 }
 function PremierAlbumMatchHeader({album, subalbum, home, away, photoCount, onOpenStories}) {
     const homeTeam=home||{},awayTeam=away||{};
-    const crest=t=>String(t.logo||t.appLogo||findAppTeamLogo(t.name||'')||'').trim();
+    const crest=t=>String(t.appLogo||t.logo||findAppTeamLogo(t.name||'')||'').trim();
     const homeLogo=crest(homeTeam),awayLogo=crest(awayTeam);
     const palettes={home:useLaCrestTeamPalette(homeTeam,'home'),away:useLaCrestTeamPalette(awayTeam,'away')};
     const sideNode=(team,logo,position,pal)=>React.createElement('div',{
@@ -6433,14 +6526,8 @@ function App() {
     const handleAlbumCardTap = (event, album) => {
         if (!album)
             return;
-        // En móvil: primer toque muestra los escudos; el segundo abre el álbum.
-        // La portada principal continúa abriendo la última galería directamente.
-        const isCover=Boolean(event&&event.currentTarget&&event.currentTarget.querySelector('.modern-album-card'));
-        const isTouch=Boolean(window.matchMedia&&window.matchMedia('(hover: none), (pointer: coarse)').matches);
-        if(isCover&&isTouch&&mobileRevealedAlbumId!==album.id){
-            setMobileRevealedAlbumId(album.id);
-            return;
-        }
+        // Los escudos y degradés ya están visibles en móviles: un toque abre la galería.
+        // En escritorio se conserva el efecto de hover.
         const firstSubAlbumId = (((album.subalbums || [])[0] || {}).id) || '';
         setMobileRevealedAlbumId('');
         location.hash = albumHash(album.id, firstSubAlbumId);
