@@ -2253,7 +2253,7 @@ img{-webkit-user-drag:none;}
   <link rel="stylesheet" href="./admin-mobile-picker-v11.css?v=20261116-12" />
   <script src="./admin-recordatorios.js?v=20261101-3"></script>
 <script defer src="./premium-ux-v132.js?v=135"></script>
-<script src="./admin-ops-v150.js?v=150.1"></script>
+<script src="./admin-ops-v150.js?v=151.2"></script>
 
 <style id="la-v145-shop-story-experience">
   .la-selected-review{border:1px solid rgba(125,211,252,.24)!important;background:linear-gradient(160deg,rgba(9,35,54,.9),rgba(5,11,22,.95))!important}
@@ -6249,6 +6249,10 @@ function App() {
         try {const val=JSON.parse(localStorage.getItem('LA_PHOTO_VIEWS_DEVICE_V1')||'{}');return val&&typeof val==='object'&&!Array.isArray(val)?val:{};}
         catch(_){return {};}
     });
+    const [photoDeviceAdds,setPhotoDeviceAdds] = useState(()=>{
+        try {const val=JSON.parse(localStorage.getItem('LA_PHOTO_CART_ADDS_DEVICE_V1')||'{}');return val&&typeof val==='object'&&!Array.isArray(val)?val:{};}
+        catch(_){return {};}
+    });
     const [focusPhoto, setFocusPhoto] = useState(null);
     const [albumRenderLimit, setAlbumRenderLimit] = useState(() => window.innerWidth < 640 ? 8 : 15);
     const [highlightIds, setHighlightIds] = useState(readHighlightIds());
@@ -7830,6 +7834,13 @@ ${clone.outerHTML}`;
         if (freePhoto) { downloadFreePhoto(freePhoto); return; }
         const removing = cart.includes(id);
         setCart(c => c.includes(id) ? c.filter(x => x !== id) : [...c, id]);
+        if (!removing) {
+            setPhotoDeviceAdds(prev=>{
+                const next={...prev,[id]:Math.min(100000,(Number(prev[id])||0)+1)};
+                try {localStorage.setItem('LA_PHOTO_CART_ADDS_DEVICE_V1',JSON.stringify(next));}catch(_){}
+                return next;
+            });
+        }
         if (removing) setPrintedPhotoIds(ids => ids.filter(x => x !== id));
     };
     const startBulkQuote = () => {
@@ -9447,7 +9458,7 @@ En breve te las preparo y te las envío por acá 😊
                     "Indicadores calculados sobre las órdenes disponibles de Firebase, Apps Script y Cloudflare. Actualizá y recuperá pedidos para consultar la información más reciente; no reemplazan una conciliación contable.")),
             window.LAPhotoOps && React.createElement('div',{hidden:adminPanelTab!=='inicio'},
                  React.createElement(window.LAPhotoOps.Sales,{
-                    orders:adminOrderLedger,allPhotos,views:photoDeviceViews,
+                    orders:adminOrderLedger,allPhotos,views:photoDeviceViews,cartAdds:photoDeviceAdds,
                     mpConnected:mpAdminConnected,mpOrders:mpAdminOrders,orderState:adminOrderState})),
              React.createElement("section",{id:"la-admin-orders-today",hidden:adminPanelTab!=='inicio',className:"mb-5 rounded-3xl border border-emerald-400/25 bg-neutral-900 p-4 sm:p-5"},
                 React.createElement("h2",{className:"text-lg font-black text-white"},"Pedidos de hoy"),
