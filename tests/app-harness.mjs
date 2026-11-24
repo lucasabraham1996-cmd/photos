@@ -49,6 +49,10 @@ export function appHarness(overrides = {}) {
     fetch: async (...args) => { requests.push(args); throw Error('No hay red en este harness'); }
   };
   ctx.window.location = ctx.location;
+  // short-links.js se ejecuta antes que index.html en la web real.
+  const shortLinks = readFileSync(new URL('../short-links.js', import.meta.url), 'utf8');
+  new Function('window','location','history',shortLinks)(ctx.window,ctx.location,ctx.history);
+  ctx.LAShortLinks = ctx.window.LAShortLinks;
   const code = new Function('ctx', 'with(ctx){' + script + ';return {App,normalizeAlbums,saveOrderRemote};}')(ctx);
   const render = () => { cursor = 0; refCursor = 0; effects.length = 0; return code.App(); };
   return { ...code, ctx, state, effects, storage, render, actions: () => ctx.actions };
