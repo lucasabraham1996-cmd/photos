@@ -538,7 +538,7 @@ test('La página conserva el botón de descarga para reintentar después de una 
 
 function appHarness(f,config={mode:'validation',available:true,validation_amount:200,public_enabled:false}) {
   const storage=new Map(),effects=[],downloads=[],remoteOrders=[];
-  const context={admin:true,adminPanelTab:'pagos',CLUB_ENABLED:false,mpTrialBusy:false,MP_TRIAL_ENABLED:false,MP_PAYMENT_VISIBLE:true,
+  const context={admin:true,adminPanelTab:'pagos',mpAdminConnected:false,CLUB_ENABLED:false,mpTrialBusy:false,MP_TRIAL_ENABLED:false,MP_PAYMENT_VISIBLE:true,
     MP_TRIAL_BASE:BASE,mpPaymentConfig:config,mpTrialPurchase:null,mpTrialDownloads:[],
     MP_RECEIPTS_STORAGE_KEY:'LA_MP_PURCHASE_RECEIPTS_V1',
     readMpReceipts:()=>{try{return JSON.parse(storage.get('LA_MP_PURCHASE_RECEIPTS_V1')||'[]')}catch(_){return []}},
