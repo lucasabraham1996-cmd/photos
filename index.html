@@ -2379,6 +2379,12 @@ img{-webkit-user-drag:none;}
       background:linear-gradient(130deg,var(--la-team-bg,#20242a),var(--la-team-deep,#e5e7eb))!important;
     }
     .la-pl-team .la-pl-crest{display:grid!important;place-items:center!important;z-index:3!important}
+    .la-premier-duel-side.is-all-boys .la-premier-duel-name{
+      color:#101820!important;text-shadow:0 1px 3px rgba(255,255,255,.7)!important;
+    }
+    .la-pl-team.la-pl-team--all-boys .la-pl-name{
+      color:#101820!important;text-shadow:0 1px 3px rgba(255,255,255,.7)!important;
+    }
     .la-pl-team .la-pl-crest img{
       display:block!important;max-width:100%!important;max-height:100%!important;
       object-fit:contain!important;filter:drop-shadow(0 3px 7px rgba(0,0,0,.48))!important;
@@ -5863,7 +5869,7 @@ function LaGalleryCoverCrests({album,compact=false}) {
                 background:'linear-gradient(145deg,'+palette.bg+','+palette.accent+')',borderColor:'rgba(255,255,255,.24)'}
         },
             logo?React.createElement('img',{src:logo,alt:name,loading:'lazy',referrerPolicy:'no-referrer',
-                onError:e=>{e.currentTarget.style.display='none';const next=e.currentTarget.nextElementSibling;if(next)next.style.display='flex';}}):null,
+                onError:e=>{e.currentTarget.style.setProperty('display','none','important');const next=e.currentTarget.nextElementSibling;if(next)next.style.setProperty('display','flex','important');}}):null,
             React.createElement('span',{className:'gallery-cover-crest-fallback',style:{display:logo?'none':'flex'}},teamInitials(name)));
     };
     return React.createElement('div',{
