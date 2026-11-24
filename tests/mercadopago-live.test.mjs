@@ -676,7 +676,7 @@ test('Enlace privado permite recuperar fotos con el UUID y comprobante, sin volv
     'Antes de verificar pago, no se revela enlace de recuperación');
   app.context.mpVerifiedReceipt=true;app.context.mpVerifiedCheckoutRef.current=checkout_id;
   const url=app.actions.mpPrivateReceiptLink({checkout_id,receipt_token});
-  assert.equal(url,ORIGIN+'/photos/#/compra/'+checkout_id+'/'+receipt_token);
+  assert.equal(url,ORIGIN+'/#/compra/'+checkout_id+'/'+receipt_token);
   assert.equal(app.actions.mpPrivateReceiptLink({checkout_id,receipt_token:'invalid'}),'');
 }));
 
