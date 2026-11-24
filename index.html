@@ -2346,6 +2346,28 @@ img{-webkit-user-drag:none;}
   @media(max-width:700px){.la-ops-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}.la-ops-ranks{grid-template-columns:1fr}.la-ops-copy{grid-template-columns:1fr}.la-ops-stage-board{grid-template-columns:repeat(3,minmax(0,1fr))}}
 
 
+
+  /* v151: compras recuperables sin registro y estado responsable. */
+  .la-buyer-receipt-import{padding:14px;border:1px solid #315879;border-radius:14px;background:#091c31;margin:0 0 14px}
+  .la-buyer-receipt-import h3{font-size:13px;color:#e4f6ff;font-weight:900}
+  .la-buyer-receipt-import p{font-size:11px;color:#b8cddb;line-height:1.5;margin:7px 0 9px}
+  .la-buyer-receipt-import input{flex:1 1 160px;min-width:0;border:1px solid #496782;background:#020f1e;color:#fff;font-size:12px;padding:10px;border-radius:10px}
+  .la-buyer-receipt-import button{flex:0 0 auto;background:#0284c7;border-radius:11px;color:#fff;padding:9px 13px;font-size:12px;font-weight:900}
+  .la-buyer-receipt-import button:disabled{opacity:.45}
+  .la-buyer-receipt-import small{display:block;font-size:10px;color:#9fb2bf;margin-top:9px}
+  .la-buyer-receipt-import .la-buyer-receipt-message{color:#fcd34d;font-weight:800}
+  .la-buyer-whatsapp-receipt{padding:12px;border:1px solid #2e685d;border-radius:13px;background:#082720;margin:0 0 13px}
+  .la-buyer-whatsapp-receipt strong{display:block;color:#d1fae5;font-size:12px}
+  .la-buyer-whatsapp-receipt p{color:#edfdf5;font-size:12px;margin:6px 0}
+  .la-buyer-whatsapp-receipt small{display:block;color:#a7d5ca;font-size:10px}
+  .la-buyer-whatsapp-receipt a{display:inline-block;margin-top:10px;padding:9px 12px;background:#16a34a;color:#fff;font-weight:900;font-size:11px;border-radius:10px}
+  .la-buyer-receipt-chip{display:inline-block;border-radius:999px;padding:4px 8px;font-size:10px;font-weight:900}
+  .la-buyer-receipt-chip.previously-paid{background:#064e3b;color:#a7f3d0;border:1px solid #059669}
+  .la-buyer-receipt-chip.pending{background:#78350f45;color:#fcd34d;border:1px solid #a16207}
+  .la-buyer-receipt-actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
+  .la-buyer-receipt-actions button{padding:9px 11px;border-radius:10px;background:#0369a1;color:#fff;font-size:11px;font-weight:900}
+  .la-buyer-receipt-actions button+button{background:#233a51;border:1px solid #54718b}
+
   .la-quantity-promo{display:flex;align-items:flex-start;flex-wrap:wrap;gap:7px;padding:11px 13px;
     border:1px solid #365e75;background:#0c2633;border-radius:12px;margin:0 0 12px;color:#c7efff;font-size:12px;font-weight:750}
   .la-quantity-promo i{color:#7dd3fc;padding-top:2px}
@@ -6303,6 +6325,12 @@ function App() {
     };
     const [mpReceipts,setMpReceipts]=useState(readMpReceipts);
     const [mpHistoryOpen,setMpHistoryOpen]=useState(false);
+    const [privateReceiptInput,setPrivateReceiptInput]=useState('');
+    const [privateReceiptError,setPrivateReceiptError]=useState('');
+    const [lastWhatsappReceipt,setLastWhatsappReceipt]=useState(()=>{
+        try {const r=JSON.parse(localStorage.getItem('LA_LAST_ORDER_RECEIPT')||'null');return r&&r.id?r:null;}
+        catch(_){return null;}
+    });
     const mpReturnRequested=new URLSearchParams(location.search).get('mp_return')==='1'||Boolean(mpAccessFromLink);
     const [mpTrialPurchase, setMpTrialPurchase] = useState(() => {
         if(mpAccessFromLink)return mpAccessFromLink;
@@ -7913,6 +7941,31 @@ ${clone.outerHTML}`;
             clearMpReturnAddress();
         }
     };
+    const openPrivateReceiptFromInput=()=>{
+        const raw=String(privateReceiptInput||'').trim();
+        setPrivateReceiptError('');
+        let url;
+        try {url=new URL(raw,location.origin);}
+        catch(_){setPrivateReceiptError('Ingresá el enlace privado completo de la compra.');return;}
+        const match=String(url.hash||'').match(/^#\/compra\/([a-f\d-]{36})\/([a-f\d]{64})$/i);
+        const validUuid=match&&/^[a-f\d]{8}-[a-f\d]{4}-4[a-f\d]{3}-[89ab][a-f\d]{3}-[a-f\d]{12}$/i.test(match[1]);
+        if(url.origin!==location.origin||!validUuid){
+            setPrivateReceiptError('El enlace debe pertenecer a esta web y contener un comprobante privado válido.');
+            return;
+        }
+        const receipt={checkout_id:match[1],receipt_token:match[2].toLowerCase(),
+            order_id:'Recuperando compra',mode:'public',ready:true,paid:false};
+        setPrivateReceiptInput('');
+        openSavedMpReceipt(receipt);
+    };
+    const copySavedReceiptLink=async(purchase)=>{
+        if(!purchase||purchase.mode==='test'||!purchase.checkout_id||
+            !/^[a-f\d-]{36}$/i.test(purchase.checkout_id)||!/^[a-f\d]{64}$/i.test(purchase.receipt_token||''))return;
+        const url=new URL('/',location.origin);
+        url.hash='#/compra/'+purchase.checkout_id+'/'+purchase.receipt_token;
+        try {await navigator.clipboard.writeText(url.href);setPrivateReceiptError('Enlace privado copiado. Guardalo en un lugar seguro.');}
+        catch(_){setPrivateReceiptError('No se pudo copiar el enlace en este navegador.');}
+    };
     const openSavedMpReceipt=(purchase)=>{
         if(!purchase||!purchase.checkout_id||!purchase.receipt_token)return;
         setMpHistoryOpen(false);
@@ -8744,7 +8797,9 @@ En breve te las preparo y te las envío por acá 😊
             try{
                 saveLocalOrders(mergeOrders(readLocalOrders(),[pkg.orderData]));
                 savePendingOrders(mergeOrders(readPendingOrders(),[compactOrderForScript(pkg.orderData)]));
-                localStorage.setItem('LA_LAST_ORDER_RECEIPT',JSON.stringify({id:fixedCode,date:pkg.orderData.date,itemCount:pkg.orderData.items.length,total:pkg.orderData.total,whatsappUrl,confirmed:false,pendingSync:true}));
+                const sentReceipt={id:fixedCode,date:pkg.orderData.date,itemCount:pkg.orderData.items.length,total:pkg.orderData.total,whatsappUrl,confirmed:false,pendingSync:true};
+                localStorage.setItem('LA_LAST_ORDER_RECEIPT',JSON.stringify(sentReceipt));
+                setLastWhatsappReceipt(sentReceipt);
                 localStorage.setItem('LA_RECOVER_CART',JSON.stringify(cart));
             }catch(localErr){console.warn('No se pudo preparar el respaldo local del pedido.',localErr)}
 
@@ -10791,18 +10846,49 @@ React.createElement("div", { id: "order-search-panel", hidden:adminPanelTab!=='p
                     React.createElement("div",null,React.createElement("h2",{className:"text-xl font-black text-white"},"Mis compras"),
                         React.createElement("p",{className:"text-xs text-neutral-400"},"Comprobantes de este dispositivo · cada compra se verifica con Mercado Pago")),
                     React.createElement("button",{onClick:()=>setMpHistoryOpen(false),type:"button",className:"px-3 py-2 rounded-xl border border-white/20"},"Cerrar")),
+                React.createElement('div',{className:'la-buyer-receipt-import'},
+                    React.createElement('h3',null,React.createElement('i',{className:'fas fa-link mr-2'}),'Recuperar compra desde otro dispositivo'),
+                    React.createElement('p',null,'Pegá el enlace privado que recibiste o guardaste después de pagar. No alcanza con el número de pedido: hace falta el comprobante seguro.'),
+                    React.createElement('div',{className:'flex gap-2 flex-wrap sm:flex-nowrap'},
+                        React.createElement('input',{type:'text',value:privateReceiptInput,
+                            onChange:e=>{setPrivateReceiptInput(e.target.value);setPrivateReceiptError('');},
+                            onKeyDown:e=>{if(e.key==='Enter'){e.preventDefault();openPrivateReceiptFromInput();}},
+                            autoComplete:'off',spellCheck:false,placeholder:'https://lucasabrahamph.com/#/compra/...',
+                            'aria-label':'Pegá tu enlace privado de recuperación'}),
+                        React.createElement('button',{type:'button',onClick:openPrivateReceiptFromInput,
+                            disabled:!privateReceiptInput.trim()},'Recuperar')),
+                    privateReceiptError&&React.createElement('p',{role:'status',className:'la-buyer-receipt-message'},privateReceiptError),
+                    React.createElement('small',null,'No compartas este enlace públicamente: permite acceder a las fotos luego de validar el pago.')),
+                lastWhatsappReceipt&&React.createElement('div',{className:'la-buyer-whatsapp-receipt'},
+                    React.createElement('strong',null,'Última consulta por WhatsApp · #'+lastWhatsappReceipt.id),
+                    React.createElement('p',null,(lastWhatsappReceipt.itemCount||0)+' fotos · '+formatPrice(lastWhatsappReceipt.total||0)),
+                    React.createElement('small',null,'Consulta preparada en este dispositivo. No indica pago ni entrega confirmados.'),
+                    React.createElement('a',{href:'https://wa.me/'+SELLER_PHONE+'?text='+
+                        encodeURIComponent('Hola Lucas, quisiera consultar el estado de mi pedido #'+lastWhatsappReceipt.id+'.'),
+                        target:'_blank',rel:'noopener noreferrer'},'Consultar estado por WhatsApp')),
                 React.createElement("div",{className:"grid gap-3 max-h-[65vh] overflow-y-auto"},
                     !mpReceipts.length&&React.createElement('div',{className:'rounded-xl border border-sky-300/20 bg-sky-950/20 p-4'},
                         React.createElement('p',{className:'text-sm text-sky-100'},'No hay comprobantes guardados en este dispositivo.'),
                         React.createElement('p',{className:'text-xs text-neutral-400 mt-2'},'Si pagaste desde otro celular o perdiste el ticket, solicitá la recuperación por WhatsApp. No vuelvas a pagar.'),
                         React.createElement('a',{href:'https://wa.me/'+SELLER_PHONE+'?text='+encodeURIComponent('Hola Lucas, ya pagué fotografías y necesito recuperar mi comprobante o enlace de descarga.'),target:'_blank',rel:'noopener noreferrer',
                             className:'inline-block mt-3 rounded-xl bg-emerald-500 px-3 py-2 text-emerald-950 font-black text-xs'},'Solicitar recuperación')),
-                    mpReceipts.map(p=>React.createElement("button",{key:p.checkout_id,type:"button",onClick:()=>openSavedMpReceipt(p),
-                        className:"text-left rounded-2xl border border-sky-300/20 bg-sky-950/30 px-4 py-3"},
-                        React.createElement("b",{className:"block text-white text-sm"},formatPrice(p.amount||0)+" · "+(p.quantity||p.order_data&&p.order_data.items&&p.order_data.items.length||0)+" fotos"),
-                        React.createElement("span",{className:"block text-xs text-sky-100/80 mt-1"},p.created_at?new Date(p.created_at).toLocaleString('es-AR'):"Comprobante guardado"),
-                        React.createElement("span",{className:"block text-xs text-sky-200 mt-1 break-all"},p.order_id),
-                        React.createElement("span",{className:"inline-block text-xs text-emerald-300 mt-2 font-black"},"Verificar pago y abrir descargas")))))),
+                    mpReceipts.map(p=>React.createElement('article',{key:p.checkout_id,
+                        className:'text-left rounded-2xl border border-sky-300/20 bg-sky-950/30 px-4 py-3'},
+                        React.createElement('div',{className:'flex flex-wrap items-center justify-between gap-2'},
+                            React.createElement('b',{className:'text-white text-sm'},
+                                formatPrice(p.amount||0)+' · '+(p.quantity||p.order_data&&p.order_data.items&&p.order_data.items.length||0)+' fotos'),
+                            React.createElement('span',{className:'la-buyer-receipt-chip '+(p.paid?'previously-paid':'pending')},
+                                p.paid?'Último estado: acreditado':'Pendiente de verificar')),
+                        React.createElement('span',{className:'block text-xs text-sky-100/80 mt-1'},
+                            p.created_at?new Date(p.created_at).toLocaleString('es-AR'):'Comprobante guardado'),
+                        React.createElement('span',{className:'block text-xs text-sky-200 mt-1 break-all'},p.order_id),
+                        React.createElement('div',{className:'la-buyer-receipt-actions'},
+                            React.createElement('button',{type:'button',onClick:()=>openSavedMpReceipt(p)},
+                                React.createElement('i',{className:'fas fa-shield-check mr-1'}),
+                                'Verificar pago y descargas'),
+                            p.mode!=='test'&&React.createElement('button',{type:'button',
+                                onClick:()=>copySavedReceiptLink(p)},
+                                React.createElement('i',{className:'fas fa-link mr-1'}),'Copiar enlace privado'))))))),
         checkoutOpen && checkoutSaveError && React.createElement("div", { className:"checkout-save-error", role:"alert" }, checkoutSaveError, React.createElement("button", { type:"button", onClick:()=>navigator.clipboard.writeText(checkoutOrderCode||'').catch(()=>{}), className:"checkout-save-copy" }, "Copiar código")),
         iphoneInstallOpen && admin && React.createElement(IphoneInstallModal, { onClose: () => setIphoneInstallOpen(false), onDownload: downloadAppForIphone, onCopy: copyGalleryInstallUrl, onOpen: () => window.open(getGalleryInstallUrl(), '_blank') }),
         priceAdminOpen && admin && React.createElement(PriceAdminModal, { onClose: () => setPriceAdminOpen(false), priceSettings: priceSettings, setPriceSettings: setPriceSettings, setAdminMessage: setAdminMessage }),
