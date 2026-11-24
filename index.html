@@ -2341,6 +2341,12 @@ img{-webkit-user-drag:none;}
     border-radius:12px;border:1px solid #30516c;background:#0a2233;color:#c7deef}
   .la-ops-stage strong{font-size:23px;font-weight:950;color:#fff}.la-ops-stage span{font-size:10px;font-weight:800}
   .la-ops-stage.active{background:#0369a1;border-color:#7dd3fc}
+
+  .la-workflow-actions{display:flex;flex-wrap:wrap;align-items:center;gap:8px}
+  .la-workflow-note-button{align-self:end;min-height:36px;background:#20384a;border:1px solid #47667d;border-radius:9px;
+    color:#e0f2fe;font-weight:850;font-size:11px;padding:8px 10px}
+  .la-workflow-note-current{padding:9px;border:1px solid #345d7a;background:#0b1c2b;border-radius:9px;font-size:12px;color:#e0f2fe;white-space:pre-wrap}
+
   .la-ops-stage-select{display:flex;flex-direction:column;gap:3px;color:#afc4d4;font-size:10px;font-weight:800}
   .la-ops-stage-select select{background:#071724;color:#fff;border:1px solid #315575;border-radius:8px;padding:7px;font-size:11px;max-width:150px}
   @media(max-width:700px){.la-ops-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}.la-ops-ranks{grid-template-columns:1fr}.la-ops-copy{grid-template-columns:1fr}.la-ops-stage-board{grid-template-columns:repeat(3,minmax(0,1fr))}}
@@ -7363,6 +7369,39 @@ ${clone.outerHTML}`;
     // La ficha de Cloudflare puede omitir campos que sí están registrados
     // en Firebase / Apps Script. Combinar solo en la vista del administrador.
     // No cambia importes acreditados, webhooks ni permisos de descarga.
+    const workflowStageForOrder=o=>{
+        if(!o)return '';
+        const saved=String(o.workflowStage??'').trim();
+        return o.workflowStage!==undefined?saved:String(adminWorkflowTags[normalizeOrderCode(o.id)]||'');
+    };
+    const updateAdminWorkflowStage=async(o,stage)=>{
+        if(!admin||!o||!o.id||!['','preparing','claims'].includes(stage))return;
+        const key=normalizeOrderCode(o.id);
+        const patch={workflowStage:stage,workflowUpdatedAt:new Date().toISOString()};
+        setAdminWorkflowTags(prev=>{
+            const next={...prev};
+            if(stage)next[key]=stage;else delete next[key];
+            return next;
+        });
+        // Modificamos solamente seguimiento, NUNCA el estado de acreditación ni los permisos MP.
+        setOrders(prev=>mergeOrders(prev,[{...o,...patch}]));
+        const saved=await updateOrderFirebase(o.id,patch).catch(e=>{console.warn('Sincronización de seguimiento:',e);return false;});
+        if(saved){
+            setAdminMessage('Seguimiento sincronizado con Firebase. Se verá en otros dispositivos al actualizar los pedidos.');
+        }else{
+            setAdminMessage('Seguimiento guardado solo en este dispositivo. Firebase no confirmó la sincronización.');
+        }
+    };
+    const saveAdminWorkflowNote=async(o)=>{
+        if(!admin||!o||!o.id)return;
+        const value=window.prompt('Nota breve de seguimiento (máximo 300 caracteres):',String(o.workflowNote||'').slice(0,300));
+        if(value===null)return;
+        const note=String(value||'').trim().slice(0,300);
+        const patch={workflowNote:note,workflowUpdatedAt:new Date().toISOString()};
+        setOrders(prev=>mergeOrders(prev,[{...o,...patch}]));
+        const saved=await updateOrderFirebase(o.id,patch).catch(e=>{console.warn('Nota de seguimiento:',e);return false;});
+        setAdminMessage(saved?'Nota sincronizada.':'La nota no pudo sincronizarse. Revisá la conexión antes de continuar.');
+    };
     const adminMpLinkedOrder=o=>{
         if(!o)return null;
         const checkout=String(o.checkout_id||o.mpCheckoutId||'');
@@ -7459,8 +7498,8 @@ ${clone.outerHTML}`;
                 (adminLedgerFilter==='month'&&Date.parse(o.date||o.createdAt||'')>=monthCutoff)||
                 (adminLedgerFilter==='paid'&&['paid','manual_paid'].includes(state))||
                 (adminLedgerFilter==='delivered'&&Boolean(o.delivered))||
-                (adminLedgerFilter==='preparing'&&adminWorkflowTags[normalizeOrderCode(o.id)]==='preparing')||
-                (adminLedgerFilter==='claims'&&adminWorkflowTags[normalizeOrderCode(o.id)]==='claims')||
+                (adminLedgerFilter==='preparing'&&workflowStageForOrder(o)==='preparing')||
+                (adminLedgerFilter==='claims'&&workflowStageForOrder(o)==='claims')||
                 (adminLedgerFilter==='whatsapp'&&channel==='whatsapp')||
                 state===adminLedgerFilter;
             const dateOk=!adminLedgerDate||String(o.date||o.createdAt||'').slice(0,10)===adminLedgerDate;
@@ -9711,8 +9750,8 @@ React.createElement("div", { id: "order-search-panel", hidden:adminPanelTab!=='p
                         const num=adminOrderLedger.filter(o=>
                             value==='pending'?['pending','agreed'].includes(adminOrderState(o)):
                             value==='paid'?['paid','manual_paid'].includes(adminOrderState(o)):
-                            value==='preparing'?adminWorkflowTags[normalizeOrderCode(o.id)]==='preparing':
-                            value==='claims'?adminWorkflowTags[normalizeOrderCode(o.id)]==='claims':
+                            value==='preparing'?workflowStageForOrder(o)==='preparing':
+                            value==='claims'?workflowStageForOrder(o)==='claims':
                             Boolean(o.delivered)).length;
                         return React.createElement('button',{type:'button',key:value,
                             className:'la-ops-stage'+(adminLedgerFilter===value?' active':''),
@@ -9720,7 +9759,7 @@ React.createElement("div", { id: "order-search-panel", hidden:adminPanelTab!=='p
                             React.createElement('strong',null,num),React.createElement('span',null,label));
                     })),
                 React.createElement('p',{className:'text-[11px] text-neutral-400 mb-3'},
-                    'Preparación y reclamos se guardan en este navegador: no cambian el estado del pago ni habilitan descargas.'),
+                    'Preparación, reclamos y notas intentan sincronizarse con Firebase. Si no responde, el cambio queda en pantalla. Ninguno modifica cobros ni permisos de descarga.'),
                 React.createElement("div",{className:"la-ledger-filterbar"},
                     React.createElement("input",{type:"search",className:"la-ledger-search",value:adminLedgerSearch,
                         onChange:e=>setAdminLedgerSearch(e.target.value),placeholder:"Buscar cliente, equipo, foto o pedido","aria-label":"Buscar pedidos"}),
@@ -9751,18 +9790,23 @@ React.createElement("div", { id: "order-search-panel", hidden:adminPanelTab!=='p
                                 ` · ${formatPrice(adminOrderState(o)==='manual_paid'?(o.manualPaymentAmount??o.total):o.total)}`),
                             React.createElement("div",{className:"la-ledger-summary"},
                                 (o.items||[]).length+" fotos · "+(o.albumName||o.items&&o.items[0]&&o.items[0].albumName||"Sin galería"))),
-                        React.createElement('label',{className:'la-ops-stage-select'},'Seguimiento',
-                            React.createElement('select',{value:adminWorkflowTags[normalizeOrderCode(o.id)]||'',onChange:e=>{
-                                const key=normalizeOrderCode(o.id),value=e.target.value;
-                                setAdminWorkflowTags(prev=>{const next={...prev};if(value)next[key]=value;else delete next[key];return next;});
-                            }},
-                                [['','Sin etiqueta'],['preparing','En preparación'],['claims','Reclamo']].map(([v,t])=>
-                                    React.createElement('option',{key:v,value:v},t)))),
+                        React.createElement('div',{className:'la-workflow-actions'},
+                            React.createElement('label',{className:'la-ops-stage-select'},'Seguimiento',
+                                React.createElement('select',{value:workflowStageForOrder(o),
+                                    onChange:e=>updateAdminWorkflowStage(o,e.target.value)},
+                                    [['','Sin etiqueta'],['preparing','En preparación'],['claims','Reclamo']].map(([v,t])=>
+                                        React.createElement('option',{key:v,value:v},t)))),
+                            React.createElement('button',{type:'button',className:'la-workflow-note-button',
+                                onClick:()=>saveAdminWorkflowNote(o)},'Nota'+(o.workflowNote?' ✓':''))),
                         React.createElement("details",{className:"la-ledger-details"},
                             React.createElement("summary",null,"Ver fotos y movimientos"),
                             React.createElement("div",{className:"la-ledger-expanded"},
                                 React.createElement("p",null,"Fecha: ",o.date?new Date(o.date).toLocaleString('es-AR'):"No informada"),
                                 React.createElement("p",null,"Código: ",o.id),
+                                o.workflowNote&&React.createElement('p',{className:'la-workflow-note-current'},
+                                    'Nota de seguimiento: ',o.workflowNote),
+                                o.workflowUpdatedAt&&React.createElement('p',{className:'text-[11px] text-neutral-500'},
+                                    'Seguimiento actualizado: '+new Date(o.workflowUpdatedAt).toLocaleString('es-AR')),
                                 !((o.items||[]).length)&&React.createElement("p",null,"Esta fuente no conservó las fotografías."),
                                 (o.items||[]).map((p,i)=>React.createElement("div",{key:i,className:"la-ledger-photo"},
                                     React.createElement("span",null,p.name||p.code||"Foto "+(i+1),p.albumName?" · "+p.albumName:""),
