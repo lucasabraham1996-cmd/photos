@@ -29,6 +29,20 @@ function Sales({orders=[],allPhotos=[],views={},mpOrders=[],mpConnected=false,or
     return p?[p.name||p.code||id,Number(count)||0]:null;
   }).filter(Boolean).sort((a,b)=>b[1]-a[1]).slice(0,5);
   const missingDownloads=mpConnected?mpOrders.filter(o=>o&&o.paid===true&&(o.photos||[]).some(p=>!p||!p.download_url)).length:0;
+  // Señalar coincidencias sospechosas, nunca cancelar, fusionar ni cobrar de nuevo automáticamente.
+  const suspectOrders=[];
+  const sorted=scope.filter(o=>o&&o.id&&Date.parse(o.date||o.createdAt||'')).slice()
+      .sort((a,b)=>Date.parse(a.date||a.createdAt)-Date.parse(b.date||b.createdAt));
+  for(let i=1;i<sorted.length;i++){
+    const a=sorted[i-1],b=sorted[i];
+    const phoneA=String(a.phone||a.customerPhone||'').replace(/\D/g,'');
+    const phoneB=String(b.phone||b.customerPhone||'').replace(/\D/g,'');
+    const interval=Math.abs(Date.parse(b.date||b.createdAt)-Date.parse(a.date||a.createdAt));
+    if(phoneA.length>=9&&phoneA===phoneB&&a.id!==b.id&&
+        Number(a.total||0)>0&&Number(a.total)===Number(b.total)&&interval<=8*60000)
+      suspectOrders.push([a.id,b.id]);
+    if(suspectOrders.length>=5)break;
+  }
   const children=[];
   children.push(h('div',{className:'la-ops-head'},h('h3',null,'Rendimiento comercial'),h('p',null,'Ventas y fotos de pedidos acreditados disponibles.')));
   children.push(h('label',{className:'la-ops-period'},'Período ',
@@ -44,6 +58,9 @@ function Sales({orders=[],allPhotos=[],views={},mpOrders=[],mpConnected=false,or
   children.push(h('details',{className:'la-ops-details'},h('summary',null,'Aperturas de fotos en este dispositivo (no globales)'),
     ...local.map(([name,count],i)=>h('p',{className:'la-ops-muted',key:i},name+': '+count+' aperturas'))));
   if(missingDownloads)children.push(h('p',{className:'la-ops-warning'},'Revisar '+missingDownloads+' compras pagadas de Mercado Pago: la fuente no informa algún enlace de descarga.'));
+  if(suspectOrders.length)children.push(h('div',{className:'la-ops-warning'},
+    'Posibles pedidos repetidos (mismo teléfono, importe y menos de 8 minutos): '+
+      suspectOrders.map(pair=>pair.join(' / ')).join(' · ')+'. Revisar manualmente; no se modificó ningún cobro.'));
   children.push(h('p',{className:'la-ops-muted'},mpConnected?'MP conectado: según registros recuperados.':'MP sin conectar: puede faltar facturación.'));
   return h('section',{className:'la-ops-panel'},...children);
 }
