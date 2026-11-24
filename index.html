@@ -2305,6 +2305,28 @@ img{-webkit-user-drag:none;}
   .la-order-edit-shell{padding-top:6px!important}
   .la-checkout-view-order:focus-visible,.la-order-back-to-checkout:focus-visible{outline:2px solid #fff;outline-offset:2px}
 
+  .la-customer-quick-links{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0 16px}
+  .la-customer-quick-links button{display:inline-flex;align-items:center;gap:7px;padding:10px 14px;border:1px solid #36516b;border-radius:13px;background:#0c1c2c;color:#e9f6ff;font-size:12px;font-weight:850}
+  .la-customer-quick-links button:first-child i{color:#f9a8d4}
+  .la-photo-tools{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+  .la-photo-search-wrap{display:flex;align-items:center;gap:9px;flex:1 1 260px;min-width:0;border:1px solid #334155;border-radius:13px;background:#0b1726;padding:10px 12px}
+  .la-photo-search-wrap input{width:100%;min-width:0;outline:none;background:transparent;color:#fff;font-size:13px}
+  .la-favorites-filter,.la-favorites-open{border:1px solid #3b5066;border-radius:12px;padding:10px 12px;font-size:12px;font-weight:850;background:#111c2b;color:#e2e8f0}
+  .la-favorites-filter i{color:#f9a8d4;margin-right:6px}.la-favorites-filter.active{background:#6b1645;border-color:#f472b6}
+  .la-favorites-open{background:#13496b;border-color:#38bdf8;color:#fff}
+  .la-photo-search-count{font-size:11px;color:#9fb4c7;font-weight:700}
+  .mosaic-tile .la-photo-favorite{position:absolute;bottom:52px;left:8px;z-index:22;display:grid;place-items:center;width:34px;height:34px;
+      border:1px solid rgba(255,255,255,.46);border-radius:50%;background:rgba(0,0,0,.76);color:#fff;cursor:pointer}
+  .mosaic-tile .la-photo-favorite.active{background:#9d174d;border-color:#f9a8d4;color:#fff}
+  .la-favorites-modal{padding:6px;color:#fff}
+  .la-favorite-row{display:flex;gap:11px;align-items:center;border:1px solid #334155;background:#090f19;border-radius:14px;padding:9px}
+  .la-favorite-row>img{width:68px;height:68px;flex:0 0 68px;object-fit:cover;border-radius:10px}
+  .la-favorite-cart-button{flex:0 0 auto;padding:9px 10px;border-radius:10px;background:#0284c7;color:#fff;font-size:11px;font-weight:900}
+  .la-favorite-remove{flex:0 0 auto;border-radius:9px;padding:10px;background:#3d1620;color:#ffe4e6}
+  .la-favorite-return{display:block;width:100%;padding:13px;margin-top:14px;background:#075985;color:#fff;font-size:13px;font-weight:900;border-radius:12px}
+  @media(max-width:640px){.la-photo-tools{gap:6px}.la-photo-search-wrap{flex-basis:100%}.la-photo-search-count{flex-basis:100%}.la-favorite-row{gap:7px;padding:6px}.la-favorite-row>img{width:52px;height:52px;flex-basis:52px}.la-favorite-cart-button{padding:9px 7px;font-size:10px}.la-favorite-remove{padding:9px}}
+
+
   /* v148 mobile: la foto y el título se ven inicialmente; el duelo aparece al primer toque. */
   @media(max-width:768px),(hover:none),(pointer:coarse){
     .home-album-card-wrap .modern-album-card:not(.team-open) .team-album-reveal,
@@ -6138,6 +6160,17 @@ function App() {
     const [albumSearch, setAlbumSearch] = useState("");
     const [mobileRevealedAlbumId, setMobileRevealedAlbumId] = useState("");
     const [viewMode, setViewMode] = useState("mosaic");
+    const [photoSearch,setPhotoSearch] = useState('');
+    const [favoritesOnly,setFavoritesOnly] = useState(false);
+    const [favoritesOpen,setFavoritesOpen] = useState(false);
+    const [favoriteIds,setFavoriteIds] = useState(()=>{
+        try {const a=JSON.parse(localStorage.getItem('LA_PHOTO_FAVORITES_V1')||'[]');return Array.isArray(a)?a.filter(x=>typeof x==='string').slice(0,400):[];}
+        catch(_){return [];}
+    });
+    const [photoDeviceViews,setPhotoDeviceViews] = useState(()=>{
+        try {const val=JSON.parse(localStorage.getItem('LA_PHOTO_VIEWS_DEVICE_V1')||'{}');return val&&typeof val==='object'&&!Array.isArray(val)?val:{};}
+        catch(_){return {};}
+    });
     const [focusPhoto, setFocusPhoto] = useState(null);
     const [albumRenderLimit, setAlbumRenderLimit] = useState(() => window.innerWidth < 640 ? 8 : 15);
     const [highlightIds, setHighlightIds] = useState(readHighlightIds());
@@ -6906,6 +6939,28 @@ ${clone.outerHTML}`;
     const currentSubAlbums = useMemo(() => sortSubAlbums((currentAlbum && currentAlbum.subalbums) || []), [currentAlbum === null || currentAlbum === void 0 ? void 0 : currentAlbum.id, currentAlbum === null || currentAlbum === void 0 ? void 0 : currentAlbum.subalbums]);
     const currentSubAlbum = currentSubAlbums.find(sa => sa.id === activeSubAlbum) || null;
     const albumPhotos = currentSubAlbum ? currentSubAlbum.photos : (currentAlbum && (!currentAlbum.subalbums || currentAlbum.subalbums.length === 0) && Array.isArray(currentAlbum.photos) ? currentAlbum.photos : []);
+    const toggleFavorite=id=>setFavoriteIds(prev=>prev.includes(id)?prev.filter(x=>x!==id):[id,...prev].slice(0,400));
+    useEffect(()=>{try{localStorage.setItem('LA_PHOTO_FAVORITES_V1',JSON.stringify(favoriteIds));}catch(_e){}},[favoriteIds]);
+    const favoritePhotos=useMemo(()=>allPhotos.filter(p=>favoriteIds.includes(p.id)),[allPhotos,favoriteIds]);
+    const searchedAlbumPhotos=useMemo(()=>{
+        const q=norm(photoSearch);
+        return albumPhotos.filter((p,i)=>{
+            if(favoritesOnly&&!favoriteIds.includes(p.id))return false;
+            if(!q)return true;
+            const number=String(albumPhotos.length-i);
+            const fields=[p.name,p.code,p.subAlbumName,p.albumName,currentAlbum&&currentAlbum.name].filter(Boolean).join(' ');
+            return number.includes(q)||norm(fields).includes(q);
+        });
+    },[albumPhotos,photoSearch,favoritesOnly,favoriteIds,currentAlbum&&currentAlbum.name]);
+    useEffect(()=>setAlbumPage(1),[photoSearch,favoritesOnly,activeSubAlbum,activeAlbum]);
+    useEffect(()=>{
+        if(!viewer||!viewer.id)return;
+        setPhotoDeviceViews(prev=>{
+            const next={...prev,[viewer.id]:Math.min(100000,(Number(prev[viewer.id])||0)+1)};
+            try{localStorage.setItem('LA_PHOTO_VIEWS_DEVICE_V1',JSON.stringify(next));}catch(_e){}
+            return next;
+        });
+    },[viewer&&viewer.id]);
 
     // Sugerencias reales: otro álbum, mismo rival específico o misma categoría.
     // No se considera All Boys como coincidencia de rival porque aparece en numerosas galerías.
@@ -7000,9 +7055,9 @@ ${clone.outerHTML}`;
         return ()=>window.clearTimeout(timer);
     },[matchStories,matchStoryIndex,matchStoryPaused]);
 
-    const totalAlbumPages = Math.max(1, Math.ceil(albumPhotos.length / 60));
+    const totalAlbumPages = Math.max(1, Math.ceil(searchedAlbumPhotos.length / 60));
     const safeAlbumPage = Math.min(Math.max(1, albumPage), totalAlbumPages);
-    const pagedPhotos = useMemo(() => albumPhotos.slice((safeAlbumPage - 1) * 60, safeAlbumPage * 60), [albumPhotos, safeAlbumPage]);
+    const pagedPhotos = useMemo(() => searchedAlbumPhotos.slice((safeAlbumPage - 1) * 60, safeAlbumPage * 60), [searchedAlbumPhotos, safeAlbumPage]);
     // Numeración inversa dentro de cada categoría/álbum: la última foto es la Nº 1.
     // La secuencia continúa correctamente entre páginas y en el visor ampliado.
     const photoSequenceNumber = (photo) => {
@@ -9972,6 +10027,11 @@ React.createElement("div", { id: "order-search-panel", hidden:adminPanelTab!=='p
                             React.createElement("div", { className: "w-[66px] h-[66px] sm:w-20 sm:h-20 mx-auto rounded-full p-[2px] bg-gradient-to-tr from-yellow-400 via-pink-500 to-indigo-500 transition-all duration-300 group-hover:scale-105 group-hover:shadow-[0_10px_28px_rgba(236,72,153,.25)]" },
                                 React.createElement("div", { className: "w-full h-full rounded-full bg-neutral-950 border-2 border-neutral-950 overflow-hidden" }, a.cover ? React.createElement("img", { src: a.cover, loading: "lazy", decoding: "async", className: "w-full h-full object-cover transition duration-500 group-hover:scale-110" }) : React.createElement("div", { className: "w-full h-full bg-neutral-900" }))),
                             React.createElement("p", { className: "text-[10px] sm:text-[11px] text-neutral-300 mt-1.5 leading-tight whitespace-normal break-words line-clamp-2" }, a.name)))))),
+                !currentAlbum && React.createElement('div',{className:'la-customer-quick-links'},
+                    React.createElement('button',{type:'button',onClick:()=>setFavoritesOpen(true)},
+                        React.createElement('i',{className:'fas fa-heart'}),' Favoritas (',favoriteIds.length,')'),
+                    React.createElement('button',{type:'button',onClick:()=>setMpHistoryOpen(true)},
+                        React.createElement('i',{className:'fas fa-receipt'}),' Mis compras')),
                 !currentAlbum && React.createElement("div", { className:"home-quick-actions" },
                     React.createElement("button", { onClick:() => setBookingOpen(true), className:"booking-btn home-price-btn px-5 py-4 rounded-2xl font-black" }, React.createElement("i", { className:"fas fa-tags mr-2" }), "Consultar precios"),
                     React.createElement("button", { onClick:() => setMatchPickerOpen(true), className:"match-picker-open-btn" }, React.createElement("i", { className:"fas fa-futbol" }), React.createElement("span", null, "Seleccionar partido"))),
@@ -10138,6 +10198,18 @@ React.createElement("div", { id: "order-search-panel", hidden:adminPanelTab!=='p
                                     React.createElement("p", { className: "subalbum-copy-meta" },
                                         sa.dateLabel || currentAlbum.dateLabel || 'sin fecha',
                                         " · abrir cobertura"))))))),
+                    React.createElement('div',{className:'la-photo-tools mb-3'},
+                        React.createElement('div',{className:'la-photo-search-wrap'},
+                            React.createElement('i',{className:'fas fa-magnifying-glass text-sky-300','aria-hidden':true}),
+                            React.createElement('input',{type:'search',value:photoSearch,onChange:e=>setPhotoSearch(e.target.value),
+                                autoComplete:'off',placeholder:'Buscar número, nombre o código...','aria-label':'Buscar fotos del álbum'})),
+                        React.createElement('button',{type:'button',onClick:()=>setFavoritesOnly(v=>!v),
+                            className:'la-favorites-filter'+(favoritesOnly?' active':''),'aria-pressed':favoritesOnly},
+                            React.createElement('i',{className:'fas fa-heart'}),favoritesOnly?' Favoritas':' Solo favoritas'),
+                        React.createElement('button',{type:'button',onClick:()=>setFavoritesOpen(true),className:'la-favorites-open'},
+                            'Ver favoritas ('+favoriteIds.length+')'),
+                        React.createElement('span',{className:'la-photo-search-count'},
+                            searchedAlbumPhotos.length+' de '+albumPhotos.length+' fotos')),
                     React.createElement("div", { className: "flex flex-col gap-2 w-full lg:w-auto" },
                         React.createElement("div", { className: "bg-neutral-900 border border-neutral-800 rounded-xl p-1 grid grid-cols-3 gap-1 w-full sm:w-auto" },
                             React.createElement("button", { onClick: () => setViewMode('mosaic'), className: `px-3 py-2.5 rounded-lg text-[11px] sm:text-xs font-bold ${viewMode === 'mosaic' ? 'bg-white text-black' : 'text-neutral-300'}` },
@@ -10211,6 +10283,11 @@ React.createElement("div", { id: "order-search-panel", hidden:adminPanelTab!=='p
                         React.createElement("div", { className: `absolute inset-0 ${isSelected ? (bulkQuoteMode ? 'bg-emerald-900/35' : 'bg-indigo-900/40') : 'bg-transparent'} pointer-events-none` }),
                         photo.free && React.createElement("span",{className:"la-photo-free-badge"},React.createElement("i",{className:"fas fa-circle-check","aria-hidden":true})," GRATUITA"),
                         !photo.free && photo.directDiscountPercent>0 && React.createElement("span",{className:"la-photo-discount-badge la-photo-discount-tile"},"-",photo.directDiscountPercent,"% OFF"),
+                        React.createElement('button',{type:'button',className:'la-photo-favorite'+(favoriteIds.includes(photo.id)?' active':''),
+                            onClick:e=>{e.stopPropagation();toggleFavorite(photo.id);},
+                            'aria-label':favoriteIds.includes(photo.id)?'Quitar de favoritas':'Guardar en favoritas',
+                            'aria-pressed':favoriteIds.includes(photo.id),title:'Favorita'},
+                            React.createElement('i',{className:'fas fa-heart'})),
                         React.createElement("div", { className: "absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent p-2 pt-6 pointer-events-none" },
                             React.createElement("p", { className: "text-white/80 font-mono text-[9px] sm:text-[10px] truncate" }, photo.name),
                             React.createElement("p", { className: (photo.free ? "text-emerald-300" : bulkQuoteMode ? "text-emerald-300" : "text-sky-300") + " text-[9px] font-bold" },
@@ -10261,6 +10338,25 @@ React.createElement("div", { id: "order-search-panel", hidden:adminPanelTab!=='p
                                 renderVersusScene(teams.home,teams.away,{compact:true}),
                                 React.createElement('span',{className:'la-related-reason'},item.reason));
                         }))))),
+        favoritesOpen && React.createElement(Modal,{onClose:()=>setFavoritesOpen(false),max:'max-w-2xl',modalType:'favorites'},
+            React.createElement('section',{className:'la-favorites-modal'},
+                React.createElement('h2',{className:'text-xl font-black text-white mb-2'},
+                    React.createElement('i',{className:'fas fa-heart text-pink-300 mr-2'}),'Mis favoritas'),
+                React.createElement('p',{className:'text-xs text-neutral-400 mb-4'},'Las favoritas se guardan en este dispositivo.'),
+                favoritePhotos.length
+                    ?React.createElement('div',{className:'grid gap-2 max-h-[65vh] overflow-y-auto'},
+                        favoritePhotos.map(p=>React.createElement('div',{key:p.id,className:'la-favorite-row'},
+                            React.createElement('img',{src:toImgUrl(p.rawUrl||p.fullUrl||p.url,180),alt:p.name||'Fotografía',loading:'lazy'}),
+                            React.createElement('div',{className:'min-w-0 flex-1'},
+                                React.createElement('strong',{className:'block text-xs text-white truncate'},p.name||p.code||'Foto'),
+                                React.createElement('small',{className:'block text-[11px] text-sky-100/70 truncate'},p.albumName||'')),
+                            !p.free&&React.createElement('button',{type:'button',onClick:()=>toggle(p.id),className:'la-favorite-cart-button'},
+                                React.createElement('i',{className:'fas '+(cart.includes(p.id)?'fa-check':'fa-cart-plus')}),
+                                cart.includes(p.id)?' En carrito':' Agregar'),
+                            React.createElement('button',{type:'button',className:'la-favorite-remove',onClick:()=>toggleFavorite(p.id),
+                                'aria-label':'Quitar favorita'},React.createElement('i',{className:'fas fa-xmark'})))))
+                    :React.createElement('p',{className:'text-sm text-neutral-300 py-8 text-center'},'Todavía no guardaste favoritas. Tocá el corazón en cualquier foto.'),
+                React.createElement('button',{type:'button',className:'la-favorite-return',onClick:()=>setFavoritesOpen(false)},'Volver'))),
         matchStories.length > 0 && React.createElement(PremierAlbumStoryViewer, {
             photos:matchStories, index:matchStoryIndex,
             albumName:(currentAlbum && currentAlbum.name) || 'Partido',
@@ -10620,6 +10716,12 @@ React.createElement("div", { id: "order-search-panel", hidden:adminPanelTab!=='p
                       viewer.directDiscountPercent>0 && React.createElement("s",{className:"la-old-unit-price la-old-unit-price-large"},formatPrice(viewer.price)),
                       " ",formatPrice(Math.round(viewer.price*(1-(viewer.directDiscountPercent||0)/100)))),
                     !viewer.free && viewer.directDiscountPercent>0 && React.createElement("div",{className:"la-photo-discount-badge la-photo-discount-viewer"},React.createElement("i",{className:"fas fa-tag mr-2","aria-hidden":true}),viewer.directDiscountPercent,"% OFF · Se aplica automáticamente"),
+                    React.createElement('button',{type:'button',onClick:()=>toggleFavorite(viewer.id),
+                        className:'w-full rounded-xl border border-pink-300/25 bg-pink-500/10 py-3 mb-3 text-sm font-black '+(favoriteIds.includes(viewer.id)?'text-pink-200':'text-white'),
+                        'aria-pressed':favoriteIds.includes(viewer.id)},
+                        React.createElement('i',{className:'fas fa-heart mr-2'}),
+                        favoriteIds.includes(viewer.id)?'Guardada en favoritas · Quitar':'Guardar en favoritas'),
+                    React.createElement('p',{className:'text-xs text-sky-100/65 mb-3'},'En el celular, deslizá para pasar de foto.'),
                     React.createElement("button", { onClick: () => viewer.free ? downloadFreePhoto(viewer) : bulkQuoteMode ? toggleBulkQuotePhoto(viewer.id) : toggle(viewer.id), className: "w-full " + (viewer.free ? "la-photo-free-cta" : bulkQuoteMode ? "bulk-quote-photo-btn" : "buy-btn") + " font-black py-4 rounded-xl mb-3" },
                         viewer.free ? React.createElement(React.Fragment,null,React.createElement("i",{className:"fas fa-download mr-2","aria-hidden":true}),"Descargar foto gratuita") : bulkQuoteMode ? (bulkQuoteIds.includes(viewer.id) ? "Quitar de la negociación" : "Seleccionar para negociar") : (cart.includes(viewer.id) ? "Quitar del carrito" : "Agregar al carrito")),
                     React.createElement("button", { type:"button", onClick:()=>setViewer(null),
