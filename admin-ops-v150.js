@@ -17,7 +17,7 @@ function exportCsv(filename,columns,records){
   a.href=url;a.download=filename;document.body.appendChild(a);a.click();a.remove();
   setTimeout(()=>URL.revokeObjectURL(url),60000);
 }
-function Sales({orders=[],allPhotos=[],views={},mpOrders=[],mpConnected=false,orderState}){
+function Sales({orders=[],allPhotos=[],views={},cartAdds={},mpOrders=[],mpConnected=false,orderState}){
   const [period,setPeriod]=React.useState('30');
   const cutoff=period==='all'?0:Date.now()-Number(period)*86400000;
   const scope=orders.filter(o=>o&&o.type!=='benefit_redemption'&&(!cutoff||Date.parse(o.date||o.createdAt||'')>=cutoff));
@@ -42,10 +42,12 @@ function Sales({orders=[],allPhotos=[],views={},mpOrders=[],mpConnected=false,or
   const rank=(label,values)=>h('div',{className:'la-ops-rank',key:label},h('h4',null,label),
     ...(values.length?values.map(([name,count],i)=>h('div',{className:'la-ops-rank-row',key:i},h('span',null,(i+1)+'. '+name),h('b',null,count))):
       [h('p',{className:'la-ops-muted',key:'empty'},'Sin ventas identificadas en el período.')]));
-  const local=Object.entries(views).map(([id,count])=>{
+  const deviceTop=counter=>Object.entries(counter).map(([id,count])=>{
     const p=allPhotos.find(x=>x.id===id);
     return p?[p.name||p.code||id,Number(count)||0]:null;
   }).filter(Boolean).sort((a,b)=>b[1]-a[1]).slice(0,5);
+  const local=deviceTop(views);
+  const localCart=deviceTop(cartAdds);
   const missingDownloads=mpConnected?mpOrders.filter(o=>o&&o.paid===true&&(o.photos||[]).some(p=>!p||!p.download_url)).length:0;
   // Señalar coincidencias sospechosas, nunca cancelar, fusionar ni cobrar de nuevo automáticamente.
   const suspectOrders=[];
@@ -91,8 +93,14 @@ function Sales({orders=[],allPhotos=[],views={},mpOrders=[],mpConnected=false,or
         ['Album','Categoria','Foto','Codigo','Veces vendida'],rows);
     }},'Exportar fotos vendidas CSV'),
     h('small',null,'Archivos generados con los pedidos acreditados consultados. No incluyen claves de acceso ni enlaces privados.')));
-  children.push(h('details',{className:'la-ops-details'},h('summary',null,'Aperturas de fotos en este dispositivo (no globales)'),
-    ...local.map(([name,count],i)=>h('p',{className:'la-ops-muted',key:i},name+': '+count+' aperturas'))));
+  children.push(h('details',{className:'la-ops-details'},h('summary',null,'Interés registrado en este dispositivo (no global)'),
+    h('h4',{className:'la-ops-subtitle'},'Fotos más abiertas'),
+    ...(local.length?local.map(([name,count],i)=>h('p',{className:'la-ops-muted',key:'v'+i},name+': '+count+' aperturas')):
+        [h('p',{className:'la-ops-muted',key:'v0'},'Aún sin aperturas registradas en este navegador.')]),
+    h('h4',{className:'la-ops-subtitle'},'Fotos más agregadas al carrito'),
+    ...(localCart.length?localCart.map(([name,count],i)=>h('p',{className:'la-ops-muted',key:'a'+i},name+': '+count+' agregados')):
+        [h('p',{className:'la-ops-muted',key:'a0'},'Aún sin agregados registrados en este navegador.')]),
+    h('p',{className:'la-ops-muted'},'Estos eventos no incluyen otros dispositivos ni representan ventas.')));
   if(missingDownloads)children.push(h('p',{className:'la-ops-warning'},'Revisar '+missingDownloads+' compras pagadas de Mercado Pago: la fuente no informa algún enlace de descarga.'));
   if(suspectOrders.length)children.push(h('div',{className:'la-ops-warning'},
     'Posibles pedidos repetidos (mismo teléfono, importe y menos de 8 minutos): '+
