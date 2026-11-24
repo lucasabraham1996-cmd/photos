@@ -2346,6 +2346,10 @@ img{-webkit-user-drag:none;}
   @media(max-width:700px){.la-ops-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}.la-ops-ranks{grid-template-columns:1fr}.la-ops-copy{grid-template-columns:1fr}.la-ops-stage-board{grid-template-columns:repeat(3,minmax(0,1fr))}}
 
 
+  .la-quantity-promo{display:flex;align-items:flex-start;flex-wrap:wrap;gap:7px;padding:11px 13px;
+    border:1px solid #365e75;background:#0c2633;border-radius:12px;margin:0 0 12px;color:#c7efff;font-size:12px;font-weight:750}
+  .la-quantity-promo i{color:#7dd3fc;padding-top:2px}
+  .la-quantity-promo small{width:100%;color:#9bbccc;font-size:10px}
   .la-customer-quick-links{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0 16px}
   .la-customer-quick-links button{display:inline-flex;align-items:center;gap:7px;padding:10px 14px;border:1px solid #36516b;border-radius:13px;background:#0c1c2c;color:#e9f6ff;font-size:12px;font-weight:850}
   .la-customer-quick-links button:first-child i{color:#f9a8d4}
@@ -6955,10 +6959,16 @@ ${clone.outerHTML}`;
         const age = albumAgeDays(a);
         return age >= 0 && age < HOME_RECENT_MAX_AGE_DAYS && (!newestAlbum || a.id !== newestAlbum.id);
     }), [activeAlbums, newestAlbum && newestAlbum.id]);
+    const albumMatchesQuickSearch=(a,q)=>{
+        if(!q)return true;
+        const sides=matchPickerSides(a);
+        const categories=(a.subalbums||[]).map(x=>x.name||'');
+        return norm([a.name,a.dateLabel,sides.home.name,sides.away.name,...categories].filter(Boolean).join(' ')).includes(q);
+    };
     const homeSearchAlbums = useMemo(() => {
         const q = norm(albumSearch);
         if (!q) return [];
-        return displayAlbums.filter(a => norm(a.name).includes(q) || norm(a.dateLabel).includes(q));
+        return displayAlbums.filter(a=>albumMatchesQuickSearch(a,q));
     }, [displayAlbums, albumSearch]);
     const homeGridAlbums = useMemo(() => norm(albumSearch)
         ? homeSearchAlbums.filter(a => !newestAlbum || a.id !== newestAlbum.id)
@@ -6969,9 +6979,9 @@ ${clone.outerHTML}`;
         return displayAlbums.filter(a => !visibleIds.has(a.id)).length;
     }, [displayAlbums, recentHomeAlbums, newestAlbum && newestAlbum.id]);
     const filteredAlbums = useMemo(() => { const q = norm(albumSearch); if (!q)
-        return activeAlbums; return activeAlbums.filter(a => norm(a.name).includes(q) || norm(a.dateLabel).includes(q)); }, [activeAlbums, albumSearch]);
+        return activeAlbums; return activeAlbums.filter(a => albumMatchesQuickSearch(a,q)); }, [activeAlbums, albumSearch]);
     const filteredArchivedAlbums = useMemo(() => { const q = norm(albumSearch); if (!q)
-        return archivedAlbums; return archivedAlbums.filter(a => norm(a.name).includes(q) || norm(a.dateLabel).includes(q)); }, [archivedAlbums, albumSearch]);
+        return archivedAlbums; return archivedAlbums.filter(a => albumMatchesQuickSearch(a,q)); }, [archivedAlbums, albumSearch]);
     const visibleFilteredAlbums = useMemo(() => filteredAlbums.slice(0, albumRenderLimit), [filteredAlbums, albumRenderLimit]);
     const highlightedAlbums = useMemo(() => { const selected = highlightIds.map(id => activeAlbums.find(a => a.id === id)).filter(Boolean); return selected.length ? selected : activeAlbums.slice(0, 8); }, [highlightIds, activeAlbums]);
     const toggleHighlight = (albumId) => setHighlightIds(ids => ids.includes(albumId) ? ids.filter(id => id !== albumId) : [albumId, ...ids].slice(0, 12));
@@ -7532,6 +7542,8 @@ ${clone.outerHTML}`;
         : (error || 'Ocurrió un problema momentáneo al cargar la galería.');
     const regular = calculateSubtotal(selectedPhotos);
     const discount = discountRate(cart.length);
+    const nextPhotoDiscount = cart.length<3?{target:3,percent:10}:
+        cart.length<5?{target:5,percent:15}:null;
     const siteDiscountPercent = Math.max(0, Math.min(100, Number(discountSettings.percent) || 0));
     const albumSiteDiscount = (albumId) => { var _a; return ((_a = discountSettings.excludedAlbums) === null || _a === void 0 ? void 0 : _a[albumId]) ? 0 : siteDiscountPercent; };
     const hasSiteDiscount = (albumId) => albumSiteDiscount(albumId) > 0;
@@ -7744,7 +7756,7 @@ ${clone.outerHTML}`;
                             React.createElement("span", { className:"album-cta-chip shrink-0" }, React.createElement("i", { className:"fas fa-arrow-right" }), " Ver"))))));
     };
     const toggleAlbumDiscountException = (albumId) => setDiscountSettings(s => { var _a; return ({ ...s, excludedAlbums: { ...(s.excludedAlbums || {}), [albumId]: !((_a = s.excludedAlbums) === null || _a === void 0 ? void 0 : _a[albumId]) } }); });
-    const promoText = () => cart.length ? cart.length + ' fotos seleccionadas · sin límite de cantidad' : 'Seleccioná todas las fotos que quieras';
+    const promoText = () => cart.length ? cart.length + ' fotos · '+(discount>0?Math.round(discount*100)+'% OFF por cantidad':'sin límite de cantidad') : 'Seleccioná todas las fotos que quieras';
     // CARRITO_SIN_LIMITE: la selección de fotos no tiene máximo de unidades.
     const toggle = (id) => {
         const freePhoto = allPhotos.find(p => p.id === id && p.free);
@@ -10541,6 +10553,15 @@ React.createElement("div", { id: "order-search-panel", hidden:adminPanelTab!=='p
                             onClick:()=>setCheckoutOrderModalOpen(true),
                             'aria-label':'Ver y editar las fotos del pedido'
                         },React.createElement('i',{className:'fas fa-eye','aria-hidden':true}),' Ver pedido'))),
+                !mpReceiptView&&cart.length>0&&React.createElement('div',{className:'la-quantity-promo'},
+                    React.createElement('i',{className:'fas fa-tag','aria-hidden':true}),
+                    React.createElement('span',null,
+                        discount>0?'Ya tenés '+Math.round(discount*100)+'% de descuento por cantidad. ':'',
+                        nextPhotoDiscount?'Sumá '+(nextPhotoDiscount.target-cart.length)+
+                            ' foto'+(nextPhotoDiscount.target-cart.length===1?'':'s')+
+                            ' para llegar al '+nextPhotoDiscount.percent+'% por cantidad.':
+                            'Alcanzaste el 15% máximo por cantidad.'),
+                    React.createElement('small',null,'El total refleja los descuentos configurados.')),
                 mpReceiptView&&!mpVerifiedReceipt&&React.createElement("section",{className:"mb-4 bg-sky-950/70 border border-sky-300/30 rounded-2xl p-4"},
                     React.createElement("p",{className:"text-sm text-white font-black"},
                         mpReturnMissing?"No pudimos identificar la compra en este navegador":"Verificando el pago con Mercado Pago"),
